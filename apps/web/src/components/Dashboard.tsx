@@ -154,7 +154,9 @@ export function Dashboard() {
               <Stat label="Speed" value={(state.vehicle.speedMps * 3.6).toFixed(0)} unit="km/h" />
               <Stat
                 label="Heading"
-                value={`${(((((state.vehicle.heading * 180) / Math.PI) % 360) + 360) % 360).toFixed(0)}°`}
+                // Round before wrapping: a heading of -0.006 degrees rounds to
+                // "360" if the modulo runs first.
+                value={`${((Math.round((state.vehicle.heading * 180) / Math.PI) % 360) + 360) % 360}°`}
               />
             </div>
             <p className="mt-2 text-[10.5px] text-[color:var(--color-muted)]">
