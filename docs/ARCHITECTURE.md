@@ -3,25 +3,35 @@
 ## 1. Shape of the repository
 
 ```
-apps/web/                Next.js 16 App Router frontend — the only runnable app
-  src/app/               / (dashboard) and /scene-lab
-  src/components/        Dashboard, SceneLab, SceneStage, LinkFan, ui primitives
-  public/models/         Runtime .glb assets, served statically
+apps/web/                Next.js 16 frontend
+  src/app/               /, /scenario-lab, /experiments, /decision-log, /capture, /scene-lab
+  src/components/        Mission, ScenarioLab, Experiments, DecisionLog, Capture, AppShell, ui
+  src/lib/               REST client, useEngineRun (WebSocket, reconnect, staleness)
+  public/models/         Runtime .glb assets
+services/engine/         The Python engine
+  continua_engine/contracts.py     Authoritative event and metric schema (Pydantic)
+  continua_engine/world.py         Route, coverage, motion — reads packages/contracts/world.json
+  continua_engine/sim/             exogenous trace, network model, simulator loop
+  continua_engine/controller/      state machine, policies, predictors, training
+  continua_engine/experiments/     metrics, paired runner, CLI
+  continua_engine/store/           SQLite metadata + JSONL evidence
+  continua_engine/emulation/       capability probe and Linux adapter
+  continua_engine/api/             FastAPI REST + WebSocket, run and replay sessions
+  continua_engine/scenarios/       scenario specs and link profiles (JSON, not code)
+  continua_engine/models/          predictor.json + training_report.json
 packages/scene/          The reusable 3D scene
-  src/core/clock.ts      Deterministic simulation clock
-  src/math/noise.ts      Seeded value noise, fbm, easing — no Math.random
+  src/core/clock.ts      Deterministic scene clock
   src/world/             route, terrain, road, sites
-  src/preview/           Phase 1 scene-state source
+  src/preview/           Phase 1 preview state source
+  src/engine/            EngineSceneStateSource — the Phase 2 seam
   src/components/        React Three Fiber components
-  src/runtime/           Context, settings store, HUD read hooks
-  src/theme.ts           Design tokens shared with the app
-packages/contracts/      Framework-free shared types
-assets/blender/          .blend sources
-assets/reference/        Reference imagery
-assets/previews/         Blender renders + browser evidence
-scripts/blender/         Reproducible generation and export scripts
-scripts/                 checkpoint.py, run-blender.mjs
-tests/                   Playwright smoke + evidence capture
+packages/contracts/      Shared types (src/index.ts, src/engine.ts) and world.json
+scripts/blender/         Reproducible asset generation and export
+scripts/emulation/       setup.sh, verify.sh, cleanup.sh
+scripts/                 checkpoint.py, run-blender.mjs, engine_cli.py
+data/                    experiments/, emulation_capability.json (runs/ git-ignored)
+tests/engine/            pytest engine suite
+tests/                   Playwright browser suites
 docs/                    This directory
 ```
 
