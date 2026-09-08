@@ -660,9 +660,14 @@ def cmd_start(args: argparse.Namespace) -> int:
     creationflags = 0
     if os.name == "nt":
         creationflags = subprocess.CREATE_NEW_PROCESS_GROUP | getattr(subprocess, "DETACHED_PROCESS", 0)
+    # `--branch` belongs to the top-level parser, so it must precede the
+    # subcommand. Putting it after `start` makes argparse reject the relaunch
+    # and the daemon dies the instant it is spawned — silently, because the
+    # parent has already returned "started".
     command = [
-        sys.executable, str(Path(__file__).resolve()), "start",
-        "--foreground", "--interval", str(args.interval), "--branch", args.branch,
+        sys.executable, str(Path(__file__).resolve()),
+        "--branch", args.branch,
+        "start", "--foreground", "--interval", str(args.interval),
     ]
     if args.no_push:
         command.append("--no-push")
@@ -671,7 +676,10 @@ def cmd_start(args: argparse.Namespace) -> int:
             command, cwd=REPO_ROOT, stdout=handle, stderr=handle,
             stdin=subprocess.DEVNULL, env=env, creationflags=creationflags,
         )
-    time.sleep(1.5)
+    time.sleep(2.0)
+    if supervisor_alive() is None and process.poll() is not None:
+        print(f"supervisor failed to start (exit {process.returncode}); see {LOG_FILE}")
+        return 1
     print(f"checkpoint supervisor started (pid {process.pid}); interval {args.interval}s, branch {args.branch}")
     print(f"log: {LOG_FILE}")
     return 0

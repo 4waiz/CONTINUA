@@ -69,16 +69,16 @@ function closeupShot(distance: number, time: number, out: Shot): Shot {
 function overviewShot(distance: number, time: number, out: Shot): Shot {
   const heading = route.smoothHeadingAt(distance, 90);
   const orbit = heading + 2.2 + Math.sin(time * 0.045) * 0.16;
-  const radius = 96;
+  const radius = 68;
   const anchor = route.at(distance);
   const anchorY = roadSurfaceY(distance);
 
   out.position.set(
     anchor.x + Math.cos(orbit) * radius,
-    anchorY + 58,
+    anchorY + 34,
     anchor.z - Math.sin(orbit) * radius,
   );
-  const ahead = route.at(distance + 60);
+  const ahead = route.at(distance + 48);
   out.target.set(
     (anchor.x + ahead.x) / 2,
     anchorY + 4,

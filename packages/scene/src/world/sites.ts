@@ -39,8 +39,9 @@ export const SITES: readonly SiteMarker[] = [
     label: 'Docking station',
     detail: 'Wired gigabit uplink. Active only while the rover is docked or tethered.',
     prop: 'PROP_DockStation',
-    x: 0,
-    z: 7.5,
+    // Sits at the route origin: the run must begin physically tethered.
+    x: -24,
+    z: 7.0,
     yaw: Math.PI,
     network: 'wired',
     linkHeight: 4.0,
@@ -51,8 +52,8 @@ export const SITES: readonly SiteMarker[] = [
     label: 'Command facility',
     detail: 'Mission control and the session gateway all four links terminate at.',
     prop: 'PROP_Facility_Main',
-    x: -34,
-    z: 46,
+    x: -46,
+    z: 44,
     yaw: -Math.PI / 2,
     selectable: true,
   },
@@ -67,9 +68,21 @@ export const SITES: readonly SiteMarker[] = [
     selectable: true,
   },
   {
-    id: 'wifi-north',
+    id: 'wifi-yard',
     label: 'Wi-Fi access point A',
-    detail: 'Courtyard 5 GHz cell. First handoff target after undocking.',
+    detail: 'Yard cell covering the dock apron. First handoff target after undocking.',
+    prop: 'PROP_WifiMast',
+    x: 24,
+    z: -28,
+    yaw: -0.3,
+    network: 'wifi',
+    linkHeight: 6.6,
+    selectable: true,
+  },
+  {
+    id: 'wifi-north',
+    label: 'Wi-Fi access point B',
+    detail: 'Courtyard 5 GHz cell covering the middle of the yard.',
     prop: 'PROP_WifiMast',
     x: 104,
     z: -36,
@@ -80,8 +93,8 @@ export const SITES: readonly SiteMarker[] = [
   },
   {
     id: 'wifi-south',
-    label: 'Wi-Fi access point B',
-    detail: 'Perimeter cell covering the yard exit.',
+    label: 'Wi-Fi access point C',
+    detail: 'Perimeter cell covering the yard exit onto the corridor.',
     prop: 'PROP_WifiMast',
     x: 182,
     z: 34,
@@ -123,7 +136,8 @@ const DOCK_SITE = SITES.find((site) => site.id === 'dock')!;
 
 const WIFI_RANGE = 155;
 const CELL_RANGE = 330;
-const TETHER_RANGE = 9;
+// Long enough that the docked phase reads as a real stage of the run.
+const TETHER_RANGE = 20;
 
 /**
  * Geometric coverage 0..1 for one network at a world position.
@@ -136,7 +150,7 @@ export function coverageAt(network: AccessNetworkId, x: number, z: number): numb
     case 'wired': {
       const distance = Math.hypot(x - DOCK_SITE.x, z - DOCK_SITE.z);
       // Binary by nature: you are plugged in, or you are not.
-      return 1 - smoothstep(TETHER_RANGE - 2, TETHER_RANGE, distance);
+      return 1 - smoothstep(TETHER_RANGE - 6, TETHER_RANGE, distance);
     }
     case 'wifi': {
       let best = 0;

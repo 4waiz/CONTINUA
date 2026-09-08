@@ -22,6 +22,7 @@ import {
   useEffect,
   useMemo,
   useRef,
+  useState,
   useSyncExternalStore,
   type ReactNode,
 } from 'react';
@@ -167,37 +168,39 @@ export function usePlayback() {
  */
 export function useThrottledSceneState(intervalMs = 200): SceneState {
   const { frame, clock, source } = useSceneRuntime();
-  const cache = useRef<SceneState>(frame.current);
-  const version = useRef(0);
+  const [state, setState] = useState<SceneState>(() => frame.current);
 
-  const subscribe = useMemo(
-    () => (listener: () => void) => {
-      const timer = setInterval(() => {
-        const next = frame.current;
-        if (next !== cache.current) {
-          cache.current = next;
-          version.current += 1;
-          listener();
-        }
-      }, intervalMs);
-      const unsubscribe = clock.subscribe(() => {
-        cache.current = source.sampleAt(clock.time);
-        version.current += 1;
-        listener();
-      });
-      return () => {
-        clearInterval(timer);
-        unsubscribe();
-      };
-    },
-    [frame, clock, source, intervalMs],
-  );
+  useEffect(() => {
+    let last = frame.current;
+    setState(last);
 
-  return useSyncExternalStore(
-    subscribe,
-    () => cache.current,
-    () => cache.current,
-  );
+    // Poll the frame scratch state at a human-readable rate. Deliberately not
+    // `useSyncExternalStore`: its snapshot must be derived from a store React
+    // can observe, and a ref mutated inside `useFrame` is not that — the
+    // snapshot never changed identity from React's point of view and the
+    // panels froze on their first value.
+    const timer = setInterval(() => {
+      const next = frame.current;
+      if (next !== last) {
+        last = next;
+        setState(next);
+      }
+    }, intervalMs);
+
+    // Seeking must update the readouts immediately, even while paused.
+    const unsubscribe = clock.subscribe(() => {
+      const next = source.sampleAt(clock.time);
+      last = next;
+      setState(next);
+    });
+
+    return () => {
+      clearInterval(timer);
+      unsubscribe();
+    };
+  }, [frame, clock, source, intervalMs]);
+
+  return state;
 }
 
 /** Keyboard transport, matching the on-screen controls. */
