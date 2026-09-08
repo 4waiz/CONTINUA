@@ -98,12 +98,12 @@ export function Lighting({ quality }: { quality: 'high' | 'balanced' | 'low' }) 
   return (
     <>
       <GradientSky />
-      <hemisphereLight args={[SCENE_COLOR.sky, SCENE_COLOR.groundFar, 1.25]} />
-      <ambientLight intensity={0.32} color="#EEF4FF" />
+      <hemisphereLight args={[SCENE_COLOR.sky, SCENE_COLOR.groundFar, 0.62]} />
+      <ambientLight intensity={0.14} color="#E6EEFF" />
       <directionalLight
         ref={lightRef}
-        intensity={2.15}
-        color="#FFF8EE"
+        intensity={1.55}
+        color="#FFF6EA"
         castShadow={shadows}
         shadow-mapSize-width={shadowSize}
         shadow-mapSize-height={shadowSize}
@@ -119,9 +119,9 @@ export function Lighting({ quality }: { quality: 'high' | 'balanced' | 'low' }) 
       {/* A locally generated environment: no network fetch, no HDR download. */}
       <Environment resolution={quality === 'high' ? 128 : 64} frames={1}>
         <color attach="background" args={[SCENE_COLOR.sky]} />
-        <Lightformer intensity={2.4} position={[0, 8, 0]} scale={[12, 12, 1]} rotation-x={Math.PI / 2} />
-        <Lightformer intensity={0.9} position={[6, 2, 4]} scale={[8, 4, 1]} color="#DCE9FF" />
-        <Lightformer intensity={0.7} position={[-6, 1, -4]} scale={[8, 4, 1]} color="#FFF3E4" />
+        <Lightformer intensity={1.15} position={[0, 8, 0]} scale={[12, 12, 1]} rotation-x={Math.PI / 2} />
+        <Lightformer intensity={0.45} position={[6, 2, 4]} scale={[8, 4, 1]} color="#DCE9FF" />
+        <Lightformer intensity={0.35} position={[-6, 1, -4]} scale={[8, 4, 1]} color="#FFF3E4" />
       </Environment>
     </>
   );

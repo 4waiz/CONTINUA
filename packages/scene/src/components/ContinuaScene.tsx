@@ -167,7 +167,7 @@ export function ContinuaScene({ className, fallback, onReady, onFirstFrame }: Co
       camera={{ position: [18, 7, 18], fov: 40, near: 0.3, far: 2600 }}
       onCreated={({ gl, scene }) => {
         gl.toneMapping = ACESFilmicToneMapping;
-        gl.toneMappingExposure = 1.06;
+        gl.toneMappingExposure = 0.92;
         gl.outputColorSpace = SRGBColorSpace;
         scene.background = null;
         onReady?.();

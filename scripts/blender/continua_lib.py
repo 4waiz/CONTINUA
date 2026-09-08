@@ -172,15 +172,15 @@ def continua_materials() -> dict[str, bpy.types.Material]:
         "sensor": pbr("CONTINUA_Sensor_Housing", "#2B3242", metallic=0.55, roughness=0.34),
         "sensor_lens": pbr("CONTINUA_Sensor_Lens", "#0E1422", metallic=0.2, roughness=0.08),
         # --- world ---------------------------------------------------------
-        "concrete": pbr("CONTINUA_Concrete", "#DFE5EF", metallic=0.0, roughness=0.82),
+        "concrete": pbr("CONTINUA_Concrete", "#C4CEDD", metallic=0.0, roughness=0.84),
         "concrete_dark": pbr("CONTINUA_Concrete_Dark", "#C3CBD9", metallic=0.0, roughness=0.86),
-        "building": pbr("CONTINUA_Building", "#F2F5FA", metallic=0.0, roughness=0.6),
+        "building": pbr("CONTINUA_Building", "#DDE4EF", metallic=0.0, roughness=0.62),
         "building_glass": pbr("CONTINUA_Building_Glass", "#9FB6D6", metallic=0.1, roughness=0.12,
                               alpha=0.8),
         "steel": pbr("CONTINUA_Steel", "#AAB4C4", metallic=0.85, roughness=0.36),
-        "steel_white": pbr("CONTINUA_Steel_White", "#E7ECF4", metallic=0.3, roughness=0.4),
-        "asphalt": pbr("CONTINUA_Asphalt", "#C8CFDC", metallic=0.0, roughness=0.9),
-        "sand": pbr("CONTINUA_Sand", "#E8E4DC", metallic=0.0, roughness=0.95),
+        "steel_white": pbr("CONTINUA_Steel_White", "#D3DBE7", metallic=0.35, roughness=0.42),
+        "asphalt": pbr("CONTINUA_Asphalt", "#9BA7B9", metallic=0.0, roughness=0.9),
+        "sand": pbr("CONTINUA_Sand", "#CFC6B4", metallic=0.0, roughness=0.95),
     }
 
 

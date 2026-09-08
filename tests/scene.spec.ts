@@ -312,8 +312,11 @@ test.describe('determinism and rig integrity', () => {
         `on ${renderer.renderer} (${renderer.vendor})`,
     );
 
-    // A hard threshold here would only assert the speed of the CI machine.
-    // What must hold is that frames are actually being produced.
-    expect(measurement.frames).toBeGreaterThan(20);
+    // A frame-rate threshold here would only assert the speed of whatever
+    // machine ran the suite — the default project rasterises in software via
+    // SwiftShader and tops out around 4 fps by design. What must hold is that
+    // the render loop is genuinely producing frames; the real hardware number
+    // is measured by the `gpu` project and recorded in docs/PROGRESS.md.
+    expect(measurement.frames).toBeGreaterThan(8);
   });
 });

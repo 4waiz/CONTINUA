@@ -172,7 +172,7 @@ export function Ground({ quality }: { quality: 'high' | 'balanced' | 'low' }) {
         <lineBasicMaterial
           color={SCENE_COLOR.grid}
           transparent
-          opacity={quality === 'low' ? 0.16 : 0.26}
+          opacity={quality === 'low' ? 0.2 : 0.32}
           depthWrite={false}
         />
       </lineSegments>

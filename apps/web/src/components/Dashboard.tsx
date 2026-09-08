@@ -152,7 +152,10 @@ export function Dashboard() {
           <Panel title="Rover">
             <div className="grid grid-cols-2 gap-3">
               <Stat label="Speed" value={(state.vehicle.speedMps * 3.6).toFixed(0)} unit="km/h" />
-              <Stat label="Heading" value={`${((state.vehicle.heading * 180) / Math.PI).toFixed(0)}°`} />
+              <Stat
+                label="Heading"
+                value={`${(((((state.vehicle.heading * 180) / Math.PI) % 360) + 360) % 360).toFixed(0)}°`}
+              />
             </div>
             <p className="mt-2 text-[10.5px] text-[color:var(--color-muted)]">
               CONTINUA Rover Mk1 · inspection unit 04
