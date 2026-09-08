@@ -1,0 +1,589 @@
+{
+  "generated_from": {
+    "runs": [
+      "run-7d8750c2b7",
+      "run-d2819d215c",
+      "run-3c69f9615f"
+    ],
+    "experiments": [
+      "exp-26f132d5d7",
+      "exp-64931cf540",
+      "exp-e70fe761a1",
+      "exp-657ef4a89a"
+    ]
+  },
+  "execution_mode": "simulation",
+  "cards": {
+    "compare": {
+      "id": "compare",
+      "kicker": "Paired trial \u00b7 identical exogenous trace",
+      "title": "Reactive baseline vs CONTINUA",
+      "subtitle": "wifi-degradation \u00b7 seed 70009 \u00b7 both runs driven by the same pre-generated trace; only the policy differs",
+      "columns": [
+        "B0 \u00b7 reactive",
+        "P1 \u00b7 CONTINUA"
+      ],
+      "rows": [
+        {
+          "label": "Session reconnects",
+          "baseline": 1,
+          "continua": 0,
+          "format": "int",
+          "better_is": "lower"
+        },
+        {
+          "label": "Interruptions",
+          "baseline": 4,
+          "continua": 1,
+          "format": "int",
+          "better_is": "lower"
+        },
+        {
+          "label": "Total interruption",
+          "baseline": 7.32,
+          "continua": 0.16,
+          "format": "seconds",
+          "better_is": "lower"
+        },
+        {
+          "label": "Longest interruption",
+          "baseline": 4.5,
+          "continua": 0.16,
+          "format": "seconds",
+          "better_is": "lower"
+        },
+        {
+          "label": "Control deadlines missed",
+          "baseline": 34.3166,
+          "continua": 31.9748,
+          "format": "percent",
+          "better_is": "lower"
+        },
+        {
+          "label": "Video frames delivered",
+          "baseline": 57.968,
+          "continua": 68.0,
+          "format": "percent",
+          "better_is": "higher"
+        },
+        {
+          "label": "Satellite data used",
+          "baseline": 47591048,
+          "continua": 4791508,
+          "format": "bytes",
+          "better_is": "lower"
+        },
+        {
+          "label": "Relative link cost",
+          "baseline": 3.4357,
+          "continua": 1.1887,
+          "format": "units",
+          "better_is": "lower"
+        }
+      ],
+      "against_us": [
+        {
+          "label": "Handovers performed",
+          "baseline": 3,
+          "continua": 5,
+          "format": "int",
+          "better_is": "lower",
+          "note": "more, not fewer \u2014 preparing a path costs transitions"
+        },
+        {
+          "label": "Bulk transfer completed",
+          "baseline": 138746258,
+          "continua": 73437786,
+          "format": "bytes",
+          "better_is": "higher",
+          "note": "deliberately throttled to protect control and video"
+        }
+      ],
+      "footnote": "The 0.16 s that remains is the session establishing at t = 0, before any link is carrying. Every policy, including both baselines, records it.",
+      "sources": {
+        "baseline_run": "run-7d8750c2b7",
+        "continua_run": "run-d2819d215c",
+        "files": [
+          "data/runs/run-7d8750c2b7/metrics.json",
+          "data/runs/run-d2819d215c/metrics.json"
+        ],
+        "mode": "simulation"
+      }
+    },
+    "ablation": {
+      "id": "ablation",
+      "kicker": "20 paired trials per policy \u00b7 test seed block \u00b7 held out",
+      "title": "What actually did the work",
+      "subtitle": "Take one part out at a time and re-run the same seeds",
+      "variants": [
+        {
+          "label": "CONTINUA (P1)",
+          "note": "everything on",
+          "interruption_s": 0.16,
+          "cost_units": 1.2512,
+          "satellite_mb": 4.78,
+          "congestion_control_miss_pct": 31.4563
+        },
+        {
+          "label": "\u2026without prediction",
+          "note": "prepare and steer, but no forecast",
+          "interruption_s": 0.16,
+          "cost_units": 1.2315,
+          "satellite_mb": 4.74,
+          "congestion_control_miss_pct": 31.5292
+        },
+        {
+          "label": "\u2026without application-awareness",
+          "note": "no per-class throttling or cost weighting",
+          "interruption_s": 0.16,
+          "cost_units": 4.7768,
+          "satellite_mb": 62.33,
+          "congestion_control_miss_pct": 51.5801
+        },
+        {
+          "label": "Always-multipath baseline",
+          "note": "keep a second path warm at all times",
+          "interruption_s": 0.16,
+          "cost_units": 4.3132,
+          "satellite_mb": 61.2,
+          "congestion_control_miss_pct": 49.1571
+        }
+      ],
+      "reading": [
+        "Preparation removes the interruption \u2014 the always-multipath baseline reaches the same 0.16 s.",
+        "Prediction is not what removed it. Ablating the predictor changes nothing we can measure.",
+        "Application-awareness is what makes it affordable, and under congestion it is what holds the control channel."
+      ],
+      "predictor": {
+        "kicker": "and the model we trained anyway",
+        "rows": [
+          {
+            "label": "Precision",
+            "heuristic": 0.838,
+            "learned": 0.6485,
+            "format": "ratio"
+          },
+          {
+            "label": "Recall",
+            "heuristic": 0.1396,
+            "learned": 0.7817,
+            "format": "ratio"
+          },
+          {
+            "label": "False positives per run",
+            "heuristic": 7.5,
+            "learned": 101.4,
+            "format": "number"
+          },
+          {
+            "label": "Resulting app health",
+            "heuristic": 68.79,
+            "learned": 67.885,
+            "format": "number"
+          }
+        ],
+        "reading": "Recall 0.14 \u2192 0.78, and the outcome got slightly worse. Better forecasting did not help because preparation had already removed the thing it was forecasting."
+      },
+      "sources": {
+        "experiments": [
+          "exp-26f132d5d7",
+          "exp-64931cf540",
+          "exp-e70fe761a1"
+        ],
+        "files": [
+          "data/experiments/exp-26f132d5d7.json",
+          "data/experiments/exp-64931cf540.json",
+          "data/experiments/exp-e70fe761a1.json"
+        ],
+        "mode": "simulation"
+      }
+    },
+    "results": {
+      "id": "results",
+      "kicker": "20 paired trials per policy \u00b7 mean [95 % CI] \u00b7 test seed block",
+      "title": "Measured results",
+      "subtitle": "Software simulation. Seeds are disjoint from training and tuning, and were used once.",
+      "scenarios": [
+        {
+          "key": "wifi",
+          "label": "Wi-Fi degradation",
+          "experiment": "exp-26f132d5d7"
+        },
+        {
+          "key": "congestion",
+          "label": "Cellular congestion",
+          "experiment": "exp-64931cf540"
+        }
+      ],
+      "columns": [
+        "B0 \u00b7 reactive",
+        "B2 \u00b7 always multipath",
+        "P1 \u00b7 CONTINUA"
+      ],
+      "rows": [
+        {
+          "label": "Total interruption (s)",
+          "format": "seconds",
+          "better_is": "lower",
+          "wifi": {
+            "B0": {
+              "mean": 7.32,
+              "ci": [
+                7.32,
+                7.32
+              ]
+            },
+            "B2": {
+              "mean": 0.16,
+              "ci": [
+                0.16,
+                0.16
+              ]
+            },
+            "P1": {
+              "mean": 0.16,
+              "ci": [
+                0.16,
+                0.16
+              ]
+            }
+          },
+          "congestion": {
+            "B0": {
+              "mean": 7.32,
+              "ci": [
+                7.32,
+                7.32
+              ]
+            },
+            "B2": {
+              "mean": 0.16,
+              "ci": [
+                0.16,
+                0.16
+              ]
+            },
+            "P1": {
+              "mean": 0.16,
+              "ci": [
+                0.16,
+                0.16
+              ]
+            }
+          }
+        },
+        {
+          "label": "Control deadlines missed (%)",
+          "format": "percent",
+          "better_is": "lower",
+          "wifi": {
+            "B0": {
+              "mean": 34.6308,
+              "ci": [
+                34.4893,
+                34.7724
+              ]
+            },
+            "B2": {
+              "mean": 31.8119,
+              "ci": [
+                31.6293,
+                31.9944
+              ]
+            },
+            "P1": {
+              "mean": 31.5418,
+              "ci": [
+                31.3398,
+                31.7439
+              ]
+            }
+          },
+          "congestion": {
+            "B0": {
+              "mean": 54.3959,
+              "ci": [
+                54.2365,
+                54.5553
+              ]
+            },
+            "B2": {
+              "mean": 49.1571,
+              "ci": [
+                48.8914,
+                49.4228
+              ]
+            },
+            "P1": {
+              "mean": 31.4563,
+              "ci": [
+                31.248,
+                31.6646
+              ]
+            }
+          }
+        },
+        {
+          "label": "Video frames delivered (%)",
+          "format": "percent",
+          "better_is": "higher",
+          "wifi": {
+            "B0": {
+              "mean": 57.4016,
+              "ci": [
+                57.136,
+                57.6672
+              ]
+            },
+            "B2": {
+              "mean": 64.3556,
+              "ci": [
+                64.022,
+                64.6892
+              ]
+            },
+            "P1": {
+              "mean": 67.2857,
+              "ci": [
+                66.8331,
+                67.7383
+              ]
+            }
+          },
+          "congestion": {
+            "B0": {
+              "mean": 58.5635,
+              "ci": [
+                58.3247,
+                58.8023
+              ]
+            },
+            "B2": {
+              "mean": 62.662,
+              "ci": [
+                62.2022,
+                63.1217
+              ]
+            },
+            "P1": {
+              "mean": 69.1668,
+              "ci": [
+                68.8202,
+                69.5134
+              ]
+            }
+          }
+        },
+        {
+          "label": "Satellite data (MB)",
+          "format": "number",
+          "better_is": "lower",
+          "wifi": {
+            "B0": {
+              "mean": 47.59,
+              "ci": [
+                47.59,
+                47.59
+              ]
+            },
+            "B2": {
+              "mean": 61.2,
+              "ci": [
+                60.57,
+                61.83
+              ]
+            },
+            "P1": {
+              "mean": 4.78,
+              "ci": [
+                4.76,
+                4.8
+              ]
+            }
+          },
+          "congestion": {
+            "B0": {
+              "mean": 47.59,
+              "ci": [
+                47.59,
+                47.59
+              ]
+            },
+            "B2": {
+              "mean": 63.78,
+              "ci": [
+                63.12,
+                64.45
+              ]
+            },
+            "P1": {
+              "mean": 4.77,
+              "ci": [
+                4.74,
+                4.8
+              ]
+            }
+          }
+        },
+        {
+          "label": "Relative link cost",
+          "format": "units",
+          "better_is": "lower",
+          "wifi": {
+            "B0": {
+              "mean": 3.4357,
+              "ci": [
+                3.4357,
+                3.4357
+              ]
+            },
+            "B2": {
+              "mean": 4.3132,
+              "ci": [
+                4.2745,
+                4.3519
+              ]
+            },
+            "P1": {
+              "mean": 1.2512,
+              "ci": [
+                1.188,
+                1.3144
+              ]
+            }
+          },
+          "congestion": {
+            "B0": {
+              "mean": 3.3369,
+              "ci": [
+                3.3369,
+                3.3369
+              ]
+            },
+            "B2": {
+              "mean": 4.3558,
+              "ci": [
+                4.3136,
+                4.398
+              ]
+            },
+            "P1": {
+              "mean": 1.1548,
+              "ci": [
+                1.0909,
+                1.2187
+              ]
+            }
+          }
+        },
+        {
+          "label": "Application health",
+          "format": "number",
+          "better_is": "higher",
+          "wifi": {
+            "B0": {
+              "mean": 66.37,
+              "ci": [
+                66.2544,
+                66.4856
+              ]
+            },
+            "B2": {
+              "mean": 70.255,
+              "ci": [
+                70.0895,
+                70.4205
+              ]
+            },
+            "P1": {
+              "mean": 68.79,
+              "ci": [
+                68.5816,
+                68.9984
+              ]
+            }
+          },
+          "congestion": {
+            "B0": {
+              "mean": 54.565,
+              "ci": [
+                54.4384,
+                54.6916
+              ]
+            },
+            "B2": {
+              "mean": 59.22,
+              "ci": [
+                59.0884,
+                59.3516
+              ]
+            },
+            "P1": {
+              "mean": 68.86,
+              "ci": [
+                68.669,
+                69.051
+              ]
+            }
+          }
+        }
+      ],
+      "honesty": "Application health is the row where CONTINUA loses on the Wi-Fi route: the always-multipath baseline scores higher because it buys quality with satellite bytes CONTINUA declines to spend. Under congestion the ordering reverses.",
+      "sources": {
+        "experiments": [
+          "exp-26f132d5d7",
+          "exp-64931cf540"
+        ],
+        "files": [
+          "data/experiments/exp-26f132d5d7.json",
+          "data/experiments/exp-64931cf540.json"
+        ],
+        "commits": [
+          "352acd58a178f231988fcdf8c9dd55385a2916bd",
+          "d02080d28eb5764b7380828dc5dcd2ada7626324"
+        ],
+        "mode": "simulation"
+      }
+    },
+    "scope": {
+      "id": "scope",
+      "kicker": "What this is not",
+      "title": "Scope and limitations",
+      "items": [
+        {
+          "head": "A software simulation",
+          "body": "A discrete-time causal model of queues, delay, jitter and burst loss. No radio, no hardware, no live network, at any point in this video.",
+          "source": "services/engine/continua_engine/sim/simulator.py"
+        },
+        {
+          "head": "Emulation is implemented but not verified here",
+          "body": "Emulation NOT VERIFIED HERE. missing capability: sudo_nopasswd; kernel MPTCP is unavailable, so no run on this host may be described as verified MPTCP. Simulation mode is fully operational and unaffected.",
+          "source": "data/emulation_capability.json"
+        },
+        {
+          "head": "No MPTCP",
+          "body": "This kernel reports CONFIG_MPTCP unset, so nothing shown may be described as multipath TCP. The design does not depend on it.",
+          "source": "data/emulation_capability.json"
+        },
+        {
+          "head": "Total loss defeats it",
+          "body": "When every link is down there is nothing to steer onto: 10.6 s of unavoidable interruption, identical for every policy including CONTINUA.",
+          "source": "data/experiments/exp-657ef4a89a.json"
+        },
+        {
+          "head": "One synthetic route, six scenarios",
+          "body": "917 m, 24 control points, one coverage model. These results describe that world. They are not a claim about any real deployment.",
+          "source": "packages/contracts/world.json"
+        }
+      ],
+      "next": "Hardware in the loop, a real radio, and a field trial are the next step \u2014 not a result.",
+      "sources": {
+        "files": [
+          "data/emulation_capability.json",
+          "data/experiments/exp-657ef4a89a.json"
+        ],
+        "mode": "simulation"
+      }
+    }
+  }
+}
