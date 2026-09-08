@@ -58,8 +58,19 @@ async function startRun(page: Page, scenario?: string): Promise<void> {
     undefined,
     { timeout: 60_000 },
   );
-  // Wait for the first real controller decision to appear.
-  await expect(page.getByText(/Session established on/)).toBeVisible({ timeout: 30_000 });
+  // Wait until the engine has actually assigned a carrying path. The first
+  // event carries no *action* (a session being established is not a switch), so
+  // waiting on the decision list would wait forever.
+  await page.waitForFunction(
+    () => {
+      const api = (
+        window as unknown as { __CONTINUA__?: { getFrame: () => { active: string | null } } }
+      ).__CONTINUA__;
+      return Boolean(api && api.getFrame().active);
+    },
+    undefined,
+    { timeout: 45_000 },
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -207,8 +218,10 @@ test.describe('other sections', () => {
     await expect(page.getByText(/Results ·/)).toBeVisible({ timeout: 200_000 });
 
     // The table must contain every policy under comparison.
-    for (const policy of ['B0', 'B1', 'B2', 'P1']) {
-      await expect(page.getByRole('columnheader', { name: new RegExp(`^${policy}`) })).toBeVisible();
+    for (const policy of ['B0', 'B1', 'B2', 'P1', 'P1-noPred', 'P1-noApp']) {
+      await expect(
+        page.getByRole('columnheader', { name: new RegExp(`^${policy} n=`) }),
+      ).toBeVisible();
     }
     await expect(page.getByText(/marking is not a significance test/i)).toBeVisible();
     await page.screenshot({
