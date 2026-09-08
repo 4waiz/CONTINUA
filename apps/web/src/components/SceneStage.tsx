@@ -9,7 +9,7 @@
 
 import { ContinuaScene } from '@continua/scene';
 import { useProgress } from '@react-three/drei';
-import { Component, useEffect, useState, type ErrorInfo, type ReactNode } from 'react';
+import { Component, useCallback, useEffect, useState, type ErrorInfo, type ReactNode } from 'react';
 
 // ---------------------------------------------------------------------------
 
@@ -100,17 +100,18 @@ function StatusPane({
   );
 }
 
-function LoadingOverlay() {
-  const { active, progress, item } = useProgress();
+function LoadingOverlay({ ready }: { ready: boolean }) {
+  const { progress, item } = useProgress();
   const [settled, setSettled] = useState(false);
 
+  // `ready` is the scene's own first-frame signal. `useProgress` only drives
+  // the bar: its counters can sit at zero when glTFs come from the preload
+  // cache, so it must never be the thing that decides we are done.
   useEffect(() => {
-    if (!active && progress >= 100) {
-      const timer = setTimeout(() => setSettled(true), 260);
-      return () => clearTimeout(timer);
-    }
-    return undefined;
-  }, [active, progress]);
+    if (!ready) return undefined;
+    const timer = setTimeout(() => setSettled(true), 240);
+    return () => clearTimeout(timer);
+  }, [ready]);
 
   if (settled) return null;
 
@@ -119,7 +120,7 @@ function LoadingOverlay() {
       className="pointer-events-none absolute inset-0 grid place-items-center transition-opacity duration-300"
       style={{
         background: 'linear-gradient(180deg,#FBFCFE 0%,#EEF3FD 100%)',
-        opacity: !active && progress >= 100 ? 0 : 1,
+        opacity: ready ? 0 : 1,
       }}
     >
       <div className="w-64 text-center">
@@ -131,7 +132,8 @@ function LoadingOverlay() {
           />
         </div>
         <div className="metric mt-2 font-[family-name:var(--font-mono)] text-[11px] text-[color:var(--color-muted)]">
-          {Math.round(progress)}%{item ? ` · ${item.split('/').pop()}` : ''}
+          {ready ? 'ready' : `${Math.round(progress)}%`}
+          {!ready && item ? ` · ${item.split('/').pop()}` : ''}
         </div>
       </div>
     </div>
@@ -146,6 +148,8 @@ export function SceneStage({ className = '' }: { className?: string }) {
   // second one from an effect.
   const [support] = useState(detectWebGL);
   const [contextLost, setContextLost] = useState(false);
+  const [ready, setReady] = useState(false);
+  const onFirstFrame = useCallback(() => setReady(true), []);
 
   useEffect(() => {
     const onLost = (event: Event) => {
@@ -174,8 +178,8 @@ export function SceneStage({ className = '' }: { className?: string }) {
 
       {support.ok === true && (
         <SceneErrorBoundary>
-          <ContinuaScene className="!absolute inset-0" />
-          <LoadingOverlay />
+          <ContinuaScene className="!absolute inset-0" onFirstFrame={onFirstFrame} />
+          <LoadingOverlay ready={ready} />
         </SceneErrorBoundary>
       )}
 

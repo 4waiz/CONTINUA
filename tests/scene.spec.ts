@@ -38,16 +38,21 @@ async function waitForScene(page: Page): Promise<void> {
     { timeout: 60_000 },
   );
   // One rendered frame with the rover actually placed in the world.
+  // Wait for the scene to have actually drawn: the debug bridge only appears
+  // once the Canvas' Suspense boundary has resolved every glTF.
   await page.waitForFunction(
     () => {
       const api = (
-        window as unknown as { __CONTINUA__?: { getFrame: () => { vehicle: { position: { x: number } } } } }
+        window as unknown as {
+          __CONTINUA__?: { three?: unknown; getFrame: () => { vehicle: { position: { x: number } } } };
+        }
       ).__CONTINUA__;
-      return Boolean(api && Number.isFinite(api.getFrame().vehicle.position.x));
+      return Boolean(api?.three && Number.isFinite(api.getFrame().vehicle.position.x));
     },
     undefined,
     { timeout: 60_000 },
   );
+  await expect(page.getByText('Loading mission scene')).toBeHidden({ timeout: 60_000 });
 }
 
 // ---------------------------------------------------------------------------
@@ -138,7 +143,10 @@ test.describe('CONTINUA dashboard', () => {
 // ---------------------------------------------------------------------------
 
 test.describe('determinism and rig integrity', () => {
-  test.skip(({ }, testInfo) => testInfo.project.name !== 'desktop-1920', 'run once');
+  // These assert behaviour, not layout, so one viewport is enough.
+  test.beforeEach(({}, testInfo) => {
+    test.skip(testInfo.project.name !== 'desktop-1920', 'behaviour checks run once');
+  });
 
   test('the same timestamp reproduces the same scene state', async ({ page }) => {
     await page.goto('/scene-lab', { waitUntil: 'domcontentloaded' });
@@ -201,19 +209,9 @@ test.describe('determinism and rig integrity', () => {
       };
 
       const api = (
-        window as unknown as {
-          __CONTINUA__: { getFrame: () => unknown };
-          __r3f?: unknown;
-        }
+        window as unknown as { __CONTINUA__: { three?: { scene: unknown } } }
       ).__CONTINUA__;
-      void api;
-
-      // r3f attaches its store to the canvas element.
-      const canvas = document.querySelector('canvas') as (HTMLCanvasElement & {
-        __r3f?: { root?: { getState?: () => { scene: unknown } } };
-      }) | null;
-      const state = canvas?.__r3f?.root?.getState?.();
-      if (state?.scene) visit(state.scene as Parameters<typeof visit>[0]);
+      if (api.three?.scene) visit(api.three.scene as Parameters<typeof visit>[0]);
 
       return {
         roverNodes,

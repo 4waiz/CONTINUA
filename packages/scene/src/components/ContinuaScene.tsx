@@ -10,10 +10,10 @@
 
 import { AdaptiveDpr, AdaptiveEvents, BakeShadows, Preload } from '@react-three/drei';
 import { Canvas } from '@react-three/fiber';
-import { Suspense, useCallback, useMemo, useState, type ReactNode } from 'react';
-import { ACESFilmicToneMapping, SRGBColorSpace } from 'three';
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { ACESFilmicToneMapping, PCFShadowMap, SRGBColorSpace } from 'three';
 import type { QualityTier } from '@continua/contracts';
-import { useFrame } from '@react-three/fiber';
+import { useFrame, useThree } from '@react-three/fiber';
 import { SCENE_COLOR } from '../theme';
 import {
   useSceneRuntime,
@@ -43,7 +43,59 @@ function SceneDriver({ frozen }: { frozen: boolean }) {
   return null;
 }
 
-function SceneContents({ quality }: { quality: QualityTier }) {
+/**
+ * Fires once the scene has actually drawn.
+ *
+ * It lives inside the `<Suspense>` boundary, so it cannot mount until every
+ * glTF has resolved — which makes it a far more trustworthy "ready" signal than
+ * drei's `useProgress`, whose loading-manager counters can settle at zero when
+ * assets come from the preload cache.
+ */
+function FirstFrameSignal({ onFirstFrame }: { onFirstFrame?: () => void }) {
+  const frames = useRef(0);
+  const fired = useRef(false);
+  useFrame(() => {
+    if (fired.current) return;
+    frames.current += 1;
+    if (frames.current >= 3) {
+      fired.current = true;
+      onFirstFrame?.();
+    }
+  });
+  return null;
+}
+
+/**
+ * Publishes the live renderer state on `window.__CONTINUA__.three`.
+ *
+ * The browser smoke tests need to walk the real scene graph to prove the
+ * exported rig survived — node names, materials, triangle counts. There is no
+ * supported way to reach it from outside the Canvas, so the scene hands it out
+ * explicitly. Preview data only.
+ */
+function DebugBridge() {
+  const scene = useThree((state) => state.scene);
+  const gl = useThree((state) => state.gl);
+  const camera = useThree((state) => state.camera);
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const api = (window as unknown as { __CONTINUA__?: Record<string, unknown> }).__CONTINUA__;
+    if (!api) return;
+    api.three = { scene, gl, camera };
+    return () => {
+      delete api.three;
+    };
+  }, [scene, gl, camera]);
+  return null;
+}
+
+function SceneContents({
+  quality,
+  onFirstFrame,
+}: {
+  quality: QualityTier;
+  onFirstFrame?: () => void;
+}) {
   const settings = useSceneSettings();
   const setSettings = useSetSceneSettings();
   const inspect = settings.mode === 'inspect';
@@ -69,6 +121,8 @@ function SceneContents({ quality }: { quality: QualityTier }) {
       <SceneCameras mode={inspect ? 'turntable' : settings.camera} />
       {quality === 'low' && <BakeShadows />}
       <Preload all />
+      <FirstFrameSignal onFirstFrame={onFirstFrame} />
+      <DebugBridge />
     </>
   );
 }
@@ -77,10 +131,13 @@ export interface ContinuaSceneProps {
   className?: string;
   /** Rendered inside the canvas' Suspense boundary. */
   fallback?: ReactNode;
+  /** Canvas created — WebGL is alive, but assets may still be loading. */
   onReady?: () => void;
+  /** Assets resolved and the scene has drawn. Use this to hide a loader. */
+  onFirstFrame?: () => void;
 }
 
-export function ContinuaScene({ className, fallback, onReady }: ContinuaSceneProps) {
+export function ContinuaScene({ className, fallback, onReady, onFirstFrame }: ContinuaSceneProps) {
   const settings = useSceneSettings();
   // Adapt to the device before the first frame rather than after a stutter.
   const [pixelRatioCap] = useState(() => {
@@ -100,7 +157,7 @@ export function ContinuaScene({ className, fallback, onReady }: ContinuaScenePro
     <Canvas
       className={className}
       dpr={dpr}
-      shadows={settings.quality !== 'low'}
+      shadows={settings.quality === 'low' ? false : { enabled: true, type: PCFShadowMap }}
       gl={{
         antialias: settings.quality !== 'low',
         powerPreference: 'high-performance',
@@ -118,7 +175,7 @@ export function ContinuaScene({ className, fallback, onReady }: ContinuaScenePro
       style={{ background: SCENE_COLOR.skyHorizon }}
     >
       <Suspense fallback={fallback ?? null}>
-        <SceneContents quality={settings.quality} />
+        <SceneContents quality={settings.quality} onFirstFrame={onFirstFrame} />
       </Suspense>
       <AdaptiveDpr pixelated={false} />
       <AdaptiveEvents />
