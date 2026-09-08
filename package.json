@@ -21,7 +21,7 @@
     "start": "npm run start --workspace=@continua/web",
     "lint": "eslint apps packages tests --max-warnings=0",
     "typecheck": "tsc --noEmit -p apps/web/tsconfig.json",
-    "test:smoke": "playwright test --config=tests/playwright.config.ts",
+    "test:smoke": "playwright test --config=tests/playwright.config.ts --project=desktop-1920 --project=desktop-1440 --project=desktop-1280",
     "blender:vehicle": "node scripts/run-blender.mjs scripts/blender/build_vehicle.py",
     "blender:props": "node scripts/run-blender.mjs scripts/blender/build_props.py",
     "blender:previews": "node scripts/run-blender.mjs scripts/blender/render_previews.py",
