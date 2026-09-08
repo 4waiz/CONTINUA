@@ -75,7 +75,18 @@ const DECISION_LIMIT = 200;
 const STALE_AFTER_MS = 4000;
 const UI_THROTTLE_MS = 180;
 
-export function useEngineRun(runId: string | null): EngineRunHandle {
+export interface EngineRunOptions {
+  /**
+   * How often buffered events are handed to React. Defaults to 180 ms, which
+   * is right for a dashboard a human reads. Frame capture sets it much lower so
+   * the on-screen numbers match the frame being rendered rather than lagging a
+   * fifth of a second behind it.
+   */
+  throttleMs?: number;
+}
+
+export function useEngineRun(runId: string | null, options: EngineRunOptions = {}): EngineRunHandle {
+  const throttleMs = options.throttleMs ?? UI_THROTTLE_MS;
   // One buffer per run: a new run can never inherit the previous timeline.
   const source = useMemo(() => new EngineSceneStateSource(runId ?? 'engine', 100), [runId]);
 
@@ -112,9 +123,9 @@ export function useEngineRun(runId: string | null): EngineRunHandle {
               : decisions,
         };
       });
-    }, UI_THROTTLE_MS);
+    }, throttleMs);
     return () => clearInterval(timer);
-  }, []);
+  }, [throttleMs]);
 
   // --- staleness watchdog ---------------------------------------------------
   useEffect(() => {
@@ -171,8 +182,24 @@ export function useEngineRun(runId: string | null): EngineRunHandle {
 
         switch (message.type) {
           case 'snapshot':
-          case 'seek':
+            // A fresh subscription: start the timeline over.
             source.reset(message.state.run_id, message.state.duration_s);
+            lastSeqRef.current = 0;
+            if (message.event) {
+              source.ingest(message.event);
+              lastSeqRef.current = message.event.seq;
+              pendingRef.current.push(message.event);
+            }
+            patch({ state: message.state });
+            break;
+          case 'seek':
+            // A seek moves the cursor; it does NOT invalidate the timeline.
+            // Resetting the buffer here blanked every chart on each scrub, and
+            // left `sampleAt` with a single event and nothing to interpolate
+            // between — which frame-stepped capture would have inherited.
+            // Sequence tracking restarts because a backward seek rebuilds the
+            // simulation from the same seed; the re-emitted events are
+            // identical and are deduplicated by `seq`.
             lastSeqRef.current = 0;
             if (message.event) {
               source.ingest(message.event);

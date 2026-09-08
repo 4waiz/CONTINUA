@@ -20,7 +20,8 @@ import { ModeBadge } from './AppShell';
 import { MissionScene } from './mission/MissionScene';
 
 export function CaptureView({ runId }: { runId: string | null }) {
-  const run = useEngineRun(runId);
+  // A short throttle so the overlay numbers belong to the frame being captured.
+  const run = useEngineRun(runId, { throttleMs: 40 });
   const playing = run.state?.status === 'running';
   // Derived, not stored: the capture harness polls `data-capture-ready`, and a
   // value that lags one render behind would let it start recording too early.
