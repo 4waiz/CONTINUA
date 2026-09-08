@@ -19,8 +19,8 @@
     "dev": "npm run dev --workspace=@continua/web",
     "build": "npm run build --workspace=@continua/web",
     "start": "npm run start --workspace=@continua/web",
-    "lint": "npm run lint --workspace=@continua/web",
-    "typecheck": "tsc -b packages/contracts packages/scene apps/web --pretty",
+    "lint": "eslint apps packages tests --max-warnings=0",
+    "typecheck": "tsc --noEmit -p apps/web/tsconfig.json",
     "test:smoke": "playwright test --config=tests/playwright.config.ts",
     "blender:vehicle": "node scripts/run-blender.mjs scripts/blender/build_vehicle.py",
     "blender:props": "node scripts/run-blender.mjs scripts/blender/build_props.py",
@@ -33,6 +33,8 @@
   },
   "devDependencies": {
     "@playwright/test": "1.63.0",
+    "eslint": "9.39.5",
+    "eslint-config-next": "16.3.4",
     "typescript": "5.9.3"
   }
 }

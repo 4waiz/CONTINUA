@@ -1,0 +1,219 @@
+@import 'tailwindcss';
+
+/* ---------------------------------------------------------------------------
+   CONTINUA design tokens.
+   Mirrors packages/scene/src/theme.ts — see docs/DESIGN_SPEC.md.
+   Light mode by design. This is a daylight technical instrument, not a
+   cyberpunk console.
+--------------------------------------------------------------------------- */
+
+@theme {
+  --color-bg: #f7faff;
+  --color-surface: #ffffff;
+  --color-surface-muted: #f1f5fc;
+  --color-ink: #14213d;
+  --color-muted: #667593;
+  --color-line: #e2e9f5;
+  --color-line-strong: #ccd8ec;
+  --color-cyan: #12b9e8;
+  --color-blue: #176bff;
+  --color-violet: #7c3cff;
+  --color-good: #12b981;
+  --color-warn: #f59e0b;
+  --color-bad: #e5484d;
+
+  --radius-panel: 18px;
+  --radius-control: 10px;
+
+  --font-sans:
+    ui-sans-serif, -apple-system, 'Segoe UI', Inter, 'Helvetica Neue', Arial, system-ui, sans-serif;
+  --font-mono: ui-monospace, 'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace;
+
+  --shadow-panel: 0 1px 2px rgb(20 33 61 / 0.04), 0 8px 24px -12px rgb(20 33 61 / 0.12);
+  --shadow-raised: 0 2px 4px rgb(20 33 61 / 0.05), 0 18px 42px -18px rgb(20 33 61 / 0.2);
+}
+
+:root {
+  color-scheme: light;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* --- primitives ---------------------------------------------------------- */
+
+.panel {
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-panel);
+  box-shadow: var(--shadow-panel);
+}
+
+.panel-label {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+
+.metric {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+.control {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: var(--radius-control);
+  border: 1px solid var(--color-line);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 550;
+  cursor: pointer;
+  transition:
+    background 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease;
+  white-space: nowrap;
+}
+
+.control:hover:not(:disabled) {
+  background: var(--color-surface-muted);
+  border-color: var(--color-line-strong);
+}
+
+.control:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.control[data-active='true'] {
+  background: color-mix(in srgb, var(--color-blue) 10%, white);
+  border-color: color-mix(in srgb, var(--color-blue) 38%, white);
+  color: var(--color-blue);
+}
+
+.control:focus-visible,
+.scrub:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--color-blue);
+  outline-offset: 2px;
+}
+
+/* --- timeline scrubber --------------------------------------------------- */
+
+.scrub {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 22px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.scrub::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    var(--color-blue) 0%,
+    var(--color-blue) calc(var(--progress, 0) * 100%),
+    var(--color-line) calc(var(--progress, 0) * 100%),
+    var(--color-line) 100%
+  );
+}
+
+.scrub::-moz-range-track {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--color-line);
+}
+
+.scrub::-moz-range-progress {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--color-blue);
+}
+
+.scrub::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  margin-top: -5px;
+  border-radius: 999px;
+  background: var(--color-surface);
+  border: 2px solid var(--color-blue);
+  box-shadow: 0 1px 4px rgb(20 33 61 / 0.2);
+}
+
+.scrub::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  background: var(--color-surface);
+  border: 2px solid var(--color-blue);
+}
+
+/* --- scene canvas -------------------------------------------------------- */
+
+.scene-shell {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-panel);
+  background: linear-gradient(180deg, #fbfcfe 0%, #eef3fd 100%);
+  border: 1px solid var(--color-line);
+}
+
+.scene-shell canvas {
+  display: block;
+  touch-action: none;
+}
+
+@keyframes continua-sweep {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(220%);
+  }
+}
+
+.loading-sweep::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  width: 40%;
+  background: linear-gradient(90deg, transparent, rgb(23 107 255 / 0.14), transparent);
+  animation: continua-sweep 1.35s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loading-sweep::after {
+    animation: none;
+  }
+}
