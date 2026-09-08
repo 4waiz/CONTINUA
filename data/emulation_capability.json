@@ -1,0 +1,98 @@
+{
+  "generated_at": "2026-09-08T11:11:46.801647+00:00",
+  "host_platform": "Windows 11",
+  "probe_target": "wsl",
+  "emulation_supported": false,
+  "mptcp_supported": false,
+  "blocking_reasons": [
+    "missing capability: sudo_nopasswd",
+    "kernel MPTCP is unavailable, so no run on this host may be described as verified MPTCP"
+  ],
+  "summary": "Emulation NOT VERIFIED HERE. missing capability: sudo_nopasswd; kernel MPTCP is unavailable, so no run on this host may be described as verified MPTCP. Simulation mode is fully operational and unaffected.",
+  "checks": [
+    {
+      "name": "kernel",
+      "required_for": "all emulation",
+      "ok": true,
+      "detail": "Linux kernel release",
+      "value": "6.18.33.2-microsoft-standard-WSL2"
+    },
+    {
+      "name": "kernel_mptcp",
+      "required_for": "MPTCP claims",
+      "ok": false,
+      "detail": "Kernel MPTCP support (net.mptcp.enabled and CONFIG_MPTCP)",
+      "value": "sysctl=absent; config=absent"
+    },
+    {
+      "name": "ip_mptcp",
+      "required_for": "MPTCP claims",
+      "ok": false,
+      "detail": "iproute2 `ip mptcp` subcommand talks to the kernel",
+      "value": "RTNETLINK answers: No such file or directory\nError talking to the kernel"
+    },
+    {
+      "name": "iproute2",
+      "required_for": "namespaces and shaping",
+      "ok": true,
+      "detail": "iproute2 present",
+      "value": "ip utility, iproute2-5.15.0, libbpf 0.5.0"
+    },
+    {
+      "name": "tc",
+      "required_for": "traffic shaping",
+      "ok": true,
+      "detail": "tc present",
+      "value": "tc utility, iproute2-5.15.0, libbpf 0.5.0"
+    },
+    {
+      "name": "sch_netem",
+      "required_for": "delay/loss shaping",
+      "ok": true,
+      "detail": "netem qdisc module",
+      "value": "filename:       /lib/modules/6.18.33.2-microsoft-standard-WSL2/kernel/net/sched/sch_netem.ko"
+    },
+    {
+      "name": "ss",
+      "required_for": "subflow inspection",
+      "ok": true,
+      "detail": "ss present",
+      "value": "/usr/bin/ss"
+    },
+    {
+      "name": "tcpdump",
+      "required_for": "packet capture verification",
+      "ok": true,
+      "detail": "tcpdump present",
+      "value": "/usr/bin/tcpdump"
+    },
+    {
+      "name": "python3",
+      "required_for": "traffic endpoints",
+      "ok": true,
+      "detail": "python3 present",
+      "value": "/usr/bin/python3"
+    },
+    {
+      "name": "sudo_nopasswd",
+      "required_for": "namespace creation",
+      "ok": false,
+      "detail": "Passwordless sudo (required to create namespaces and qdiscs non-interactively)",
+      "value": "password required"
+    },
+    {
+      "name": "netns_dir",
+      "required_for": "namespace creation",
+      "ok": false,
+      "detail": "/var/run/netns exists",
+      "value": "absent"
+    },
+    {
+      "name": "mininet_wifi",
+      "required_for": "optional richer topologies",
+      "ok": false,
+      "detail": "Mininet-WiFi importable",
+      "value": "no"
+    }
+  ]
+}

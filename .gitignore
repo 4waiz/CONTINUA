@@ -52,3 +52,19 @@ tests/output/
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# ---- engine run data ----------------------------------------------------
+# Live run event logs are transient and can be regenerated from (scenario,
+# seed, policy). Aggregate experiment results and the capability report are
+# evidence and ARE tracked.
+data/runs/
+data/**/events.jsonl
+!data/experiments/
+!data/evidence/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+*.sqlite
+*.sqlite-journal

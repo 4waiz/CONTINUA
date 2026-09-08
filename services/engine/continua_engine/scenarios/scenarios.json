@@ -1,0 +1,158 @@
+{
+  "$comment": "Immutable scenario specifications. A scenario fixes the exogenous world: route speed, which links exist, what faults occur and when, and what background demand competes for capacity. It says NOTHING about policy. Every policy under test is run against the identical exogenous trace for a given seed — that is what makes the comparison paired and fair.",
+  "version": "1.1.0",
+  "scenarios": [
+    {
+      "id": "baseline-journey",
+      "title": "Baseline journey",
+      "family": "baseline",
+      "description": "The full route with no injected faults. Establishes what normal looks like: dock, undock to Wi-Fi, cross to cellular, fall back to satellite in the remote sector.",
+      "duration_s": 105,
+      "speed_scale": 1.0,
+      "reverse": false,
+      "links": ["wired", "wifi", "cellular", "satellite"],
+      "workload": ["control", "telemetry", "video", "voice", "bulk"],
+      "faults": [],
+      "background": []
+    },
+    {
+      "id": "wifi-degradation",
+      "title": "Gradual Wi-Fi degradation, cellular overlapping",
+      "family": "degradation",
+      "description": "Wi-Fi quality decays smoothly over 22 s while the rover is still inside cellular coverage. The canonical case for prediction: the failure is visible in the trend well before it becomes a violation.",
+      "duration_s": 105,
+      "speed_scale": 1.0,
+      "reverse": false,
+      "links": ["wired", "wifi", "cellular", "satellite"],
+      "workload": ["control", "telemetry", "video", "voice", "bulk"],
+      "faults": [
+        { "link": "wifi", "kind": "degrade", "start_s": 26.0, "ramp_s": 22.0, "duration_s": 34.0, "severity": 0.94 }
+      ],
+      "background": []
+    },
+    {
+      "id": "sudden-failure",
+      "title": "Sudden Wi-Fi failure without warning",
+      "family": "sudden",
+      "description": "Wi-Fi drops to zero in 200 ms with no preceding trend. Prediction cannot help here; the honest expectation is that CONTINUA performs like a good reactive policy, and the experiment is designed to show that.",
+      "duration_s": 105,
+      "speed_scale": 1.0,
+      "reverse": false,
+      "links": ["wired", "wifi", "cellular", "satellite"],
+      "workload": ["control", "telemetry", "video", "voice", "bulk"],
+      "faults": [
+        { "link": "wifi", "kind": "outage", "start_s": 32.0, "ramp_s": 0.2, "duration_s": 40.0, "severity": 1.0 }
+      ],
+      "background": []
+    },
+    {
+      "id": "cellular-congestion",
+      "title": "Cellular congestion",
+      "family": "congestion",
+      "description": "Competing background demand consumes most of the cellular cell's capacity for 30 s. Availability stays high, so a coverage-only policy sees nothing wrong while queues build.",
+      "duration_s": 105,
+      "speed_scale": 1.0,
+      "reverse": false,
+      "links": ["wired", "wifi", "cellular", "satellite"],
+      "workload": ["control", "telemetry", "video", "voice", "bulk"],
+      "faults": [],
+      "background": [
+        { "link": "cellular", "start_s": 46.0, "ramp_s": 4.0, "duration_s": 30.0, "load": 0.86 }
+      ]
+    },
+    {
+      "id": "satellite-fallback",
+      "title": "Satellite fallback in the remote sector",
+      "family": "fallback",
+      "description": "Cellular fades out early, forcing the satellite path while the rover is still moving fast. Exercises long activation delay and high base RTT against tight control deadlines.",
+      "duration_s": 105,
+      "speed_scale": 1.0,
+      "reverse": false,
+      "links": ["wired", "wifi", "cellular", "satellite"],
+      "workload": ["control", "telemetry", "video", "voice", "bulk"],
+      "faults": [
+        { "link": "cellular", "kind": "degrade", "start_s": 52.0, "ramp_s": 8.0, "duration_s": 45.0, "severity": 0.97 }
+      ],
+      "background": []
+    },
+    {
+      "id": "flapping",
+      "title": "Repeated flapping availability",
+      "family": "flapping",
+      "description": "Wi-Fi cycles available/unavailable five times. Punishes any controller without hysteresis or a minimum dwell time; ping-pong shows up directly as unnecessary handovers.",
+      "duration_s": 105,
+      "speed_scale": 1.0,
+      "reverse": false,
+      "links": ["wired", "wifi", "cellular", "satellite"],
+      "workload": ["control", "telemetry", "video", "voice", "bulk"],
+      "faults": [
+        { "link": "wifi", "kind": "outage", "start_s": 24.0, "ramp_s": 0.4, "duration_s": 4.0, "severity": 1.0 },
+        { "link": "wifi", "kind": "outage", "start_s": 32.0, "ramp_s": 0.4, "duration_s": 3.0, "severity": 1.0 },
+        { "link": "wifi", "kind": "outage", "start_s": 39.0, "ramp_s": 0.4, "duration_s": 5.0, "severity": 1.0 },
+        { "link": "wifi", "kind": "outage", "start_s": 49.0, "ramp_s": 0.4, "duration_s": 3.0, "severity": 1.0 },
+        { "link": "wifi", "kind": "outage", "start_s": 56.0, "ramp_s": 0.4, "duration_s": 6.0, "severity": 1.0 }
+      ],
+      "background": []
+    },
+    {
+      "id": "dock-disconnect",
+      "title": "Docking and Ethernet disconnect",
+      "family": "dock",
+      "description": "The tether is pulled 2 s before the rover physically leaves the dock, so wired dies while Wi-Fi is still marginal at the apron edge.",
+      "duration_s": 105,
+      "speed_scale": 1.0,
+      "reverse": false,
+      "links": ["wired", "wifi", "cellular", "satellite"],
+      "workload": ["control", "telemetry", "video", "voice", "bulk"],
+      "faults": [
+        { "link": "wired", "kind": "outage", "start_s": 4.0, "ramp_s": 0.1, "duration_s": 200.0, "severity": 1.0 }
+      ],
+      "background": []
+    },
+    {
+      "id": "total-loss",
+      "title": "Complete loss of all paths",
+      "family": "outage",
+      "description": "Every path is taken away for 9 s. There is no policy that can carry a session through this; the experiment checks that CONTINUA reports a genuine outage and a simulated safe-stop rather than pretending.",
+      "duration_s": 105,
+      "speed_scale": 1.0,
+      "reverse": false,
+      "links": ["wired", "wifi", "cellular", "satellite"],
+      "workload": ["control", "telemetry", "video", "voice", "bulk"],
+      "faults": [
+        { "link": "wifi", "kind": "outage", "start_s": 55.0, "ramp_s": 0.2, "duration_s": 9.0, "severity": 1.0 },
+        { "link": "cellular", "kind": "outage", "start_s": 55.0, "ramp_s": 0.2, "duration_s": 9.0, "severity": 1.0 },
+        { "link": "satellite", "kind": "outage", "start_s": 55.0, "ramp_s": 0.2, "duration_s": 9.0, "severity": 1.0 }
+      ],
+      "background": []
+    },
+    {
+      "id": "fast-run",
+      "title": "Fast traverse",
+      "family": "motion",
+      "description": "Same world at 1.8x speed. Coverage transitions arrive sooner, shortening every prediction window.",
+      "duration_s": 70,
+      "speed_scale": 1.8,
+      "reverse": false,
+      "links": ["wired", "wifi", "cellular", "satellite"],
+      "workload": ["control", "telemetry", "video", "voice", "bulk"],
+      "faults": [
+        { "link": "wifi", "kind": "degrade", "start_s": 16.0, "ramp_s": 12.0, "duration_s": 22.0, "severity": 0.94 }
+      ],
+      "background": []
+    },
+    {
+      "id": "reverse-run",
+      "title": "Reversed route",
+      "family": "motion",
+      "description": "The route driven from the remote sector back to the dock: satellite first, wired last. Guards against a policy that has quietly learned the forward order.",
+      "duration_s": 105,
+      "speed_scale": 1.0,
+      "reverse": true,
+      "links": ["wired", "wifi", "cellular", "satellite"],
+      "workload": ["control", "telemetry", "video", "voice", "bulk"],
+      "faults": [],
+      "background": []
+    }
+  ]
+}

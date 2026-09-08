@@ -1,0 +1,129 @@
+{
+  "$comment": "SYNTHETIC ASSUMPTIONS, NOT MEASURED OPERATOR DATA. These are plausible starting profiles chosen to make the four access classes behave distinguishably; they are not derived from any real network trace. See docs/ASSUMPTIONS.md. Every value here is a knob, deliberately kept out of implementation code.",
+  "version": "1.1.0",
+  "profiles": {
+    "wired": {
+      "label": "Wired Ethernet (dock)",
+      "capacity_mbps": 940.0,
+      "base_rtt_ms": 1.6,
+      "jitter_ms": 0.25,
+      "loss_base": 0.00002,
+      "activation_s": 0.15,
+      "validation_s": 0.10,
+      "queue_bytes": 262144,
+      "cost_per_mb": 0.0,
+      "activation_cost": 0.0,
+      "burst_loss": { "p_enter": 0.0002, "p_exit": 0.5, "burst_loss_rate": 0.05 },
+      "rssi_available": false
+    },
+    "wifi": {
+      "label": "Wi-Fi 5 GHz (site APs)",
+      "capacity_mbps": 90.0,
+      "base_rtt_ms": 9.0,
+      "jitter_ms": 3.5,
+      "loss_base": 0.0018,
+      "activation_s": 0.85,
+      "validation_s": 0.35,
+      "queue_bytes": 131072,
+      "cost_per_mb": 0.0,
+      "activation_cost": 0.0,
+      "burst_loss": { "p_enter": 0.004, "p_exit": 0.28, "burst_loss_rate": 0.35 },
+      "rssi_available": true,
+      "rssi_at_full_dbm": -46.0,
+      "rssi_at_edge_dbm": -92.0
+    },
+    "cellular": {
+      "label": "5G mobile (macro site profile)",
+      "capacity_mbps": 55.0,
+      "base_rtt_ms": 32.0,
+      "jitter_ms": 9.0,
+      "loss_base": 0.0035,
+      "activation_s": 1.8,
+      "validation_s": 0.6,
+      "queue_bytes": 196608,
+      "cost_per_mb": 0.004,
+      "activation_cost": 0.02,
+      "burst_loss": { "p_enter": 0.006, "p_exit": 0.22, "burst_loss_rate": 0.4 },
+      "rssi_available": false
+    },
+    "satellite": {
+      "label": "Satellite link (LEO-like access profile)",
+      "capacity_mbps": 18.0,
+      "base_rtt_ms": 620.0,
+      "jitter_ms": 45.0,
+      "loss_base": 0.007,
+      "activation_s": 4.5,
+      "validation_s": 1.2,
+      "queue_bytes": 393216,
+      "cost_per_mb": 0.06,
+      "activation_cost": 0.35,
+      "burst_loss": { "p_enter": 0.01, "p_exit": 0.2, "burst_loss_rate": 0.5 },
+      "rssi_available": false
+    }
+  },
+  "quality_response": {
+    "$comment": "How modelled coverage 0..1 maps onto capacity, delay and loss. A link at coverage 0 is unusable; at 1 it performs at its profile values.",
+    "capacity_at_zero": 0.05,
+    "rtt_multiplier_at_zero": 3.2,
+    "jitter_multiplier_at_zero": 4.0,
+    "loss_at_zero": 0.55,
+    "usable_coverage_floor": 0.12
+  },
+  "workload": {
+    "$comment": "Traffic class definitions. Deadlines are application requirements, not observed values.",
+    "control": {
+      "label": "Vehicle control commands",
+      "hz": 20.0,
+      "packet_bytes": 220,
+      "deadline_ms": 150.0,
+      "acked": true,
+      "retransmit_timeout_ms": 120.0,
+      "max_retransmits": 2,
+      "band": 0
+    },
+    "voice": {
+      "label": "Voice-like operator audio",
+      "$comment": "A synthetic constant-bitrate stream with voice-like packet size and cadence. This is NOT a real voice codec, jitter buffer or call implementation.",
+      "hz": 50.0,
+      "packet_bytes": 160,
+      "deadline_ms": 120.0,
+      "acked": false,
+      "band": 0
+    },
+    "telemetry": {
+      "label": "Vehicle telemetry",
+      "hz": 10.0,
+      "packet_bytes": 420,
+      "deadline_ms": 400.0,
+      "acked": false,
+      "band": 1
+    },
+    "video": {
+      "label": "Inspection camera stream",
+      "$comment": "Synthetic timestamped frames. Frame is decodable only if all its packets arrive before the deadline.",
+      "fps": 30.0,
+      "frame_bytes": 7200,
+      "mtu_bytes": 1200,
+      "deadline_ms": 350.0,
+      "acked": false,
+      "band": 1,
+      "bitrate_ladder_mbps": [4.5, 2.4, 1.2, 0.6],
+      "stall_threshold_ms": 200.0
+    },
+    "bulk": {
+      "label": "Inspection log upload",
+      "$comment": "Modelled as a fluid byte stream rather than discrete packets, to keep run times tractable. Documented in docs/ASSUMPTIONS.md.",
+      "offered_mbps": 12.0,
+      "total_bytes": 180000000,
+      "band": 2,
+      "deferrable": true
+    }
+  },
+  "probing": {
+    "$comment": "The controller can only observe a path it puts traffic on. Non-carrying but activated paths are probed so backups have real measurements.",
+    "probe_hz": 5.0,
+    "probe_bytes": 96,
+    "min_samples": 4,
+    "window_s": 2.0
+  }
+}
