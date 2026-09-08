@@ -42,21 +42,49 @@ export function CaptureOverlays() {
   );
 }
 
+/**
+ * Two placements. `lower-left` sits the title on a soft gradient scrim so the
+ * rendered vehicle behind it stays visible — an opening title, not a cover.
+ * The default is centred over a wash, which is what an end card wants.
+ */
 function TitleCard({ overlay }: { overlay: CaptureOverlay }) {
-  return (
-    <div className="absolute inset-0 grid place-items-center bg-[color:var(--color-bg)]/70 backdrop-blur-[2px]">
-      <div className="text-center">
+  const wordmark = (
+    <div
+      className={`${overlay.place === 'lower-left' ? 'text-[5.6vw]' : 'text-[7.2vw]'} font-semibold leading-none tracking-[-0.045em]`}
+      style={{
+        background: 'linear-gradient(96deg,#176BFF,#7C3CFF)',
+        WebkitBackgroundClip: 'text',
+        backgroundClip: 'text',
+        color: 'transparent',
+      }}
+    >
+      {overlay.text}
+    </div>
+  );
+
+  if (overlay.place === 'lower-left') {
+    return (
+      <div className="absolute inset-0">
         <div
-          className="text-[7.2vw] font-semibold leading-none tracking-[-0.045em]"
-          style={{
-            background: 'linear-gradient(96deg,#176BFF,#7C3CFF)',
-            WebkitBackgroundClip: 'text',
-            backgroundClip: 'text',
-            color: 'transparent',
-          }}
-        >
-          {overlay.text}
+          className="absolute inset-x-0 bottom-0 h-[46%]"
+          style={{ background: 'linear-gradient(to top, rgba(247,250,255,0.96) 34%, rgba(247,250,255,0) 100%)' }}
+        />
+        <div className="absolute bottom-[9.5%] left-[5.2%]">
+          {wordmark}
+          {overlay.sub ? (
+            <div className="mt-[0.9vw] text-[1.5vw] tracking-[0.01em] text-[color:var(--color-ink)]">
+              {overlay.sub}
+            </div>
+          ) : null}
         </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="absolute inset-0 grid place-items-center bg-[color:var(--color-bg)]/78">
+      <div className="text-center">
+        {wordmark}
         {overlay.sub ? (
           <div className="mt-[1.1vw] text-[1.55vw] tracking-[0.02em] text-[color:var(--color-ink)]">
             {overlay.sub}

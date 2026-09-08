@@ -23,6 +23,8 @@ export interface CaptureOverlay {
   kind: OverlayKind;
   text: string;
   sub?: string;
+  /** Title placement. `lower-left` keeps the render behind it visible. */
+  place?: 'lower-left' | 'centre';
   /** Playback rate against the run's own clock. Shown whenever it is not 1. */
   rate?: number;
   /** Video timestamp, for the harness's own frame accounting. */

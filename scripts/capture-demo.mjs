@@ -167,6 +167,43 @@ async function captureCard(browser, shot) {
   return { shot: shot.id, kind: 'card', still: `video/frames/${shot.id}/still.png`, frames, url };
 }
 
+/**
+ * The two title plates that sit over the Blender shots, captured with a
+ * transparent background so FFmpeg can fade them in over the rendered frames.
+ * Same component and tokens as the in-app overlays — see TitleFrame.tsx.
+ */
+async function captureTitle(browser, overlay) {
+  const directory = join(FRAMES, `title-${overlay.shot}`);
+  rmSync(directory, { recursive: true, force: true });
+  mkdirSync(directory, { recursive: true });
+
+  const query = new URLSearchParams({ text: overlay.text, place: overlay.place ?? 'centre' });
+  if (overlay.sub) query.set('sub', overlay.sub);
+  const url = `${WEB}/capture/title?${query}`;
+
+  const page = await browser.newPage({ viewport: { width, height }, deviceScaleFactor: 1 });
+  await page.goto(url, { waitUntil: 'networkidle' });
+  await page.waitForSelector('[data-capture-ready="true"]', { timeout: 20000 });
+  await page.evaluate(() => document.fonts.ready);
+  await page.waitForTimeout(300);
+
+  const target = join(directory, 'plate.png');
+  await page.screenshot({ path: target, omitBackground: true, animations: 'disabled' });
+  await page.close();
+
+  console.log(`  title-${overlay.shot}  "${overlay.text}"  → plate.png`);
+  return {
+    shot: `title-${overlay.shot}`,
+    kind: 'title',
+    over_shot: overlay.shot,
+    plate: `video/frames/title-${overlay.shot}/plate.png`,
+    from: overlay.from,
+    to: overlay.to,
+    frames: 1,
+    url,
+  };
+}
+
 async function captureApp(browser, shot) {
   const directory = join(FRAMES, shot.id);
   rmSync(directory, { recursive: true, force: true });
@@ -286,6 +323,14 @@ async function main() {
       } else if (shot.kind === 'app') {
         manifest.push(await captureApp(browser, shot));
         if (TEST_MODE) break;
+      }
+    }
+
+    if (!TEST_MODE) {
+      const titles = TIMELINE.overlays.filter((overlay) => overlay.kind === 'title' && overlay.shot);
+      for (const overlay of titles) {
+        if (only && !only.has(overlay.shot)) continue;
+        manifest.push(await captureTitle(browser, overlay));
       }
     }
   } finally {
