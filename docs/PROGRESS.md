@@ -85,7 +85,7 @@ build.
 
 | Configuration | Result |
 | --- | --- |
-| **Real GPU** — Chrome (channel `chrome`), 1920×1080, `high` quality, uncapped rAF | **233.8 fps** (4.0 s sample) |
+| **Real GPU** — Chrome (channel `chrome`), 1920×1080, `high` quality, uncapped rAF | **233.8 fps** and **226.3 fps** on two independent 4.0 s samples |
 | Hardware | ANGLE / Intel(R) Graphics `0x00007D67`, Direct3D 11, integrated |
 | Headless SwiftShader (default CI project) | 3.4–4.2 fps — software rasterisation, expected |
 
@@ -162,6 +162,9 @@ inspection:
    terrain bounds.
 10. **`.env.example` refused by the secret-path guard** — a naive `.env` prefix
     match. Now exact-name and directory-prefix matching.
+11. **No favicon.** Only visible on the real-GPU test project: headless shell
+    does not request `/favicon.ico`, full Chrome does, and the resulting 404
+    failed the no-console-errors assertion. Added `apps/web/src/app/icon.svg`.
 
 ## Not done in Phase 1 (by design)
 
