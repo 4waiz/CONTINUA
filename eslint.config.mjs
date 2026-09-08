@@ -29,6 +29,9 @@ const config = [
       // R3F puts three.js objects into JSX; the a11y and next rules that assume
       // DOM elements do not apply to <mesh>, <group> and friends.
       'react/no-unknown-property': 'off',
+      // App Router only — this rule looks for a `pages/` directory and warns
+      // loudly when it cannot find one.
+      '@next/next/no-html-link-for-pages': 'off',
     },
   },
   {
