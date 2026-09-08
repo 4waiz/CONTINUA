@@ -145,7 +145,12 @@ test.describe('CONTINUA dashboard', () => {
 test.describe('determinism and rig integrity', () => {
   // These assert behaviour, not layout, so one viewport is enough.
   test.beforeEach(({}, testInfo) => {
-    test.skip(testInfo.project.name !== 'desktop-1920', 'behaviour checks run once');
+    // Behaviour, not layout — one viewport is enough. The `gpu` project also
+    // runs these so `npm run test:perf` can report a real hardware frame rate.
+    test.skip(
+      !['desktop-1920', 'gpu'].includes(testInfo.project.name),
+      'behaviour checks run once',
+    );
   });
 
   test('the same timestamp reproduces the same scene state', async ({ page }) => {

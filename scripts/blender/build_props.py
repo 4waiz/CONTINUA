@@ -286,7 +286,7 @@ def prop_barrier(materials: dict) -> bpy.types.Object:
     for mesh in (body, stripe):   # extruded along Y; turn it to run along +X
         bmesh.ops.rotate(mesh, verts=mesh.verts[:], cent=(0, 0, 0),
                          matrix=Matrix.Rotation(math.radians(90), 3, "Z"))
-    return finish("PROP_Barrier", [(body, "concrete"), (stripe, "accent_blue")],
+    return finish("PROP_Barrier", [(body, "concrete"), (stripe, "accent_matte")],
                   materials, bevel=0.015)
 
 

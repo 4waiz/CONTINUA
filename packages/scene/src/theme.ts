@@ -34,8 +34,8 @@ export const SCENE_COLOR = {
   roadCentre: '#DFE6F1',
   apron: '#AEBBCE',
   grid: '#7C93B6',
-  ridge: '#CBD7E8',
-  ridgeFar: '#DEE6F2',
+  ridge: '#BAC8DE',
+  ridgeFar: '#D3DDEC',
 } as const;
 
 export const NETWORK_COLOR = {

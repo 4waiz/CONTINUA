@@ -161,6 +161,18 @@ export function Ground({ quality }: { quality: 'high' | 'balanced' | 'low' }) {
     () => buildRouteRibbon({ halfWidth: 26, yOffset: ROAD_SURFACE_OFFSET - 0.05, from: 0, to: 96 }),
     [],
   );
+  // A turnaround pad at the satellite terminal, so the carriageway ends at a
+  // destination instead of stopping dead in open ground.
+  const terminus = useMemo(
+    () =>
+      buildRouteRibbon({
+        halfWidth: 15,
+        yOffset: ROAD_SURFACE_OFFSET - 0.04,
+        from: Math.max(0, route.length - 66),
+        to: route.length,
+      }),
+    [],
+  );
 
   return (
     <group>
@@ -186,6 +198,9 @@ export function Ground({ quality }: { quality: 'high' | 'balanced' | 'low' }) {
 
       {/* Facility apron, then shoulder, then the carriageway, then the centre line. */}
       <mesh geometry={apron} receiveShadow renderOrder={0}>
+        <meshStandardMaterial color={SCENE_COLOR.apron} roughness={0.9} polygonOffset polygonOffsetFactor={-1} />
+      </mesh>
+      <mesh geometry={terminus} receiveShadow renderOrder={0}>
         <meshStandardMaterial color={SCENE_COLOR.apron} roughness={0.9} polygonOffset polygonOffsetFactor={-1} />
       </mesh>
       <mesh geometry={shoulder} receiveShadow>

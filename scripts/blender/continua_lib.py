@@ -165,6 +165,9 @@ def continua_materials() -> dict[str, bpy.types.Material]:
                           emission="#E01A16", emission_strength=1.4),
         "accent_blue": pbr("CONTINUA_Accent_Blue", "#176BFF", metallic=0.0, roughness=0.35,
                            emission="#176BFF", emission_strength=0.6),
+        # Non-emissive sibling for anything instanced hundreds of times: a
+        # glowing barrier stripe repeated down a road reads as neon piping.
+        "accent_matte": pbr("CONTINUA_Accent_Matte", "#426DB8", metallic=0.0, roughness=0.55),
         "accent_cyan": pbr("CONTINUA_Accent_Cyan", "#12B9E8", metallic=0.0, roughness=0.35,
                            emission="#12B9E8", emission_strength=0.8),
         "accent_violet": pbr("CONTINUA_Accent_Violet", "#7C3CFF", metallic=0.0, roughness=0.35,

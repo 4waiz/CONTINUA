@@ -120,9 +120,11 @@ export const SITES: readonly SiteMarker[] = [
     label: 'Satellite ground terminal',
     detail: 'Backhaul for the remote sector, where no terrestrial cell reaches.',
     prop: 'PROP_SatTerminal',
-    x: 656,
-    z: 118,
-    yaw: -2.2,
+    // Placed at the end of the route so the road terminates at a destination
+    // rather than stopping in open desert.
+    x: 812,
+    z: 74,
+    yaw: -2.4,
     network: 'satellite',
     linkHeight: 4.4,
     selectable: true,

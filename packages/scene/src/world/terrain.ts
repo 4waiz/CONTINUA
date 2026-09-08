@@ -35,7 +35,8 @@ export function baseHeight(x: number, z: number): number {
 
   let height = 0;
   height += openness * fbm2(x * 0.0075, z * 0.0075, 3, 11) * 2.1;
-  height += remote * (fbm2(x * 0.0032, z * 0.0032, 4, 23) * 10.5 + 2.6);
+  height += remote * (fbm2(x * 0.0032, z * 0.0032, 4, 23) * 15.5 + 3.0);
+  height += remote * fbm2(x * 0.011, z * 0.011, 3, 47) * 2.4;
   // Ground rises away from the corridor in the remote zone: a shallow valley.
   height += remote * Math.min(Math.abs(z), 260) * 0.022;
   // A low berm along the facility boundary, so the site reads as enclosed.
