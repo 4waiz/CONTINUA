@@ -19,58 +19,65 @@ import {
   type EngineEvent,
 } from '@continua/contracts/engine';
 import { NETWORK_COLOR } from '@continua/scene';
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { AppShell } from './AppShell';
 import { Chip, Panel } from './ui/primitives';
 
 export function DecisionLogView() {
   const [runs, setRuns] = useState<RunRow[]>([]);
-  const [runId, setRunId] = useState<string | null>(null);
-  const [events, setEvents] = useState<EngineEvent[]>([]);
-  const [metrics, setMetrics] = useState<Record<string, unknown> | null>(null);
+  const [pickedRunId, setPickedRunId] = useState<string | null>(null);
+  // The loaded payload carries the run id it belongs to, so "still loading" is
+  // derived rather than tracked with a flag set synchronously from an effect.
+  const [loaded, setLoaded] = useState<{
+    runId: string;
+    events: EngineEvent[];
+    metrics: Record<string, unknown> | null;
+  } | null>(null);
   const [selected, setSelected] = useState<EngineEvent | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
   const [onlyActions, setOnlyActions] = useState(true);
 
   useEffect(() => {
     api
       .listRuns(60)
-      .then((r) => {
-        setRuns(r.runs);
-        const first = r.runs.find((row) => row.events > 0);
-        if (first) setRunId(first.run_id);
-      })
+      .then((r) => setRuns(r.runs))
       .catch((cause: unknown) =>
         setError(cause instanceof EngineApiError ? cause.message : 'Engine unreachable.'),
       );
   }, []);
 
-  const load = useCallback(async (id: string) => {
-    setLoading(true);
-    setError(null);
-    setSelected(null);
-    try {
-      const [payload, runMetrics] = await Promise.all([
-        api.getRunEvents(id, 0, 6000),
-        api.getRunMetrics(id).catch(() => null),
-      ]);
-      const parsed = payload.events
-        .map((raw) => parseEngineEvent(raw))
-        .filter((event): event is EngineEvent => event !== null);
-      setEvents(parsed);
-      setMetrics(runMetrics);
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : String(cause));
-      setEvents([]);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  // Default to the newest run that actually recorded events. Derived rather
+  // than assigned from an effect, so the first render already has a selection.
+  const runId = pickedRunId ?? runs.find((row) => row.events > 0)?.run_id ?? null;
 
   useEffect(() => {
-    if (runId) load(runId);
-  }, [runId, load]);
+    if (!runId) return;
+    let cancelled = false;
+    // Everything is written after the await, so nothing sets state synchronously
+    // inside the effect body.
+    Promise.all([api.getRunEvents(runId, 0, 6000), api.getRunMetrics(runId).catch(() => null)])
+      .then(([payload, runMetrics]) => {
+        if (cancelled) return;
+        const parsed = payload.events
+          .map((raw) => parseEngineEvent(raw))
+          .filter((event): event is EngineEvent => event !== null);
+        setLoaded({ runId, events: parsed, metrics: runMetrics });
+        setSelected(null);
+        setError(null);
+      })
+      .catch((cause: unknown) => {
+        if (cancelled) return;
+        setLoaded({ runId, events: [], metrics: null });
+        setError(cause instanceof Error ? cause.message : String(cause));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [runId]);
+
+  const events = loaded?.runId === runId ? loaded.events : [];
+  const metrics = loaded?.runId === runId ? loaded.metrics : null;
+  const loading = runId !== null && loaded?.runId !== runId;
 
   const rows = onlyActions
     ? events.filter((event) => event.action && event.action.kind !== 'none')
@@ -95,7 +102,7 @@ export function DecisionLogView() {
                     type="button"
                     className="control w-full flex-col !h-auto items-start gap-0.5 py-1.5"
                     data-active={row.run_id === runId}
-                    onClick={() => setRunId(row.run_id)}
+                    onClick={() => setPickedRunId(row.run_id)}
                   >
                     <span className="flex w-full items-center justify-between gap-2">
                       <span className="truncate font-semibold">{row.scenario_id}</span>

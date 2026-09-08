@@ -15,20 +15,20 @@ import { api } from '@/lib/api';
 import { useEngineRun } from '@/lib/useEngineRun';
 import { LINK_IDS, LINK_LABEL } from '@continua/contracts/engine';
 import { NETWORK_COLOR } from '@continua/scene';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { ModeBadge } from './AppShell';
 import { MissionScene } from './mission/MissionScene';
 
 export function CaptureView({ runId }: { runId: string | null }) {
   const run = useEngineRun(runId);
-  const [ready, setReady] = useState(false);
   const playing = run.state?.status === 'running';
+  // Derived, not stored: the capture harness polls `data-capture-ready`, and a
+  // value that lags one render behind would let it start recording too early.
+  const ready = run.source.eventCount > 0 && run.connection === 'connected';
 
   useEffect(() => {
-    const assetsReady = run.source.eventCount > 0 && run.connection === 'connected';
-    setReady(assetsReady);
     (window as unknown as { __CONTINUA_CAPTURE__?: unknown }).__CONTINUA_CAPTURE__ = {
-      ready: assetsReady,
+      ready,
       runId: run.state?.run_id ?? null,
       mode: run.state?.mode ?? null,
       scenario: run.state?.scenario_id ?? null,
@@ -39,7 +39,7 @@ export function CaptureView({ runId }: { runId: string | null }) {
       pause: () => (runId ? api.controlRun(runId, { action: 'pause' }) : Promise.resolve(null)),
       play: () => (runId ? api.controlRun(runId, { action: 'play' }) : Promise.resolve(null)),
     };
-  }, [run.source.eventCount, run.connection, run.state, runId]);
+  }, [ready, run.state, runId]);
 
   const app = run.latest?.app;
 

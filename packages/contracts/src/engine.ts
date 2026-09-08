@@ -86,6 +86,8 @@ export interface EngineClassHealth {
   p99_latency_ms: number | null;
   freshness_ms: number | null;
   stall_ms: number | null;
+  /** Whether video is stalled at this instant, as judged by the receiver. */
+  stalled_now: boolean | null;
   frames_delivered: number;
   frames_expected: number;
   goodput_mbps: number | null;

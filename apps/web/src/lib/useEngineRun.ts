@@ -10,10 +10,15 @@
  *    interpolate forward, and it does not synthesise numbers to keep the
  *    dashboard moving.
  * 2. **Survive reconnects.** Events are keyed by their monotonic `seq`;
- *    duplicates from a resubscribe are dropped and gaps are reported so the UI
- *    can say the history is incomplete rather than pretending it is whole.
+ *    duplicates from a resubscribe are dropped and gaps are counted, so the UI
+ *    can say the history is incomplete rather than pretend it is whole.
  * 3. **Stay off the render path.** Events feed an `EngineSceneStateSource`
- *    (mutable, read inside `useFrame`); React state updates are throttled.
+ *    (mutable, read inside `useFrame`); React updates are batched on a timer.
+ *
+ * All per-run buffers live in a single state object tagged with its run id, and
+ * the hook *derives* the empty state for a different run rather than clearing
+ * state from an effect. That keeps the reset atomic and avoids a render where
+ * the new run is showing the old run's history.
  */
 
 import { EngineSceneStateSource } from '@continua/scene';
@@ -27,6 +32,30 @@ import { socketUrl } from './api';
 
 export type ConnectionState = 'idle' | 'connecting' | 'connected' | 'disconnected' | 'error';
 
+interface StreamBuffer {
+  runId: string | null;
+  latest: EngineEvent | null;
+  history: EngineEvent[];
+  decisions: EngineEvent[];
+  dropped: number;
+  state: EngineRunState | null;
+  connection: ConnectionState;
+  error: string | null;
+  attempts: number;
+}
+
+const EMPTY: StreamBuffer = {
+  runId: null,
+  latest: null,
+  history: [],
+  decisions: [],
+  dropped: 0,
+  state: null,
+  connection: 'idle',
+  error: null,
+  attempts: 0,
+};
+
 export interface EngineRunHandle {
   source: EngineSceneStateSource;
   connection: ConnectionState;
@@ -34,9 +63,7 @@ export interface EngineRunHandle {
   stale: boolean;
   state: EngineRunState | null;
   latest: EngineEvent | null;
-  /** Decisions only — events that carried an action other than `none`. */
   decisions: EngineEvent[];
-  /** History for the charts. Capped; the full log lives in the backend. */
   history: EngineEvent[];
   droppedSequences: number;
   error: string | null;
@@ -49,48 +76,44 @@ const STALE_AFTER_MS = 4000;
 const UI_THROTTLE_MS = 180;
 
 export function useEngineRun(runId: string | null): EngineRunHandle {
-  const source = useMemo(() => new EngineSceneStateSource(runId ?? 'engine', 100), []);
+  // One buffer per run: a new run can never inherit the previous timeline.
+  const source = useMemo(() => new EngineSceneStateSource(runId ?? 'engine', 100), [runId]);
 
-  const [connection, setConnection] = useState<ConnectionState>('idle');
-  const [state, setState] = useState<EngineRunState | null>(null);
-  const [latest, setLatest] = useState<EngineEvent | null>(null);
-  const [decisions, setDecisions] = useState<EngineEvent[]>([]);
-  const [history, setHistory] = useState<EngineEvent[]>([]);
-  const [droppedSequences, setDropped] = useState(0);
-  const [error, setError] = useState<string | null>(null);
-  const [reconnectAttempts, setReconnectAttempts] = useState(0);
+  const [buffer, setBuffer] = useState<StreamBuffer>(EMPTY);
   const [stale, setStale] = useState(false);
 
-  const socketRef = useRef<WebSocket | null>(null);
+  const pendingRef = useRef<EngineEvent[]>([]);
   const lastSeqRef = useRef(0);
   const lastMessageAtRef = useRef(0);
-  const pendingRef = useRef<EngineEvent[]>([]);
-  const flushTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const closedByUsRef = useRef(false);
+  const runIdRef = useRef<string | null>(null);
 
-  // --- throttled hand-off from the socket to React --------------------------
+  // Only the buffer whose tag matches the requested run is ever shown.
+  const active = buffer.runId === runId ? buffer : EMPTY;
+
+  // --- batched hand-off from the socket to React ----------------------------
   useEffect(() => {
-    flushTimerRef.current = setInterval(() => {
+    const timer = setInterval(() => {
       const pending = pendingRef.current;
       if (pending.length === 0) return;
       pendingRef.current = [];
-      const newest = pending[pending.length - 1]!;
-      setLatest(newest);
-      setHistory((previous) => {
-        const next = previous.concat(pending);
-        return next.length > HISTORY_LIMIT ? next.slice(next.length - HISTORY_LIMIT) : next;
+      const tag = runIdRef.current;
+      setBuffer((previous) => {
+        const base = previous.runId === tag ? previous : { ...EMPTY, runId: tag };
+        const history = base.history.concat(pending);
+        const acted = pending.filter((event) => event.action && event.action.kind !== 'none');
+        const decisions = acted.length ? base.decisions.concat(acted) : base.decisions;
+        return {
+          ...base,
+          latest: pending[pending.length - 1]!,
+          history: history.length > HISTORY_LIMIT ? history.slice(history.length - HISTORY_LIMIT) : history,
+          decisions:
+            decisions.length > DECISION_LIMIT
+              ? decisions.slice(decisions.length - DECISION_LIMIT)
+              : decisions,
+        };
       });
-      const acted = pending.filter((event) => event.action && event.action.kind !== 'none');
-      if (acted.length) {
-        setDecisions((previous) => {
-          const next = previous.concat(acted);
-          return next.length > DECISION_LIMIT ? next.slice(next.length - DECISION_LIMIT) : next;
-        });
-      }
     }, UI_THROTTLE_MS);
-    return () => {
-      if (flushTimerRef.current) clearInterval(flushTimerRef.current);
-    };
+    return () => clearInterval(timer);
   }, []);
 
   // --- staleness watchdog ---------------------------------------------------
@@ -104,38 +127,34 @@ export function useEngineRun(runId: string | null): EngineRunHandle {
 
   // --- socket lifecycle -----------------------------------------------------
   useEffect(() => {
-    if (!runId) {
-      setConnection('idle');
-      return;
-    }
+    if (!runId) return;
 
-    source.reset(runId, 100);
+    runIdRef.current = runId;
     lastSeqRef.current = 0;
     pendingRef.current = [];
-    setHistory([]);
-    setDecisions([]);
-    setDropped(0);
-    setLatest(null);
-    setError(null);
-    closedByUsRef.current = false;
+    source.reset(runId, 100);
 
     let attempt = 0;
     let retryTimer: ReturnType<typeof setTimeout> | null = null;
     let disposed = false;
+    let socket: WebSocket | null = null;
+
+    const patch = (change: Partial<StreamBuffer>) =>
+      setBuffer((previous) => {
+        const base = previous.runId === runId ? previous : { ...EMPTY, runId };
+        return { ...base, ...change };
+      });
 
     const connect = () => {
       if (disposed) return;
-      setConnection('connecting');
-      const socket = new WebSocket(socketUrl(runId));
-      socketRef.current = socket;
+      patch({ connection: 'connecting' });
+      socket = new WebSocket(socketUrl(runId));
 
       socket.onopen = () => {
         if (disposed) return;
         attempt = 0;
-        setReconnectAttempts(0);
-        setConnection('connected');
-        setError(null);
         lastMessageAtRef.current = Date.now();
+        patch({ connection: 'connected', error: null, attempts: 0 });
       };
 
       socket.onmessage = (raw) => {
@@ -153,7 +172,6 @@ export function useEngineRun(runId: string | null): EngineRunHandle {
         switch (message.type) {
           case 'snapshot':
           case 'seek':
-            setState(message.state);
             source.reset(message.state.run_id, message.state.duration_s);
             lastSeqRef.current = 0;
             if (message.event) {
@@ -161,13 +179,16 @@ export function useEngineRun(runId: string | null): EngineRunHandle {
               lastSeqRef.current = message.event.seq;
               pendingRef.current.push(message.event);
             }
+            patch({ state: message.state });
             break;
           case 'event': {
             const event = message.event;
             const expected = lastSeqRef.current + 1;
             if (lastSeqRef.current > 0 && event.seq > expected) {
-              // A real gap: the socket missed events while we were away.
-              setDropped((previous) => previous + (event.seq - expected));
+              const gap = event.seq - expected;
+              setBuffer((previous) =>
+                previous.runId === runId ? { ...previous, dropped: previous.dropped + gap } : previous,
+              );
             }
             if (event.seq > lastSeqRef.current) lastSeqRef.current = event.seq;
             source.ingest(event);
@@ -176,28 +197,25 @@ export function useEngineRun(runId: string | null): EngineRunHandle {
           }
           case 'tick':
           case 'status':
-            setState(message.state);
+            patch({ state: message.state });
             break;
           case 'error':
-            setError(message.detail);
-            setConnection('error');
+            patch({ connection: 'error', error: message.detail });
             break;
         }
       };
 
       socket.onerror = () => {
-        if (disposed) return;
-        setConnection('error');
+        if (!disposed) patch({ connection: 'error' });
       };
 
       socket.onclose = () => {
-        socketRef.current = null;
-        if (disposed || closedByUsRef.current) return;
-        setConnection('disconnected');
+        socket = null;
+        if (disposed) return;
         attempt += 1;
-        setReconnectAttempts(attempt);
-        // Bounded exponential backoff, capped so a dead backend does not turn
-        // into a busy loop.
+        patch({ connection: 'disconnected', attempts: attempt });
+        // Bounded exponential backoff, capped so a dead backend does not become
+        // a busy loop.
         const delay = Math.min(1000 * 2 ** Math.min(attempt - 1, 4), 15000);
         retryTimer = setTimeout(connect, delay);
       };
@@ -206,24 +224,25 @@ export function useEngineRun(runId: string | null): EngineRunHandle {
     connect();
     return () => {
       disposed = true;
-      closedByUsRef.current = true;
       if (retryTimer) clearTimeout(retryTimer);
-      socketRef.current?.close();
-      socketRef.current = null;
+      if (socket) {
+        socket.onclose = null;
+        socket.close();
+      }
     };
   }, [runId, source]);
 
   return {
     source,
-    connection,
-    stale,
-    state,
-    latest,
-    decisions,
-    history,
-    droppedSequences,
-    error,
-    reconnectAttempts,
+    connection: runId ? active.connection : 'idle',
+    stale: Boolean(runId) && stale,
+    state: active.state,
+    latest: active.latest,
+    decisions: active.decisions,
+    history: active.history,
+    droppedSequences: active.dropped,
+    error: active.error,
+    reconnectAttempts: active.attempts,
   };
 }
 

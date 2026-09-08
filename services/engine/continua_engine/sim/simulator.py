@@ -261,6 +261,9 @@ class Simulation:
             health.stall_ms = round(receiver.stall_ms, 1)
             health.frames_delivered = receiver.frames_delivered
             health.frames_expected = receiver.frames_expected
+            threshold_s = float(self.plant.spec["video"]["stall_threshold_ms"]) / 1000.0
+            last_frame = receiver.last_frame_t if receiver.last_frame_t is not None else 0.0
+            health.stalled_now = (self.t - last_frame) > threshold_s
         if cls is TrafficClass.BULK:
             health.bytes_completed = int(receiver.bytes_completed)
         if self.t > 0:

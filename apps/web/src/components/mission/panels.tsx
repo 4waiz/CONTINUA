@@ -487,7 +487,10 @@ export function CameraPanel({ event }: { event: EngineEvent | null }) {
     context.fillText(`t+${(event?.t ?? 0).toFixed(2)}s`, 10, height - 10);
   }, [video, event?.t]);
 
-  const stalled = (video?.stall_ms ?? 0) > 0 && video?.frames_delivered === lastFrames.current;
+  // Read straight from the event: the receiver already decided this. Comparing
+  // against a ref during render is both a lint error and a subtle correctness
+  // bug, because the ref is written from an effect a frame later.
+  const stalled = video?.stalled_now === true;
 
   return (
     <Panel

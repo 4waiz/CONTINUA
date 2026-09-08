@@ -70,12 +70,12 @@ export function MissionView() {
     };
   }, []);
 
-  // Follow the carrying link unless the operator has picked one explicitly.
+  // Follow the carrying link unless the operator has pinned one. Derived during
+  // render rather than synchronised from an effect: the effect version renders
+  // one frame with the stale link and then re-renders.
   const carrying = run.latest?.carrying ?? null;
   const [pinned, setPinned] = useState(false);
-  useEffect(() => {
-    if (!pinned && carrying) setSelectedLink(carrying);
-  }, [carrying, pinned]);
+  const activeLink: EngineLinkId = pinned ? selectedLink : (carrying ?? selectedLink);
 
   const act = useCallback(
     async (fn: () => Promise<unknown>, message?: string) => {
@@ -137,7 +137,7 @@ export function MissionView() {
     [scenarios, run.state?.scenario_id, scenarioId],
   );
 
-  const windowS = run.latest?.links[selectedLink]?.window_s ?? 2;
+  const windowS = run.latest?.links[activeLink]?.window_s ?? 2;
   const duration = run.state?.duration_s ?? scenario?.duration_s ?? 100;
   const t = run.state?.t ?? 0;
 
@@ -291,8 +291,8 @@ export function MissionView() {
       <div className="grid grid-cols-1 gap-3 xl:grid-cols-[288px_minmax(0,1fr)_320px]">
         <div className="flex flex-col gap-3">
           <SelectedLinkCards
-            link={selectedLink}
-            observation={run.latest?.links[selectedLink]}
+            link={activeLink}
+            observation={run.latest?.links[activeLink]}
             history={run.history}
             windowS={windowS}
           />
@@ -321,7 +321,7 @@ export function MissionView() {
           )}
           <AccessStrip
             event={run.latest}
-            selected={selectedLink}
+            selected={activeLink}
             onSelect={(link) => {
               setSelectedLink(link);
               setPinned(true);
@@ -334,14 +334,14 @@ export function MissionView() {
               onClick={() => setPinned(false)}
               title="Return to automatically following whichever link is carrying the session"
             >
-              Following {selectedLink} · click to auto-follow
+              Following {activeLink} · click to auto-follow
             </button>
           )}
         </div>
 
         <div className="flex flex-col gap-3">
           <ApplicationHealthPanel event={run.latest} />
-          <TelemetryPanel history={run.history} link={selectedLink} />
+          <TelemetryPanel history={run.history} link={activeLink} />
           <CameraPanel event={run.latest} />
         </div>
       </div>

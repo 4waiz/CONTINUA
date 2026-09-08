@@ -179,6 +179,9 @@ class ClassHealth(BaseModel):
     freshness_ms: float | None = None
     #: Video only: cumulative milliseconds with no decodable frame.
     stall_ms: float | None = None
+    #: Video only: whether the stream is stalled *at this instant*. Published by
+    #: the receiver so the UI never has to infer it from frame-count history.
+    stalled_now: bool | None = None
     frames_delivered: NonNegativeInt = 0
     frames_expected: NonNegativeInt = 0
     #: Bytes usefully delivered to the application (excludes duplicates).
