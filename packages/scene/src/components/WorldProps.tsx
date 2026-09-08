@@ -78,7 +78,9 @@ function buildScatter(): Record<string, Placement[]> {
     ...scatterAlongRoute(58, 324, 12, -6.6, false),
   ];
 
-  const lightPoles = scatterAlongRoute(18, 420, 52, 9.4, true);
+  // Poles line the serviced corridor; the remote sector gets route markers.
+  const lightPoles = scatterAlongRoute(18, 430, 52, 9.4, true);
+  const routeMarkers = scatterAlongRoute(470, 880, 46, 8.8, true);
 
   const containers: Placement[] = [];
   for (const [cx, cz, count] of [
@@ -112,9 +114,9 @@ function buildScatter(): Record<string, Placement[]> {
   const rocksA: Placement[] = [];
   const rocksB: Placement[] = [];
   const rocksC: Placement[] = [];
-  for (let i = 0; i < 260; i += 1) {
-    const x = 300 + random() * 640;
-    const z = -240 + random() * 500;
+  for (let i = 0; i < 420; i += 1) {
+    const x = 240 + random() * 900;
+    const z = -400 + random() * 830;
     if (!farEnoughFromRoad(x, z, 13)) continue;
     const placement: Placement = {
       x,
@@ -131,6 +133,7 @@ function buildScatter(): Record<string, Placement[]> {
   return {
     PROP_Barrier: barriers,
     PROP_LightPole: lightPoles,
+    PROP_RoadSign_Marker: routeMarkers,
     PROP_Container: containers,
     PROP_RoadSign: signs,
     PROP_Rock_A: rocksA,
@@ -279,7 +282,7 @@ export function WorldProps({
 
   const instanced = useMemo(() => {
     return Object.entries(scatter).map(([name, placements]) => {
-      const node = library.get(name);
+      const node = library.get(name.replace(/_Marker$/, ''));
       if (!node) {
         console.warn(`[CONTINUA] prop "${name}" not found in ${PROPS_MODEL_URL}`);
         return null;

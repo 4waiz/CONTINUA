@@ -36,6 +36,18 @@ export default defineConfig({
     { name: 'desktop-1920', use: { ...devices['Desktop Chrome'], viewport: { width: 1920, height: 1080 } } },
     { name: 'desktop-1440', use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 900 } } },
     { name: 'desktop-1280', use: { ...devices['Desktop Chrome'], viewport: { width: 1280, height: 720 } } },
+    {
+      // Real hardware rendering. `npm run test:perf` uses this so the frame
+      // rate in docs/PROGRESS.md is a measurement, not a software-rasteriser
+      // artefact. Requires a locally installed Chrome.
+      name: 'gpu',
+      use: {
+        ...devices['Desktop Chrome'],
+        channel: 'chrome',
+        viewport: { width: 1920, height: 1080 },
+        launchOptions: { args: ['--ignore-gpu-blocklist', '--enable-gpu-rasterization'] },
+      },
+    },
   ],
   webServer: {
     command: 'npm run start',

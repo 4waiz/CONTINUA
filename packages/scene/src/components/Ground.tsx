@@ -112,7 +112,7 @@ function buildRidges(radius: number, seed: number, height: number): BufferGeomet
   for (let i = 0; i <= segments; i += 1) {
     const angle = (i / segments) * Math.PI * 2;
     const wobble = 1 + (random() - 0.5) * 0.16;
-    const x = 380 + Math.cos(angle) * radius * wobble;
+    const x = 520 + Math.cos(angle) * radius * wobble;
     const z = Math.sin(angle) * radius * wobble * 0.82;
     const h = ridgeHeight(x, z) * height * (0.55 + random() * 0.75);
     if (previous.set) {
@@ -144,8 +144,8 @@ export function Ground({ quality }: { quality: 'high' | 'balanced' | 'low' }) {
     [detail],
   );
   const survey = useMemo(() => buildSurveyGrid(quality === 'low' ? 26 : 16), [quality]);
-  const ridgeNear = useMemo(() => buildRidges(520, 4242, 0.85), []);
-  const ridgeFar = useMemo(() => buildRidges(760, 9191, 1.35), []);
+  const ridgeNear = useMemo(() => buildRidges(980, 4242, 1.5), []);
+  const ridgeFar = useMemo(() => buildRidges(1420, 9191, 2.3), []);
 
   const road = useMemo(() => buildRouteRibbon(), []);
   const roadEdgeLeft = useMemo(

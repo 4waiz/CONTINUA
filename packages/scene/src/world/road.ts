@@ -67,8 +67,11 @@ export function buildRouteRibbon(
     uvs[uvBase + 3] = v;
 
     if (i < steps - 1) {
+      // Counter-clockwise seen from above, so the surface normal is +Y.
+      // The obvious ordering here winds the other way, which makes every
+      // ribbon face the ground and vanish under front-face culling.
       const a = i * 2;
-      indices.push(a, a + 1, a + 2, a + 1, a + 3, a + 2);
+      indices.push(a, a + 2, a + 1, a + 1, a + 2, a + 3);
     }
   }
 

@@ -29,7 +29,8 @@
     "checkpoint:start": "python scripts/checkpoint.py start",
     "checkpoint:once": "python scripts/checkpoint.py once",
     "checkpoint:status": "python scripts/checkpoint.py status",
-    "checkpoint:stop": "python scripts/checkpoint.py stop"
+    "checkpoint:stop": "python scripts/checkpoint.py stop",
+    "test:perf": "playwright test --config=tests/playwright.config.ts --project=gpu --grep \"measures rendering performance\""
   },
   "devDependencies": {
     "@playwright/test": "1.63.0",

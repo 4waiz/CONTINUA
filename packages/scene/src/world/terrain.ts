@@ -15,13 +15,13 @@ import { route, type Route } from './route';
 
 export const TERRAIN = {
   /** World bounds of the playable ground plane, metres. */
-  minX: -160,
-  maxX: 1000,
-  minZ: -300,
-  maxZ: 320,
+  minX: -260,
+  maxX: 1340,
+  minZ: -470,
+  maxZ: 490,
   /** Grid resolution of the generated mesh. */
-  segmentsX: 232,
-  segmentsZ: 124,
+  segmentsX: 264,
+  segmentsZ: 158,
   /** Corridor half-widths for flattening the route. */
   flatInner: 7.5,
   flatOuter: 20,

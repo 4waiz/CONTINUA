@@ -180,7 +180,7 @@ def continua_materials() -> dict[str, bpy.types.Material]:
         "steel": pbr("CONTINUA_Steel", "#AAB4C4", metallic=0.85, roughness=0.36),
         "steel_white": pbr("CONTINUA_Steel_White", "#D3DBE7", metallic=0.35, roughness=0.42),
         "asphalt": pbr("CONTINUA_Asphalt", "#9BA7B9", metallic=0.0, roughness=0.9),
-        "sand": pbr("CONTINUA_Sand", "#CFC6B4", metallic=0.0, roughness=0.95),
+        "sand": pbr("CONTINUA_Sand", "#AEA48F", metallic=0.0, roughness=0.95),
     }
 
 
