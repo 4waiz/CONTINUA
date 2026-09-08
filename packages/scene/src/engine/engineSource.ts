@@ -186,7 +186,10 @@ export class EngineSceneStateSource implements SceneStateSource {
         network: id,
         state,
         coverage: observation.modelled_coverage ?? 0,
-        ...(observation.rtt_ms !== null ? { rssiDbm: observation.rssi_dbm ?? undefined } : {}),
+        // Guard each optional measurement on *itself*. Guarding RSSI on RTT
+        // published `rssiDbm: undefined` for links that have no RSSI at all,
+        // which reads as "present but unknown" rather than "does not exist".
+        ...(observation.rssi_dbm !== null ? { rssiDbm: observation.rssi_dbm } : {}),
         ...(observation.rtt_ms !== null ? { latencyMs: observation.rtt_ms } : {}),
         ...(observation.jitter_ms !== null ? { jitterMs: observation.jitter_ms } : {}),
         ...(observation.loss_pct !== null ? { lossPct: observation.loss_pct } : {}),

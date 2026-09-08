@@ -119,16 +119,18 @@ test.describe('Mission dashboard', () => {
     ).toBeVisible({ timeout: 15_000 });
 
     // Nothing anywhere may claim an RSSI for a non-Wi-Fi link.
+    // `getFrame()` returns the scene-facing state, whose optional measurements
+    // are camelCase and are *absent* when they do not exist.
     const rssiClaims = await page.evaluate(() => {
       const api = (
         window as unknown as {
-          __CONTINUA__?: { getFrame: () => { links: Record<string, { rssi_dbm: number | null }> } };
+          __CONTINUA__?: { getFrame: () => { links: Record<string, { rssiDbm?: number }> } };
         }
       ).__CONTINUA__;
       if (!api) return [];
       const frame = api.getFrame();
       return Object.entries(frame.links ?? {})
-        .filter(([link, obs]) => link !== 'wifi' && obs && obs.rssi_dbm !== null)
+        .filter(([link, obs]) => link !== 'wifi' && obs && obs.rssiDbm !== undefined)
         .map(([link]) => link);
     });
     expect(rssiClaims, 'only Wi-Fi has an RSSI').toEqual([]);
@@ -223,7 +225,7 @@ test.describe('other sections', () => {
         page.getByRole('columnheader', { name: new RegExp(`^${policy} n=`) }),
       ).toBeVisible();
     }
-    await expect(page.getByText(/marking is not a significance test/i)).toBeVisible();
+    await expect(page.getByText(/does not mean the difference is statistically meaningful/i)).toBeVisible();
     await page.screenshot({
       path: `${EVIDENCE}/p2-experiments-results-${testInfo.project.name}.png`,
       fullPage: true,
