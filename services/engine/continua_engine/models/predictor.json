@@ -1,0 +1,71 @@
+{
+  "kind": "logistic",
+  "version": "202609081132",
+  "features": [
+    "rtt_ms",
+    "rtt_slope_ms_per_s",
+    "jitter_ms",
+    "loss_pct",
+    "loss_slope_pct_per_s",
+    "throughput_mbps",
+    "throughput_slope",
+    "queue_depth_bytes",
+    "coverage",
+    "coverage_slope",
+    "speed_mps",
+    "rtt_over_deadline",
+    "alt_best_coverage"
+  ],
+  "coef": [
+    1.0347038620161235,
+    -0.016429545370641313,
+    0.5474120559098705,
+    0.21184511544268458,
+    -0.07446058495153247,
+    0.27950275959225773,
+    -0.5141406605434495,
+    0.06958661179266168,
+    -3.6447814968430325,
+    0.6228895814855786,
+    -0.8441277131421506,
+    1.0347038620160682,
+    0.5030459640151446
+  ],
+  "intercept": 0.9024682204129327,
+  "standardiser": {
+    "mean": [
+      19.551632573289776,
+      0.21242654006107586,
+      5.656949837133554,
+      1.3401706840391026,
+      -1.3093735567691174,
+      10.662344820846675,
+      0.8749718158233744,
+      0.501628664495114,
+      0.9896247361563528,
+      -0.003165828572283972,
+      8.863282345276799,
+      0.13034421715526626,
+      0.6879947882736349
+    ],
+    "scale": [
+      13.89934697992155,
+      1.4125940813826057,
+      3.8136734434123456,
+      0.7570858490646496,
+      6.962862954430248,
+      4.812695829100779,
+      2.222118984191521,
+      10.493172774325776,
+      0.053698198720045845,
+      0.016939211938607944,
+      3.443791730209997,
+      0.09266231319947675,
+      0.24523406455556154
+    ]
+  },
+  "decision_threshold": 0.4500000000000003,
+  "calibrated": false,
+  "horizon_s": 3.0,
+  "violation_definition": "The carrying path is in violation when, within the horizon, either (a) its smoothed RTT exceeds 150 ms \u2014 the control-class deadline \u2014 or (b) its windowed loss exceeds 3.0 %, or (c) it becomes unusable. Identical definition is used for the heuristic, the learned model and the offline labels."
+}

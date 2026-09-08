@@ -1,0 +1,59 @@
+{
+  "generated_at": "2026-09-08T11:32:40.270388+00:00",
+  "version": "202609081132",
+  "horizon_s": 3.0,
+  "violation_definition": "The carrying path is in violation when, within the horizon, either (a) its smoothed RTT exceeds 150 ms \u2014 the control-class deadline \u2014 or (b) its windowed loss exceeds 3.0 %, or (c) it becomes unusable. Identical definition is used for the heuristic, the learned model and the offline labels.",
+  "training": {
+    "block": "train",
+    "runs": 35,
+    "rows": 15350,
+    "positive_rate": 0.5738,
+    "excluded_families": [
+      "motion",
+      "outage"
+    ]
+  },
+  "tuning": {
+    "block": "tune",
+    "runs": 20,
+    "rows": 8085,
+    "positive_rate": 0.5388,
+    "includes_held_out_families": true
+  },
+  "learned": {
+    "decision_threshold": 0.45,
+    "precision": 0.874,
+    "recall": 0.677,
+    "f1": 0.763,
+    "brier": 0.1896,
+    "baseline_brier": 0.2485,
+    "mean_abs_calibration_error": 0.1364,
+    "calibrated": false
+  },
+  "heuristic_on_same_rows": {
+    "precision": 0.8003,
+    "recall": 0.1214,
+    "f1": 0.2109
+  },
+  "feature_weights": {
+    "rtt_ms": 1.0347,
+    "rtt_slope_ms_per_s": -0.0164,
+    "jitter_ms": 0.5474,
+    "loss_pct": 0.2118,
+    "loss_slope_pct_per_s": -0.0745,
+    "throughput_mbps": 0.2795,
+    "throughput_slope": -0.5141,
+    "queue_depth_bytes": 0.0696,
+    "coverage": -3.6448,
+    "coverage_slope": 0.6229,
+    "speed_mps": -0.8441,
+    "rtt_over_deadline": 1.0347,
+    "alt_best_coverage": 0.503
+  },
+  "notes": [
+    "Split by whole run and by scenario family, never by row.",
+    "Labels are computed offline from the recorded run; features are the observations the controller had at decision time.",
+    "Rows where the carrying path was already in violation are excluded.",
+    "The test seed block was not touched by this script."
+  ]
+}
