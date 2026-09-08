@@ -1,0 +1,155 @@
+{
+  "$comment": "Single source of truth for the CONTINUA world. Read by packages/scene (TypeScript, for rendering) and by services/engine (Python, for the experiment). Neither side may hard-code a copy: tests/engine/test_route_parity.py asserts both derive the same route length.",
+  "version": "2.0.0",
+  "route": {
+    "sampleStepM": 1.0,
+    "stepsPerSegment": 24,
+    "controlPoints": [
+      [-26, 0],
+      [0, 0],
+      [26, -1],
+      [54, -7],
+      [86, -17],
+      [118, -23],
+      [152, -19],
+      [186, -5],
+      [214, 10],
+      [250, 18],
+      [292, 16],
+      [334, 4],
+      [372, -14],
+      [408, -30],
+      [448, -38],
+      [492, -34],
+      [538, -14],
+      [578, 16],
+      [614, 48],
+      [652, 74],
+      [694, 88],
+      [740, 88],
+      [788, 74],
+      [824, 52]
+    ]
+  },
+  "vehicle": {
+    "wheelbaseM": 2.85,
+    "wheelRadiusM": 0.405,
+    "cruiseSpeedMps": 12.0,
+    "curveSlowing": 26,
+    "minSpeedMps": 3.4,
+    "dockDwellS": 5.0
+  },
+  "coverage": {
+    "$comment": "Geometric coverage model. Ranges are synthetic assumptions, documented in docs/ASSUMPTIONS.md, not measured operator data.",
+    "wifiRangeM": 155,
+    "wifiFullFraction": 0.42,
+    "cellRangeM": 330,
+    "cellFullFraction": 0.45,
+    "tetherRangeM": 20,
+    "tetherFullOffsetM": 6,
+    "satelliteBase": 0.42,
+    "satelliteRemoteBonus": 0.45,
+    "satelliteRampFromX": 340,
+    "satelliteRampToX": 620
+  },
+  "zones": [
+    { "id": "facility", "label": "Command facility", "untilX": 94 },
+    { "id": "courtyard", "label": "Facility courtyard", "untilX": 236 },
+    { "id": "corridor", "label": "Industrial corridor", "untilX": 452 },
+    { "id": "remote", "label": "Remote sector", "untilX": null }
+  ],
+  "sites": [
+    {
+      "id": "dock",
+      "label": "Docking station",
+      "detail": "Wired gigabit uplink. Active only while the rover is docked or tethered.",
+      "prop": "PROP_DockStation",
+      "x": -24,
+      "z": 7.0,
+      "yaw": 3.141592653589793,
+      "network": "wired",
+      "linkHeight": 4.0,
+      "selectable": true
+    },
+    {
+      "id": "facility",
+      "label": "Command facility",
+      "detail": "Mission control and the session gateway all four links terminate at.",
+      "prop": "PROP_Facility_Main",
+      "x": -46,
+      "z": 44,
+      "yaw": -1.5707963267948966,
+      "selectable": true
+    },
+    {
+      "id": "hangar",
+      "label": "Service hangar",
+      "detail": "Vehicle preparation and maintenance bay.",
+      "prop": "PROP_Facility_Hangar",
+      "x": 40,
+      "z": 54,
+      "yaw": 1.5707963267948966,
+      "selectable": true
+    },
+    {
+      "id": "wifi-yard",
+      "label": "Wi-Fi access point A",
+      "detail": "Yard cell covering the dock apron. First handoff target after undocking.",
+      "prop": "PROP_WifiMast",
+      "x": 24,
+      "z": -28,
+      "yaw": -0.3,
+      "network": "wifi",
+      "linkHeight": 6.6,
+      "selectable": true
+    },
+    {
+      "id": "wifi-north",
+      "label": "Wi-Fi access point B",
+      "detail": "Courtyard 5 GHz cell covering the middle of the yard.",
+      "prop": "PROP_WifiMast",
+      "x": 104,
+      "z": -36,
+      "yaw": 0.4,
+      "network": "wifi",
+      "linkHeight": 6.6,
+      "selectable": true
+    },
+    {
+      "id": "wifi-south",
+      "label": "Wi-Fi access point C",
+      "detail": "Perimeter cell covering the yard exit onto the corridor.",
+      "prop": "PROP_WifiMast",
+      "x": 182,
+      "z": 34,
+      "yaw": -0.6,
+      "network": "wifi",
+      "linkHeight": 6.6,
+      "selectable": true
+    },
+    {
+      "id": "cell-tower",
+      "label": "5G macro site",
+      "detail": "Three-sector mast covering the industrial corridor.",
+      "prop": "PROP_CellTower",
+      "x": 336,
+      "z": -46,
+      "yaw": 0.3,
+      "network": "cellular",
+      "linkHeight": 25.5,
+      "selectable": true
+    },
+    {
+      "id": "sat-terminal",
+      "label": "Satellite ground terminal",
+      "detail": "Backhaul for the remote sector, where no terrestrial cell reaches.",
+      "prop": "PROP_SatTerminal",
+      "x": 812,
+      "z": 74,
+      "yaw": -2.4,
+      "network": "satellite",
+      "linkHeight": 4.4,
+      "selectable": true
+    }
+  ]
+}
