@@ -1,5 +1,5 @@
-import { DashboardShell } from '@/components/SceneShell';
+import { MissionShell } from '@/components/Shells';
 
 export default function Home() {
-  return <DashboardShell />;
+  return <MissionShell />;
 }

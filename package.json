@@ -30,7 +30,8 @@
     "checkpoint:once": "python scripts/checkpoint.py once",
     "checkpoint:status": "python scripts/checkpoint.py status",
     "checkpoint:stop": "python scripts/checkpoint.py stop",
-    "test:perf": "playwright test --config=tests/playwright.config.ts --project=gpu --grep \"measures rendering performance\""
+    "test:perf": "playwright test --config=tests/playwright.config.ts --project=gpu --grep \"measures rendering performance\"",
+    "engine": "python -m uvicorn continua_engine.api.app:app --host 127.0.0.1 --port 8000 --app-dir services/engine"
   },
   "devDependencies": {
     "@playwright/test": "1.63.0",

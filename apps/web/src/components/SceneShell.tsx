@@ -1,9 +1,11 @@
 'use client';
 
 /**
- * Client shell: provides the scene runtime and defers the WebGL surface to the
- * browser. `ssr: false` is deliberate — a Canvas has nothing useful to render
- * on the server, and attempting it only produces hydration noise.
+ * Client shell for the Phase 1 scene lab.
+ *
+ * Kept from Phase 1 and still routed at `/scene-lab`: it inspects the vehicle
+ * and world against the deterministic *preview* source, with no engine
+ * attached. The Phase 2 views live in `Shells.tsx` and use the engine instead.
  */
 
 import { SceneRuntimeProvider } from '@continua/scene';
@@ -22,23 +24,10 @@ function Skeleton({ label }: { label: string }) {
   );
 }
 
-const DashboardView = dynamic(
-  () => import('./Dashboard').then((module) => module.Dashboard as ComponentType),
-  { ssr: false, loading: () => <Skeleton label="Preparing CONTINUA dashboard" /> },
-);
-
 const SceneLabView = dynamic(
   () => import('./SceneLab').then((module) => module.SceneLab as ComponentType),
   { ssr: false, loading: () => <Skeleton label="Preparing CONTINUA scene lab" /> },
 );
-
-export function DashboardShell() {
-  return (
-    <SceneRuntimeProvider>
-      <DashboardView />
-    </SceneRuntimeProvider>
-  );
-}
 
 export function SceneLabShell() {
   return (
