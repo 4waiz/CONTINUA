@@ -12,11 +12,13 @@
  */
 
 import { api } from '@/lib/api';
+import { installOverlayBridge } from '@/lib/captureOverlay';
 import { useEngineRun } from '@/lib/useEngineRun';
 import { LINK_IDS, LINK_LABEL } from '@continua/contracts/engine';
 import { NETWORK_COLOR } from '@continua/scene';
 import { useEffect } from 'react';
 import { ModeBadge } from './AppShell';
+import { CaptureOverlays } from './capture/CaptureOverlays';
 import { MissionScene } from './mission/MissionScene';
 
 export function CaptureView({ runId }: { runId: string | null }) {
@@ -26,6 +28,9 @@ export function CaptureView({ runId }: { runId: string | null }) {
   // Derived, not stored: the capture harness polls `data-capture-ready`, and a
   // value that lags one render behind would let it start recording too early.
   const ready = run.source.eventCount > 0 && run.connection === 'connected';
+
+  // The harness pushes burned-in text through this bridge; see captureOverlay.ts.
+  useEffect(installOverlayBridge, []);
 
   useEffect(() => {
     (window as unknown as { __CONTINUA_CAPTURE__?: unknown }).__CONTINUA_CAPTURE__ = {
@@ -85,7 +90,12 @@ export function CaptureView({ runId }: { runId: string | null }) {
         </div>
 
         <div className="pointer-events-none absolute right-5 top-4 text-right text-[10.5px] text-[color:var(--color-muted)]">
-          <div className="font-[family-name:var(--font-mono)]">{run.state?.run_id ?? '—'}</div>
+          {/* In replay, cite the run the evidence actually came from — the
+              replay session's own id means nothing to anyone reading
+              docs/VIDEO_CLAIMS.md. */}
+          <div className="font-[family-name:var(--font-mono)]">
+            {run.state?.source?.run_id ?? run.state?.run_id ?? '—'}
+          </div>
           <div>{run.state?.scenario_title || run.state?.scenario_id || ''}</div>
           <div>
             policy {run.state?.policy_id ?? '—'} · seed {run.state?.seed ?? '—'} · t+
@@ -127,6 +137,8 @@ export function CaptureView({ runId }: { runId: string | null }) {
             </div>
           </div>
         </div>
+
+        <CaptureOverlays />
       </div>
     </div>
   );

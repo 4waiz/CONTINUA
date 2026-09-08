@@ -68,3 +68,12 @@ __pycache__/
 venv/
 *.sqlite
 *.sqlite-journal
+
+# ---- demo video intermediates ------------------------------------------
+# Frame sequences and rendered stills are large and fully regenerable from
+# video/timeline.json plus the recorded runs. The finished MP4, the poster,
+# the contact sheet, the SRT and every manifest ARE tracked.
+video/frames/
+video/renders/
+video/audio/
+video/work/
