@@ -1,0 +1,38 @@
+{
+  "name": "continua",
+  "version": "0.1.0",
+  "private": true,
+  "description": "CONTINUA — Predictive Network Continuity. Interactive 3D mission scene by Team Kanban.",
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/4waiz/CONTINUA.git"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=20.11.0"
+  },
+  "scripts": {
+    "dev": "npm run dev --workspace=@continua/web",
+    "build": "npm run build --workspace=@continua/web",
+    "start": "npm run start --workspace=@continua/web",
+    "lint": "npm run lint --workspace=@continua/web",
+    "typecheck": "tsc -b packages/contracts packages/scene apps/web --pretty",
+    "test:smoke": "playwright test --config=tests/playwright.config.ts",
+    "blender:vehicle": "node scripts/run-blender.mjs scripts/blender/build_vehicle.py",
+    "blender:props": "node scripts/run-blender.mjs scripts/blender/build_props.py",
+    "blender:previews": "node scripts/run-blender.mjs scripts/blender/render_previews.py",
+    "blender:all": "npm run blender:vehicle && npm run blender:props && npm run blender:previews",
+    "checkpoint:start": "python scripts/checkpoint.py start",
+    "checkpoint:once": "python scripts/checkpoint.py once",
+    "checkpoint:status": "python scripts/checkpoint.py status",
+    "checkpoint:stop": "python scripts/checkpoint.py stop"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0",
+    "typescript": "5.9.3"
+  }
+}

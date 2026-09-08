@@ -1,0 +1,54 @@
+# ---- dependencies ----
+node_modules/
+.pnp/
+.pnp.js
+.yarn/
+
+# ---- next.js / build output ----
+.next/
+out/
+build/
+dist/
+*.tsbuildinfo
+next-env.d.ts
+
+# ---- secrets / env ----
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets.json
+
+# ---- private MCP / editor settings ----
+.mcp.json
+.claude/settings.local.json
+.vscode/
+.idea/
+
+# ---- checkpoint supervisor (must stay untracked: it logs its own commits) ----
+.checkpoint/
+
+# ---- blender temporaries / backups ----
+*.blend1
+*.blend2
+*.blend@
+blender_autosave/
+
+# ---- render intermediates ----
+renders/frames/
+renders/tmp/
+*.exr
+assets/previews/frames/
+
+# ---- test / tooling output ----
+coverage/
+playwright-report/
+test-results/
+tests/output/
+.playwright/
+
+# ---- os noise ----
+.DS_Store
+Thumbs.db
+desktop.ini

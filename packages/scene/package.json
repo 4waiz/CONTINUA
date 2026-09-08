@@ -1,0 +1,25 @@
+{
+  "name": "@continua/scene",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Reusable CONTINUA 3D scene: deterministic clock, route, terrain, vehicle rig, world props and camera rigs. Renderer-agnostic maths + React Three Fiber components.",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./math": "./src/math/index.ts"
+  },
+  "dependencies": {
+    "@continua/contracts": "0.1.0"
+  },
+  "peerDependencies": {
+    "@react-three/drei": ">=10",
+    "@react-three/fiber": ">=9",
+    "react": ">=19",
+    "three": ">=0.180"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  }
+}
