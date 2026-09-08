@@ -178,11 +178,85 @@ measurement rather than a software-rasteriser artefact.
 
 ## 8. Phase 2 and 3 seams
 
-* **Phase 2** replaces `previewSource` with a live engine. `SceneRuntimeProvider`
-  already accepts a `source` prop. `LinkStatus` has optional `rssiDbm`,
-  `latencyMs`, `jitterMs`, `lossPct`, `throughputMbps` fields that stay
-  `undefined` until something real measures them.
+* **Phase 2 did exactly this**: `EngineSceneStateSource`
+  (`packages/scene/src/engine/engineSource.ts`) implements `SceneStateSource`
+  from a buffer of engine events, and `SceneRuntimeProvider` takes it as its
+  `source`. **No scene component changed.** The optional `rssiDbm`, `latencyMs`,
+  `jitterMs`, `lossPct` and `throughputMbps` fields are now populated — each
+  guarded on its own presence, so a link with no RSSI omits the field entirely
+  rather than reporting `undefined`.
 * **Phase 3** drives `clock.setTime(t)` in fixed steps and reads
   `CaptureFrameRequest`. The canvas is created with `preserveDrawingBuffer: true`
   so frames can be read back, and `window.__CONTINUA__` exposes the clock,
   source, settings and live renderer state.
+
+
+---
+
+# Phase 2 architecture
+
+## 10. The pipeline
+
+```
+scenario spec (JSON, immutable)
+        │
+        ▼
+exogenous trace          ← seeded once per (scenario, seed); policy-independent
+        │
+        ▼
+network adapter          ← LinkPath: queue, capacity, delay, jitter, loss
+        │
+        ▼
+traffic generators  ──►  receivers (dedupe, deadlines, freshness, frames)
+        │                        │
+        │                        ▼
+        │                  observations         ← windowed, from receiver facts only
+        │                        │
+        │                        ▼
+        │                    predictor          ← heuristic | learned | none
+        │                        │
+        │                        ▼
+        └──────────────►  policy controller     ← Observe→Predict→Prepare→Steer→Explain
+                                 │
+                                 ▼
+                             actions
+                                 │
+                                 ▼
+                           event store          ← JSONL + SQLite
+                                 │
+                    ┌────────────┴────────────┐
+                    ▼                         ▼
+              dashboard (WS)              replay
+```
+
+The one-way arrows matter. The controller sits downstream of observations and
+has no path back to the trace.
+
+## 11. Authoritative clock
+
+`Simulation` owns the only clock. `RunSession` advances it in real time at
+`speed`; the frontend renders whatever the session publishes and may interpolate
+**vehicle motion only**. Metrics are taken verbatim from events.
+
+Seeking a live run **rebuilds the simulation from the same seed and
+fast-forwards**. That is exact, not approximate, because the simulation is
+deterministic — which is also why replay can be asserted equal to the original.
+
+## 12. Boundaries added in Phase 2
+
+| Boundary | Contract |
+| --- | --- |
+| Engine ↔ frontend | `EngineEvent` (Pydantic) mirrored by `packages/contracts/src/engine.ts`, **validated at the boundary** by `parseEngineEvent`; an unrecognised payload is rejected, not rendered |
+| Engine ↔ scene | `EngineSceneStateSource implements SceneStateSource` — the Phase 1 seam, unchanged |
+| Controller ↔ world | `LinkObservation` only. No trace access, enforced by test |
+| Predictor ↔ controller | `Prediction`, carrying its own features, threshold and calibration flag |
+| Simulator ↔ store | `EngineEvent` JSONL + `manifest.json` with scenario, seed, commit and environment |
+
+## 13. Transport and resilience
+
+WebSocket at `/ws/runs/{run_id}`. Every event carries a monotonic `seq`. The
+client drops duplicates by `seq`, counts gaps and reports them, inserts
+out-of-order events at the right point in the timeline, and reconnects with
+bounded exponential backoff (1 s → 15 s). If nothing arrives for 4 s the UI marks
+the data **stale**; if the socket closes it says **disconnected**. It never
+extrapolates and never substitutes generated numbers.

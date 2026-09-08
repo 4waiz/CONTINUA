@@ -1,195 +1,245 @@
 # CONTINUA — progress
 
-**Phase 1 — vehicle, world and visual foundation.** Complete.
+| Phase | Scope | State |
+| --- | --- | --- |
+| 1 | Vehicle, world, route animation, scene components, design system, `/scene-lab` | **complete** |
+| 2 | Working application, network engine, controller, experiments | **complete** |
+| 3 | Competition video capture and edit | not started |
 
-## Launch
+---
+
+# Launch
 
 ```bash
 npm install
-npm run build
-npm run start
+npm run engine              # engine on http://127.0.0.1:8000 — leave running
+npm run build && npm start  # app on http://localhost:3000
 ```
 
-Then open **<http://localhost:3000>** (dashboard) or
-**<http://localhost:3000/scene-lab>** (scene lab).
-
-`npm run dev` works too; the smoke tests deliberately run against the production
-build.
-
-## Done
-
-### Toolchain and workflow
-- npm workspaces: `apps/web`, `packages/scene`, `packages/contracts`. Exact
-  version pins, `package-lock.json` committed.
-- `scripts/checkpoint.py` — ready-set staging, atomic Git lock, pause/resume,
-  merge/rebase refusal, conflict-marker + secret + file-size gates, bounded
-  push backoff, remote SHA verification, honest OK/SKIP/ERROR logging outside
-  tracked content.
-- `scripts/run-blender.mjs` — headless Blender runner that never touches an
-  interactive session.
-
-### Vehicle
-- `CONTINUA Rover Mk1`: 38,120 triangles, generated entirely by script.
-- Shaped body silhouette with wheel-arch cutouts, two-tone lower cladding,
-  greenhouse with A/B/C/D pillars, tinted glazing, **a real interior** (floor,
-  headliner, dash, steering wheel, four seats with headrests, cargo module,
-  console screen).
-- Swept arch flares, bumpers with winch plate and tow hooks, rock sliders,
-  door handles and shut lines, mirrors.
-- Round headlamps with bezel, reflector and proud lens; amber indicators;
-  recessed tail lamps.
-- Roof sensor rack: LiDAR, forward camera pod, satcom dome, GNSS puck, two whip
-  antennas, light bar, two beacons.
-- Wheels: revolved tyre with two offset tread rows and shoulder lugs, 6-spoke
-  alloy, brake disc and caliper. Independent steering pivots and spin transforms.
-- Small `CONTINUA` / `INSPECTION UNIT 04` identification on both flanks and the
-  tailgate. No manufacturer badging.
-- Hero `.glb` 1.39 MB, LOD1 16,784 tris / 549 KB, six studio renders.
-
-### World
-- 917 m route through four zones: command facility → courtyard → industrial
-  corridor → remote sector. Catmull-Rom, resampled every 1 m by arc length.
-- Terrain whose `height(x, z)` is the single authority, with the route corridor
-  flattened into it so the road sits *on* the ground.
-- Road ribbon, shoulder, centre line, facility apron and terminus pad, all
-  generated from the same samples and elevation.
-- 13 authored props: facility, hangar, dock, three Wi-Fi masts, 5G lattice
-  tower, satellite ground terminal, containers, light poles, barriers, signs,
-  three boulder variants.
-- Deterministic scatter; repeated props instanced.
-- Survey wireframe on the surface, low-poly ridge silhouettes, fog.
-
-### Scene runtime
-- `SceneClock` with `setTime`, play/pause/reset, speed, loop.
-- `PreviewSceneStateSource` — pure `sampleAt(t)`, handoffs planned in one
-  forward pass, so scrubbing and playback agree exactly.
-- Wheel rotation from travelled distance, Ackermann steering from route
-  curvature, body pitch/roll from the terrain normal, restrained suspension
-  trim from acceleration and lateral load.
-- Four deterministic cameras: follow, overview, close-up, turntable. Clamped
-  above the terrain, no springs, no jitter.
-- Coverage overlays, active/pre-warming link beams, selectable site markers.
-
-### Application
-- `/` — dashboard in the reference's light-mode composition, with the live
-  scene as its centrepiece and the four networks drawn as a **fan converging on
-  one gateway**, not a chain.
-- `/scene-lab` — mode, camera, quality, overlays, transport, timeline with
-  handoff markers, keyboard shortcuts, site inspector.
-- Explicit loading, WebGL-unavailable, context-lost and render-error states.
-- `SCENE PREVIEW` badge everywhere a figure is shown.
-
-## Measured results
-
-### Rendering performance
-
-| Configuration | Result |
+| URL | Section |
 | --- | --- |
-| **Real GPU** — Chrome (channel `chrome`), 1920×1080, `high` quality, uncapped rAF | **233.8 fps** and **226.3 fps** on two independent 4.0 s samples |
-| Hardware | ANGLE / Intel(R) Graphics `0x00007D67`, Direct3D 11, integrated |
-| Headless SwiftShader (default CI project) | 3.4–4.2 fps — software rasterisation, expected |
+| <http://localhost:3000> | **Mission** — live run, scene, link cards, health, pipeline |
+| <http://localhost:3000/scenario-lab> | Configure failures, congestion, movement, workload |
+| <http://localhost:3000/experiments> | Paired comparison + execution capability report |
+| <http://localhost:3000/decision-log> | Every action with its observations and reason |
+| <http://localhost:3000/capture?run=…> | Fixed 16:9 capture frame |
+| <http://localhost:3000/scene-lab> | Phase 1 scene inspector (preview source, no engine) |
 
-Measured with `npm run test:perf`, which drives the real clock and counts
-`requestAnimationFrame` callbacks over four seconds. The frame rate is uncapped
-because headless Chrome does not vsync; the useful reading is that a frame costs
-~4.3 ms on integrated graphics, i.e. comfortably inside a 16.7 ms budget for
-60 fps with a wide margin on discrete hardware.
+---
 
-The `low` quality tier additionally drops to the LOD rover, disables shadows and
-antialiasing, and caps pixel ratio at 1.0.
+# Phase 2 — feature matrix
 
-### Scene budget (1920×1080, `high`, follow camera)
+## Implemented and tested
 
-| Metric | Value |
+| Feature | Evidence |
 | --- | --- |
-| Draw calls | 131 |
-| Triangles submitted | 285,890 |
-| Geometries | 93 |
-| Textures | 6 (environment map only) |
-| Runtime asset download | 2.28 MB total |
+| Causal network simulator: finite queues, capacity, delay, jitter, correlated burst loss, activation delay, background demand, cost accounting | 36 engine tests |
+| Five traffic classes with receiver-side logs: control (acked, deduplicated), voice-like, telemetry (freshness), video (whole-frame delivery, stalls), bulk (deferrable) | `test_engine.py` |
+| Metrics computed **only** from delivery, acknowledgement and timeout events | `metrics.py`, tests |
+| Controller: Observe→Predict→Prepare→Steer→Explain, 8 states, hysteresis, min dwell, switch penalties | `controller.py`, browser tests |
+| Six policies behind one interface (B0, B1, B2, P1, 2 ablations) | `test_policies_differ_only_by_configuration` |
+| Heuristic predictor | 20-trial experiments |
+| Learned tabular predictor with run-level splits, held-out families, calibration check, documented fallback | `MODEL_CARD.md`, `training_report.json` |
+| Deterministic runs, byte-identical for a seed | `test_same_seed_reproduces_identical_run` |
+| Policy-independent exogenous trace (paired trials) | `test_exogenous_trace_is_independent_of_policy` |
+| No future-information leakage | `test_controller_never_receives_the_trace`, feature allow-list test |
+| Genuine outage + safe-stop when all paths fail | `test_total_loss_is_reported_as_a_genuine_outage` |
+| FastAPI REST + WebSocket, SQLite metadata, JSONL evidence | Browser tests |
+| Reconnect, stale-data, duplicate and out-of-order handling | `useEngineRun.ts`, browser tests |
+| Mission / Scenario Lab / Experiments / Decision Log, all controls functional | 11 Phase 2 browser tests |
+| Replay of a stored run, identified by source mode/run/time | `test_replaying_a_recorded_run_reproduces_it_exactly` + browser test |
+| Capture view: 16:9, ready signal, deterministic seek, no invented LIVE badge | Browser test asserts the ratio and the signal |
+| Unavailable measurements render as unavailable, never zero; RSSI only for Wi-Fi | Engine + browser tests |
+| 20 paired trials × 6 policies × 6 core scenarios | `data/experiments/` |
+| Emulation **capability probe** | `data/emulation_capability.json` |
 
-### Verification
+## Implemented but unverified on this host
 
-`npm run lint` · `npm run typecheck` · `npm run build` all clean.
-
-`npm run test:smoke` — **11 passed** across 1920×1080, 1440×900 and 1280×720:
-
-- both pages render with no console errors
-- `.glb` assets requested and served 200
-- transport advances, resets; cameras, overlays and modes switch
-- **determinism**: forwards and backwards sampling of `sampleAt` are equal
-- **rig integrity**: four wheels, two steering pivots, body, glass and sensor
-  assembly all present after export; `CONTINUA_Paint_White`, `CONTINUA_Glass_Tint`
-  and `CONTINUA_Rubber` materials present
-- wheel angle equals `distance / 0.405 m`; steering varies with curvature
-- frames are genuinely produced
-
-### Planned handoff sequence (preview model)
-
-| t | from → to |
+| Feature | Why |
 | --- | --- |
-| 0.0 s | — → wired (docked) |
-| 9.7 s | wired → Wi-Fi |
-| 41.6 s | Wi-Fi → 5G |
-| 71.9 s | 5G → satellite |
+| Linux emulation topology (namespaces, veth, netem, tbf, both directions) | Scripts written and parse cleanly, **never executed**: no passwordless sudo on the dev host |
+| MPTCP endpoint configuration and subflow verification | **Impossible here** — the WSL2 kernel has `CONFIG_MPTCP` unset |
+| Mininet-WiFi topologies | Not installed |
 
-Run duration 100.1 s over 917 m.
+## Planned / not done
 
-## Defects found and fixed during this phase
+Emulation execution on a suitable Linux host; calibrating the learned
+predictor; a tree model; real propagation modelling; congestion control in the
+simulator; multi-user API auth; run-storage retention; Phase 3 video capture.
 
-Recorded because each was invisible in a Blender render and only showed up under
-inspection:
+---
 
-1. **Front wheels 1.4 m out of position.** `matrix_parent_inverse =
-   parent.matrix_world.inverted()` reads a stale matrix in background Blender,
-   doubling the offset. Now parented with an explicit local transform.
-2. **Every road ribbon invisible.** The triangle winding produced a −Y normal, so
-   the carriageway, shoulder and apron were all back-face culled. Reversed.
-3. **Mirrored identification text.** Viewed from the +Y flank the nose is on the
-   observer's left, so that side must read along −X.
-4. **Headlamp lenses rendered as dark discs** — an opaque chrome ring sat in
-   front of them.
-5. **Hollow glass cabin** you could see straight through. Fixed by modelling an
-   interior whose seat backs rise above the beltline.
-6. **HUD panels frozen on their first value.** `useSyncExternalStore` cannot
-   observe a ref mutated inside `useFrame`; replaced with an interval + state.
-7. **Checkpoint supervisor died on launch**, silently. `--branch` was passed
-   after the subcommand, which argparse rejects; the parent had already printed
-   "started". Now the argument order is correct and start verifies liveness.
-8. **Mission began on satellite instead of wired** — the dock stood 27 m from the
-   route origin, outside tether range.
-9. **Ridge silhouettes cut through the terrain** as a grey band; moved beyond the
-   terrain bounds.
-10. **`.env.example` refused by the secret-path guard** — a naive `.env` prefix
-    match. Now exact-name and directory-prefix matching.
-11. **No favicon.** Only visible on the real-GPU test project: headless shell
-    does not request `/favicon.ico`, full Chrome does, and the resulting 404
-    failed the no-console-errors assertion. Added `apps/web/src/app/icon.svg`.
+# Measured results
 
-## Not done in Phase 1 (by design)
+## Experiment scale actually completed
 
-- The predictive network engine. Everything network-related is a geometric
-  preview and is labelled as such.
-- Real measurements: `rssiDbm`, `latencyMs`, `jitterMs`, `lossPct`,
-  `throughputMbps` exist in the contract and are deliberately `undefined`.
-- Video capture and edit (Phase 3). The seams exist: deterministic clock,
-  `preserveDrawingBuffer`, `CaptureFrameRequest`.
-- Mobile/touch layout. The app is responsive down to 1280×720; below that it
-  reflows but has not been designed.
-- Dark mode.
+| | |
+| --- | --- |
+| Core scenarios | 6 (`wifi-degradation`, `sudden-failure`, `cellular-congestion`, `satellite-fallback`, `flapping`, `total-loss`) |
+| Policies per scenario | 6 |
+| Paired trials per scenario | **20** (seeds 70 000–70 019, `test` block) |
+| Runs completed | **720 / 720**, 0 failures |
+| Plus | 10-scenario smoke pass (2 trials), and a 20-trial learned-predictor comparison |
+| Wall time | ~25 min for the core matrix |
 
-## Known limitations
+## Headline — `wifi-degradation`, 20 paired trials
 
-- **Terrain is generated on the main thread at mount** (~29k vertices). It costs
-  roughly 150–250 ms of the initial load. A worker would remove the hitch.
-- **The survey wireframe is a single large `LineSegments`** and is not frustum
-  culled per-region.
-- **`useGLTF` caches per URL**, so switching quality to `low` fetches the LOD
-  model on first use rather than pre-loading it.
-- **The `gpu` Playwright project needs a locally installed Chrome.** The default
-  projects fall back to SwiftShader, where the frame rate figure is meaningless.
-- **Satellite coverage is modelled as always-available outdoors.** Real terrain
-  masking and elevation angle are Phase 2 concerns.
-- **Zone boundaries are derived from route X positions**, so moving control
-  points sideways can shift a zone edge.
-- Only the light theme exists. The dark reference is recorded, not implemented.
+| Metric | B0 | B1 | B2 | **P1** | P1-noPred | P1-noApp |
+| --- | --- | --- | --- | --- | --- | --- |
+| Session reconnects | 1.00 | 0.00 | 0.00 | **0.00** | 0.00 | 0.00 |
+| Total interruption (s) | 7.32 | 1.02 | 0.16 | **0.16** | 0.16 | 0.16 |
+| Control deadline miss (%) | 34.63 | 33.32 | 31.81 | **31.54** | 31.50 | 34.70 |
+| Control p99 (ms) | 526 | 530 | 531 | **515** | 515 | 535 |
+| Video stall (ms) | 24 092 | 18 201 | 18 197 | **11 449** | 11 523 | 19 191 |
+| Telemetry miss (%) | 22.86 | 20.01 | 19.85 | **16.96** | 16.77 | 20.62 |
+| App health | 66.4 | 69.3 | **70.3** | 68.8 | 69.0 | 68.5 |
+| Satellite (MB) | 47.6 | 59.1 | 61.2 | **4.8** | 4.7 | 62.3 |
+| Cost units | 3.44 | 4.77 | 4.31 | **1.25** | 1.23 | 4.78 |
+| Handovers | 3.0 | 3.6 | 5.5 | 5.3 | 4.3 | 6.2 |
+
+**CONTINUA matches always-on redundancy (B2) on continuity — 0 reconnects,
+0.16 s interruption — using 4.8 MB of satellite instead of 61.2 MB (−92 %) and
+1.25 cost units instead of 4.31 (−71 %), with 37 % less video stall.**
+
+## Where CONTINUA wins hardest — `cellular-congestion`
+
+Availability stays high, so a coverage-only policy sees nothing wrong while
+queues build:
+
+| Metric | B0 | B1 | B2 | **P1** |
+| --- | --- | --- | --- | --- |
+| Control deadline miss (%) | 54.40 | 52.50 | 49.16 | **31.46** |
+| App health | 54.6 | 57.3 | 59.2 | **68.9** |
+| Video stall (ms) | 26 905 | 21 169 | 20 800 | **11 326** |
+| Satellite (MB) | 47.6 | 61.4 | 63.8 | **4.8** |
+| Cost units | 3.34 | 4.98 | 4.36 | **1.15** |
+
+## Negative and inconclusive results — reported, not buried
+
+**1. Prediction does not pay for itself.** The `P1 − P1-noPred` ablation is a
+wash at both predictor qualities tested:
+
+| | P1 heuristic | P1 learned | P1-noPred |
+| --- | --- | --- | --- |
+| Prediction recall | 0.14 | **0.78** | — |
+| Prediction precision | — | 0.65 | — |
+| False positives / run | 7.5 | **101.4** | 0 |
+| Unnecessary handovers | 0.15 | 1.25 | 0 |
+| Total interruption (s) | 0.16 | 0.16 | 0.16 |
+| Control miss (%) | 31.54 | 31.38 | 31.50 |
+| Cost units | 1.25 | **1.08** | 1.23 |
+| App health | 68.8 | 67.9 | **69.0** |
+
+Raising recall from 0.14 to 0.78 bought a 12 % cost reduction and cost 1.1
+points of app health, for ~101 false alarms per run.
+
+**Why:** both P1 and P1-noPred **pre-warm a backup proactively**. That is what
+removes the interruption, with or without a prediction. The predictor only
+decides whether to switch *early*, and switching early is not free. **The value
+is in preparation and application-awareness, not in prediction.**
+
+**2. B2 scores marginally higher on the composite health score** in four of six
+scenarios (e.g. 70.3 vs 68.8). CONTINUA deliberately defers bulk transfer to
+protect control and video; bulk carries weight 0.05 in `app_health_v1`, so the
+composite penalises the trade that the per-class numbers show is worth making.
+
+**3. `sudden-failure` shows no prediction benefit**, as predicted in the method
+document — a 200 ms drop with no preceding trend is not forecastable.
+
+**4. `total-loss` shows no policy difference in outage duration** (10.78 s for
+every multipath policy). Correct: no policy can carry a session through a total
+outage, and a difference here would be a bug.
+
+**5. Confidence intervals are wide** at 20 trials. Differences under a few
+percent are inconclusive and are not claimed as wins.
+
+## Learned predictor
+
+Held-out tuning runs, threshold 0.45 chosen on tuning:
+
+| | Precision | Recall | F1 |
+| --- | --- | --- | --- |
+| **Learned logistic** | **0.874** | **0.677** | **0.763** |
+| Heuristic trend | 0.800 | 0.121 | 0.211 |
+
+Brier 0.1896 vs base-rate 0.2485; **mean absolute calibration error 0.136**, so
+`calibrated: false` and the UI labels the score uncalibrated. Details in
+[`MODEL_CARD.md`](MODEL_CARD.md).
+
+## Verification
+
+| Suite | Result |
+| --- | --- |
+| `npm run lint` | clean, zero warnings |
+| `npm run typecheck` | clean |
+| `npm run build` | 8 routes, compiles |
+| `npm run test:engine` | **36 passed** |
+| `npm run test:phase2` | **11 passed** |
+| `npm run test:smoke` (Phase 1 scene, 3 viewports) | **11 passed** |
+
+## Rendering performance (unchanged from Phase 1, and kept separate from network metrics)
+
+**233.8 / 226.3 fps** at 1920×1080, `high` quality, on ANGLE / Intel(R) Graphics
+`0x00007D67` (D3D11, integrated), uncapped rAF. 131 draw calls, 2.28 MB of
+runtime assets.
+
+---
+
+# Defects found and fixed in Phase 2
+
+Recorded because each was found by looking at output, not by reading code:
+
+1. **Retransmission storm.** A fixed 120 ms RTO against the satellite path's
+   620 ms RTT retransmitted every control packet forever — 122 491 retransmits
+   for 2 100 packets. Replaced with a Jacobson/Karels adaptive RTO, bounded
+   attempts, and no retransmission past a deadline.
+2. **Switch thrashing.** The controller would move to a backup on any measured
+   violation, even when the backup was worse, producing 13 handovers per run. It
+   now requires the candidate to actually be better, plus a 0.4 s risk debounce.
+3. **Video goodput counted twice** — per packet *and* per completed frame —
+   producing a nonsensical **−12.7 % overhead**.
+4. **Prediction precision of 0.997 that meant nothing.** Predictions were being
+   scored while the carrying path was *already* in violation. Once on satellite
+   the path is permanently past the control deadline, so "predicting" it was
+   free. Now scored only on transitions; heuristic recall fell to 0.14, which is
+   the honest number.
+5. **Throttle actions emitted every step** while a throttle stayed in force,
+   burying real events under ~2 200 repeats per run.
+6. **`rssiDbm` guarded on the wrong field** in `engineSource`, publishing
+   `undefined` for links that have no RSSI at all — "present but unknown" rather
+   than "does not exist". Caught by a browser test.
+7. **React Compiler violations** in five components — setState inside effects and
+   a ref read during render. Fixed by deriving values instead, not by
+   suppressing the rules.
+8. **Application health computed 50×/s and discarded.** Building five Pydantic
+   models every 20 ms cost more than the rest of the step; now computed only
+   when an event is emitted. Run time fell from 9.6 s to ~1.5 s.
+
+---
+
+# Known limitations
+
+* **Emulation is unverified on this host** and MPTCP is impossible here. See
+  `docs/ASSUMPTIONS.md` §8.
+* **No congestion control** in the simulator. Queueing and loss are modelled;
+  TCP's reaction to them is not.
+* **Bulk transfer is fluid**, not packetised, so it has no latency distribution.
+* **The learned predictor is uncalibrated** and trained purely on synthetic data.
+* **`app_health_v1` weights are a product judgement**, not derived from anything.
+* **The strongest model feature (`coverage`) is synthetic** with no real-world
+  counterpart as implemented.
+* **20 trials** gives wide intervals; treat small gaps as inconclusive.
+* **The API is unauthenticated** (loopback-bound) and run storage is unbounded.
+* **Live-run seeking rebuilds and fast-forwards**, taking ~1–2 s on a long run.
+* **Cellular and satellite are shaped access profiles**, not radio, core-network
+  or constellation simulations.
+
+---
+
+# Phase 1 summary (unchanged)
+
+Vehicle: `CONTINUA Rover Mk1`, 38 120 triangles, generated by
+`scripts/blender/build_vehicle.py`; hero `.glb` 1.39 MB, LOD 549 KB. World: a
+917 m route through four zones with terrain whose `height(x, z)` is the single
+elevation authority. Deterministic scene clock, four cameras, all pure functions
+of time. Full detail in [`PHASE_1_HANDOFF.md`](PHASE_1_HANDOFF.md).

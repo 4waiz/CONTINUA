@@ -1,0 +1,3058 @@
+{
+  "experiment_id": "exp-3219488319",
+  "scenario_id": "reverse-run",
+  "seed_block": "test",
+  "seeds": [
+    70000,
+    70001
+  ],
+  "trials_requested": 2,
+  "trials_completed": {
+    "B0": 2,
+    "B1": 2,
+    "B2": 2,
+    "P1": 2,
+    "P1-noPred": 2,
+    "P1-noApp": 2
+  },
+  "policies": [
+    "B0",
+    "B1",
+    "B2",
+    "P1",
+    "P1-noPred",
+    "P1-noApp"
+  ],
+  "predictor": "heuristic",
+  "horizon_s": 3.0,
+  "started_at": "2026-09-08T11:35:58.335982+00:00",
+  "finished_at": "2026-09-08T11:36:16.222802+00:00",
+  "code_commit": "ae8fc4533986f96336a2e9604e0d64bf30dd5789",
+  "failures": [],
+  "aggregate": {
+    "B0": {
+      "session_reconnects": {
+        "n": 2,
+        "mean": 1.0,
+        "sd": 0.0,
+        "ci95_low": 1.0,
+        "ci95_high": 1.0,
+        "min": 1.0,
+        "max": 1.0
+      },
+      "total_interruption_s": {
+        "n": 2,
+        "mean": 4.5,
+        "sd": 0.0,
+        "ci95_low": 4.5,
+        "ci95_high": 4.5,
+        "min": 4.5,
+        "max": 4.5
+      },
+      "longest_interruption_s": {
+        "n": 2,
+        "mean": 4.5,
+        "sd": 0.0,
+        "ci95_low": 4.5,
+        "ci95_high": 4.5,
+        "min": 4.5,
+        "max": 4.5
+      },
+      "control_deadline_miss_pct": {
+        "n": 2,
+        "mean": 100.0,
+        "sd": 0.0,
+        "ci95_low": 100.0,
+        "ci95_high": 100.0,
+        "min": 100.0,
+        "max": 100.0
+      },
+      "control_p95_latency_ms": {
+        "n": 2,
+        "mean": 1239.4505,
+        "sd": 6.1469,
+        "ci95_low": 1230.9314,
+        "ci95_high": 1247.9696,
+        "min": 1235.104,
+        "max": 1243.797
+      },
+      "control_p99_latency_ms": {
+        "n": 2,
+        "mean": 1328.1275,
+        "sd": 20.8858,
+        "ci95_low": 1299.1812,
+        "ci95_high": 1357.0738,
+        "min": 1313.359,
+        "max": 1342.896
+      },
+      "voice_deadline_miss_pct": {
+        "n": 2,
+        "mean": 100.0,
+        "sd": 0.0,
+        "ci95_low": 100.0,
+        "ci95_high": 100.0,
+        "min": 100.0,
+        "max": 100.0
+      },
+      "telemetry_deadline_miss_pct": {
+        "n": 2,
+        "mean": 85.1896,
+        "sd": 0.4422,
+        "ci95_low": 84.5767,
+        "ci95_high": 85.8025,
+        "min": 84.8769,
+        "max": 85.5023
+      },
+      "video_stall_ms": {
+        "n": 2,
+        "mean": 87950.0,
+        "sd": 381.8377,
+        "ci95_low": 87420.8,
+        "ci95_high": 88479.2,
+        "min": 87680.0,
+        "max": 88220.0
+      },
+      "video_frame_delivery_pct": {
+        "n": 2,
+        "mean": 3.619,
+        "sd": 0.0,
+        "ci95_low": 3.619,
+        "ci95_high": 3.619,
+        "min": 3.619,
+        "max": 3.619
+      },
+      "bulk_bytes_completed": {
+        "n": 2,
+        "mean": 93300539.5,
+        "sd": 82522.8969,
+        "ci95_low": 93186168.6,
+        "ci95_high": 93414910.4,
+        "min": 93242187.0,
+        "max": 93358892.0
+      },
+      "app_health_score": {
+        "n": 2,
+        "mean": 6.05,
+        "sd": 0.0707,
+        "ci95_low": 5.952,
+        "ci95_high": 6.148,
+        "min": 6.0,
+        "max": 6.1
+      },
+      "satellite_bytes": {
+        "n": 2,
+        "mean": 133124327.0,
+        "sd": 0.0,
+        "ci95_low": 133124327.0,
+        "ci95_high": 133124327.0,
+        "min": 133124327.0,
+        "max": 133124327.0
+      },
+      "total_link_bytes": {
+        "n": 2,
+        "mean": 133124327.0,
+        "sd": 0.0,
+        "ci95_low": 133124327.0,
+        "ci95_high": 133124327.0,
+        "min": 133124327.0,
+        "max": 133124327.0
+      },
+      "overhead_pct": {
+        "n": 2,
+        "mean": 28.2845,
+        "sd": 0.0559,
+        "ci95_low": 28.2071,
+        "ci95_high": 28.3619,
+        "min": 28.245,
+        "max": 28.324
+      },
+      "cost_units": {
+        "n": 2,
+        "mean": 8.3375,
+        "sd": 0.0,
+        "ci95_low": 8.3375,
+        "ci95_high": 8.3375,
+        "min": 8.3375,
+        "max": 8.3375
+      },
+      "handovers": {
+        "n": 2,
+        "mean": 0.0,
+        "sd": 0.0,
+        "ci95_low": 0.0,
+        "ci95_high": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "unnecessary_handovers": {
+        "n": 2,
+        "mean": 0.0,
+        "sd": 0.0,
+        "ci95_low": 0.0,
+        "ci95_high": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "backup_activations": {
+        "n": 2,
+        "mean": 0.0,
+        "sd": 0.0,
+        "ci95_low": 0.0,
+        "ci95_high": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "prediction_precision": {
+        "n": 0,
+        "mean": null,
+        "note": "no samples"
+      },
+      "prediction_recall": {
+        "n": 0,
+        "mean": null,
+        "note": "no samples"
+      },
+      "prediction_false_positives": {
+        "n": 2,
+        "mean": 0.0,
+        "sd": 0.0,
+        "ci95_low": 0.0,
+        "ci95_high": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "prediction_false_negatives": {
+        "n": 2,
+        "mean": 0.0,
+        "sd": 0.0,
+        "ci95_low": 0.0,
+        "ci95_high": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      }
+    },
+    "B1": {
+      "session_reconnects": {
+        "n": 2,
+        "mean": 1.0,
+        "sd": 0.0,
+        "ci95_low": 1.0,
+        "ci95_high": 1.0,
+        "min": 1.0,
+        "max": 1.0
+      },
+      "total_interruption_s": {
+        "n": 2,
+        "mean": 4.5,
+        "sd": 0.0,
+        "ci95_low": 4.5,
+        "ci95_high": 4.5,
+        "min": 4.5,
+        "max": 4.5
+      },
+      "longest_interruption_s": {
+        "n": 2,
+        "mean": 4.5,
+        "sd": 0.0,
+        "ci95_low": 4.5,
+        "ci95_high": 4.5,
+        "min": 4.5,
+        "max": 4.5
+      },
+      "control_deadline_miss_pct": {
+        "n": 2,
+        "mean": 33.3956,
+        "sd": 1.3917,
+        "ci95_low": 31.4668,
+        "ci95_high": 35.3243,
+        "min": 32.4115,
+        "max": 34.3796
+      },
+      "control_p95_latency_ms": {
+        "n": 2,
+        "mean": 480.762,
+        "sd": 10.1809,
+        "ci95_low": 466.652,
+        "ci95_high": 494.872,
+        "min": 473.563,
+        "max": 487.961
+      },
+      "control_p99_latency_ms": {
+        "n": 2,
+        "mean": 539.688,
+        "sd": 12.9528,
+        "ci95_low": 521.7364,
+        "ci95_high": 557.6396,
+        "min": 530.529,
+        "max": 548.847
+      },
+      "voice_deadline_miss_pct": {
+        "n": 2,
+        "mean": 32.9443,
+        "sd": 1.6545,
+        "ci95_low": 30.6513,
+        "ci95_high": 35.2373,
+        "min": 31.7744,
+        "max": 34.1142
+      },
+      "telemetry_deadline_miss_pct": {
+        "n": 2,
+        "mean": 21.6286,
+        "sd": 0.9166,
+        "ci95_low": 20.3582,
+        "ci95_high": 22.8989,
+        "min": 20.9804,
+        "max": 22.2767
+      },
+      "video_stall_ms": {
+        "n": 2,
+        "mean": 20590.0,
+        "sd": 608.1118,
+        "ci95_low": 19747.2,
+        "ci95_high": 21432.8,
+        "min": 20160.0,
+        "max": 21020.0
+      },
+      "video_frame_delivery_pct": {
+        "n": 2,
+        "mean": 63.9525,
+        "sd": 1.5493,
+        "ci95_low": 61.8053,
+        "ci95_high": 66.0997,
+        "min": 62.857,
+        "max": 65.048
+      },
+      "bulk_bytes_completed": {
+        "n": 2,
+        "mean": 145885069.5,
+        "sd": 242539.7473,
+        "ci95_low": 145548926.56,
+        "ci95_high": 146221212.44,
+        "min": 145713568.0,
+        "max": 146056571.0
+      },
+      "app_health_score": {
+        "n": 2,
+        "mean": 69.05,
+        "sd": 1.3435,
+        "ci95_low": 67.188,
+        "ci95_high": 70.912,
+        "min": 68.1,
+        "max": 70.0
+      },
+      "satellite_bytes": {
+        "n": 2,
+        "mean": 52897980.0,
+        "sd": 3132511.3249,
+        "ci95_low": 48556540.8,
+        "ci95_high": 57239419.2,
+        "min": 50682960.0,
+        "max": 55113000.0
+      },
+      "total_link_bytes": {
+        "n": 2,
+        "mean": 174217142.0,
+        "sd": 1224.7089,
+        "ci95_low": 174215444.64,
+        "ci95_high": 174218839.36,
+        "min": 174216276.0,
+        "max": 174218008.0
+      },
+      "overhead_pct": {
+        "n": 2,
+        "mean": 7.0095,
+        "sd": 0.3429,
+        "ci95_low": 6.5342,
+        "ci95_high": 7.4848,
+        "min": 6.767,
+        "max": 7.252
+      },
+      "cost_units": {
+        "n": 2,
+        "mean": 4.5739,
+        "sd": 0.187,
+        "ci95_low": 4.3148,
+        "ci95_high": 4.833,
+        "min": 4.4417,
+        "max": 4.7061
+      },
+      "handovers": {
+        "n": 2,
+        "mean": 3.5,
+        "sd": 0.7071,
+        "ci95_low": 2.52,
+        "ci95_high": 4.48,
+        "min": 3.0,
+        "max": 4.0
+      },
+      "unnecessary_handovers": {
+        "n": 2,
+        "mean": 0.0,
+        "sd": 0.0,
+        "ci95_low": 0.0,
+        "ci95_high": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "backup_activations": {
+        "n": 2,
+        "mean": 5.5,
+        "sd": 0.7071,
+        "ci95_low": 4.52,
+        "ci95_high": 6.48,
+        "min": 5.0,
+        "max": 6.0
+      },
+      "prediction_precision": {
+        "n": 0,
+        "mean": null,
+        "note": "no samples"
+      },
+      "prediction_recall": {
+        "n": 0,
+        "mean": null,
+        "note": "no samples"
+      },
+      "prediction_false_positives": {
+        "n": 2,
+        "mean": 0.0,
+        "sd": 0.0,
+        "ci95_low": 0.0,
+        "ci95_high": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "prediction_false_negatives": {
+        "n": 2,
+        "mean": 0.0,
+        "sd": 0.0,
+        "ci95_low": 0.0,
+        "ci95_high": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      }
+    },
+    "B2": {
+      "session_reconnects": {
+        "n": 2,
+        "mean": 1.0,
+        "sd": 0.0,
+        "ci95_low": 1.0,
+        "ci95_high": 1.0,
+        "min": 1.0,
+        "max": 1.0
+      },
+      "total_interruption_s": {
+        "n": 2,
+        "mean": 4.5,
+        "sd": 0.0,
+        "ci95_low": 4.5,
+        "ci95_high": 4.5,
+        "min": 4.5,
+        "max": 4.5
+      },
+      "longest_interruption_s": {
+        "n": 2,
+        "mean": 4.5,
+        "sd": 0.0,
+        "ci95_low": 4.5,
+        "ci95_high": 4.5,
+        "min": 4.5,
+        "max": 4.5
+      },
+      "control_deadline_miss_pct": {
+        "n": 2,
+        "mean": 31.9047,
+        "sd": 0.2029,
+        "ci95_low": 31.6236,
+        "ci95_high": 32.1859,
+        "min": 31.7613,
+        "max": 32.0482
+      },
+      "control_p95_latency_ms": {
+        "n": 2,
+        "mean": 475.7755,
+        "sd": 0.2949,
+        "ci95_low": 475.3668,
+        "ci95_high": 476.1842,
+        "min": 475.567,
+        "max": 475.984
+      },
+      "control_p99_latency_ms": {
+        "n": 2,
+        "mean": 533.6825,
+        "sd": 0.9185,
+        "ci95_low": 532.4095,
+        "ci95_high": 534.9555,
+        "min": 533.033,
+        "max": 534.332
+      },
+      "voice_deadline_miss_pct": {
+        "n": 2,
+        "mean": 33.2486,
+        "sd": 0.2315,
+        "ci95_low": 32.9277,
+        "ci95_high": 33.5695,
+        "min": 33.0849,
+        "max": 33.4123
+      },
+      "telemetry_deadline_miss_pct": {
+        "n": 2,
+        "mean": 21.9272,
+        "sd": 0.8032,
+        "ci95_low": 20.814,
+        "ci95_high": 23.0403,
+        "min": 21.3592,
+        "max": 22.4951
+      },
+      "video_stall_ms": {
+        "n": 2,
+        "mean": 20520.0,
+        "sd": 1103.0866,
+        "ci95_low": 18991.2,
+        "ci95_high": 22048.8,
+        "min": 19740.0,
+        "max": 21300.0
+      },
+      "video_frame_delivery_pct": {
+        "n": 2,
+        "mean": 64.0955,
+        "sd": 0.763,
+        "ci95_low": 63.0381,
+        "ci95_high": 65.1529,
+        "min": 63.556,
+        "max": 64.635
+      },
+      "bulk_bytes_completed": {
+        "n": 2,
+        "mean": 146128971.5,
+        "sd": 642869.6656,
+        "ci95_low": 145237999.6,
+        "ci95_high": 147019943.4,
+        "min": 145674394.0,
+        "max": 146583549.0
+      },
+      "app_health_score": {
+        "n": 2,
+        "mean": 69.6,
+        "sd": 0.2828,
+        "ci95_low": 69.208,
+        "ci95_high": 69.992,
+        "min": 69.4,
+        "max": 69.8
+      },
+      "satellite_bytes": {
+        "n": 2,
+        "mean": 53275700.0,
+        "sd": 377651.5897,
+        "ci95_low": 52752301.6,
+        "ci95_high": 53799098.4,
+        "min": 53008660.0,
+        "max": 53542740.0
+      },
+      "total_link_bytes": {
+        "n": 2,
+        "mean": 174584536.0,
+        "sd": 622.254,
+        "ci95_low": 174583673.6,
+        "ci95_high": 174585398.4,
+        "min": 174584096.0,
+        "max": 174584976.0
+      },
+      "overhead_pct": {
+        "n": 2,
+        "mean": 7.0425,
+        "sd": 0.4716,
+        "ci95_low": 6.3888,
+        "ci95_high": 7.6962,
+        "min": 6.709,
+        "max": 7.376
+      },
+      "cost_units": {
+        "n": 2,
+        "mean": 3.853,
+        "sd": 0.018,
+        "ci95_low": 3.8281,
+        "ci95_high": 3.8779,
+        "min": 3.8403,
+        "max": 3.8657
+      },
+      "handovers": {
+        "n": 2,
+        "mean": 7.5,
+        "sd": 2.1213,
+        "ci95_low": 4.56,
+        "ci95_high": 10.44,
+        "min": 6.0,
+        "max": 9.0
+      },
+      "unnecessary_handovers": {
+        "n": 2,
+        "mean": 0.0,
+        "sd": 0.0,
+        "ci95_low": 0.0,
+        "ci95_high": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "backup_activations": {
+        "n": 2,
+        "mean": 3.0,
+        "sd": 0.0,
+        "ci95_low": 3.0,
+        "ci95_high": 3.0,
+        "min": 3.0,
+        "max": 3.0
+      },
+      "prediction_precision": {
+        "n": 0,
+        "mean": null,
+        "note": "no samples"
+      },
+      "prediction_recall": {
+        "n": 0,
+        "mean": null,
+        "note": "no samples"
+      },
+      "prediction_false_positives": {
+        "n": 2,
+        "mean": 0.0,
+        "sd": 0.0,
+        "ci95_low": 0.0,
+        "ci95_high": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "prediction_false_negatives": {
+        "n": 2,
+        "mean": 0.0,
+        "sd": 0.0,
+        "ci95_low": 0.0,
+        "ci95_high": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      }
+    },
+    "P1": {
+      "session_reconnects": {
+        "n": 2,
+        "mean": 1.0,
+        "sd": 0.0,
+        "ci95_low": 1.0,
+        "ci95_high": 1.0,
+        "min": 1.0,
+        "max": 1.0
+      },
+      "total_interruption_s": {
+        "n": 2,
+        "mean": 4.5,
+        "sd": 0.0,
+        "ci95_low": 4.5,
+        "ci95_high": 4.5,
+        "min": 4.5,
+        "max": 4.5
+      },
+      "longest_interruption_s": {
+        "n": 2,
+        "mean": 4.5,
+        "sd": 0.0,
+        "ci95_low": 4.5,
+        "ci95_high": 4.5,
+        "min": 4.5,
+        "max": 4.5
+      },
+      "control_deadline_miss_pct": {
+        "n": 2,
+        "mean": 32.0664,
+        "sd": 0.045,
+        "ci95_low": 32.0041,
+        "ci95_high": 32.1287,
+        "min": 32.0346,
+        "max": 32.0982
+      },
+      "control_p95_latency_ms": {
+        "n": 2,
+        "mean": 460.5195,
+        "sd": 0.3571,
+        "ci95_low": 460.0246,
+        "ci95_high": 461.0144,
+        "min": 460.267,
+        "max": 460.772
+      },
+      "control_p99_latency_ms": {
+        "n": 2,
+        "mean": 519.3255,
+        "sd": 2.3115,
+        "ci95_low": 516.1219,
+        "ci95_high": 522.5291,
+        "min": 517.691,
+        "max": 520.96
+      },
+      "voice_deadline_miss_pct": {
+        "n": 2,
+        "mean": 31.2107,
+        "sd": 0.1488,
+        "ci95_low": 31.0044,
+        "ci95_high": 31.4169,
+        "min": 31.1054,
+        "max": 31.3159
+      },
+      "telemetry_deadline_miss_pct": {
+        "n": 2,
+        "mean": 17.0846,
+        "sd": 1.0974,
+        "ci95_low": 15.5636,
+        "ci95_high": 18.6056,
+        "min": 16.3086,
+        "max": 17.8606
+      },
+      "video_stall_ms": {
+        "n": 2,
+        "mean": 13530.0,
+        "sd": 862.6703,
+        "ci95_low": 12334.4,
+        "ci95_high": 14725.6,
+        "min": 12920.0,
+        "max": 14140.0
+      },
+      "video_frame_delivery_pct": {
+        "n": 2,
+        "mean": 68.8255,
+        "sd": 0.1351,
+        "ci95_low": 68.6383,
+        "ci95_high": 69.0127,
+        "min": 68.73,
+        "max": 68.921
+      },
+      "bulk_bytes_completed": {
+        "n": 2,
+        "mean": 69014456.0,
+        "sd": 232991.6844,
+        "ci95_low": 68691546.0,
+        "ci95_high": 69337366.0,
+        "min": 68849706.0,
+        "max": 69179206.0
+      },
+      "app_health_score": {
+        "n": 2,
+        "mean": 69.35,
+        "sd": 0.2121,
+        "ci95_low": 69.056,
+        "ci95_high": 69.644,
+        "min": 69.2,
+        "max": 69.5
+      },
+      "satellite_bytes": {
+        "n": 2,
+        "mean": 3855558.0,
+        "sd": 13884.7488,
+        "ci95_low": 3836314.72,
+        "ci95_high": 3874801.28,
+        "min": 3845740.0,
+        "max": 3865376.0
+      },
+      "total_link_bytes": {
+        "n": 2,
+        "mean": 87845100.0,
+        "sd": 297510.9355,
+        "ci95_low": 87432770.88,
+        "ci95_high": 88257429.12,
+        "min": 87634728.0,
+        "max": 88055472.0
+      },
+      "overhead_pct": {
+        "n": 2,
+        "mean": 4.839,
+        "sd": 0.099,
+        "ci95_low": 4.7018,
+        "ci95_high": 4.9762,
+        "min": 4.769,
+        "max": 4.909
+      },
+      "cost_units": {
+        "n": 2,
+        "mean": 1.4363,
+        "sd": 0.0022,
+        "ci95_low": 1.4332,
+        "ci95_high": 1.4393,
+        "min": 1.4347,
+        "max": 1.4378
+      },
+      "handovers": {
+        "n": 2,
+        "mean": 3.5,
+        "sd": 0.7071,
+        "ci95_low": 2.52,
+        "ci95_high": 4.48,
+        "min": 3.0,
+        "max": 4.0
+      },
+      "unnecessary_handovers": {
+        "n": 2,
+        "mean": 0.0,
+        "sd": 0.0,
+        "ci95_low": 0.0,
+        "ci95_high": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "backup_activations": {
+        "n": 2,
+        "mean": 6.0,
+        "sd": 0.0,
+        "ci95_low": 6.0,
+        "ci95_high": 6.0,
+        "min": 6.0,
+        "max": 6.0
+      },
+      "prediction_precision": {
+        "n": 2,
+        "mean": 0.7293,
+        "sd": 0.0685,
+        "ci95_low": 0.6344,
+        "ci95_high": 0.8243,
+        "min": 0.6809,
+        "max": 0.7778
+      },
+      "prediction_recall": {
+        "n": 2,
+        "mean": 0.1491,
+        "sd": 0.0508,
+        "ci95_low": 0.0786,
+        "ci95_high": 0.2195,
+        "min": 0.1131,
+        "max": 0.185
+      },
+      "prediction_false_positives": {
+        "n": 2,
+        "mean": 13.5,
+        "sd": 2.1213,
+        "ci95_low": 10.56,
+        "ci95_high": 16.44,
+        "min": 12.0,
+        "max": 15.0
+      },
+      "prediction_false_negatives": {
+        "n": 2,
+        "mean": 218.0,
+        "sd": 46.669,
+        "ci95_low": 153.32,
+        "ci95_high": 282.68,
+        "min": 185.0,
+        "max": 251.0
+      }
+    },
+    "P1-noPred": {
+      "session_reconnects": {
+        "n": 2,
+        "mean": 1.0,
+        "sd": 0.0,
+        "ci95_low": 1.0,
+        "ci95_high": 1.0,
+        "min": 1.0,
+        "max": 1.0
+      },
+      "total_interruption_s": {
+        "n": 2,
+        "mean": 4.5,
+        "sd": 0.0,
+        "ci95_low": 4.5,
+        "ci95_high": 4.5,
+        "min": 4.5,
+        "max": 4.5
+      },
+      "longest_interruption_s": {
+        "n": 2,
+        "mean": 4.5,
+        "sd": 0.0,
+        "ci95_low": 4.5,
+        "ci95_high": 4.5,
+        "min": 4.5,
+        "max": 4.5
+      },
+      "control_deadline_miss_pct": {
+        "n": 2,
+        "mean": 32.3862,
+        "sd": 0.0911,
+        "ci95_low": 32.26,
+        "ci95_high": 32.5124,
+        "min": 32.3218,
+        "max": 32.4506
+      },
+      "control_p95_latency_ms": {
+        "n": 2,
+        "mean": 460.5195,
+        "sd": 0.3571,
+        "ci95_low": 460.0246,
+        "ci95_high": 461.0144,
+        "min": 460.267,
+        "max": 460.772
+      },
+      "control_p99_latency_ms": {
+        "n": 2,
+        "mean": 519.3255,
+        "sd": 2.3115,
+        "ci95_low": 516.1219,
+        "ci95_high": 522.5291,
+        "min": 517.691,
+        "max": 520.96
+      },
+      "voice_deadline_miss_pct": {
+        "n": 2,
+        "mean": 31.2811,
+        "sd": 0.1879,
+        "ci95_low": 31.0206,
+        "ci95_high": 31.5416,
+        "min": 31.1482,
+        "max": 31.414
+      },
+      "telemetry_deadline_miss_pct": {
+        "n": 2,
+        "mean": 17.1048,
+        "sd": 1.1934,
+        "ci95_low": 15.4509,
+        "ci95_high": 18.7588,
+        "min": 16.261,
+        "max": 17.9487
+      },
+      "video_stall_ms": {
+        "n": 2,
+        "mean": 13410.0,
+        "sd": 692.9646,
+        "ci95_low": 12449.6,
+        "ci95_high": 14370.4,
+        "min": 12920.0,
+        "max": 13900.0
+      },
+      "video_frame_delivery_pct": {
+        "n": 2,
+        "mean": 68.5715,
+        "sd": 0.5834,
+        "ci95_low": 67.763,
+        "ci95_high": 69.38,
+        "min": 68.159,
+        "max": 68.984
+      },
+      "bulk_bytes_completed": {
+        "n": 2,
+        "mean": 68299473.5,
+        "sd": 5560834.0984,
+        "ci95_low": 60592550.64,
+        "ci95_high": 76006396.36,
+        "min": 64367370.0,
+        "max": 72231577.0
+      },
+      "app_health_score": {
+        "n": 2,
+        "mean": 69.1,
+        "sd": 0.1414,
+        "ci95_low": 68.904,
+        "ci95_high": 69.296,
+        "min": 69.0,
+        "max": 69.2
+      },
+      "satellite_bytes": {
+        "n": 2,
+        "mean": 3847480.0,
+        "sd": 23306.2395,
+        "ci95_low": 3815179.2,
+        "ci95_high": 3879780.8,
+        "min": 3831000.0,
+        "max": 3863960.0
+      },
+      "total_link_bytes": {
+        "n": 2,
+        "mean": 87180092.0,
+        "sd": 5808124.189,
+        "ci95_low": 79130442.56,
+        "ci95_high": 95229741.44,
+        "min": 83073128.0,
+        "max": 91287056.0
+      },
+      "overhead_pct": {
+        "n": 2,
+        "mean": 4.9875,
+        "sd": 0.5325,
+        "ci95_low": 4.2496,
+        "ci95_high": 5.7254,
+        "min": 4.611,
+        "max": 5.364
+      },
+      "cost_units": {
+        "n": 2,
+        "mean": 1.445,
+        "sd": 0.0095,
+        "ci95_low": 1.4318,
+        "ci95_high": 1.4583,
+        "min": 1.4383,
+        "max": 1.4518
+      },
+      "handovers": {
+        "n": 2,
+        "mean": 3.5,
+        "sd": 0.7071,
+        "ci95_low": 2.52,
+        "ci95_high": 4.48,
+        "min": 3.0,
+        "max": 4.0
+      },
+      "unnecessary_handovers": {
+        "n": 2,
+        "mean": 0.0,
+        "sd": 0.0,
+        "ci95_low": 0.0,
+        "ci95_high": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "backup_activations": {
+        "n": 2,
+        "mean": 6.0,
+        "sd": 0.0,
+        "ci95_low": 6.0,
+        "ci95_high": 6.0,
+        "min": 6.0,
+        "max": 6.0
+      },
+      "prediction_precision": {
+        "n": 0,
+        "mean": null,
+        "note": "no samples"
+      },
+      "prediction_recall": {
+        "n": 0,
+        "mean": null,
+        "note": "no samples"
+      },
+      "prediction_false_positives": {
+        "n": 2,
+        "mean": 0.0,
+        "sd": 0.0,
+        "ci95_low": 0.0,
+        "ci95_high": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "prediction_false_negatives": {
+        "n": 2,
+        "mean": 0.0,
+        "sd": 0.0,
+        "ci95_low": 0.0,
+        "ci95_high": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      }
+    },
+    "P1-noApp": {
+      "session_reconnects": {
+        "n": 2,
+        "mean": 1.0,
+        "sd": 0.0,
+        "ci95_low": 1.0,
+        "ci95_high": 1.0,
+        "min": 1.0,
+        "max": 1.0
+      },
+      "total_interruption_s": {
+        "n": 2,
+        "mean": 4.5,
+        "sd": 0.0,
+        "ci95_low": 4.5,
+        "ci95_high": 4.5,
+        "min": 4.5,
+        "max": 4.5
+      },
+      "longest_interruption_s": {
+        "n": 2,
+        "mean": 4.5,
+        "sd": 0.0,
+        "ci95_low": 4.5,
+        "ci95_high": 4.5,
+        "min": 4.5,
+        "max": 4.5
+      },
+      "control_deadline_miss_pct": {
+        "n": 2,
+        "mean": 32.1263,
+        "sd": 0.0823,
+        "ci95_low": 32.0122,
+        "ci95_high": 32.2404,
+        "min": 32.0681,
+        "max": 32.1845
+      },
+      "control_p95_latency_ms": {
+        "n": 2,
+        "mean": 474.6985,
+        "sd": 1.6058,
+        "ci95_low": 472.4729,
+        "ci95_high": 476.9241,
+        "min": 473.563,
+        "max": 475.834
+      },
+      "control_p99_latency_ms": {
+        "n": 2,
+        "mean": 528.1195,
+        "sd": 3.4075,
+        "ci95_low": 523.3969,
+        "ci95_high": 532.8421,
+        "min": 525.71,
+        "max": 530.529
+      },
+      "voice_deadline_miss_pct": {
+        "n": 2,
+        "mean": 31.5774,
+        "sd": 0.1552,
+        "ci95_low": 31.3623,
+        "ci95_high": 31.7926,
+        "min": 31.4677,
+        "max": 31.6872
+      },
+      "telemetry_deadline_miss_pct": {
+        "n": 2,
+        "mean": 20.5467,
+        "sd": 0.4973,
+        "ci95_low": 19.8575,
+        "ci95_high": 21.236,
+        "min": 20.1951,
+        "max": 20.8984
+      },
+      "video_stall_ms": {
+        "n": 2,
+        "mean": 19400.0,
+        "sd": 1216.2237,
+        "ci95_low": 17714.4,
+        "ci95_high": 21085.6,
+        "min": 18540.0,
+        "max": 20260.0
+      },
+      "video_frame_delivery_pct": {
+        "n": 2,
+        "mean": 66.0,
+        "sd": 0.1344,
+        "ci95_low": 65.8138,
+        "ci95_high": 66.1862,
+        "min": 65.905,
+        "max": 66.095
+      },
+      "bulk_bytes_completed": {
+        "n": 2,
+        "mean": 146515773.5,
+        "sd": 333469.4367,
+        "ci95_low": 146053608.44,
+        "ci95_high": 146977938.56,
+        "min": 146279975.0,
+        "max": 146751572.0
+      },
+      "app_health_score": {
+        "n": 2,
+        "mean": 70.5,
+        "sd": 0.1414,
+        "ci95_low": 70.304,
+        "ci95_high": 70.696,
+        "min": 70.4,
+        "max": 70.6
+      },
+      "satellite_bytes": {
+        "n": 2,
+        "mean": 50309160.0,
+        "sd": 542888.3023,
+        "ci95_low": 49556755.2,
+        "ci95_high": 51061564.8,
+        "min": 49925280.0,
+        "max": 50693040.0
+      },
+      "total_link_bytes": {
+        "n": 2,
+        "mean": 174242246.0,
+        "sd": 845.6997,
+        "ci95_low": 174241073.92,
+        "ci95_high": 174243418.08,
+        "min": 174241648.0,
+        "max": 174242844.0
+      },
+      "overhead_pct": {
+        "n": 2,
+        "mean": 6.3895,
+        "sd": 0.1732,
+        "ci95_low": 6.1494,
+        "ci95_high": 6.6296,
+        "min": 6.267,
+        "max": 6.512
+      },
+      "cost_units": {
+        "n": 2,
+        "mean": 4.3392,
+        "sd": 0.0094,
+        "ci95_low": 4.3261,
+        "ci95_high": 4.3522,
+        "min": 4.3325,
+        "max": 4.3458
+      },
+      "handovers": {
+        "n": 2,
+        "mean": 3.5,
+        "sd": 0.7071,
+        "ci95_low": 2.52,
+        "ci95_high": 4.48,
+        "min": 3.0,
+        "max": 4.0
+      },
+      "unnecessary_handovers": {
+        "n": 2,
+        "mean": 0.0,
+        "sd": 0.0,
+        "ci95_low": 0.0,
+        "ci95_high": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "backup_activations": {
+        "n": 2,
+        "mean": 6.0,
+        "sd": 0.0,
+        "ci95_low": 6.0,
+        "ci95_high": 6.0,
+        "min": 6.0,
+        "max": 6.0
+      },
+      "prediction_precision": {
+        "n": 2,
+        "mean": 0.6319,
+        "sd": 0.4499,
+        "ci95_low": 0.0083,
+        "ci95_high": 1.2554,
+        "min": 0.3137,
+        "max": 0.95
+      },
+      "prediction_recall": {
+        "n": 2,
+        "mean": 0.1152,
+        "sd": 0.0556,
+        "ci95_low": 0.038,
+        "ci95_high": 0.1923,
+        "min": 0.0758,
+        "max": 0.1545
+      },
+      "prediction_false_positives": {
+        "n": 2,
+        "mean": 18.5,
+        "sd": 23.3345,
+        "ci95_low": -13.84,
+        "ci95_high": 50.84,
+        "min": 2.0,
+        "max": 35.0
+      },
+      "prediction_false_negatives": {
+        "n": 2,
+        "mean": 201.5,
+        "sd": 9.1924,
+        "ci95_low": 188.76,
+        "ci95_high": 214.24,
+        "min": 195.0,
+        "max": 208.0
+      }
+    }
+  },
+  "paired_deltas": {
+    "B0": {
+      "total_interruption_s": {
+        "n_pairs": 2,
+        "mean_delta_p1_minus_baseline": 0.0,
+        "p1_lower_in_pairs": 0,
+        "note": "negative means CONTINUA (P1) scored lower on this metric"
+      },
+      "session_reconnects": {
+        "n_pairs": 2,
+        "mean_delta_p1_minus_baseline": 0.0,
+        "p1_lower_in_pairs": 0,
+        "note": "negative means CONTINUA (P1) scored lower on this metric"
+      },
+      "control_deadline_miss_pct": {
+        "n_pairs": 2,
+        "mean_delta_p1_minus_baseline": -67.9336,
+        "p1_lower_in_pairs": 2,
+        "note": "negative means CONTINUA (P1) scored lower on this metric"
+      },
+      "video_stall_ms": {
+        "n_pairs": 2,
+        "mean_delta_p1_minus_baseline": -74420.0,
+        "p1_lower_in_pairs": 2,
+        "note": "negative means CONTINUA (P1) scored lower on this metric"
+      },
+      "satellite_bytes": {
+        "n_pairs": 2,
+        "mean_delta_p1_minus_baseline": -129268769.0,
+        "p1_lower_in_pairs": 2,
+        "note": "negative means CONTINUA (P1) scored lower on this metric"
+      },
+      "cost_units": {
+        "n_pairs": 2,
+        "mean_delta_p1_minus_baseline": -6.9013,
+        "p1_lower_in_pairs": 2,
+        "note": "negative means CONTINUA (P1) scored lower on this metric"
+      },
+      "app_health_score": {
+        "n_pairs": 2,
+        "mean_delta_p1_minus_baseline": 63.3,
+        "p1_lower_in_pairs": 0,
+        "note": "negative means CONTINUA (P1) scored lower on this metric"
+      },
+      "handovers": {
+        "n_pairs": 2,
+        "mean_delta_p1_minus_baseline": 3.5,
+        "p1_lower_in_pairs": 0,
+        "note": "negative means CONTINUA (P1) scored lower on this metric"
+      }
+    },
+    "B1": {
+      "total_interruption_s": {
+        "n_pairs": 2,
+        "mean_delta_p1_minus_baseline": 0.0,
+        "p1_lower_in_pairs": 0,
+        "note": "negative means CONTINUA (P1) scored lower on this metric"
+      },
+      "session_reconnects": {
+        "n_pairs": 2,
+        "mean_delta_p1_minus_baseline": 0.0,
+        "p1_lower_in_pairs": 0,
+        "note": "negative means CONTINUA (P1) scored lower on this metric"
+      },
+      "control_deadline_miss_pct": {
+        "n_pairs": 2,
+        "mean_delta_p1_minus_baseline": -1.3292,
+        "p1_lower_in_pairs": 2,
+        "note": "negative means CONTINUA (P1) scored lower on this metric"
+      },
+      "video_stall_ms": {
+        "n_pairs": 2,
+        "mean_delta_p1_minus_baseline": -7060.0,
+        "p1_lower_in_pairs": 2,
+        "note": "negative means CONTINUA (P1) scored lower on this metric"
+      },
+      "satellite_bytes": {
+        "n_pairs": 2,
+        "mean_delta_p1_minus_baseline": -49042422.0,
+        "p1_lower_in_pairs": 2,
+        "note": "negative means CONTINUA (P1) scored lower on this metric"
+      },
+      "cost_units": {
+        "n_pairs": 2,
+        "mean_delta_p1_minus_baseline": -3.1376,
+        "p1_lower_in_pairs": 2,
+        "note": "negative means CONTINUA (P1) scored lower on this metric"
+      },
+      "app_health_score": {
+        "n_pairs": 2,
+        "mean_delta_p1_minus_baseline": 0.3,
+        "p1_lower_in_pairs": 1,
+        "note": "negative means CONTINUA (P1) scored lower on this metric"
+      },
+      "handovers": {
+        "n_pairs": 2,
+        "mean_delta_p1_minus_baseline": 0.0,
+        "p1_lower_in_pairs": 0,
+        "note": "negative means CONTINUA (P1) scored lower on this metric"
+      }
+    },
+    "B2": {
+      "total_interruption_s": {
+        "n_pairs": 2,
+        "mean_delta_p1_minus_baseline": 0.0,
+        "p1_lower_in_pairs": 0,
+        "note": "negative means CONTINUA (P1) scored lower on this metric"
+      },
+      "session_reconnects": {
+        "n_pairs": 2,
+        "mean_delta_p1_minus_baseline": 0.0,
+        "p1_lower_in_pairs": 0,
+        "note": "negative means CONTINUA (P1) scored lower on this metric"
+      },
+      "control_deadline_miss_pct": {
+        "n_pairs": 2,
+        "mean_delta_p1_minus_baseline": 0.1616,
+        "p1_lower_in_pairs": 1,
+        "note": "negative means CONTINUA (P1) scored lower on this metric"
+      },
+      "video_stall_ms": {
+        "n_pairs": 2,
+        "mean_delta_p1_minus_baseline": -6990.0,
+        "p1_lower_in_pairs": 2,
+        "note": "negative means CONTINUA (P1) scored lower on this metric"
+      },
+      "satellite_bytes": {
+        "n_pairs": 2,
+        "mean_delta_p1_minus_baseline": -49420142.0,
+        "p1_lower_in_pairs": 2,
+        "note": "negative means CONTINUA (P1) scored lower on this metric"
+      },
+      "cost_units": {
+        "n_pairs": 2,
+        "mean_delta_p1_minus_baseline": -2.4167,
+        "p1_lower_in_pairs": 2,
+        "note": "negative means CONTINUA (P1) scored lower on this metric"
+      },
+      "app_health_score": {
+        "n_pairs": 2,
+        "mean_delta_p1_minus_baseline": -0.25,
+        "p1_lower_in_pairs": 2,
+        "note": "negative means CONTINUA (P1) scored lower on this metric"
+      },
+      "handovers": {
+        "n_pairs": 2,
+        "mean_delta_p1_minus_baseline": -4.0,
+        "p1_lower_in_pairs": 2,
+        "note": "negative means CONTINUA (P1) scored lower on this metric"
+      }
+    },
+    "P1-noPred": {
+      "total_interruption_s": {
+        "n_pairs": 2,
+        "mean_delta_p1_minus_baseline": 0.0,
+        "p1_lower_in_pairs": 0,
+        "note": "negative means CONTINUA (P1) scored lower on this metric"
+      },
+      "session_reconnects": {
+        "n_pairs": 2,
+        "mean_delta_p1_minus_baseline": 0.0,
+        "p1_lower_in_pairs": 0,
+        "note": "negative means CONTINUA (P1) scored lower on this metric"
+      },
+      "control_deadline_miss_pct": {
+        "n_pairs": 2,
+        "mean_delta_p1_minus_baseline": -0.3198,
+        "p1_lower_in_pairs": 2,
+        "note": "negative means CONTINUA (P1) scored lower on this metric"
+      },
+      "video_stall_ms": {
+        "n_pairs": 2,
+        "mean_delta_p1_minus_baseline": 120.0,
+        "p1_lower_in_pairs": 0,
+        "note": "negative means CONTINUA (P1) scored lower on this metric"
+      },
+      "satellite_bytes": {
+        "n_pairs": 2,
+        "mean_delta_p1_minus_baseline": 8078.0,
+        "p1_lower_in_pairs": 0,
+        "note": "negative means CONTINUA (P1) scored lower on this metric"
+      },
+      "cost_units": {
+        "n_pairs": 2,
+        "mean_delta_p1_minus_baseline": -0.0088,
+        "p1_lower_in_pairs": 2,
+        "note": "negative means CONTINUA (P1) scored lower on this metric"
+      },
+      "app_health_score": {
+        "n_pairs": 2,
+        "mean_delta_p1_minus_baseline": 0.25,
+        "p1_lower_in_pairs": 0,
+        "note": "negative means CONTINUA (P1) scored lower on this metric"
+      },
+      "handovers": {
+        "n_pairs": 2,
+        "mean_delta_p1_minus_baseline": 0.0,
+        "p1_lower_in_pairs": 0,
+        "note": "negative means CONTINUA (P1) scored lower on this metric"
+      }
+    },
+    "P1-noApp": {
+      "total_interruption_s": {
+        "n_pairs": 2,
+        "mean_delta_p1_minus_baseline": 0.0,
+        "p1_lower_in_pairs": 0,
+        "note": "negative means CONTINUA (P1) scored lower on this metric"
+      },
+      "session_reconnects": {
+        "n_pairs": 2,
+        "mean_delta_p1_minus_baseline": 0.0,
+        "p1_lower_in_pairs": 0,
+        "note": "negative means CONTINUA (P1) scored lower on this metric"
+      },
+      "control_deadline_miss_pct": {
+        "n_pairs": 2,
+        "mean_delta_p1_minus_baseline": -0.0599,
+        "p1_lower_in_pairs": 2,
+        "note": "negative means CONTINUA (P1) scored lower on this metric"
+      },
+      "video_stall_ms": {
+        "n_pairs": 2,
+        "mean_delta_p1_minus_baseline": -5870.0,
+        "p1_lower_in_pairs": 2,
+        "note": "negative means CONTINUA (P1) scored lower on this metric"
+      },
+      "satellite_bytes": {
+        "n_pairs": 2,
+        "mean_delta_p1_minus_baseline": -46453602.0,
+        "p1_lower_in_pairs": 2,
+        "note": "negative means CONTINUA (P1) scored lower on this metric"
+      },
+      "cost_units": {
+        "n_pairs": 2,
+        "mean_delta_p1_minus_baseline": -2.9029,
+        "p1_lower_in_pairs": 2,
+        "note": "negative means CONTINUA (P1) scored lower on this metric"
+      },
+      "app_health_score": {
+        "n_pairs": 2,
+        "mean_delta_p1_minus_baseline": -1.15,
+        "p1_lower_in_pairs": 2,
+        "note": "negative means CONTINUA (P1) scored lower on this metric"
+      },
+      "handovers": {
+        "n_pairs": 2,
+        "mean_delta_p1_minus_baseline": 0.0,
+        "p1_lower_in_pairs": 0,
+        "note": "negative means CONTINUA (P1) scored lower on this metric"
+      }
+    }
+  },
+  "raw": {
+    "B0": [
+      {
+        "run_id": "run-ff4c56e6f4",
+        "scenario_id": "reverse-run",
+        "policy_id": "B0",
+        "seed": 70000,
+        "duration_s": 105.0,
+        "continuity": {
+          "session_reconnects": 1,
+          "interruptions": 1,
+          "total_interruption_s": 4.5,
+          "longest_interruption_s": 4.5,
+          "outage_s": 4.5,
+          "safe_stop_entered": true
+        },
+        "application": {
+          "control": {
+            "sent": 2100,
+            "delivered": 1626,
+            "duplicates_suppressed": 0,
+            "goodput_bytes": 357720,
+            "deadline_eligible": 1716,
+            "deadline_misses": 1716,
+            "deadline_miss_pct": 100.0,
+            "mean_latency_ms": 775.708,
+            "p50_latency_ms": 854.172,
+            "p95_latency_ms": 1235.104,
+            "p99_latency_ms": 1342.896
+          },
+          "telemetry": {
+            "sent": 1050,
+            "delivered": 831,
+            "duplicates_suppressed": 0,
+            "goodput_bytes": 349020,
+            "deadline_eligible": 876,
+            "deadline_misses": 749,
+            "deadline_miss_pct": 85.5023,
+            "mean_latency_ms": 780.691,
+            "p50_latency_ms": 856.232,
+            "p95_latency_ms": 1235.418,
+            "p99_latency_ms": 1367.945,
+            "final_freshness_ms": 30.1
+          },
+          "video": {
+            "sent": 18900,
+            "delivered": 14711,
+            "duplicates_suppressed": 0,
+            "goodput_bytes": 820800,
+            "deadline_eligible": 15515,
+            "deadline_misses": 14755,
+            "deadline_miss_pct": 95.1015,
+            "mean_latency_ms": 778.488,
+            "p50_latency_ms": 848.872,
+            "p95_latency_ms": 1243.176,
+            "p99_latency_ms": 1344.048,
+            "frames_expected": 3150,
+            "frames_delivered": 114,
+            "frame_delivery_pct": 3.619,
+            "stall_ms": 88220.0
+          },
+          "voice": {
+            "sent": 5251,
+            "delivered": 4071,
+            "duplicates_suppressed": 0,
+            "goodput_bytes": 651360,
+            "deadline_eligible": 4296,
+            "deadline_misses": 4296,
+            "deadline_miss_pct": 100.0,
+            "mean_latency_ms": 775.186,
+            "p50_latency_ms": 844.574,
+            "p95_latency_ms": 1236.726,
+            "p99_latency_ms": 1343.132
+          },
+          "bulk": {
+            "sent": 0,
+            "delivered": 0,
+            "duplicates_suppressed": 0,
+            "goodput_bytes": 93239094,
+            "bytes_completed": 93242187,
+            "completion_pct": 51.8012
+          }
+        },
+        "app_health_score": 6.0,
+        "links": {
+          "bytes": {
+            "wired": 0,
+            "wifi": 0,
+            "cellular": 0,
+            "satellite": 133124327
+          },
+          "activations": {
+            "wired": 0,
+            "wifi": 0,
+            "cellular": 0,
+            "satellite": 1
+          },
+          "satellite_bytes": 133124327,
+          "total_bytes": 133124327,
+          "goodput_bytes": 95417994,
+          "overhead_pct": 28.324,
+          "cost_units": 8.3375
+        },
+        "control_plane": {
+          "handovers": 0,
+          "unnecessary_handovers": 0,
+          "backup_activations": 0,
+          "duplication_windows": 0,
+          "control_timeouts": 404,
+          "control_retransmits": 0
+        },
+        "prediction": {
+          "predictor": "none",
+          "horizon_s": null,
+          "evaluated": 0,
+          "skipped_already_violating": 0,
+          "scoring_rule": "Predictions are scored only while the carrying path is not already in violation; a forecast of an ongoing condition is not a forecast.",
+          "true_positives": 0,
+          "false_positives": 0,
+          "false_negatives": 0,
+          "true_negatives": 0,
+          "precision": null,
+          "recall": null,
+          "f1": null,
+          "calibrated": false
+        },
+        "wall_time_s": 1.065,
+        "events": 954,
+        "trial": 0
+      },
+      {
+        "run_id": "run-d6f6f5dd9b",
+        "scenario_id": "reverse-run",
+        "policy_id": "B0",
+        "seed": 70001,
+        "duration_s": 105.0,
+        "continuity": {
+          "session_reconnects": 1,
+          "interruptions": 1,
+          "total_interruption_s": 4.5,
+          "longest_interruption_s": 4.5,
+          "outage_s": 4.5,
+          "safe_stop_entered": true
+        },
+        "application": {
+          "control": {
+            "sent": 2100,
+            "delivered": 1628,
+            "duplicates_suppressed": 0,
+            "goodput_bytes": 358160,
+            "deadline_eligible": 1718,
+            "deadline_misses": 1718,
+            "deadline_miss_pct": 100.0,
+            "mean_latency_ms": 774.301,
+            "p50_latency_ms": 851.56,
+            "p95_latency_ms": 1243.797,
+            "p99_latency_ms": 1313.359
+          },
+          "telemetry": {
+            "sent": 1050,
+            "delivered": 808,
+            "duplicates_suppressed": 0,
+            "goodput_bytes": 339360,
+            "deadline_eligible": 853,
+            "deadline_misses": 724,
+            "deadline_miss_pct": 84.8769,
+            "mean_latency_ms": 771.307,
+            "p50_latency_ms": 821.561,
+            "p95_latency_ms": 1249.895,
+            "p99_latency_ms": 1327.821,
+            "final_freshness_ms": 74.8
+          },
+          "video": {
+            "sent": 18900,
+            "delivered": 14720,
+            "duplicates_suppressed": 0,
+            "goodput_bytes": 820800,
+            "deadline_eligible": 15524,
+            "deadline_misses": 14739,
+            "deadline_miss_pct": 94.9433,
+            "mean_latency_ms": 776.843,
+            "p50_latency_ms": 849.59,
+            "p95_latency_ms": 1242.395,
+            "p99_latency_ms": 1335.402,
+            "frames_expected": 3150,
+            "frames_delivered": 114,
+            "frame_delivery_pct": 3.619,
+            "stall_ms": 87680.0
+          },
+          "voice": {
+            "sent": 5251,
+            "delivered": 4059,
+            "duplicates_suppressed": 0,
+            "goodput_bytes": 649440,
+            "deadline_eligible": 4284,
+            "deadline_misses": 4284,
+            "deadline_miss_pct": 100.0,
+            "mean_latency_ms": 773.473,
+            "p50_latency_ms": 841.412,
+            "p95_latency_ms": 1240.778,
+            "p99_latency_ms": 1328.1
+          },
+          "bulk": {
+            "sent": 0,
+            "delivered": 0,
+            "duplicates_suppressed": 0,
+            "goodput_bytes": 93355798,
+            "bytes_completed": 93358892,
+            "completion_pct": 51.8661
+          }
+        },
+        "app_health_score": 6.1,
+        "links": {
+          "bytes": {
+            "wired": 0,
+            "wifi": 0,
+            "cellular": 0,
+            "satellite": 133124327
+          },
+          "activations": {
+            "wired": 0,
+            "wifi": 0,
+            "cellular": 0,
+            "satellite": 1
+          },
+          "satellite_bytes": 133124327,
+          "total_bytes": 133124327,
+          "goodput_bytes": 95523558,
+          "overhead_pct": 28.245,
+          "cost_units": 8.3375
+        },
+        "control_plane": {
+          "handovers": 0,
+          "unnecessary_handovers": 0,
+          "backup_activations": 0,
+          "duplication_windows": 0,
+          "control_timeouts": 421,
+          "control_retransmits": 0
+        },
+        "prediction": {
+          "predictor": "none",
+          "horizon_s": null,
+          "evaluated": 0,
+          "skipped_already_violating": 0,
+          "scoring_rule": "Predictions are scored only while the carrying path is not already in violation; a forecast of an ongoing condition is not a forecast.",
+          "true_positives": 0,
+          "false_positives": 0,
+          "false_negatives": 0,
+          "true_negatives": 0,
+          "precision": null,
+          "recall": null,
+          "f1": null,
+          "calibrated": false
+        },
+        "wall_time_s": 1.201,
+        "events": 954,
+        "trial": 1
+      }
+    ],
+    "B1": [
+      {
+        "run_id": "run-8f7c9f146b",
+        "scenario_id": "reverse-run",
+        "policy_id": "B1",
+        "seed": 70000,
+        "duration_s": 105.0,
+        "continuity": {
+          "session_reconnects": 1,
+          "interruptions": 1,
+          "total_interruption_s": 4.5,
+          "longest_interruption_s": 4.5,
+          "outage_s": 4.5,
+          "safe_stop_entered": true
+        },
+        "application": {
+          "control": {
+            "sent": 2100,
+            "delivered": 1971,
+            "duplicates_suppressed": 0,
+            "goodput_bytes": 433620,
+            "deadline_eligible": 2061,
+            "deadline_misses": 668,
+            "deadline_miss_pct": 32.4115,
+            "mean_latency_ms": 132.848,
+            "p50_latency_ms": 23.88,
+            "p95_latency_ms": 473.563,
+            "p99_latency_ms": 530.529
+          },
+          "telemetry": {
+            "sent": 1050,
+            "delivered": 975,
+            "duplicates_suppressed": 0,
+            "goodput_bytes": 409500,
+            "deadline_eligible": 1020,
+            "deadline_misses": 214,
+            "deadline_miss_pct": 20.9804,
+            "mean_latency_ms": 133.312,
+            "p50_latency_ms": 22.645,
+            "p95_latency_ms": 475.661,
+            "p99_latency_ms": 529.948,
+            "final_freshness_ms": 19.1
+          },
+          "video": {
+            "sent": 18900,
+            "delivered": 17484,
+            "duplicates_suppressed": 0,
+            "goodput_bytes": 14752800,
+            "deadline_eligible": 18288,
+            "deadline_misses": 5117,
+            "deadline_miss_pct": 27.9801,
+            "mean_latency_ms": 133.125,
+            "p50_latency_ms": 24.039,
+            "p95_latency_ms": 479.842,
+            "p99_latency_ms": 529.122,
+            "frames_expected": 3150,
+            "frames_delivered": 2049,
+            "frame_delivery_pct": 65.048,
+            "stall_ms": 20160.0
+          },
+          "voice": {
+            "sent": 5251,
+            "delivered": 4864,
+            "duplicates_suppressed": 0,
+            "goodput_bytes": 778240,
+            "deadline_eligible": 5089,
+            "deadline_misses": 1617,
+            "deadline_miss_pct": 31.7744,
+            "mean_latency_ms": 132.801,
+            "p50_latency_ms": 23.81,
+            "p95_latency_ms": 477.635,
+            "p99_latency_ms": 529.948
+          },
+          "bulk": {
+            "sent": 0,
+            "delivered": 0,
+            "duplicates_suppressed": 0,
+            "goodput_bytes": 146055149,
+            "bytes_completed": 146056571,
+            "completion_pct": 81.1425
+          }
+        },
+        "app_health_score": 70.0,
+        "links": {
+          "bytes": {
+            "wired": 4611816,
+            "wifi": 36252296,
+            "cellular": 82670936,
+            "satellite": 50682960
+          },
+          "activations": {
+            "wired": 1,
+            "wifi": 2,
+            "cellular": 1,
+            "satellite": 3
+          },
+          "satellite_bytes": 50682960,
+          "total_bytes": 174218008,
+          "goodput_bytes": 162429309,
+          "overhead_pct": 6.767,
+          "cost_units": 4.4417
+        },
+        "control_plane": {
+          "handovers": 3,
+          "unnecessary_handovers": 0,
+          "backup_activations": 6,
+          "duplication_windows": 0,
+          "control_timeouts": 71,
+          "control_retransmits": 21
+        },
+        "prediction": {
+          "predictor": "none",
+          "horizon_s": null,
+          "evaluated": 0,
+          "skipped_already_violating": 0,
+          "scoring_rule": "Predictions are scored only while the carrying path is not already in violation; a forecast of an ongoing condition is not a forecast.",
+          "true_positives": 0,
+          "false_positives": 0,
+          "false_negatives": 0,
+          "true_negatives": 0,
+          "precision": null,
+          "recall": null,
+          "f1": null,
+          "calibrated": false
+        },
+        "wall_time_s": 1.136,
+        "events": 956,
+        "trial": 0
+      },
+      {
+        "run_id": "run-3947ed66cf",
+        "scenario_id": "reverse-run",
+        "policy_id": "B1",
+        "seed": 70001,
+        "duration_s": 105.0,
+        "continuity": {
+          "session_reconnects": 1,
+          "interruptions": 1,
+          "total_interruption_s": 4.5,
+          "longest_interruption_s": 4.5,
+          "outage_s": 4.5,
+          "safe_stop_entered": true
+        },
+        "application": {
+          "control": {
+            "sent": 2100,
+            "delivered": 1949,
+            "duplicates_suppressed": 1,
+            "goodput_bytes": 428780,
+            "deadline_eligible": 2039,
+            "deadline_misses": 701,
+            "deadline_miss_pct": 34.3796,
+            "mean_latency_ms": 142.942,
+            "p50_latency_ms": 24.105,
+            "p95_latency_ms": 487.961,
+            "p99_latency_ms": 548.847
+          },
+          "telemetry": {
+            "sent": 1050,
+            "delivered": 974,
+            "duplicates_suppressed": 0,
+            "goodput_bytes": 409080,
+            "deadline_eligible": 1019,
+            "deadline_misses": 227,
+            "deadline_miss_pct": 22.2767,
+            "mean_latency_ms": 142.193,
+            "p50_latency_ms": 23.952,
+            "p95_latency_ms": 485.155,
+            "p99_latency_ms": 548.847,
+            "final_freshness_ms": 12.4
+          },
+          "video": {
+            "sent": 18900,
+            "delivered": 17475,
+            "duplicates_suppressed": 0,
+            "goodput_bytes": 14256000,
+            "deadline_eligible": 18279,
+            "deadline_misses": 5505,
+            "deadline_miss_pct": 30.1165,
+            "mean_latency_ms": 144.996,
+            "p50_latency_ms": 25.747,
+            "p95_latency_ms": 488.4,
+            "p99_latency_ms": 545.921,
+            "frames_expected": 3150,
+            "frames_delivered": 1980,
+            "frame_delivery_pct": 62.857,
+            "stall_ms": 21020.0
+          },
+          "voice": {
+            "sent": 5251,
+            "delivered": 4855,
+            "duplicates_suppressed": 0,
+            "goodput_bytes": 776800,
+            "deadline_eligible": 5080,
+            "deadline_misses": 1733,
+            "deadline_miss_pct": 34.1142,
+            "mean_latency_ms": 144.066,
+            "p50_latency_ms": 25.043,
+            "p95_latency_ms": 488.392,
+            "p99_latency_ms": 547.214
+          },
+          "bulk": {
+            "sent": 0,
+            "delivered": 0,
+            "duplicates_suppressed": 0,
+            "goodput_bytes": 145712125,
+            "bytes_completed": 145713568,
+            "completion_pct": 80.952
+          }
+        },
+        "app_health_score": 68.1,
+        "links": {
+          "bytes": {
+            "wired": 0,
+            "wifi": 36778684,
+            "cellular": 82324592,
+            "satellite": 55113000
+          },
+          "activations": {
+            "wired": 0,
+            "wifi": 2,
+            "cellular": 1,
+            "satellite": 3
+          },
+          "satellite_bytes": 55113000,
+          "total_bytes": 174216276,
+          "goodput_bytes": 161582785,
+          "overhead_pct": 7.252,
+          "cost_units": 4.7061
+        },
+        "control_plane": {
+          "handovers": 4,
+          "unnecessary_handovers": 0,
+          "backup_activations": 5,
+          "duplication_windows": 0,
+          "control_timeouts": 84,
+          "control_retransmits": 14
+        },
+        "prediction": {
+          "predictor": "none",
+          "horizon_s": null,
+          "evaluated": 0,
+          "skipped_already_violating": 0,
+          "scoring_rule": "Predictions are scored only while the carrying path is not already in violation; a forecast of an ongoing condition is not a forecast.",
+          "true_positives": 0,
+          "false_positives": 0,
+          "false_negatives": 0,
+          "true_negatives": 0,
+          "precision": null,
+          "recall": null,
+          "f1": null,
+          "calibrated": false
+        },
+        "wall_time_s": 1.177,
+        "events": 956,
+        "trial": 1
+      }
+    ],
+    "B2": [
+      {
+        "run_id": "run-57c6c09408",
+        "scenario_id": "reverse-run",
+        "policy_id": "B2",
+        "seed": 70000,
+        "duration_s": 105.0,
+        "continuity": {
+          "session_reconnects": 1,
+          "interruptions": 1,
+          "total_interruption_s": 4.5,
+          "longest_interruption_s": 4.5,
+          "outage_s": 4.5,
+          "safe_stop_entered": true
+        },
+        "application": {
+          "control": {
+            "sent": 2100,
+            "delivered": 1988,
+            "duplicates_suppressed": 1245,
+            "goodput_bytes": 437360,
+            "deadline_eligible": 2078,
+            "deadline_misses": 660,
+            "deadline_miss_pct": 31.7613,
+            "mean_latency_ms": 127.904,
+            "p50_latency_ms": 16.063,
+            "p95_latency_ms": 475.567,
+            "p99_latency_ms": 533.033
+          },
+          "telemetry": {
+            "sent": 1050,
+            "delivered": 973,
+            "duplicates_suppressed": 0,
+            "goodput_bytes": 408660,
+            "deadline_eligible": 1018,
+            "deadline_misses": 229,
+            "deadline_miss_pct": 22.4951,
+            "mean_latency_ms": 139.691,
+            "p50_latency_ms": 21.561,
+            "p95_latency_ms": 483.242,
+            "p99_latency_ms": 542.496,
+            "final_freshness_ms": 19.1
+          },
+          "video": {
+            "sent": 18900,
+            "delivered": 17462,
+            "duplicates_suppressed": 0,
+            "goodput_bytes": 14414400,
+            "deadline_eligible": 18266,
+            "deadline_misses": 5351,
+            "deadline_miss_pct": 29.2949,
+            "mean_latency_ms": 138.73,
+            "p50_latency_ms": 23.153,
+            "p95_latency_ms": 484.313,
+            "p99_latency_ms": 535.011,
+            "frames_expected": 3150,
+            "frames_delivered": 2002,
+            "frame_delivery_pct": 63.556,
+            "stall_ms": 21300.0
+          },
+          "voice": {
+            "sent": 5251,
+            "delivered": 4839,
+            "duplicates_suppressed": 0,
+            "goodput_bytes": 774240,
+            "deadline_eligible": 5064,
+            "deadline_misses": 1692,
+            "deadline_miss_pct": 33.4123,
+            "mean_latency_ms": 139.286,
+            "p50_latency_ms": 22.992,
+            "p95_latency_ms": 483.91,
+            "p99_latency_ms": 535.891
+          },
+          "bulk": {
+            "sent": 0,
+            "delivered": 0,
+            "duplicates_suppressed": 0,
+            "goodput_bytes": 145672865,
+            "bytes_completed": 145674394,
+            "completion_pct": 80.9302
+          }
+        },
+        "app_health_score": 69.4,
+        "links": {
+          "bytes": {
+            "wired": 6233208,
+            "wifi": 44016740,
+            "cellular": 70791408,
+            "satellite": 53542740
+          },
+          "activations": {
+            "wired": 1,
+            "wifi": 1,
+            "cellular": 1,
+            "satellite": 1
+          },
+          "satellite_bytes": 53542740,
+          "total_bytes": 174584096,
+          "goodput_bytes": 161707525,
+          "overhead_pct": 7.376,
+          "cost_units": 3.8657
+        },
+        "control_plane": {
+          "handovers": 9,
+          "unnecessary_handovers": 0,
+          "backup_activations": 3,
+          "duplication_windows": 0,
+          "control_timeouts": 269,
+          "control_retransmits": 39
+        },
+        "prediction": {
+          "predictor": "none",
+          "horizon_s": null,
+          "evaluated": 0,
+          "skipped_already_violating": 0,
+          "scoring_rule": "Predictions are scored only while the carrying path is not already in violation; a forecast of an ongoing condition is not a forecast.",
+          "true_positives": 0,
+          "false_positives": 0,
+          "false_negatives": 0,
+          "true_negatives": 0,
+          "precision": null,
+          "recall": null,
+          "f1": null,
+          "calibrated": false
+        },
+        "wall_time_s": 1.281,
+        "events": 958,
+        "trial": 0
+      },
+      {
+        "run_id": "run-e50eefa8c8",
+        "scenario_id": "reverse-run",
+        "policy_id": "B2",
+        "seed": 70001,
+        "duration_s": 105.0,
+        "continuity": {
+          "session_reconnects": 1,
+          "interruptions": 1,
+          "total_interruption_s": 4.5,
+          "longest_interruption_s": 4.5,
+          "outage_s": 4.5,
+          "safe_stop_entered": true
+        },
+        "application": {
+          "control": {
+            "sent": 2100,
+            "delivered": 1985,
+            "duplicates_suppressed": 1248,
+            "goodput_bytes": 436700,
+            "deadline_eligible": 2075,
+            "deadline_misses": 665,
+            "deadline_miss_pct": 32.0482,
+            "mean_latency_ms": 127.529,
+            "p50_latency_ms": 16.701,
+            "p95_latency_ms": 475.984,
+            "p99_latency_ms": 534.332
+          },
+          "telemetry": {
+            "sent": 1050,
+            "delivered": 985,
+            "duplicates_suppressed": 0,
+            "goodput_bytes": 413700,
+            "deadline_eligible": 1030,
+            "deadline_misses": 220,
+            "deadline_miss_pct": 21.3592,
+            "mean_latency_ms": 136.804,
+            "p50_latency_ms": 21.906,
+            "p95_latency_ms": 479.907,
+            "p99_latency_ms": 541.156,
+            "final_freshness_ms": 12.4
+          },
+          "video": {
+            "sent": 18900,
+            "delivered": 17595,
+            "duplicates_suppressed": 0,
+            "goodput_bytes": 14659200,
+            "deadline_eligible": 18399,
+            "deadline_misses": 5352,
+            "deadline_miss_pct": 29.0885,
+            "mean_latency_ms": 138.834,
+            "p50_latency_ms": 23.826,
+            "p95_latency_ms": 483.958,
+            "p99_latency_ms": 538.252,
+            "frames_expected": 3150,
+            "frames_delivered": 2036,
+            "frame_delivery_pct": 64.635,
+            "stall_ms": 19740.0
+          },
+          "voice": {
+            "sent": 5251,
+            "delivered": 4874,
+            "duplicates_suppressed": 0,
+            "goodput_bytes": 779840,
+            "deadline_eligible": 5099,
+            "deadline_misses": 1687,
+            "deadline_miss_pct": 33.0849,
+            "mean_latency_ms": 138.158,
+            "p50_latency_ms": 23.059,
+            "p95_latency_ms": 484.235,
+            "p99_latency_ms": 540.033
+          },
+          "bulk": {
+            "sent": 0,
+            "delivered": 0,
+            "duplicates_suppressed": 0,
+            "goodput_bytes": 146582196,
+            "bytes_completed": 146583549,
+            "completion_pct": 81.4353
+          }
+        },
+        "app_health_score": 69.8,
+        "links": {
+          "bytes": {
+            "wired": 49048,
+            "wifi": 49078440,
+            "cellular": 72448828,
+            "satellite": 53008660
+          },
+          "activations": {
+            "wired": 1,
+            "wifi": 1,
+            "cellular": 1,
+            "satellite": 1
+          },
+          "satellite_bytes": 53008660,
+          "total_bytes": 174584976,
+          "goodput_bytes": 162871636,
+          "overhead_pct": 6.709,
+          "cost_units": 3.8403
+        },
+        "control_plane": {
+          "handovers": 6,
+          "unnecessary_handovers": 0,
+          "backup_activations": 3,
+          "duplication_windows": 0,
+          "control_timeouts": 275,
+          "control_retransmits": 43
+        },
+        "prediction": {
+          "predictor": "none",
+          "horizon_s": null,
+          "evaluated": 0,
+          "skipped_already_violating": 0,
+          "scoring_rule": "Predictions are scored only while the carrying path is not already in violation; a forecast of an ongoing condition is not a forecast.",
+          "true_positives": 0,
+          "false_positives": 0,
+          "false_negatives": 0,
+          "true_negatives": 0,
+          "precision": null,
+          "recall": null,
+          "f1": null,
+          "calibrated": false
+        },
+        "wall_time_s": 1.375,
+        "events": 957,
+        "trial": 1
+      }
+    ],
+    "P1": [
+      {
+        "run_id": "run-e55e2b0f9c",
+        "scenario_id": "reverse-run",
+        "policy_id": "P1",
+        "seed": 70000,
+        "duration_s": 105.0,
+        "continuity": {
+          "session_reconnects": 1,
+          "interruptions": 1,
+          "total_interruption_s": 4.5,
+          "longest_interruption_s": 4.5,
+          "outage_s": 4.5,
+          "safe_stop_entered": true
+        },
+        "application": {
+          "control": {
+            "sent": 2100,
+            "delivered": 1988,
+            "duplicates_suppressed": 288,
+            "goodput_bytes": 437360,
+            "deadline_eligible": 2078,
+            "deadline_misses": 667,
+            "deadline_miss_pct": 32.0982,
+            "mean_latency_ms": 125.332,
+            "p50_latency_ms": 16.969,
+            "p95_latency_ms": 460.267,
+            "p99_latency_ms": 520.96
+          },
+          "telemetry": {
+            "sent": 1050,
+            "delivered": 974,
+            "duplicates_suppressed": 0,
+            "goodput_bytes": 409080,
+            "deadline_eligible": 1019,
+            "deadline_misses": 182,
+            "deadline_miss_pct": 17.8606,
+            "mean_latency_ms": 122.774,
+            "p50_latency_ms": 15.733,
+            "p95_latency_ms": 458.351,
+            "p99_latency_ms": 508.997,
+            "final_freshness_ms": 19.1
+          },
+          "video": {
+            "sent": 15596,
+            "delivered": 14495,
+            "duplicates_suppressed": 0,
+            "goodput_bytes": 12926880,
+            "deadline_eligible": 15179,
+            "deadline_misses": 3272,
+            "deadline_miss_pct": 21.5561,
+            "mean_latency_ms": 102.23,
+            "p50_latency_ms": 14.645,
+            "p95_latency_ms": 452.003,
+            "p99_latency_ms": 506.893,
+            "frames_expected": 3150,
+            "frames_delivered": 2165,
+            "frame_delivery_pct": 68.73,
+            "stall_ms": 14140.0
+          },
+          "voice": {
+            "sent": 5251,
+            "delivered": 4877,
+            "duplicates_suppressed": 0,
+            "goodput_bytes": 780320,
+            "deadline_eligible": 5102,
+            "deadline_misses": 1587,
+            "deadline_miss_pct": 31.1054,
+            "mean_latency_ms": 122.176,
+            "p50_latency_ms": 16.96,
+            "p95_latency_ms": 459.955,
+            "p99_latency_ms": 512.822
+          },
+          "bulk": {
+            "sent": 0,
+            "delivered": 0,
+            "duplicates_suppressed": 0,
+            "goodput_bytes": 69179088,
+            "bytes_completed": 69179206,
+            "completion_pct": 38.4329
+          }
+        },
+        "app_health_score": 69.2,
+        "links": {
+          "bytes": {
+            "wired": 3044012,
+            "wifi": 47182736,
+            "cellular": 33963348,
+            "satellite": 3865376
+          },
+          "activations": {
+            "wired": 1,
+            "wifi": 2,
+            "cellular": 1,
+            "satellite": 3
+          },
+          "satellite_bytes": 3865376,
+          "total_bytes": 88055472,
+          "goodput_bytes": 83732728,
+          "overhead_pct": 4.909,
+          "cost_units": 1.4378
+        },
+        "control_plane": {
+          "handovers": 3,
+          "unnecessary_handovers": 0,
+          "backup_activations": 6,
+          "duplication_windows": 6,
+          "control_timeouts": 91,
+          "control_retransmits": 21
+        },
+        "prediction": {
+          "predictor": "heuristic-trend-1.1",
+          "horizon_s": 3.0,
+          "evaluated": 478,
+          "skipped_already_violating": 524,
+          "scoring_rule": "Predictions are scored only while the carrying path is not already in violation; a forecast of an ongoing condition is not a forecast.",
+          "true_positives": 32,
+          "false_positives": 15,
+          "false_negatives": 251,
+          "true_negatives": 180,
+          "precision": 0.6809,
+          "recall": 0.1131,
+          "f1": 0.194,
+          "calibrated": false
+        },
+        "wall_time_s": 1.845,
+        "events": 1002,
+        "trial": 0
+      },
+      {
+        "run_id": "run-6d2c382ff5",
+        "scenario_id": "reverse-run",
+        "policy_id": "P1",
+        "seed": 70001,
+        "duration_s": 105.0,
+        "continuity": {
+          "session_reconnects": 1,
+          "interruptions": 1,
+          "total_interruption_s": 4.5,
+          "longest_interruption_s": 4.5,
+          "outage_s": 4.5,
+          "safe_stop_entered": true
+        },
+        "application": {
+          "control": {
+            "sent": 2100,
+            "delivered": 1989,
+            "duplicates_suppressed": 323,
+            "goodput_bytes": 437580,
+            "deadline_eligible": 2079,
+            "deadline_misses": 666,
+            "deadline_miss_pct": 32.0346,
+            "mean_latency_ms": 124.455,
+            "p50_latency_ms": 16.851,
+            "p95_latency_ms": 460.772,
+            "p99_latency_ms": 517.691
+          },
+          "telemetry": {
+            "sent": 1050,
+            "delivered": 979,
+            "duplicates_suppressed": 0,
+            "goodput_bytes": 411180,
+            "deadline_eligible": 1024,
+            "deadline_misses": 167,
+            "deadline_miss_pct": 16.3086,
+            "mean_latency_ms": 122.53,
+            "p50_latency_ms": 17.121,
+            "p95_latency_ms": 458.018,
+            "p99_latency_ms": 523.781,
+            "final_freshness_ms": 12.4
+          },
+          "video": {
+            "sent": 15590,
+            "delivered": 14559,
+            "duplicates_suppressed": 0,
+            "goodput_bytes": 12973440,
+            "deadline_eligible": 15243,
+            "deadline_misses": 3261,
+            "deadline_miss_pct": 21.3934,
+            "mean_latency_ms": 102.752,
+            "p50_latency_ms": 15.519,
+            "p95_latency_ms": 450.589,
+            "p99_latency_ms": 507.314,
+            "frames_expected": 3150,
+            "frames_delivered": 2171,
+            "frame_delivery_pct": 68.921,
+            "stall_ms": 12920.0
+          },
+          "voice": {
+            "sent": 5251,
+            "delivered": 4897,
+            "duplicates_suppressed": 0,
+            "goodput_bytes": 783520,
+            "deadline_eligible": 5122,
+            "deadline_misses": 1604,
+            "deadline_miss_pct": 31.3159,
+            "mean_latency_ms": 123.448,
+            "p50_latency_ms": 17.994,
+            "p95_latency_ms": 460.73,
+            "p99_latency_ms": 515.858
+          },
+          "bulk": {
+            "sent": 0,
+            "delivered": 0,
+            "duplicates_suppressed": 0,
+            "goodput_bytes": 68849606,
+            "bytes_completed": 68849706,
+            "completion_pct": 38.2498
+          }
+        },
+        "app_health_score": 69.5,
+        "links": {
+          "bytes": {
+            "wired": 4512,
+            "wifi": 50305488,
+            "cellular": 33478988,
+            "satellite": 3845740
+          },
+          "activations": {
+            "wired": 1,
+            "wifi": 2,
+            "cellular": 1,
+            "satellite": 3
+          },
+          "satellite_bytes": 3845740,
+          "total_bytes": 87634728,
+          "goodput_bytes": 83455326,
+          "overhead_pct": 4.769,
+          "cost_units": 1.4347
+        },
+        "control_plane": {
+          "handovers": 4,
+          "unnecessary_handovers": 0,
+          "backup_activations": 6,
+          "duplication_windows": 8,
+          "control_timeouts": 89,
+          "control_retransmits": 25
+        },
+        "prediction": {
+          "predictor": "heuristic-trend-1.1",
+          "horizon_s": 3.0,
+          "evaluated": 482,
+          "skipped_already_violating": 539,
+          "scoring_rule": "Predictions are scored only while the carrying path is not already in violation; a forecast of an ongoing condition is not a forecast.",
+          "true_positives": 42,
+          "false_positives": 12,
+          "false_negatives": 185,
+          "true_negatives": 243,
+          "precision": 0.7778,
+          "recall": 0.185,
+          "f1": 0.2989,
+          "calibrated": false
+        },
+        "wall_time_s": 1.799,
+        "events": 1021,
+        "trial": 1
+      }
+    ],
+    "P1-noPred": [
+      {
+        "run_id": "run-b110083faa",
+        "scenario_id": "reverse-run",
+        "policy_id": "P1-noPred",
+        "seed": 70000,
+        "duration_s": 105.0,
+        "continuity": {
+          "session_reconnects": 1,
+          "interruptions": 1,
+          "total_interruption_s": 4.5,
+          "longest_interruption_s": 4.5,
+          "outage_s": 4.5,
+          "safe_stop_entered": true
+        },
+        "application": {
+          "control": {
+            "sent": 2100,
+            "delivered": 1986,
+            "duplicates_suppressed": 271,
+            "goodput_bytes": 436920,
+            "deadline_eligible": 2076,
+            "deadline_misses": 671,
+            "deadline_miss_pct": 32.3218,
+            "mean_latency_ms": 125.69,
+            "p50_latency_ms": 16.719,
+            "p95_latency_ms": 460.267,
+            "p99_latency_ms": 520.96
+          },
+          "telemetry": {
+            "sent": 1050,
+            "delivered": 969,
+            "duplicates_suppressed": 0,
+            "goodput_bytes": 406980,
+            "deadline_eligible": 1014,
+            "deadline_misses": 182,
+            "deadline_miss_pct": 17.9487,
+            "mean_latency_ms": 123.403,
+            "p50_latency_ms": 15.87,
+            "p95_latency_ms": 458.351,
+            "p99_latency_ms": 508.997,
+            "final_freshness_ms": 19.1
+          },
+          "video": {
+            "sent": 15736,
+            "delivered": 14658,
+            "duplicates_suppressed": 0,
+            "goodput_bytes": 13223040,
+            "deadline_eligible": 15342,
+            "deadline_misses": 3272,
+            "deadline_miss_pct": 21.3271,
+            "mean_latency_ms": 101.248,
+            "p50_latency_ms": 14.5,
+            "p95_latency_ms": 451.915,
+            "p99_latency_ms": 506.893,
+            "frames_expected": 3150,
+            "frames_delivered": 2173,
+            "frame_delivery_pct": 68.984,
+            "stall_ms": 13900.0
+          },
+          "voice": {
+            "sent": 5251,
+            "delivered": 4870,
+            "duplicates_suppressed": 0,
+            "goodput_bytes": 779200,
+            "deadline_eligible": 5095,
+            "deadline_misses": 1587,
+            "deadline_miss_pct": 31.1482,
+            "mean_latency_ms": 122.396,
+            "p50_latency_ms": 16.967,
+            "p95_latency_ms": 459.955,
+            "p99_latency_ms": 512.822
+          },
+          "bulk": {
+            "sent": 0,
+            "delivered": 0,
+            "duplicates_suppressed": 0,
+            "goodput_bytes": 72231459,
+            "bytes_completed": 72231577,
+            "completion_pct": 40.1287
+          }
+        },
+        "app_health_score": 69.2,
+        "links": {
+          "bytes": {
+            "wired": 3040272,
+            "wifi": 50258716,
+            "cellular": 34124108,
+            "satellite": 3863960
+          },
+          "activations": {
+            "wired": 1,
+            "wifi": 2,
+            "cellular": 1,
+            "satellite": 3
+          },
+          "satellite_bytes": 3863960,
+          "total_bytes": 91287056,
+          "goodput_bytes": 87077599,
+          "overhead_pct": 4.611,
+          "cost_units": 1.4383
+        },
+        "control_plane": {
+          "handovers": 3,
+          "unnecessary_handovers": 0,
+          "backup_activations": 6,
+          "duplication_windows": 4,
+          "control_timeouts": 94,
+          "control_retransmits": 23
+        },
+        "prediction": {
+          "predictor": "none",
+          "horizon_s": null,
+          "evaluated": 0,
+          "skipped_already_violating": 0,
+          "scoring_rule": "Predictions are scored only while the carrying path is not already in violation; a forecast of an ongoing condition is not a forecast.",
+          "true_positives": 0,
+          "false_positives": 0,
+          "false_negatives": 0,
+          "true_negatives": 0,
+          "precision": null,
+          "recall": null,
+          "f1": null,
+          "calibrated": false
+        },
+        "wall_time_s": 1.255,
+        "events": 1009,
+        "trial": 0
+      },
+      {
+        "run_id": "run-06db83700f",
+        "scenario_id": "reverse-run",
+        "policy_id": "P1-noPred",
+        "seed": 70001,
+        "duration_s": 105.0,
+        "continuity": {
+          "session_reconnects": 1,
+          "interruptions": 1,
+          "total_interruption_s": 4.5,
+          "longest_interruption_s": 4.5,
+          "outage_s": 4.5,
+          "safe_stop_entered": true
+        },
+        "application": {
+          "control": {
+            "sent": 2100,
+            "delivered": 1987,
+            "duplicates_suppressed": 245,
+            "goodput_bytes": 437140,
+            "deadline_eligible": 2077,
+            "deadline_misses": 674,
+            "deadline_miss_pct": 32.4506,
+            "mean_latency_ms": 125.845,
+            "p50_latency_ms": 19.342,
+            "p95_latency_ms": 460.772,
+            "p99_latency_ms": 517.691
+          },
+          "telemetry": {
+            "sent": 1050,
+            "delivered": 982,
+            "duplicates_suppressed": 0,
+            "goodput_bytes": 412440,
+            "deadline_eligible": 1027,
+            "deadline_misses": 167,
+            "deadline_miss_pct": 16.261,
+            "mean_latency_ms": 122.903,
+            "p50_latency_ms": 19.107,
+            "p95_latency_ms": 456.972,
+            "p99_latency_ms": 523.781,
+            "final_freshness_ms": 12.4
+          },
+          "video": {
+            "sent": 15474,
+            "delivered": 14402,
+            "duplicates_suppressed": 0,
+            "goodput_bytes": 12619200,
+            "deadline_eligible": 15086,
+            "deadline_misses": 3261,
+            "deadline_miss_pct": 21.6161,
+            "mean_latency_ms": 104.836,
+            "p50_latency_ms": 18.329,
+            "p95_latency_ms": 451.035,
+            "p99_latency_ms": 507.314,
+            "frames_expected": 3150,
+            "frames_delivered": 2147,
+            "frame_delivery_pct": 68.159,
+            "stall_ms": 12920.0
+          },
+          "voice": {
+            "sent": 5251,
+            "delivered": 4881,
+            "duplicates_suppressed": 0,
+            "goodput_bytes": 780960,
+            "deadline_eligible": 5106,
+            "deadline_misses": 1604,
+            "deadline_miss_pct": 31.414,
+            "mean_latency_ms": 124.72,
+            "p50_latency_ms": 20.428,
+            "p95_latency_ms": 460.73,
+            "p99_latency_ms": 515.858
+          },
+          "bulk": {
+            "sent": 0,
+            "delivered": 0,
+            "duplicates_suppressed": 0,
+            "goodput_bytes": 64367263,
+            "bytes_completed": 64367370,
+            "completion_pct": 35.7597
+          }
+        },
+        "app_health_score": 69.0,
+        "links": {
+          "bytes": {
+            "wired": 4512,
+            "wifi": 41257608,
+            "cellular": 37980008,
+            "satellite": 3831000
+          },
+          "activations": {
+            "wired": 1,
+            "wifi": 2,
+            "cellular": 1,
+            "satellite": 3
+          },
+          "satellite_bytes": 3831000,
+          "total_bytes": 83073128,
+          "goodput_bytes": 78617003,
+          "overhead_pct": 5.364,
+          "cost_units": 1.4518
+        },
+        "control_plane": {
+          "handovers": 4,
+          "unnecessary_handovers": 0,
+          "backup_activations": 6,
+          "duplication_windows": 7,
+          "control_timeouts": 93,
+          "control_retransmits": 36
+        },
+        "prediction": {
+          "predictor": "none",
+          "horizon_s": null,
+          "evaluated": 0,
+          "skipped_already_violating": 0,
+          "scoring_rule": "Predictions are scored only while the carrying path is not already in violation; a forecast of an ongoing condition is not a forecast.",
+          "true_positives": 0,
+          "false_positives": 0,
+          "false_negatives": 0,
+          "true_negatives": 0,
+          "precision": null,
+          "recall": null,
+          "f1": null,
+          "calibrated": false
+        },
+        "wall_time_s": 1.267,
+        "events": 1056,
+        "trial": 1
+      }
+    ],
+    "P1-noApp": [
+      {
+        "run_id": "run-127c28ffe0",
+        "scenario_id": "reverse-run",
+        "policy_id": "P1-noApp",
+        "seed": 70000,
+        "duration_s": 105.0,
+        "continuity": {
+          "session_reconnects": 1,
+          "interruptions": 1,
+          "total_interruption_s": 4.5,
+          "longest_interruption_s": 4.5,
+          "outage_s": 4.5,
+          "safe_stop_entered": true
+        },
+        "application": {
+          "control": {
+            "sent": 2100,
+            "delivered": 1970,
+            "duplicates_suppressed": 0,
+            "goodput_bytes": 433400,
+            "deadline_eligible": 2060,
+            "deadline_misses": 663,
+            "deadline_miss_pct": 32.1845,
+            "mean_latency_ms": 130.159,
+            "p50_latency_ms": 18.621,
+            "p95_latency_ms": 473.563,
+            "p99_latency_ms": 530.529
+          },
+          "telemetry": {
+            "sent": 1050,
+            "delivered": 979,
+            "duplicates_suppressed": 0,
+            "goodput_bytes": 411180,
+            "deadline_eligible": 1024,
+            "deadline_misses": 214,
+            "deadline_miss_pct": 20.8984,
+            "mean_latency_ms": 130.705,
+            "p50_latency_ms": 17.49,
+            "p95_latency_ms": 475.661,
+            "p99_latency_ms": 529.948,
+            "final_freshness_ms": 19.1
+          },
+          "video": {
+            "sent": 18900,
+            "delivered": 17525,
+            "duplicates_suppressed": 0,
+            "goodput_bytes": 14990400,
+            "deadline_eligible": 18329,
+            "deadline_misses": 5117,
+            "deadline_miss_pct": 27.9175,
+            "mean_latency_ms": 130.629,
+            "p50_latency_ms": 19.45,
+            "p95_latency_ms": 478.57,
+            "p99_latency_ms": 529.122,
+            "frames_expected": 3150,
+            "frames_delivered": 2082,
+            "frame_delivery_pct": 66.095,
+            "stall_ms": 20260.0
+          },
+          "voice": {
+            "sent": 5251,
+            "delivered": 4878,
+            "duplicates_suppressed": 0,
+            "goodput_bytes": 780480,
+            "deadline_eligible": 5103,
+            "deadline_misses": 1617,
+            "deadline_miss_pct": 31.6872,
+            "mean_latency_ms": 130.243,
+            "p50_latency_ms": 18.937,
+            "p95_latency_ms": 477.635,
+            "p99_latency_ms": 529.948
+          },
+          "bulk": {
+            "sent": 0,
+            "delivered": 0,
+            "duplicates_suppressed": 0,
+            "goodput_bytes": 146278708,
+            "bytes_completed": 146279975,
+            "completion_pct": 81.2667
+          }
+        },
+        "app_health_score": 70.4,
+        "links": {
+          "bytes": {
+            "wired": 6241872,
+            "wifi": 58754548,
+            "cellular": 58552188,
+            "satellite": 50693040
+          },
+          "activations": {
+            "wired": 1,
+            "wifi": 2,
+            "cellular": 1,
+            "satellite": 3
+          },
+          "satellite_bytes": 50693040,
+          "total_bytes": 174241648,
+          "goodput_bytes": 162894168,
+          "overhead_pct": 6.512,
+          "cost_units": 4.3458
+        },
+        "control_plane": {
+          "handovers": 3,
+          "unnecessary_handovers": 0,
+          "backup_activations": 6,
+          "duplication_windows": 0,
+          "control_timeouts": 66,
+          "control_retransmits": 15
+        },
+        "prediction": {
+          "predictor": "heuristic-trend-1.1",
+          "horizon_s": 3.0,
+          "evaluated": 514,
+          "skipped_already_violating": 443,
+          "scoring_rule": "Predictions are scored only while the carrying path is not already in violation; a forecast of an ongoing condition is not a forecast.",
+          "true_positives": 16,
+          "false_positives": 35,
+          "false_negatives": 195,
+          "true_negatives": 268,
+          "precision": 0.3137,
+          "recall": 0.0758,
+          "f1": 0.1221,
+          "calibrated": false
+        },
+        "wall_time_s": 1.738,
+        "events": 957,
+        "trial": 0
+      },
+      {
+        "run_id": "run-871fbcd1ab",
+        "scenario_id": "reverse-run",
+        "policy_id": "P1-noApp",
+        "seed": 70001,
+        "duration_s": 105.0,
+        "continuity": {
+          "session_reconnects": 1,
+          "interruptions": 1,
+          "total_interruption_s": 4.5,
+          "longest_interruption_s": 4.5,
+          "outage_s": 4.5,
+          "safe_stop_entered": true
+        },
+        "application": {
+          "control": {
+            "sent": 2100,
+            "delivered": 1965,
+            "duplicates_suppressed": 0,
+            "goodput_bytes": 432300,
+            "deadline_eligible": 2055,
+            "deadline_misses": 659,
+            "deadline_miss_pct": 32.0681,
+            "mean_latency_ms": 129.838,
+            "p50_latency_ms": 20.362,
+            "p95_latency_ms": 475.834,
+            "p99_latency_ms": 525.71
+          },
+          "telemetry": {
+            "sent": 1050,
+            "delivered": 980,
+            "duplicates_suppressed": 0,
+            "goodput_bytes": 411600,
+            "deadline_eligible": 1025,
+            "deadline_misses": 207,
+            "deadline_miss_pct": 20.1951,
+            "mean_latency_ms": 129.414,
+            "p50_latency_ms": 19.705,
+            "p95_latency_ms": 474.094,
+            "p99_latency_ms": 538.993,
+            "final_freshness_ms": 12.4
+          },
+          "video": {
+            "sent": 18900,
+            "delivered": 17598,
+            "duplicates_suppressed": 0,
+            "goodput_bytes": 14947200,
+            "deadline_eligible": 18402,
+            "deadline_misses": 5095,
+            "deadline_miss_pct": 27.6872,
+            "mean_latency_ms": 131.36,
+            "p50_latency_ms": 22.018,
+            "p95_latency_ms": 477.645,
+            "p99_latency_ms": 530.542,
+            "frames_expected": 3150,
+            "frames_delivered": 2076,
+            "frame_delivery_pct": 65.905,
+            "stall_ms": 18540.0
+          },
+          "voice": {
+            "sent": 5251,
+            "delivered": 4885,
+            "duplicates_suppressed": 0,
+            "goodput_bytes": 781600,
+            "deadline_eligible": 5110,
+            "deadline_misses": 1608,
+            "deadline_miss_pct": 31.4677,
+            "mean_latency_ms": 130.183,
+            "p50_latency_ms": 20.985,
+            "p95_latency_ms": 477.462,
+            "p99_latency_ms": 532.774
+          },
+          "bulk": {
+            "sent": 0,
+            "delivered": 0,
+            "duplicates_suppressed": 0,
+            "goodput_bytes": 146750200,
+            "bytes_completed": 146751572,
+            "completion_pct": 81.5287
+          }
+        },
+        "app_health_score": 70.6,
+        "links": {
+          "bytes": {
+            "wired": 4512,
+            "wifi": 57579164,
+            "cellular": 66733888,
+            "satellite": 49925280
+          },
+          "activations": {
+            "wired": 1,
+            "wifi": 2,
+            "cellular": 1,
+            "satellite": 3
+          },
+          "satellite_bytes": 49925280,
+          "total_bytes": 174242844,
+          "goodput_bytes": 163322900,
+          "overhead_pct": 6.267,
+          "cost_units": 4.3325
+        },
+        "control_plane": {
+          "handovers": 4,
+          "unnecessary_handovers": 0,
+          "backup_activations": 6,
+          "duplication_windows": 0,
+          "control_timeouts": 75,
+          "control_retransmits": 20
+        },
+        "prediction": {
+          "predictor": "heuristic-trend-1.1",
+          "horizon_s": 3.0,
+          "evaluated": 497,
+          "skipped_already_violating": 460,
+          "scoring_rule": "Predictions are scored only while the carrying path is not already in violation; a forecast of an ongoing condition is not a forecast.",
+          "true_positives": 38,
+          "false_positives": 2,
+          "false_negatives": 208,
+          "true_negatives": 249,
+          "precision": 0.95,
+          "recall": 0.1545,
+          "f1": 0.2658,
+          "calibrated": false
+        },
+        "wall_time_s": 1.927,
+        "events": 957,
+        "trial": 1
+      }
+    ]
+  }
+}

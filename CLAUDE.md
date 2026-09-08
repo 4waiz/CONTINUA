@@ -12,18 +12,21 @@ Phase 2 — the predictive network handoffs that keep its session alive.
 
 | Phase | Scope | State |
 | --- | --- | --- |
-| 1 | Vehicle, world, route animation, scene components, design system, `/scene-lab` | this phase |
-| 2 | Predictive network engine, real link/handoff logic, live scene-state feed | not started |
+| 1 | Vehicle, world, route animation, scene components, design system, `/scene-lab` | complete |
+| 2 | Network engine, controller, dashboard, experiments | complete |
 | 3 | Competition video capture and edit | not started |
 
 ---
 
 ## 1. Hard rules
 
-1. **Never** present decorative values as measured network performance. Until
-   the Phase 2 engine exists, the HUD says `SCENE PREVIEW` and numbers are
-   labelled illustrative. The reference dashboard's `-67 dBm`, `24 ms`,
-   `99.99%` are *design content*, not achieved results.
+1. **Never** present decorative values as measured network performance.
+   Every figure must trace to a receiver-side fact or be labelled as modelled.
+   A measurement that does not exist is `null` and renders as "unavailable",
+   never as `0`. The reference dashboard's `-67 dBm`, `24 ms`, `99.99%`,
+   `12 handoffs` and `96 QoS` are *design content*; none of them appear.
+   Never describe the simulator as a live network test, the shaped cellular
+   profile as 5G, or anything on this host as MPTCP.
 2. **Only the coordinating agent runs Git.** Sub-agents never commit, push,
    branch, stash or reset.
 3. **Only one process drives Blender at a time.** Generation runs headless
@@ -98,16 +101,18 @@ omit an oversized deliverable**: if it cannot be pushed, say so explicitly.
 ## 3. Layout
 
 ```
-apps/web/            Next.js 16 App Router frontend (the only runnable app)
-packages/scene/      Reusable CONTINUA 3D scene: clock, route, terrain, rig, cameras
-packages/contracts/  Framework-free shared types (scene-state adapter for Phase 2)
-assets/blender/      .blend sources (editable)
-assets/reference/    Reference imagery
-assets/previews/     Rendered previews and browser evidence
-scripts/blender/     Reproducible Blender generation + export scripts
-scripts/             checkpoint.py, run-blender.mjs
-docs/                Design spec, architecture, asset manifest, progress, handoff
-tests/               Playwright smoke tests
+apps/web/            Next.js 16 frontend: Mission, Scenario Lab, Experiments, Decision Log, Capture
+services/engine/     Python engine: simulator, controller, predictors, store, experiments, API
+packages/scene/      Reusable 3D scene + EngineSceneStateSource
+packages/contracts/  Shared types (TypeScript + Python) and world.json
+scripts/blender/     Reproducible Blender generation + export
+scripts/emulation/   Linux namespace / netem topology scripts (setup, verify, cleanup)
+scripts/             checkpoint.py, run-blender.mjs, engine_cli.py
+assets/              .blend sources, reference imagery, renders, browser evidence
+data/                Experiment results and capability report (run logs git-ignored)
+docs/                Ten documents
+tests/engine/        pytest engine suite
+tests/               Playwright browser suites
 ```
 
 npm workspaces only — no Turborepo/Nx. `packages/*` are TypeScript source
@@ -177,10 +182,26 @@ per frame; HUD readouts are throttled.
 
 ```bash
 npm run lint         # eslint, zero warnings
-npm run typecheck    # tsc project references
+npm run typecheck    # tsc
 npm run build        # production build
-npm run test:smoke   # Playwright: boots, renders, no console errors
+npm run test:engine  # 36 engine tests
+npm run test:phase2  # 11 browser tests (engine must be running)
+npm run test:smoke   # Phase 1 scene tests, 3 viewports
 ```
 
 Then look at it in a browser at 1920×1080, 1440×900 and 1280×720 before
 calling it finished.
+
+## 8. Experiment discipline (Phase 2 onward)
+
+* The exogenous trace is generated from `(scenario, seed)` **before any policy
+  runs** and is never influenced by policy. That is what makes trials paired.
+* The controller must never receive the trace, and prediction features are
+  restricted to an observable allow-list. Both are enforced by tests.
+* Seed blocks `train` / `tune` / `test` are disjoint. **Nothing is fitted on the
+  test block**, and it is used once.
+* Report negative and inconclusive results. Do not re-run a comparison until a
+  better number appears, and do not edit a scenario to change an outcome.
+* Count the costs of proactivity — unnecessary handovers, false positives,
+  duplicate bytes — in the same table as the wins.
+* Never put an LLM in the real-time routing loop.

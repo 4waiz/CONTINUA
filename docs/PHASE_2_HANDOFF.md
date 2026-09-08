@@ -207,14 +207,46 @@ and bought nothing measurable for them. The heuristic predictor's recall on
 transitions is only ~0.14, so it rarely fires before the reactive trigger would
 have.
 
-The learned predictor reaches recall 0.68 at precision 0.87 on held-out tuning
-runs, so **the obvious Phase 3 or Phase 2.1 experiment is whether the learned
-model changes this ablation.** That is a real open question, not a formality.
+### The learned predictor was tested too, and it did not rescue prediction
 
-Do not present prediction as a demonstrated win in the video. The demonstrated
-wins are: multipath eliminating reconnects, and application-awareness cutting
-satellite usage by ~92 %, cost by ~71 % and video stall by ~37 % at identical
-continuity to always-on redundancy.
+`wifi-degradation`, 20 paired trials, `--predictor learned`:
+
+| | P1 (learned) | P1-noPred |
+| --- | --- | --- |
+| Prediction recall | **0.782** | — |
+| Prediction precision | 0.648 | — |
+| False positives per run | **101.4** | 0 |
+| Unnecessary handovers | 1.25 | 0 |
+| Total interruption | 0.16 s | 0.16 s |
+| Control deadline miss | 31.38 % | 31.50 % |
+| Video stall | 11 481 ms | 11 523 ms |
+| Cost units | **1.084** | 1.232 |
+| App health | 67.9 | **69.0** |
+
+Raising recall from 0.14 to 0.78 bought a **12 % cost reduction** and a
+**1.1-point drop in app health**, at the price of ~101 false alarms per run.
+Prediction still does not pay for itself.
+
+### Why — the mechanism worth understanding
+
+Both P1 and P1-noPred **pre-warm a backup path proactively**. That is what
+removes the interruption; it happens whether or not anything is predicted. The
+predictor's only remaining job is to decide *when to switch early*, and
+switching early has a real cost (activation, duplicate bytes, a handover).
+
+**The value in CONTINUA is in preparation and application-awareness, not in
+prediction.** That is the honest headline, and it is a more interesting claim
+than the one the project set out to make.
+
+**Do not present prediction as a demonstrated win in the video.** It is not one,
+at either predictor quality tested. The demonstrated wins are:
+
+1. **Multipath** eliminates session reconnects (1.0 → 0.0 per run vs B0).
+2. **Proactive pre-warming** removes the interruption (7.32 s → 0.16 s vs B0;
+   matching always-on redundancy).
+3. **Application-awareness** cuts satellite usage ~92 %, cost ~71 % and video
+   stall ~37 % against always-on redundancy, and cuts control deadline misses
+   from 49 % to 31 % under congestion.
 
 ---
 

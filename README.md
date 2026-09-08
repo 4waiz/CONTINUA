@@ -14,27 +14,38 @@ session survives every handoff.
 
 ```bash
 npm install
-npm run build
-npm run start
+npm run engine              # engine on 127.0.0.1:8000 — leave this running
+npm run build && npm start  # app on localhost:3000
 ```
 
-- Dashboard — <http://localhost:3000>
-- Scene lab — <http://localhost:3000/scene-lab>
+| URL | Section |
+| --- | --- |
+| <http://localhost:3000> | **Mission** — live run, 3D scene, link cards, application health |
+| <http://localhost:3000/scenario-lab> | Inject failures and congestion, change speed and workload |
+| <http://localhost:3000/experiments> | Paired policy comparison and the execution-capability report |
+| <http://localhost:3000/decision-log> | Every controller action with its observations and reason |
+| <http://localhost:3000/capture?run=…> | Fixed 16:9 capture frame |
+| <http://localhost:3000/scene-lab> | Phase 1 scene inspector |
 
-`npm run dev` for hot reload. Node 20.11+ required.
+Node 20.11+ and Python 3.11+ required. Engine dependencies:
+`pip install -r services/engine/requirements.txt`.
 
 ## What this is
 
-**Phase 1 of 3: the vehicle, the world and the visual foundation.**
+**Phases 1–2 of 3: the vehicle and world, and a working application-aware
+connectivity prototype.**
 
-Everything you see is generated from source in this repository — the rover, the
-buildings, the masts, the terrain, the route. There are no purchased models, no
-downloaded HDRIs, no webfonts, and nothing is fetched at runtime.
+A Python engine simulates four access paths — finite queues, capacity, delay,
+jitter, correlated burst loss, activation delay, competing demand and per-byte
+cost — and carries five real traffic classes across them. A controller observes,
+predicts, prepares a backup, steers, and explains itself. The 3D scene
+visualises the experiment; it is not the networking engine.
 
-The network behaviour shown is a **deterministic geometric preview**, derived
-from distance to infrastructure. It is not a measurement, every panel says so,
-and Phase 2 replaces it with a real engine behind an interface that already
-exists.
+**Everything here is a deterministic software model.** It is not a live
+mobile-network test. The execution mode is stamped on every event, on the
+dashboard and in the capture frame. Emulation and MPTCP are **not verified on
+this machine** — the reasons were probed, not assumed, and are recorded in
+`data/emulation_capability.json`.
 
 ![Rover close-up](assets/previews/browser/view-02-vehicle-closeup.png)
 
@@ -42,26 +53,30 @@ exists.
 
 | Command | What it does |
 | --- | --- |
-| `npm run dev` | Development server |
-| `npm run build` / `npm run start` | Production build and serve |
-| `npm run lint` | ESLint across app and packages, zero warnings |
-| `npm run typecheck` | TypeScript, no emit |
-| `npm run test:smoke` | Playwright, 11 tests, 1920/1440/1280 |
-| `npm run test:perf` | Real-GPU frame rate (needs local Chrome) |
-| `npm run blender:all` | Regenerate every 3D asset from script |
-| `npm run checkpoint:status` | Checkpoint supervisor status |
+| `npm run engine` | Start the Python engine |
+| `npm run dev` / `npm run build` / `npm start` | Frontend |
+| `npm run lint` · `npm run typecheck` | Static checks, both clean |
+| `npm run test:engine` | 36 engine tests |
+| `npm run test:phase2` | 11 browser tests (engine must be running) |
+| `npm run test:smoke` | Phase 1 scene tests, 3 viewports |
+| `npm run experiment:smoke` | 2 trials × every scenario, ~3 min |
+| `npm run experiment` | 20 paired trials × 6 core scenarios, ~25 min |
+| `npm run train:predictor` | Retrain the learned predictor |
+| `npm run emulation:status` | Honest capability report for this host |
+| `npm run blender:all` | Regenerate every 3D asset |
 
 ## Layout
 
 ```
-apps/web/            Next.js 16 frontend
-packages/scene/      Reusable 3D scene: clock, route, terrain, rig, cameras
-packages/contracts/  Shared types — the Phase 2 seam
-assets/blender/      .blend sources
-assets/previews/     Studio renders and browser evidence
-scripts/blender/     Reproducible generation and export
-docs/                Design spec, architecture, asset manifest, progress, handoff
-tests/               Playwright smoke and evidence capture
+apps/web/            Next.js 16 frontend — Mission, Scenario Lab, Experiments, Decision Log
+services/engine/     Python engine — simulator, controller, predictors, API, experiments
+packages/scene/      Reusable 3D scene, plus the engine-driven scene source
+packages/contracts/  Shared types (TypeScript + Python) and world.json
+scripts/emulation/   Linux namespace / netem topology scripts
+assets/              .blend sources, reference imagery, renders, browser evidence
+data/                Experiment results and capability report (run logs are git-ignored)
+docs/                Ten documents — see below
+tests/               Engine (pytest) and browser (Playwright) suites
 ```
 
 ## Documentation
@@ -73,19 +88,36 @@ tests/               Playwright smoke and evidence capture
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Scene and application boundaries, determinism |
 | [`docs/ASSET_MANIFEST.md`](docs/ASSET_MANIFEST.md) | Assets, licences, the orientation contract |
 | [`docs/PROGRESS.md`](docs/PROGRESS.md) | Measured results, defects fixed, limitations |
-| [`docs/PHASE_1_HANDOFF.md`](docs/PHASE_1_HANDOFF.md) | Everything Phase 2 needs |
+| [`docs/PHASE_1_HANDOFF.md`](docs/PHASE_1_HANDOFF.md) | Everything Phase 2 needed |
+| [`docs/ASSUMPTIONS.md`](docs/ASSUMPTIONS.md) | Everything modelled rather than measured |
+| [`docs/METRICS.md`](docs/METRICS.md) | Every metric, unit and measurement window |
+| [`docs/EXPERIMENT_METHOD.md`](docs/EXPERIMENT_METHOD.md) | Pairing, seed blocks, and how not to fool yourself |
+| [`docs/MODEL_CARD.md`](docs/MODEL_CARD.md) | The learned predictor, including its calibration failure |
+| [`docs/SECURITY.md`](docs/SECURITY.md) | Threat model and known weaknesses |
+| [`docs/AI_USE.md`](docs/AI_USE.md) | Where ML is used, and why no LLM is in the routing loop |
+| [`docs/PHASE_2_HANDOFF.md`](docs/PHASE_2_HANDOFF.md) | Everything Phase 3 needs |
 
 ## Measured
 
-- Rover: 38,120 triangles, 1.39 MB `.glb`; LOD 16,784 / 549 KB
-- Full scene: 131 draw calls, 2.28 MB of runtime assets
-- **233.8 fps** at 1920×1080, `high` quality, on Intel integrated graphics
-  (ANGLE / D3D11), uncapped rAF — see `docs/PROGRESS.md` for method
+**720 paired experiment runs** — 20 trials × 6 policies × 6 core scenarios,
+0 failures. On `wifi-degradation`, CONTINUA matches always-on redundancy on
+continuity (0 reconnects, 0.16 s interruption) while using **4.8 MB of satellite
+instead of 61.2 MB (−92 %)**, **1.25 cost units instead of 4.31 (−71 %)** and
+**37 % less video stall**. Under cellular congestion it cuts control deadline
+misses from 49 % to **31 %**.
+
+**And an honest negative result:** prediction does not pay for itself. The
+`P1 − P1-noPred` ablation is a wash at both predictor qualities tested — the
+value is in *preparation* and *application-awareness*, not in prediction. Full
+numbers, including where CONTINUA loses, are in `docs/PROGRESS.md`.
+
+Rendering (kept separate from network metrics): 233.8 fps at 1920×1080 on Intel
+integrated graphics; 131 draw calls; 2.28 MB of runtime assets.
 
 ## Phases
 
 | Phase | Scope | State |
 | --- | --- | --- |
 | 1 | Vehicle, world, route animation, scene components, design system, `/scene-lab` | **complete** |
-| 2 | Predictive network engine, real link and handoff logic, live scene-state feed | not started |
+| 2 | Network engine, controller, dashboard, experiments | **complete** |
 | 3 | Competition video capture and edit | not started |

@@ -1,0 +1,271 @@
+[
+  {
+    "scenario_id": "baseline-journey",
+    "experiment_id": "exp-ab98fa6c86",
+    "trials_requested": 2,
+    "trials_completed": {
+      "B0": 2,
+      "B1": 2,
+      "B2": 2,
+      "P1": 2,
+      "P1-noPred": 2,
+      "P1-noApp": 2
+    },
+    "predictor": "heuristic",
+    "seed_block": "test",
+    "elapsed_s": 18.6
+  },
+  {
+    "scenario_id": "wifi-degradation",
+    "experiment_id": "exp-a4ff0bee55",
+    "trials_requested": 2,
+    "trials_completed": {
+      "B0": 2,
+      "B1": 2,
+      "B2": 2,
+      "P1": 2,
+      "P1-noPred": 2,
+      "P1-noApp": 2
+    },
+    "predictor": "heuristic",
+    "seed_block": "test",
+    "elapsed_s": 19.4
+  },
+  {
+    "scenario_id": "sudden-failure",
+    "experiment_id": "exp-fc214cc40b",
+    "trials_requested": 2,
+    "trials_completed": {
+      "B0": 2,
+      "B1": 2,
+      "B2": 2,
+      "P1": 2,
+      "P1-noPred": 2,
+      "P1-noApp": 2
+    },
+    "predictor": "heuristic",
+    "seed_block": "test",
+    "elapsed_s": 19.6
+  },
+  {
+    "scenario_id": "cellular-congestion",
+    "experiment_id": "exp-ce1f4e4cae",
+    "trials_requested": 2,
+    "trials_completed": {
+      "B0": 2,
+      "B1": 2,
+      "B2": 2,
+      "P1": 2,
+      "P1-noPred": 2,
+      "P1-noApp": 2
+    },
+    "predictor": "heuristic",
+    "seed_block": "test",
+    "elapsed_s": 18.9
+  },
+  {
+    "scenario_id": "satellite-fallback",
+    "experiment_id": "exp-53482def53",
+    "trials_requested": 2,
+    "trials_completed": {
+      "B0": 2,
+      "B1": 2,
+      "B2": 2,
+      "P1": 2,
+      "P1-noPred": 2,
+      "P1-noApp": 2
+    },
+    "predictor": "heuristic",
+    "seed_block": "test",
+    "elapsed_s": 19.3
+  },
+  {
+    "scenario_id": "flapping",
+    "experiment_id": "exp-bae2482cd4",
+    "trials_requested": 2,
+    "trials_completed": {
+      "B0": 2,
+      "B1": 2,
+      "B2": 2,
+      "P1": 2,
+      "P1-noPred": 2,
+      "P1-noApp": 2
+    },
+    "predictor": "heuristic",
+    "seed_block": "test",
+    "elapsed_s": 19.3
+  },
+  {
+    "scenario_id": "dock-disconnect",
+    "experiment_id": "exp-10c2505f1c",
+    "trials_requested": 2,
+    "trials_completed": {
+      "B0": 2,
+      "B1": 2,
+      "B2": 2,
+      "P1": 2,
+      "P1-noPred": 2,
+      "P1-noApp": 2
+    },
+    "predictor": "heuristic",
+    "seed_block": "test",
+    "elapsed_s": 18.4
+  },
+  {
+    "scenario_id": "total-loss",
+    "experiment_id": "exp-6842a92aff",
+    "trials_requested": 2,
+    "trials_completed": {
+      "B0": 2,
+      "B1": 2,
+      "B2": 2,
+      "P1": 2,
+      "P1-noPred": 2,
+      "P1-noApp": 2
+    },
+    "predictor": "heuristic",
+    "seed_block": "test",
+    "elapsed_s": 18.3
+  },
+  {
+    "scenario_id": "fast-run",
+    "experiment_id": "exp-f0a3afd165",
+    "trials_requested": 2,
+    "trials_completed": {
+      "B0": 2,
+      "B1": 2,
+      "B2": 2,
+      "P1": 2,
+      "P1-noPred": 2,
+      "P1-noApp": 2
+    },
+    "predictor": "heuristic",
+    "seed_block": "test",
+    "elapsed_s": 11.3
+  },
+  {
+    "scenario_id": "reverse-run",
+    "experiment_id": "exp-3219488319",
+    "trials_requested": 2,
+    "trials_completed": {
+      "B0": 2,
+      "B1": 2,
+      "B2": 2,
+      "P1": 2,
+      "P1-noPred": 2,
+      "P1-noApp": 2
+    },
+    "predictor": "heuristic",
+    "seed_block": "test",
+    "elapsed_s": 17.9
+  },
+  {
+    "scenario_id": "wifi-degradation",
+    "experiment_id": "exp-26f132d5d7",
+    "trials_requested": 20,
+    "trials_completed": {
+      "B0": 20,
+      "B1": 20,
+      "B2": 20,
+      "P1": 20,
+      "P1-noPred": 20,
+      "P1-noApp": 20
+    },
+    "predictor": "heuristic",
+    "seed_block": "test",
+    "elapsed_s": 182.2
+  },
+  {
+    "scenario_id": "sudden-failure",
+    "experiment_id": "exp-16354dec23",
+    "trials_requested": 20,
+    "trials_completed": {
+      "B0": 20,
+      "B1": 20,
+      "B2": 20,
+      "P1": 20,
+      "P1-noPred": 20,
+      "P1-noApp": 20
+    },
+    "predictor": "heuristic",
+    "seed_block": "test",
+    "elapsed_s": 180.0
+  },
+  {
+    "scenario_id": "cellular-congestion",
+    "experiment_id": "exp-64931cf540",
+    "trials_requested": 20,
+    "trials_completed": {
+      "B0": 20,
+      "B1": 20,
+      "B2": 20,
+      "P1": 20,
+      "P1-noPred": 20,
+      "P1-noApp": 20
+    },
+    "predictor": "heuristic",
+    "seed_block": "test",
+    "elapsed_s": 239.7
+  },
+  {
+    "scenario_id": "satellite-fallback",
+    "experiment_id": "exp-966206c65b",
+    "trials_requested": 20,
+    "trials_completed": {
+      "B0": 20,
+      "B1": 20,
+      "B2": 20,
+      "P1": 20,
+      "P1-noPred": 20,
+      "P1-noApp": 20
+    },
+    "predictor": "heuristic",
+    "seed_block": "test",
+    "elapsed_s": 307.5
+  },
+  {
+    "scenario_id": "flapping",
+    "experiment_id": "exp-c1ddbbb2ba",
+    "trials_requested": 20,
+    "trials_completed": {
+      "B0": 20,
+      "B1": 20,
+      "B2": 20,
+      "P1": 20,
+      "P1-noPred": 20,
+      "P1-noApp": 20
+    },
+    "predictor": "heuristic",
+    "seed_block": "test",
+    "elapsed_s": 387.6
+  },
+  {
+    "scenario_id": "total-loss",
+    "experiment_id": "exp-657ef4a89a",
+    "trials_requested": 20,
+    "trials_completed": {
+      "B0": 20,
+      "B1": 20,
+      "B2": 20,
+      "P1": 20,
+      "P1-noPred": 20,
+      "P1-noApp": 20
+    },
+    "predictor": "heuristic",
+    "seed_block": "test",
+    "elapsed_s": 342.0
+  },
+  {
+    "scenario_id": "wifi-degradation",
+    "experiment_id": "exp-e70fe761a1",
+    "trials_requested": 20,
+    "trials_completed": {
+      "P1": 20,
+      "P1-noPred": 20,
+      "B1": 20
+    },
+    "predictor": "learned",
+    "seed_block": "test",
+    "elapsed_s": 157.9
+  }
+]
