@@ -58,7 +58,7 @@ async function waitForScene(page: Page): Promise<void> {
 // ---------------------------------------------------------------------------
 
 test.describe('CONTINUA dashboard', () => {
-  test('landing page renders the scene and the honest preview badge', async ({ page }, testInfo) => {
+  test('scene lab renders the scene and the honest preview badge', async ({ page }, testInfo) => {
     const errors = collectConsoleErrors(page);
 
     const modelResponses: { url: string; status: number; bytes: number }[] = [];
@@ -71,14 +71,17 @@ test.describe('CONTINUA dashboard', () => {
       });
     });
 
-    await page.goto('/', { waitUntil: 'domcontentloaded' });
+    // Phase 2 moved the Mission dashboard to `/`; the Phase 1 scene inspector,
+    // which runs against the deterministic *preview* source with no engine
+    // attached, lives at `/scene-lab` and is what these tests cover.
+    await page.goto('/scene-lab', { waitUntil: 'domcontentloaded' });
     await waitForScene(page);
 
-    await expect(page.getByRole('heading', { name: 'CONTINUA', level: 1 })).toBeVisible();
-    await expect(page.getByText('Predictive Network Continuity')).toBeVisible();
-    await expect(page.getByText('by Team Kanban')).toBeVisible();
+    await expect(page.getByRole('heading', { name: /CONTINUA/ })).toBeVisible();
+    await expect(page.getByText('Predictive Network Continuity', { exact: false })).toBeVisible();
+    await expect(page.getByText('Team Kanban', { exact: false })).toBeVisible();
 
-    // Phase 1 must never claim measured performance.
+    // The preview source must never claim measured performance.
     await expect(page.getByText('SCENE PREVIEW').first()).toBeVisible();
 
     // The glTF assets really were fetched, and really were served.
@@ -90,7 +93,7 @@ test.describe('CONTINUA dashboard', () => {
     expect(props?.status).toBe(200);
 
     await page.screenshot({
-      path: `${EVIDENCE_DIR}/dashboard-${testInfo.project.name}.png`,
+      path: `${EVIDENCE_DIR}/scene-lab-preview-${testInfo.project.name}.png`,
       fullPage: false,
     });
 
