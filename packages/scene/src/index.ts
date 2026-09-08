@@ -20,8 +20,9 @@ export {
 } from './runtime/SceneRuntime';
 export { SceneClock } from './core/clock';
 
-// --- state source ----------------------------------------------------------
+// --- state sources ---------------------------------------------------------
 export { PreviewSceneStateSource, previewSource, VEHICLE } from './preview/previewSource';
+export { EngineSceneStateSource } from './engine/engineSource';
 
 // --- world model -----------------------------------------------------------
 export { Route, route, ROUTE_CONTROL_POINTS, type RouteSample } from './world/route';

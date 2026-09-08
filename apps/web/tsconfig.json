@@ -39,6 +39,12 @@
       ],
       "@continua/scene/*": [
         "../../packages/scene/src/*"
+      ],
+      "@continua/contracts/engine": [
+        "../../packages/contracts/src/engine.ts"
+      ],
+      "@continua/contracts/world.json": [
+        "../../packages/contracts/world.json"
       ]
     }
   },

@@ -7,7 +7,9 @@
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./engine": "./src/engine.ts",
+    "./world.json": "./world.json"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json --noEmit"
