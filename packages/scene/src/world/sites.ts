@@ -105,7 +105,7 @@ export const SITES: readonly SiteMarker[] = [
   },
   {
     id: 'cell-tower',
-    label: '5G macro site',
+    label: 'Cellular macro site',
     detail: 'Three-sector mast covering the industrial corridor.',
     prop: 'PROP_CellTower',
     x: 336,

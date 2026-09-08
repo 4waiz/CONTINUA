@@ -9,7 +9,7 @@
  *   ACTIVE LINK  — one bright beam from the rover's roof to the serving site.
  *   WARMING LINK — the same beam, faint, for a link being pre-established.
  *
- * There is never a chain from wired to Wi-Fi to 5G to satellite: they are
+ * There is never a chain from wired to Wi-Fi to cellular to satellite: they are
  * alternative links to one gateway, and at most one carries the session.
  * Wired is drawn only while the rover is actually tethered at the dock.
  */

@@ -41,7 +41,10 @@ const DecisionLog = dynamic(
   { ssr: false, loading: () => <Skeleton label="Preparing decision log" /> },
 );
 const Capture = dynamic(
-  () => import('./CaptureView').then((m) => m.CaptureView as ComponentType<{ runId: string | null }>),
+  () =>
+    import('./CaptureView').then(
+      (m) => m.CaptureView as ComponentType<{ runId: string | null; fullBleed?: boolean }>,
+    ),
   { ssr: false, loading: () => <Skeleton label="Preparing capture frame" /> },
 );
 
@@ -60,7 +63,10 @@ export function DecisionLogShell() {
 
 function CaptureInner() {
   const params = useSearchParams();
-  return <Capture runId={params.get('run')} />;
+  // ?fullbleed=1 removes the page chrome so the 16:9 frame *is* the viewport.
+  // The video needs 1920x1080 of content, not a rounded card floating on a
+  // background; a human opening /capture by hand still gets the framed version.
+  return <Capture runId={params.get('run')} fullBleed={params.get('fullbleed') === '1'} />;
 }
 
 export function CaptureShell() {

@@ -136,7 +136,7 @@ function CardScaler() {
 
 function Frame({ card, children }: { card: CardData; children: React.ReactNode }) {
   return (
-    <div className="flex h-full flex-col px-[96px] py-[72px]">
+    <div className="flex h-full flex-col px-[92px] pb-[56px] pt-[58px]" data-card-frame>
       <header className="flex items-start justify-between">
         <div>
           {card.kicker ? (
@@ -144,9 +144,9 @@ function Frame({ card, children }: { card: CardData; children: React.ReactNode }
               {card.kicker}
             </div>
           ) : null}
-          <h1 className="mt-3 text-[58px] font-semibold leading-[1.05] tracking-[-0.03em]">{card.title}</h1>
+          <h1 className="mt-2 text-[54px] font-semibold leading-[1.05] tracking-[-0.03em]">{card.title}</h1>
           {card.subtitle ? (
-            <p className="mt-3 max-w-[1280px] text-[22px] leading-[1.4] text-[color:var(--color-muted)]">
+            <p className="mt-2 max-w-[1280px] text-[21px] leading-[1.35] text-[color:var(--color-muted)]">
               {card.subtitle as string}
             </p>
           ) : null}
@@ -155,7 +155,7 @@ function Frame({ card, children }: { card: CardData; children: React.ReactNode }
           Simulation
         </div>
       </header>
-      <div className="mt-9 min-h-0 flex-1">{children}</div>
+      <div className="mt-7 min-h-0 flex-1">{children}</div>
     </div>
   );
 }
@@ -168,36 +168,40 @@ function Compare({ card }: { card: CardData }) {
   const columns = card.columns as string[];
 
   return (
-    <div className="flex h-full flex-col gap-6">
-      <div className="grid grid-cols-[1fr_320px_320px] items-end gap-x-8 border-b border-[color:var(--color-line-strong)] pb-3 text-[18px] font-semibold uppercase tracking-[0.12em] text-[color:var(--color-muted)]">
+    <div className="flex h-full min-h-0 flex-col">
+      <div className="grid grid-cols-[1fr_300px_300px] items-end gap-x-8 border-b border-[color:var(--color-line-strong)] pb-2 text-[17px] font-semibold uppercase tracking-[0.12em] text-[color:var(--color-muted)]">
         <div />
         <div className="text-right">{columns[0]}</div>
         <div className="text-right text-[color:var(--color-blue)]">{columns[1]}</div>
       </div>
 
-      {rows.map((row) => {
-        const v = verdict(row);
-        return (
-          <div
-            key={row.label}
-            className="grid grid-cols-[1fr_320px_320px] items-baseline gap-x-8 border-b border-[color:var(--color-line)] pb-4"
-          >
-            <div className="text-[26px]">{row.label}</div>
-            <div className="metric text-right text-[34px] text-[color:var(--color-muted)]">
-              {fmt(row.baseline, row.format)}
-            </div>
+      {/* The rows share whatever height is left rather than each claiming a
+          fixed slice — eight rows and a footnote have to fit 1080 exactly. */}
+      <div className="flex min-h-0 flex-1 flex-col justify-between py-1">
+        {rows.map((row) => {
+          const v = verdict(row);
+          return (
             <div
-              className="metric text-right text-[40px] font-semibold"
-              style={{ color: v === 'win' ? 'var(--color-good)' : v === 'loss' ? 'var(--color-warn)' : 'inherit' }}
+              key={row.label}
+              className="grid grid-cols-[1fr_300px_300px] items-baseline gap-x-8 border-b border-[color:var(--color-line)] pb-[7px]"
             >
-              {fmt(row.continua, row.format)}
+              <div className="text-[24px]">{row.label}</div>
+              <div className="metric text-right text-[30px] text-[color:var(--color-muted)]">
+                {fmt(row.baseline, row.format)}
+              </div>
+              <div
+                className="metric text-right text-[35px] font-semibold"
+                style={{ color: v === 'win' ? 'var(--color-good)' : v === 'loss' ? 'var(--color-warn)' : 'inherit' }}
+              >
+                {fmt(row.continua, row.format)}
+              </div>
             </div>
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
 
-      <div className="mt-auto grid grid-cols-[1fr_320px_320px] gap-x-8 rounded-[14px] border border-[color:var(--color-warn)]/40 bg-[color:var(--color-warn)]/[0.07] px-6 py-4">
-        <div className="col-span-3 mb-2 text-[16px] font-semibold uppercase tracking-[0.14em] text-[color:var(--color-warn)]">
+      <div className="mt-4 grid grid-cols-[1fr_300px_300px] items-baseline gap-x-8 gap-y-1 rounded-[14px] border border-[color:var(--color-warn)]/40 bg-[color:var(--color-warn)]/[0.07] px-6 py-3">
+        <div className="col-span-3 mb-1 text-[15px] font-semibold uppercase tracking-[0.14em] text-[color:var(--color-warn)]">
           Where CONTINUA is worse
         </div>
         {against.map((row) => (
@@ -205,7 +209,7 @@ function Compare({ card }: { card: CardData }) {
         ))}
       </div>
 
-      <p className="text-[19px] leading-[1.4] text-[color:var(--color-muted)]">{card.footnote as string}</p>
+      <p className="mt-3 text-[18px] leading-[1.35] text-[color:var(--color-muted)]">{card.footnote as string}</p>
     </div>
   );
 }
@@ -213,12 +217,12 @@ function Compare({ card }: { card: CardData }) {
 function Fragmentish({ row }: { row: Row }) {
   return (
     <>
-      <div className="text-[21px]">
+      <div className="text-[20px] leading-[1.3]">
         {row.label}
-        {row.note ? <span className="ml-3 text-[17px] text-[color:var(--color-muted)]">— {row.note}</span> : null}
+        {row.note ? <span className="ml-3 text-[16px] text-[color:var(--color-muted)]">— {row.note}</span> : null}
       </div>
-      <div className="metric text-right text-[25px] text-[color:var(--color-muted)]">{fmt(row.baseline, row.format)}</div>
-      <div className="metric text-right text-[25px] font-semibold text-[color:var(--color-warn)]">
+      <div className="metric text-right text-[23px] text-[color:var(--color-muted)]">{fmt(row.baseline, row.format)}</div>
+      <div className="metric text-right text-[23px] font-semibold text-[color:var(--color-warn)]">
         {fmt(row.continua, row.format)}
       </div>
     </>
@@ -246,8 +250,8 @@ function Ablation({ card }: { card: CardData }) {
   };
 
   return (
-    <div className="grid h-full grid-cols-[1.35fr_1fr] gap-10">
-      <div className="flex flex-col gap-4">
+    <div className="grid h-full min-h-0 grid-cols-[1.35fr_1fr] gap-10">
+      <div className="flex min-h-0 flex-col gap-5">
         <div className="grid grid-cols-[1.5fr_repeat(4,1fr)] gap-x-4 border-b border-[color:var(--color-line-strong)] pb-2 text-[14px] font-semibold uppercase tracking-[0.1em] text-[color:var(--color-muted)]">
           <div />
           <div className="text-right">Interruption</div>
@@ -287,7 +291,7 @@ function Ablation({ card }: { card: CardData }) {
         </ul>
       </div>
 
-      <div className="rounded-[16px] border border-[color:var(--color-line)] bg-white p-7">
+      <div className="h-fit self-start rounded-[16px] border border-[color:var(--color-line)] bg-white p-7">
         <div className="text-[15px] font-semibold uppercase tracking-[0.14em] text-[color:var(--color-muted)]">
           {predictor.kicker}
         </div>
@@ -339,7 +343,7 @@ function Results({ card }: { card: CardData }) {
         {scenarios.map((scenario) => (
           <div key={scenario.key} className="flex flex-col">
             <div className="text-[24px] font-semibold">{scenario.label}</div>
-            <div className="mt-3 grid grid-cols-[1.35fr_repeat(3,1fr)] gap-x-3 border-b border-[color:var(--color-line-strong)] pb-2 text-[13px] font-semibold uppercase tracking-[0.09em] text-[color:var(--color-muted)]">
+            <div className="mt-4 grid grid-cols-[1.35fr_repeat(3,1fr)] gap-x-3 border-b border-[color:var(--color-line-strong)] pb-2 text-[13px] font-semibold uppercase tracking-[0.09em] text-[color:var(--color-muted)]">
               <div />
               {columns.map((column, index) => (
                 <div key={column} className={`text-right ${index === 2 ? 'text-[color:var(--color-blue)]' : ''}`}>
@@ -350,7 +354,7 @@ function Results({ card }: { card: CardData }) {
             {rows.map((row) => (
               <div
                 key={row.label}
-                className="grid grid-cols-[1.35fr_repeat(3,1fr)] items-baseline gap-x-3 border-b border-[color:var(--color-line)] py-[9px]"
+                className="grid grid-cols-[1.35fr_repeat(3,1fr)] items-baseline gap-x-3 border-b border-[color:var(--color-line)] py-[15px]"
               >
                 <div className="text-[18px] leading-[1.25]">{row.label}</div>
                 {policies.map((policy) => {
@@ -389,7 +393,7 @@ function Scope({ card }: { card: CardData }) {
   const items = card.items as { head: string; body: string; source: string }[];
   return (
     <div className="flex h-full flex-col gap-6">
-      <div className="grid flex-1 grid-cols-2 gap-x-10 gap-y-6">
+      <div className="grid flex-1 auto-rows-min grid-cols-2 content-start gap-x-10 gap-y-8">
         {items.map((item) => (
           <div key={item.head} className="border-l-[3px] border-[color:var(--color-line-strong)] pl-6">
             <div className="text-[26px] font-semibold leading-[1.2]">{item.head}</div>

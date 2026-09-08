@@ -21,7 +21,7 @@ import { ModeBadge } from './AppShell';
 import { CaptureOverlays } from './capture/CaptureOverlays';
 import { MissionScene } from './mission/MissionScene';
 
-export function CaptureView({ runId }: { runId: string | null }) {
+export function CaptureView({ runId, fullBleed = false }: { runId: string | null; fullBleed?: boolean }) {
   // A short throttle so the overlay numbers belong to the frame being captured.
   const run = useEngineRun(runId, { throttleMs: 40 });
   const playing = run.state?.status === 'running';
@@ -50,10 +50,20 @@ export function CaptureView({ runId }: { runId: string | null }) {
   const app = run.latest?.app;
 
   return (
-    <div className="grid min-h-screen place-items-center bg-[color:var(--color-bg)] p-4">
+    <div
+      className={
+        fullBleed
+          ? 'h-screen w-screen overflow-hidden bg-[color:var(--color-bg)]'
+          : 'grid min-h-screen place-items-center bg-[color:var(--color-bg)] p-4'
+      }
+    >
       <div
-        className="relative w-full max-w-[1600px] overflow-hidden rounded-[18px] border border-[color:var(--color-line)] bg-white shadow-[var(--shadow-raised)]"
-        style={{ aspectRatio: '16 / 9' }}
+        className={
+          fullBleed
+            ? 'relative h-full w-full overflow-hidden bg-white'
+            : 'relative w-full max-w-[1600px] overflow-hidden rounded-[18px] border border-[color:var(--color-line)] bg-white shadow-[var(--shadow-raised)]'
+        }
+        style={fullBleed ? undefined : { aspectRatio: '16 / 9' }}
         data-capture-ready={ready ? 'true' : 'false'}
       >
         {runId ? (
@@ -70,10 +80,13 @@ export function CaptureView({ runId }: { runId: string | null }) {
           </div>
         )}
 
-        {/* Identity strip. Never omitted, in any capture. */}
-        <div className="pointer-events-none absolute left-5 top-4 flex items-center gap-2.5">
+        {/* Identity strip. Never omitted, in any capture.
+            Sized in vw so it scales with the frame: at 1920 wide the smallest
+            line here is still legible when the finished video is watched at
+            half size. */}
+        <div className="pointer-events-none absolute left-[1.6%] top-[2.4%] flex items-center gap-[0.8vw]">
           <span
-            className="text-[26px] font-semibold leading-none tracking-[-0.03em]"
+            className="text-[1.75vw] font-semibold leading-none tracking-[-0.03em]"
             style={{
               background: 'linear-gradient(96deg,#176BFF,#7C3CFF)',
               WebkitBackgroundClip: 'text',
@@ -83,13 +96,13 @@ export function CaptureView({ runId }: { runId: string | null }) {
           >
             CONTINUA
           </span>
-          <span className="text-[12px] text-[color:var(--color-muted)]">
+          <span className="text-[0.85vw] text-[color:var(--color-muted)]">
             Predictive Network Continuity
           </span>
           <ModeBadge state={run.state} />
         </div>
 
-        <div className="pointer-events-none absolute right-5 top-4 text-right text-[10.5px] text-[color:var(--color-muted)]">
+        <div className="pointer-events-none absolute right-[1.6%] top-[2.4%] text-right text-[0.76vw] leading-[1.5] text-[color:var(--color-muted)]">
           {/* In replay, cite the run the evidence actually came from — the
               replay session's own id means nothing to anyone reading
               docs/VIDEO_CLAIMS.md. */}
@@ -103,36 +116,36 @@ export function CaptureView({ runId }: { runId: string | null }) {
           </div>
         </div>
 
-        <div className="pointer-events-none absolute bottom-4 left-5 right-5 flex items-end justify-between gap-4">
-          <div className="flex gap-1.5">
+        <div className="pointer-events-none absolute bottom-[2.4%] left-[1.6%] right-[1.6%] flex items-end justify-between gap-[1vw]">
+          <div className="flex gap-[0.5vw]">
             {LINK_IDS.map((link) => {
               const obs = run.latest?.links[link];
               const carrying = run.latest?.carrying === link;
               return (
                 <div
                   key={link}
-                  className="rounded-[10px] border bg-white/90 px-2.5 py-1.5 backdrop-blur"
+                  className="rounded-[0.6vw] border bg-white/90 px-[0.75vw] py-[0.45vw] backdrop-blur"
                   style={{
                     borderColor: carrying ? NETWORK_COLOR[link] : 'var(--color-line)',
                     opacity: obs?.phase === 'unavailable' ? 0.45 : 1,
                   }}
                 >
-                  <div className="text-[11px] font-semibold" style={{ color: NETWORK_COLOR[link] }}>
+                  <div className="text-[0.82vw] font-semibold" style={{ color: NETWORK_COLOR[link] }}>
                     {LINK_LABEL[link].label}
                   </div>
-                  <div className="metric text-[10px] text-[color:var(--color-muted)]">
+                  <div className="metric text-[0.72vw] text-[color:var(--color-muted)]">
                     {obs?.rtt_ms != null ? `${obs.rtt_ms.toFixed(0)} ms` : 'unavailable'}
                   </div>
                 </div>
               );
             })}
           </div>
-          <div className="rounded-[10px] border border-[color:var(--color-line)] bg-white/90 px-3 py-1.5 text-right backdrop-blur">
-            <div className="panel-label">App health · app_health_v1</div>
-            <div className="metric text-[20px] font-semibold leading-none">
+          <div className="rounded-[0.6vw] border border-[color:var(--color-line)] bg-white/90 px-[0.9vw] py-[0.5vw] text-right backdrop-blur">
+            <div className="panel-label text-[0.62vw]">App health · app_health_v1</div>
+            <div className="metric text-[1.6vw] font-semibold leading-none">
               {app?.health_score != null ? app.health_score.toFixed(0) : '—'}
             </div>
-            <div className="text-[10px] text-[color:var(--color-muted)]">
+            <div className="text-[0.72vw] text-[color:var(--color-muted)]">
               reconnects {app?.session_reconnects ?? '—'} · outage {(app?.outage_s ?? 0).toFixed(1)}s
             </div>
           </div>

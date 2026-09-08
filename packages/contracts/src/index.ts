@@ -50,7 +50,7 @@ export interface AccessNetworkMeta {
 export const ACCESS_NETWORK_META: Readonly<Record<AccessNetworkId, AccessNetworkMeta>> = {
   wired: { id: 'wired', label: 'Wired', sublabel: 'Ethernet', accent: 'cyan' },
   wifi: { id: 'wifi', label: 'Wi-Fi', sublabel: '2.4 / 5 GHz', accent: 'cyan' },
-  cellular: { id: 'cellular', label: '5G', sublabel: 'Mobile Network', accent: 'blue' },
+  cellular: { id: 'cellular', label: 'Cellular', sublabel: 'Macro site profile', accent: 'blue' },
   satellite: { id: 'satellite', label: 'Satellite', sublabel: 'Link', accent: 'violet' },
 };
 

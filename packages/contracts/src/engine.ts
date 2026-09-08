@@ -260,7 +260,7 @@ export function formatMeasurement(
 export const LINK_LABEL: Record<EngineLinkId, { label: string; sublabel: string }> = {
   wired: { label: 'Wired', sublabel: 'Ethernet' },
   wifi: { label: 'Wi-Fi', sublabel: '2.4 / 5 GHz' },
-  cellular: { label: '5G', sublabel: 'Mobile Network' },
+  cellular: { label: 'Cellular', sublabel: 'Macro site profile' },
   satellite: { label: 'Satellite', sublabel: 'Link' },
 };
 

@@ -33,7 +33,7 @@
       "rssi_at_edge_dbm": -92.0
     },
     "cellular": {
-      "label": "5G mobile (macro site profile)",
+      "label": "Cellular (shaped macro site profile)",
       "capacity_mbps": 55.0,
       "base_rtt_ms": 32.0,
       "jitter_ms": 9.0,

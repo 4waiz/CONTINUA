@@ -128,6 +128,36 @@ async function captureCard(browser, shot) {
   await page.evaluate(() => document.fonts.ready);
   await page.waitForTimeout(350);
 
+  // A card whose content is taller or wider than the frame ships as a cropped
+  // table with the honest rows sliced off the bottom — the exact failure this
+  // project cannot afford. Refuse rather than warn.
+  const overflow = await page.evaluate(() => {
+    const frame = document.querySelector('[data-card-frame]');
+    if (!frame) return { missing: true };
+    const clipped = [...frame.querySelectorAll('*')].filter((element) => {
+      const box = element.getBoundingClientRect();
+      return box.height > 0 && (box.bottom > 1080.5 || box.right > 1920.5 || box.top < -0.5);
+    });
+    return {
+      missing: false,
+      scrollHeight: frame.scrollHeight,
+      clientHeight: frame.clientHeight,
+      clipped: clipped.slice(0, 4).map((element) => {
+        const box = element.getBoundingClientRect();
+        return `${element.tagName.toLowerCase()} "${(element.textContent ?? '').trim().slice(0, 48)}" bottom=${box.bottom.toFixed(0)}`;
+      }),
+    };
+  });
+
+  if (overflow.missing) throw new Error(`${shot.id}: card frame not found at ${url}`);
+  if (overflow.clipped.length > 0 || overflow.scrollHeight > overflow.clientHeight + 1) {
+    throw new Error(
+      `${shot.id}: card "${shot.card}" does not fit 1920x1080 ` +
+        `(content ${overflow.scrollHeight}px in ${overflow.clientHeight}px).\n` +
+        overflow.clipped.map((line) => `    clipped: ${line}`).join('\n'),
+    );
+  }
+
   const target = join(directory, 'still.png');
   await page.screenshot({ path: target, animations: 'disabled' });
   await page.close();
@@ -151,7 +181,7 @@ async function captureApp(browser, shot) {
   });
   page.on('pageerror', (error) => errors.push(String(error)));
 
-  const url = `${WEB}/capture?run=${replayId}`;
+  const url = `${WEB}/capture?run=${replayId}&fullbleed=1`;
   await page.goto(url, { waitUntil: 'networkidle' });
 
   // Prime the socket at the start of the window before recording anything, so
