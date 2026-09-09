@@ -41,6 +41,14 @@ Every dashboard shot carries the execution-mode chip in frame. The 3D opening
 and closing shots are Blender renders of the project's own asset and are
 labelled **rendered scene**, not captured telemetry.
 
+### Playback rate
+
+One stretch — the five-step sequence, shot S4 — is played at **0.36x** so that
+two controller actions 0.66 s apart in the run are both readable. Whenever the
+rate is not 1.0 the frame carries a badge saying so, next to a `t+` readout that
+is always the run's own clock, never video time. No other shot is retimed, and
+nothing is sped up anywhere.
+
 ### How the shown trace was chosen
 
 Not by looking for the best one. `scripts/select_representative.py` fixes the
@@ -61,27 +69,31 @@ seed, same scenario, same exogenous trace** — only the policy differs.
 
 Times are the caption cue points in `video/timeline.json`.
 
-| # | Claim as spoken | Run / experiment | Mode | Source file | Status |
+Several claims are **shown but not spoken** — the caption cards carry more
+precision than a voice-over can. Those rows say so rather than quoting a
+sentence nobody says.
+
+| # | Claim, as it appears | Run / experiment | Mode | Source file | Status |
 | --- | --- | --- | --- | --- | --- |
-| C1 | "A response vehicle leaves a wired dock, crosses Wi-Fi and cellular, and ends on satellite." | route + coverage model, 24 control points, 917 m | simulation | `packages/contracts/world.json`, `packages/scene/src/world/route.ts` | implemented |
-| C2 | "Everything you are about to see is a software simulation of that journey. No radios, no satellite, no hardware." | — | — | `docs/ASSUMPTIONS.md` §1 | implemented |
-| C3 | "The reactive baseline waits for the link it is using to fail." | policy `B0` = switch only on measured unusability | simulation | `services/engine/continua_engine/controller/controller.py` → `POLICY_LIBRARY['B0']` | implemented |
-| C4 | "On this run it loses the session four times — seven point three seconds of dead air, and one full reconnect." | `run-7d8750c2b7` | simulation | `data/runs/run-7d8750c2b7/metrics.json` → `continuity` | **measured** |
-| C5 | "CONTINUA runs the same journey through five steps: observe, predict, prepare, steer, explain." | controller state machine | simulation | `services/engine/continua_engine/controller/controller.py` | implemented |
-| C6 | "It watches receiver-side facts only — round-trip time, loss, jitter, queue depth. The controller never sees the script the world is running from." | trace isolation | simulation | `tests/engine/test_engine.py::test_controller_cannot_reach_trace` | **measured** (asserted by test) |
-| C7 | "At twenty-eight point eight seconds it warms cellular while Wi-Fi is still carrying traffic." | `run-d2819d215c`, action `start_duplication` @ 28.76 s | simulation | `data/runs/run-d2819d215c/events.jsonl` | **measured** |
-| C8 | "At twenty-nine point four it moves the session across, and records why." | same run, action `switch` @ 29.42 s, reason recorded at decision time | simulation | `data/runs/run-d2819d215c/events.jsonl` | **measured** |
-| C9 | "Same seed, same trace, only the policy changed: seven point three two seconds of interruption becomes zero point one six." | `run-7d8750c2b7` vs `run-d2819d215c` | simulation | both `metrics.json` | **measured** |
-| C10 | "The remaining zero point one six seconds is the session coming up at t equals zero, before any link is carrying." | outage window 0.00–0.20 s, present in every policy including the baselines | simulation | `data/runs/*/events.jsonl` → `app.in_outage` | **measured** |
-| C11 | "Across twenty paired trials the always-multipath baseline reaches the same zero point one six seconds. Preparation is what removes the interruption — not prediction." | `exp-26f132d5d7`, policies B2 and P1 | simulation | `data/experiments/exp-26f132d5d7.json` → `aggregate` | **measured** |
-| C12 | "What CONTINUA adds is the price. Same continuity, at one point two five cost units against four point three one, and four point eight megabytes over satellite against sixty-one point two." | `exp-26f132d5d7`, P1 vs B2 | simulation | same | **measured** |
-| C13 | "Turn the application-awareness off and the cost goes back up to four point seven eight." | ablation `P1-noApp` | simulation | same → `aggregate['P1-noApp']` | **measured** |
-| C14 | "Under cellular congestion that awareness is also what holds the control channel: thirty-one point five percent of deadlines missed against forty-nine point two." | `exp-64931cf540`, P1 vs B2 | simulation | `data/experiments/exp-64931cf540.json` | **measured** |
-| C15 | "Removing the predictor entirely changes almost nothing. That is a negative result and it is in the repository." | ablation `P1-noPred` | simulation | `data/experiments/exp-26f132d5d7.json`, `docs/EXPERIMENT_METHOD.md` | **measured** |
-| C16 | "A trained model raises recall from zero point one four to zero point seven eight — and makes the outcome slightly worse, at a hundred and one false positives a run." | `exp-e70fe761a1` (learned predictor) | simulation | `data/experiments/exp-e70fe761a1.json`, `docs/MODEL_CARD.md` | **measured** |
-| C17 | "When every link is down, nothing here helps: ten point six seconds, for every policy." | `exp-657ef4a89a` (`total-loss`) | simulation | `data/experiments/exp-657ef4a89a.json` | **measured** |
-| C18 | "The Linux emulation path is written but this machine cannot verify it, and the kernel has no MPTCP. Both are recorded, not glossed." | capability probe | — | `data/emulation_capability.json`, `docs/ASSUMPTIONS.md` | **not verified here** |
-| C19 | "Hardware, a real radio, and a field trial are the next step." | — | — | `docs/PHASE_2_HANDOFF.md` | **proposed** |
+| C1 | "A response vehicle drives out of coverage." (N1) | route + coverage model, 24 control points, 917 m | simulation | `packages/contracts/world.json`, `packages/scene/src/world/route.ts` | implemented |
+| C2 | "Everything here is a software simulation. No radios, no satellite, no hardware." (N2) | — | — | `docs/ASSUMPTIONS.md` §1 | implemented |
+| C3 | "The reactive baseline waits for its link to fail." (N3) | policy `B0` = switch only on measured unusability | simulation | `services/engine/continua_engine/controller/controller.py` → `POLICY_LIBRARY['B0']` | implemented |
+| C4 | "The session goes dark four times: seven point three two seconds." (N3) | `run-7d8750c2b7` | simulation | `data/runs/run-7d8750c2b7/metrics.json` → `continuity` | **measured** |
+| C5 | "Five steps." plus the five step captions (N5–N8) | controller state machine | simulation | `services/engine/continua_engine/controller/controller.py` | implemented |
+| C6 | "Observe: receiver side facts only. The controller never sees the world's script." (N5) | trace isolation | simulation | `tests/engine/test_engine.py::test_controller_cannot_reach_trace` | **measured** (asserted by test) |
+| C7 | "Prepare: it warms cellular while Wi-Fi still carries." Caption: "t+28.76 s · duplicate onto cellular while Wi-Fi still carries" | `run-d2819d215c`, action `start_duplication` @ 28.76 s | simulation | `data/evidence/video/run-d2819d215c/`, `data/runs/run-d2819d215c/events.jsonl` | **measured** |
+| C8 | "Steer: six tenths of a second later." / "Explain: it records why, at the moment it decided." Caption: "t+29.42 s · session moved on a measured violation" | same run, action `switch` @ 29.42 s, reason recorded at decision time | simulation | `data/evidence/video/run-d2819d215c/`, `data/runs/run-d2819d215c/events.jsonl` | **measured** |
+| C9 | "Same seed, same trace, only the policy changed. Seven point three two seconds becomes zero point one six." (N9) | `run-7d8750c2b7` vs `run-d2819d215c` | simulation | both `metrics.json` | **measured** |
+| C10 | "…and that remainder is the session starting up." (N9), plus the card footnote | outage window 0.00–0.20 s, present in every policy including the baselines | simulation | `data/runs/*/events.jsonl` → `app.in_outage` | **measured** |
+| C11 | "Twenty paired trials say something we did not expect. Preparation is what removes the interruption." (N11) | `exp-26f132d5d7`, policies B2 and P1 | simulation | `data/experiments/exp-26f132d5d7.json` → `aggregate` | **measured** |
+| C12 | "What CONTINUA adds is the price: the same continuity at a third of the cost, a twelfth of the satellite data." (N12), with the exact figures on the results card | `exp-26f132d5d7`, P1 vs B2 | simulation | same | **measured** |
+| C13 | Ablation card only — not spoken. "…without application-awareness: 4.78 cost units, 62.3 MB satellite" | ablation `P1-noApp` | simulation | same → `aggregate['P1-noApp']` | **measured** |
+| C14 | Results and ablation cards only — not spoken. Congestion column, P1 31.5 % vs B2 49.2 % | `exp-64931cf540`, P1 vs B2 | simulation | `data/experiments/exp-64931cf540.json` | **measured** |
+| C15 | "Take the predictor out and almost nothing changes." (N11) | ablation `P1-noPred` | simulation | `data/experiments/exp-26f132d5d7.json`, `docs/EXPERIMENT_METHOD.md` | **measured** |
+| C16 | Predictor card only — not spoken. Recall 0.140 → 0.782, false positives 7.5 → 101, app health 68.8 → 67.9 | `exp-e70fe761a1` (learned predictor) | simulation | `data/experiments/exp-e70fe761a1.json`, `docs/MODEL_CARD.md` | **measured** |
+| C17 | "Total loss: ten point six seconds, every policy." (N13) | `exp-657ef4a89a` (`total-loss`) | simulation | `data/experiments/exp-657ef4a89a.json` | **measured** |
+| C18 | "Emulation is unverified here and the kernel has no MPTCP." (N13), and the scope card | capability probe | — | `data/emulation_capability.json`, `docs/ASSUMPTIONS.md` | **not verified here** |
+| C19 | Scope card only — not spoken. "Hardware in the loop, a real radio, and a field trial are the next step — not a result." | — | — | `docs/PHASE_2_HANDOFF.md` | **proposed** |
 
 ---
 

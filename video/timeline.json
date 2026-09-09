@@ -6,7 +6,7 @@
     "width": 1920,
     "height": 1080,
     "fps": 30,
-    "duration_s": 116.0,
+    "duration_s": 117.0,
     "container": "mp4",
     "video_codec": "libx264",
     "pixel_format": "yuv420p",
@@ -171,7 +171,7 @@
       "id": "S9",
       "kind": "card",
       "video_from": 98.0,
-      "video_to": 109.5,
+      "video_to": 110.5,
       "card": "scope",
       "note": "Scope and limitations. Not a footnote — a full card.",
       "claims": [
@@ -183,8 +183,8 @@
     {
       "id": "S10",
       "kind": "blender",
-      "video_from": 109.5,
-      "video_to": 116.0,
+      "video_from": 110.5,
+      "video_to": 117.0,
       "source": "renders/outro/####.png",
       "label": "rendered scene",
       "note": "Closing card. CONTINUA / The network changes. The session doesn't. / by Team Kanban."
@@ -267,13 +267,13 @@
     {
       "id": "N13",
       "from": 98.6,
-      "to": 109.2,
+      "to": 110.2,
       "text": "Scope. A simulation, not a network. Emulation is unverified here and the kernel has no MPTCP. Total loss: ten point six seconds, every policy."
     },
     {
       "id": "N14",
-      "from": 110.2,
-      "to": 115.4,
+      "from": 111.2,
+      "to": 116.4,
       "text": "CONTINUA. Predictive network continuity. By Team Kanban."
     }
   ],
@@ -365,8 +365,8 @@
       "sub": "\"holding to avoid a ping-pong switch\" — recorded reason"
     },
     {
-      "from": 110.0,
-      "to": 115.8,
+      "from": 111.0,
+      "to": 116.8,
       "kind": "title",
       "text": "CONTINUA",
       "sub": "The network changes. The session doesn't. · by Team Kanban",

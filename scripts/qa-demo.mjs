@@ -16,6 +16,7 @@
  */
 
 import { execFileSync, spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -128,6 +129,36 @@ for (const shot of [...TIMELINE.shots].sort((a, b) => a.video_from - b.video_fro
 const sampled = readdirSync(QA).length;
 check('one sample frame per shot written for review', sampled === TIMELINE.shots.length, `${sampled} frames in video/work/qa/`);
 
+// Repeated frames are what judder *is*. The first cut had 42-66 % of every
+// application shot byte-identical to the frame before it, in irregular runs,
+// because the capture screenshotted before the seek had reached the page and
+// the scene clock only resynced on 0.35 s of drift. Measure it, do not eyeball
+// it.
+const appShots = TIMELINE.shots.filter((shot) => shot.kind === 'app');
+const repeats = [];
+for (const shot of appShots) {
+  const directory = join(ROOT, 'video', 'frames', shot.id);
+  if (!existsSync(directory)) continue;
+  const files = readdirSync(directory).filter((name) => name.endsWith('.png')).sort();
+  let duplicates = 0;
+  let previous = null;
+  for (const name of files) {
+    const digest = createHash('md5').update(readFileSync(join(directory, name))).digest('hex');
+    if (digest === previous) duplicates += 1;
+    previous = digest;
+  }
+  repeats.push({ shot: shot.id, frames: files.length, duplicates });
+}
+const worst = repeats.reduce(
+  (acc, entry) => Math.max(acc, entry.frames ? entry.duplicates / entry.frames : 0),
+  0,
+);
+check(
+  'application footage has no repeated frames',
+  repeats.length > 0 && worst < 0.02,
+  repeats.map((entry) => `${entry.shot} ${entry.duplicates}/${entry.frames}`).join(', ') || 'no frames on disk',
+);
+
 // --- audio ----------------------------------------------------------------
 
 console.log('\naudio');
@@ -141,6 +172,20 @@ check('audio does not clip', Number.isFinite(peakDb) && peakDb < -0.1, `peak ${p
 // A narration track that is technically audible but far too quiet is still a
 // broken deliverable on a laptop speaker.
 check('narration is at a usable level', Number.isFinite(meanDb) && meanDb > -32, `mean ${meanDb} dB`);
+
+// Every line read at the synthesiser's ceiling is the difference between
+// narration and a screen reader. Assert the fitter did not have to max out.
+const narrationReport = existsSync(join(ROOT, 'video/audio/narration.json'))
+  ? JSON.parse(readFileSync(join(ROOT, 'video/audio/narration.json'), 'utf8'))
+  : null;
+const maxed = (narrationReport?.cues ?? []).filter((cue) => cue.rate >= 18);
+check(
+  'most narration is not read at the maximum rate',
+  narrationReport !== null && maxed.length <= Math.ceil((narrationReport.cues.length ?? 0) / 3),
+  narrationReport
+    ? `${maxed.length}/${narrationReport.cues.length} cues at +18%, voice "${narrationReport.voice}"`
+    : 'video/audio/narration.json missing',
+);
 
 // --- subtitles ------------------------------------------------------------
 
@@ -216,6 +261,8 @@ const BY_EYE = [
   'Titles and card text are not cropped at any edge.',
   'The execution-mode chip is legible in every application shot.',
   'Charts and tables are readable at half size.',
+  'Motion in the application shots is smooth, with no repeated frames.',
+  'The narration is followable — not read at the synthesiser ceiling.',
   'The final card reads CONTINUA / by Team Kanban.',
 ];
 

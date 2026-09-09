@@ -1,6 +1,6 @@
 # Narration — CONTINUA demo video
 
-252 words, 116 seconds. Spoken slowly on purpose: the video is dense with
+252 words, 117 seconds. Spoken slowly on purpose: the video is dense with
 numbers and the viewer needs room between them.
 
 ## How this script got shorter twice
@@ -124,12 +124,12 @@ every continuity and application metric.*
 *P1 1.25 cost units vs B2 4.31; 4.78 MB vs 61.20 MB; app health 68.8 vs 70.3.
 The loss is spoken, not buried.*
 
-### N13 · 98.6 → 109.2 — scope
+### N13 · 98.6 → 110.2 — scope
 
 > Scope. A simulation, not a network. Emulation is unverified here and the
 > kernel has no MPTCP. Total loss: ten point six seconds, every policy.
 
-### N14 · 110.2 → 115.4 — close
+### N14 · 111.2 → 116.4 — close
 
 > CONTINUA. Predictive network continuity. By Team Kanban.
 

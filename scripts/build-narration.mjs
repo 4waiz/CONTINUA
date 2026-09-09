@@ -168,11 +168,27 @@ function main() {
   const measured = durationOf(target);
   writeFileSync(
     join(AUDIO, 'narration.json'),
-    `${JSON.stringify({ voice: VOICE, synthesiser: 'Windows System.Speech (local)', total_s: measured, cues: report }, null, 2)}\n`,
+    `${JSON.stringify(
+      {
+        voice: engineUsed?.voice ?? VOICE,
+        synthesiser:
+          engineUsed?.engine === 'winrt'
+            ? 'Windows.Media.SpeechSynthesis (OneCore, local)'
+            : 'Windows System.Speech (SAPI5, local)',
+        prosody: 'SSML: sentence and clause breaks, percentage rate, ceiling +18%',
+        total_s: measured,
+        cues: report,
+      },
+      null,
+      2,
+    )}\n`,
     'utf8',
   );
 
-  console.log(`\nnarration.wav  ${measured.toFixed(2)}s  voice "${VOICE}"`);
+  console.log(
+    `\nnarration.wav  ${measured.toFixed(2)}s  voice "${engineUsed?.voice ?? VOICE}"` +
+      ` via ${engineUsed?.engine ?? 'unknown'}`,
+  );
   console.log(`report: video/audio/narration.json`);
   if (Math.abs(measured - total) > 0.05) {
     console.warn(`note: bed is ${measured.toFixed(2)}s against a ${total}s timeline`);

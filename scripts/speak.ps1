@@ -30,8 +30,8 @@ param(
   # Percentage against the voice's natural pace. Negative is slower.
   [int]$RatePercent = 0,
   [string]$Voice = 'Microsoft Mark',
-  [int]$SentenceBreakMs = 260,
-  [int]$ClauseBreakMs = 110
+  [int]$SentenceBreakMs = 200,
+  [int]$ClauseBreakMs = 90
 )
 
 $ErrorActionPreference = 'Stop'
