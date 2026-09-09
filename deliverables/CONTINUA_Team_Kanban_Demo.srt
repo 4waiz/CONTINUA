@@ -1,137 +1,125 @@
 1
-00:00:00,600 --> 00:00:04,420
+00:00:00,600 --> 00:00:06,300
 A response vehicle drives out of coverage. The
-network changes.
+network changes; the session should not.
 
 2
-00:00:04,420 --> 00:00:06,300
-The session should not have to.
-
-3
-00:00:06,800 --> 00:00:12,500
+00:00:06,800 --> 00:00:12,600
 Everything here is a software simulation. No
 radios, no satellite, no hardware.
 
-4
-00:00:12,900 --> 00:00:15,528
+3
+00:00:13,000 --> 00:00:16,209
 The reactive baseline waits for its link to
 fail.
 
-5
-00:00:15,528 --> 00:00:20,300
-Here the session goes dark four times: seven
-point three two seconds, one full reconnect.
+4
+00:00:16,209 --> 00:00:20,400
+The session goes dark four times: seven point
+three two seconds.
 
-6
-00:00:20,800 --> 00:00:24,153
+5
+00:00:20,900 --> 00:00:24,253
 CONTINUA is the working application around
 that problem.
 
-7
-00:00:24,153 --> 00:00:26,847
+6
+00:00:24,253 --> 00:00:26,947
 Every panel reads from one engine over a live
 
-8
-00:00:26,847 --> 00:00:29,900
+7
+00:00:26,947 --> 00:00:30,000
 socket, and the execution mode is always on
 screen.
 
-9
-00:00:30,300 --> 00:00:33,203
+8
+00:00:30,400 --> 00:00:37,800
 Five steps. Observe: receiver side facts only.
+The controller never sees the world's script.
 
-10
-00:00:33,203 --> 00:00:36,800
-The controller never sees the script the world
-runs from.
-
-11
-00:00:37,200 --> 00:00:41,600
+9
+00:00:38,100 --> 00:00:42,600
 Predict: a short horizon on those same facts,
 three seconds ahead.
 
+10
+00:00:42,900 --> 00:00:50,000
+Prepare: it warms cellular while Wi-Fi still
+carries. Steer: six tenths of a second later.
+
+11
+00:00:50,300 --> 00:00:55,700
+Explain: it records why, at the moment it
+decided.
+
 12
-00:00:41,900 --> 00:00:44,403
-Prepare: at twenty eight point eight seconds
-it
-
-13
-00:00:44,403 --> 00:00:46,800
-warms cellular while Wi-Fi is still carrying.
-
-14
-00:00:46,900 --> 00:00:52,400
-Steer, six tenths of a second later. Explain:
-it records why, as it decided.
-
-15
-00:00:52,600 --> 00:00:55,233
+00:00:56,600 --> 00:00:59,733
 Same seed, same trace, only the policy
 changed.
 
-16
-00:00:55,233 --> 00:00:58,483
-Seven point three two seconds of interruption
-becomes zero
+13
+00:00:59,733 --> 00:01:03,200
+Seven point three two seconds becomes zero
+point one
 
-17
-00:00:58,483 --> 00:01:01,900
-point one six, and that remainder is the
-session starting up.
+14
+00:01:03,200 --> 00:01:06,600
+six, and that remainder is the session
+starting up.
 
-18
-00:01:02,600 --> 00:01:07,140
+15
+00:01:07,600 --> 00:01:12,140
 On the satellite route it holds the session
 through the fallback, and spends
 
-19
-00:01:07,140 --> 00:01:11,800
+16
+00:01:12,140 --> 00:01:16,800
 four point eight megabytes of satellite where
 the baseline spends forty seven.
 
-20
-00:01:12,600 --> 00:01:16,038
+17
+00:01:17,600 --> 00:01:21,181
 Twenty paired trials say something we did not
 expect.
 
-21
-00:01:16,038 --> 00:01:18,957
+18
+00:01:21,181 --> 00:01:24,222
 Preparation is what removes the interruption.
 
-22
-00:01:18,957 --> 00:01:22,200
+19
+00:01:24,222 --> 00:01:27,600
 Take the predictor out and almost nothing
 changes.
 
-23
-00:01:23,000 --> 00:01:26,640
+20
+00:01:28,600 --> 00:01:32,161
 What CONTINUA adds is the price: the same
 continuity at
 
-24
-00:01:26,640 --> 00:01:30,148
+21
+00:01:32,161 --> 00:01:35,593
 a third of the cost, a twelfth of the
 satellite data.
 
-25
-00:01:30,148 --> 00:01:32,200
+22
+00:01:35,593 --> 00:01:37,600
 It loses on application health.
 
-26
-00:01:32,600 --> 00:01:34,979
+23
+00:01:38,600 --> 00:01:41,500
 Scope. A simulation, not a network.
 
-27
-00:01:34,979 --> 00:01:38,854
+24
+00:01:41,500 --> 00:01:46,223
 Emulation is unverified here and the kernel
 has no MPTCP.
 
-28
-00:01:38,854 --> 00:01:43,000
-When every link is down: ten point six
-seconds, every policy.
+25
+00:01:46,223 --> 00:01:50,200
+Total loss: ten point six seconds, every
+policy.
 
-29
-00:01:43,600 --> 00:01:48,600
+26
+00:01:51,200 --> 00:01:56,400
 CONTINUA. Predictive network continuity. By
 Team Kanban.
