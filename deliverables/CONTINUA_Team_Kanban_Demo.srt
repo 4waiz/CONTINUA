@@ -1,120 +1,137 @@
 1
-00:00:00,600 --> 00:00:03,450
-A response vehicle drives out of coverage.
-The network changes. The session should
+00:00:00,600 --> 00:00:04,420
+A response vehicle drives out of coverage. The
+network changes.
 
 2
-00:00:03,450 --> 00:00:06,300
-not have to.
+00:00:04,420 --> 00:00:06,300
+The session should not have to.
 
 3
 00:00:06,800 --> 00:00:12,500
-Everything here is a software simulation.
-No radios, no satellite, no hardware.
+Everything here is a software simulation. No
+radios, no satellite, no hardware.
 
 4
-00:00:12,900 --> 00:00:16,600
-The reactive baseline waits for its link
-to fail. Here the session goes dark four
+00:00:12,900 --> 00:00:15,528
+The reactive baseline waits for its link to
+fail.
 
 5
-00:00:16,600 --> 00:00:20,300
-times: seven point three two seconds, one
-full reconnect.
+00:00:15,528 --> 00:00:20,300
+Here the session goes dark four times: seven
+point three two seconds, one full reconnect.
 
 6
-00:00:20,800 --> 00:00:25,350
+00:00:20,800 --> 00:00:24,153
 CONTINUA is the working application around
-that problem. Every panel reads from one
+that problem.
 
 7
-00:00:25,350 --> 00:00:29,900
-engine over a live socket, and the
-execution mode is always on screen.
+00:00:24,153 --> 00:00:26,847
+Every panel reads from one engine over a live
 
 8
-00:00:30,300 --> 00:00:33,550
-Five steps. Observe: receiver side facts
-only. The controller never sees the script
+00:00:26,847 --> 00:00:29,900
+socket, and the execution mode is always on
+screen.
 
 9
-00:00:33,550 --> 00:00:36,800
-the world runs from.
+00:00:30,300 --> 00:00:33,203
+Five steps. Observe: receiver side facts only.
 
 10
-00:00:37,200 --> 00:00:41,600
-Predict: a short horizon on those same
-facts, three seconds ahead.
+00:00:33,203 --> 00:00:36,800
+The controller never sees the script the world
+runs from.
 
 11
-00:00:41,900 --> 00:00:44,350
-Prepare: at twenty eight point eight
-seconds it warms cellular while Wi-Fi is
+00:00:37,200 --> 00:00:41,600
+Predict: a short horizon on those same facts,
+three seconds ahead.
 
 12
-00:00:44,350 --> 00:00:46,800
-still carrying.
+00:00:41,900 --> 00:00:44,403
+Prepare: at twenty eight point eight seconds
+it
 
 13
-00:00:46,900 --> 00:00:52,400
-Steer, six tenths of a second later.
-Explain: it records why, as it decided.
+00:00:44,403 --> 00:00:46,800
+warms cellular while Wi-Fi is still carrying.
 
 14
-00:00:52,600 --> 00:00:55,700
-Same seed, same trace, only the policy
-changed. Seven point three two seconds of
+00:00:46,900 --> 00:00:52,400
+Steer, six tenths of a second later. Explain:
+it records why, as it decided.
 
 15
-00:00:55,700 --> 00:00:58,800
-interruption becomes zero point one six,
-and that remainder is the session starting
+00:00:52,600 --> 00:00:55,233
+Same seed, same trace, only the policy
+changed.
 
 16
-00:00:58,800 --> 00:01:01,900
-up.
+00:00:55,233 --> 00:00:58,483
+Seven point three two seconds of interruption
+becomes zero
 
 17
-00:01:02,600 --> 00:01:07,200
-On the satellite route it holds the
-session through the fallback, and spends
+00:00:58,483 --> 00:01:01,900
+point one six, and that remainder is the
+session starting up.
 
 18
-00:01:07,200 --> 00:01:11,800
-four point eight megabytes of satellite
-where the baseline spends forty seven.
+00:01:02,600 --> 00:01:07,140
+On the satellite route it holds the session
+through the fallback, and spends
 
 19
-00:01:12,600 --> 00:01:17,400
-Twenty paired trials say something we did
-not expect. Preparation is what removes
+00:01:07,140 --> 00:01:11,800
+four point eight megabytes of satellite where
+the baseline spends forty seven.
 
 20
-00:01:17,400 --> 00:01:22,200
-the interruption. Take the predictor out
-and almost nothing changes.
+00:01:12,600 --> 00:01:16,038
+Twenty paired trials say something we did not
+expect.
 
 21
-00:01:23,000 --> 00:01:27,600
-What CONTINUA adds is the price: the same
-continuity at a third of the cost, a
+00:01:16,038 --> 00:01:18,957
+Preparation is what removes the interruption.
 
 22
-00:01:27,600 --> 00:01:32,200
-twelfth of the satellite data. It loses on
-application health.
+00:01:18,957 --> 00:01:22,200
+Take the predictor out and almost nothing
+changes.
 
 23
-00:01:32,600 --> 00:01:37,800
-Scope. A simulation, not a network.
-Emulation is unverified here and the
+00:01:23,000 --> 00:01:26,640
+What CONTINUA adds is the price: the same
+continuity at
 
 24
-00:01:37,800 --> 00:01:43,000
-kernel has no MPTCP. When every link is
-down: ten point six seconds, every policy.
+00:01:26,640 --> 00:01:30,148
+a third of the cost, a twelfth of the
+satellite data.
 
 25
+00:01:30,148 --> 00:01:32,200
+It loses on application health.
+
+26
+00:01:32,600 --> 00:01:34,979
+Scope. A simulation, not a network.
+
+27
+00:01:34,979 --> 00:01:38,854
+Emulation is unverified here and the kernel
+has no MPTCP.
+
+28
+00:01:38,854 --> 00:01:43,000
+When every link is down: ten point six
+seconds, every policy.
+
+29
 00:01:43,600 --> 00:01:48,600
-CONTINUA. Predictive network continuity.
-By Team Kanban.
+CONTINUA. Predictive network continuity. By
+Team Kanban.

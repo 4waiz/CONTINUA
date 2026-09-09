@@ -1,8 +1,8 @@
 {
   "title": "CONTINUA — Predictive Network Continuity",
   "team": "Team Kanban",
-  "built_at": "2026-09-09T09:13:46.384Z",
-  "code_commit": "70124f49785493840ba1eb19bd7a664a4832250a",
+  "built_at": "2026-09-09T09:20:01.551Z",
+  "code_commit": "1a5b14942f2bf16e1d67260daba3fc8af26d5c31",
   "execution_mode": "simulation",
   "evidence": {
     "claims": "docs/VIDEO_CLAIMS.md",

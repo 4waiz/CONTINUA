@@ -211,8 +211,10 @@ function srtTime(seconds) {
   return `${h}:${m}:${s},${String(ms % 1000).padStart(3, '0')}`;
 }
 
-/** Two lines of at most ~42 characters each is what reads comfortably at 1080p. */
-function wrap(text, limit = 42) {
+/** Two lines of at most 46 characters is what reads comfortably at 1080p. */
+const LINE_LIMIT = 46;
+
+function wrap(text, limit = LINE_LIMIT) {
   const words = text.split(/\s+/);
   const lines = [''];
   for (const word of words) {
@@ -224,22 +226,92 @@ function wrap(text, limit = 42) {
   return lines;
 }
 
+/**
+ * Split one narration line into subtitle events.
+ *
+ * Wrapping to lines and then taking two at a time is the obvious approach and
+ * it reads badly: it broke "The network changes. The session should" / "not
+ * have to." across two cards. So sentences are the unit — they are packed
+ * greedily while the result still fits two lines, and only a sentence too long
+ * for two lines on its own is broken, at its last comma.
+ */
+/**
+ * Break one over-long sentence into the fewest roughly equal parts that each
+ * fit two lines. Equal matters: a subtitle card is on screen in proportion to
+ * its length, so an uneven split shows one full card and then a flash.
+ */
+function splitEvenly(sentence) {
+  const words = sentence.split(/\s+/);
+  for (let parts = 2; parts <= words.length; parts += 1) {
+    const budget = Math.ceil(sentence.length / parts);
+    const groups = [];
+    let current = '';
+    for (const word of words) {
+      const candidate = current ? `${current} ${word}` : word;
+      if (current && candidate.length > budget && groups.length < parts - 1) {
+        groups.push(current);
+        current = word;
+      } else {
+        current = candidate;
+      }
+    }
+    if (current) groups.push(current);
+    if (groups.every((group) => wrap(group).length <= 2)) return groups;
+  }
+  return [sentence];
+}
+
+function segment(text) {
+  const sentences = text.match(/[^.!?]+[.!?]*\s*/g)?.map((part) => part.trim()).filter(Boolean) ?? [text];
+  const chunks = [];
+  let current = '';
+
+  const fits = (candidate) => wrap(candidate).length <= 2;
+
+  for (const sentence of sentences) {
+    const candidate = current ? `${current} ${sentence}` : sentence;
+    if (fits(candidate)) {
+      current = candidate;
+      continue;
+    }
+    if (current) chunks.push(current);
+    if (fits(sentence)) {
+      current = sentence;
+      continue;
+    }
+    // A sentence too long for two lines is split into equal parts, not greedily.
+    // Filling each card to the brim and letting the remainder fall off the end
+    // produced a 0.36-second card reading "seven." — technically two lines, and
+    // unreadable.
+    const parts = splitEvenly(sentence);
+    chunks.push(...parts.slice(0, -1));
+    current = parts[parts.length - 1];
+  }
+  if (current) chunks.push(current);
+  return chunks;
+}
+
 function buildSubtitles() {
   const cues = [];
   let index = 1;
   for (const cue of TIMELINE.narration) {
-    const lines = wrap(cue.text);
-    // Long lines become two subtitle events rather than a five-line block.
-    const chunks = [];
-    for (let i = 0; i < lines.length; i += 2) chunks.push(lines.slice(i, i + 2).join('\n'));
-    const span = (cue.to - cue.from) / chunks.length;
+    const chunks = segment(cue.text);
+    // Time by length rather than evenly: a two-word chunk held for as long as a
+    // twelve-word one reads as a stall.
+    const weights = chunks.map((chunk) => chunk.length);
+    const total = weights.reduce((sum, weight) => sum + weight, 0);
+    const span = cue.to - cue.from;
+
+    let at = cue.from;
     chunks.forEach((chunk, i) => {
-      const from = cue.from + i * span;
-      cues.push(`${index++}\n${srtTime(from)} --> ${srtTime(from + span)}\n${chunk}\n`);
+      const length = (weights[i] / total) * span;
+      const body = wrap(chunk).join('\n');
+      cues.push(`${index++}\n${srtTime(at)} --> ${srtTime(at + length)}\n${body}\n`);
+      at += length;
     });
   }
   const target = join(OUT, `${BASENAME}.srt`);
-  writeFileSync(target, `${cues.join('\n')}`, 'utf8');
+  writeFileSync(target, cues.join('\n'), 'utf8');
   console.log(`  ${cues.length} subtitle cues → ${BASENAME}.srt`);
   return target;
 }
