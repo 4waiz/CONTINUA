@@ -15,8 +15,13 @@
  * shorten the sentence or widen the window in the timeline, not to let the
  * audio drift out of sync with the picture.
  *
+ * That ceiling is deliberately low. The first cut let lines run at the fastest
+ * rate the speech API offers, and the result was a script full of decimals read
+ * at three and a half words a second with no pauses — technically in sync, and
+ * unlistenable. Anything above +18 % now fails the build instead.
+ *
  *   node scripts/build-narration.mjs
- *   node scripts/build-narration.mjs --voice "Microsoft Zira Desktop"
+ *   node scripts/build-narration.mjs --voice "Microsoft Zira"
  *
  * Outputs `video/audio/narration.wav` (the full 105 s bed) and
  * `video/audio/narration.json` (per-cue rate, measured duration, headroom).
@@ -33,10 +38,16 @@ const AUDIO = join(ROOT, 'video', 'audio');
 
 const argv = process.argv.slice(2);
 const voiceIndex = argv.indexOf('--voice');
-const VOICE = voiceIndex === -1 ? 'Microsoft David Desktop' : argv[voiceIndex + 1];
+// Mark is a OneCore voice: it is not visible to System.Speech at all, and it
+// reads a technical script noticeably better than the old "Desktop" voices.
+const VOICE = voiceIndex === -1 ? 'Microsoft Mark' : argv[voiceIndex + 1];
 
-/** Rates to try, slowest first. Below default because the script is dense. */
-const RATES = [-2, -1, 0, 1, 2, 3];
+/**
+ * Percentage rates to try, slowest first, against the voice's natural pace.
+ * The script is dense with numbers, so it starts below natural and the ceiling
+ * is +18 %: past that the decimals stop being followable.
+ */
+const RATES = [-8, -4, 0, 5, 10, 14, 18];
 /** Leave a beat at the end of each window so lines never butt against a cut. */
 const TAIL_S = 0.15;
 
@@ -52,16 +63,20 @@ function durationOf(path) {
   return Number.parseFloat(output.trim());
 }
 
+let engineUsed = null;
+
 function speak(text, out, rate) {
-  run('powershell', [
+  const output = run('powershell', [
     '-NoProfile',
     '-ExecutionPolicy', 'Bypass',
     '-File', join(ROOT, 'scripts', 'speak.ps1'),
     '-Text', text,
     '-Out', out,
-    '-Rate', String(rate),
+    '-RatePercent', String(rate),
     '-Voice', VOICE,
   ]);
+  const reported = /engine=(\w+) voice=(.+)/.exec(output.trim());
+  if (reported) engineUsed = { engine: reported[1], voice: reported[2].trim() };
   return durationOf(out);
 }
 
@@ -102,12 +117,14 @@ function main() {
     const flag = fits ? ' ' : '!';
     console.log(
       `${flag} ${cue.id}  ${cue.from.toFixed(1)}–${cue.to.toFixed(1)}s  ` +
-        `rate ${String(chosen.rate).padStart(2)}  ${chosen.seconds.toFixed(2)}s / ${window.toFixed(2)}s`,
+        `rate ${`${chosen.rate > 0 ? '+' : ''}${chosen.rate}%`.padStart(5)}  ` +
+        `${chosen.seconds.toFixed(2)}s / ${window.toFixed(2)}s`,
     );
     if (!fits) {
       problems.push(
         `${cue.id} needs ${chosen.seconds.toFixed(2)}s but its window is ${window.toFixed(2)}s ` +
-          `even at rate ${chosen.rate}. Shorten the line or widen the window in video/timeline.json.`,
+          `even at +${chosen.rate}%, the fastest this build will read. ` +
+          'Shorten the line or widen the window in video/timeline.json.',
       );
     }
   }
