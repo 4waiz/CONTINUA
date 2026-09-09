@@ -14,7 +14,7 @@ Phase 2 — the predictive network handoffs that keep its session alive.
 | --- | --- | --- |
 | 1 | Vehicle, world, route animation, scene components, design system, `/scene-lab` | complete |
 | 2 | Network engine, controller, dashboard, experiments | complete |
-| 3 | Competition video capture and edit | not started |
+| 3 | Demo video: claim ledger, deterministic capture, narration, edit | complete |
 
 ---
 
@@ -131,7 +131,7 @@ Light mode. Not cyberpunk.
 | `text` | `#14213D` | headings, body |
 | `muted` | `#667593` | secondary labels |
 | `cyan` | `#12B9E8` | wired / Wi-Fi accent |
-| `blue` | `#176BFF` | primary accent, 5G |
+| `blue` | `#176BFF` | primary accent, cellular |
 | `violet` | `#7C3CFF` | satellite accent |
 
 Spacious rounded panels, hairline borders, restrained shadows, soft daylight,

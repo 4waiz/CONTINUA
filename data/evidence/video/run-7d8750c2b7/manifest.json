@@ -1,0 +1,48 @@
+{
+  "run_id": "run-7d8750c2b7",
+  "mode": "simulation",
+  "scenario": {
+    "id": "wifi-degradation",
+    "title": "Gradual Wi-Fi degradation, cellular overlapping",
+    "family": "degradation",
+    "description": "Wi-Fi quality decays smoothly over 22 s while the rover is still inside cellular coverage. The canonical case for prediction: the failure is visible in the trend well before it becomes a violation.",
+    "duration_s": 105,
+    "speed_scale": 1.0,
+    "reverse": false,
+    "links": [
+      "wired",
+      "wifi",
+      "cellular",
+      "satellite"
+    ],
+    "workload": [
+      "control",
+      "telemetry",
+      "video",
+      "voice",
+      "bulk"
+    ],
+    "faults": [
+      {
+        "link": "wifi",
+        "kind": "degrade",
+        "start_s": 26.0,
+        "ramp_s": 22.0,
+        "duration_s": 34.0,
+        "severity": 0.94
+      }
+    ],
+    "background": []
+  },
+  "policy_id": "B0",
+  "seed": 70009,
+  "predictor": "heuristic",
+  "horizon_s": 3.0,
+  "engine_version": "2.0.0",
+  "code_commit": "5dd77cf386dcf672e311950a4d22fd9888423a40",
+  "started_at": "2026-09-08T12:43:12.194394+00:00",
+  "environment": {
+    "python": "3.12.10",
+    "platform": "win32"
+  }
+}

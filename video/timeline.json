@@ -1,0 +1,389 @@
+{
+  "$comment": "The edit decision list for CONTINUA_Team_Kanban_Demo.mp4. Edited by hand, consumed by scripts/capture-demo.mjs, scripts/build-demo.mjs and scripts/check-claims.mjs. Every claim id in `claims` must exist in docs/VIDEO_CLAIMS.md or the build fails.",
+  "video": {
+    "title": "CONTINUA — Predictive Network Continuity",
+    "team": "Team Kanban",
+    "width": 1920,
+    "height": 1080,
+    "fps": 30,
+    "duration_s": 109.5,
+    "container": "mp4",
+    "video_codec": "libx264",
+    "pixel_format": "yuv420p",
+    "audio_codec": "aac",
+    "faststart": true
+  },
+  "$shots": "video_from/video_to are cut points on the finished timeline. For `app` shots, sim_keys map video time to the run's own simulation clock; the rate is shown on screen whenever it is not 1.0. For `card` shots the page is captured once and held.",
+  "shots": [
+    {
+      "id": "S1",
+      "kind": "blender",
+      "video_from": 0.0,
+      "video_to": 6.5,
+      "source": "renders/intro/####.png",
+      "label": "rendered scene",
+      "note": "Blender render of the project's own rover and route. Not telemetry."
+    },
+    {
+      "id": "S2",
+      "kind": "app",
+      "video_from": 6.5,
+      "video_to": 20.0,
+      "route": "/capture",
+      "run_id": "run-7d8750c2b7",
+      "policy": "B0",
+      "scenario": "wifi-degradation",
+      "seed": 70009,
+      "sim_keys": [
+        [
+          6.5,
+          68.0
+        ],
+        [
+          20.0,
+          81.5
+        ]
+      ],
+      "note": "The reactive baseline losing the session at 73.06 s for 4.56 s. Chosen because it is the largest recorded outage in the paired run, not because it flatters anything.",
+      "claims": [
+        "C3",
+        "C4"
+      ]
+    },
+    {
+      "id": "S3",
+      "kind": "app",
+      "video_from": 20.0,
+      "video_to": 30.0,
+      "route": "/capture",
+      "run_id": "run-d2819d215c",
+      "policy": "P1",
+      "scenario": "wifi-degradation",
+      "seed": 70009,
+      "sim_keys": [
+        [
+          20.0,
+          12.0
+        ],
+        [
+          30.0,
+          22.0
+        ]
+      ],
+      "note": "The working application, stable stretch on Wi-Fi. Execution-mode chip in frame throughout.",
+      "claims": [
+        "C2"
+      ]
+    },
+    {
+      "id": "S4",
+      "kind": "app",
+      "video_from": 30.0,
+      "video_to": 52.0,
+      "route": "/capture",
+      "run_id": "run-d2819d215c",
+      "policy": "P1",
+      "scenario": "wifi-degradation",
+      "seed": 70009,
+      "sim_keys": [
+        [
+          30.0,
+          24.0
+        ],
+        [
+          38.0,
+          28.4
+        ],
+        [
+          40.0,
+          28.7
+        ],
+        [
+          46.0,
+          29.7
+        ],
+        [
+          52.0,
+          35.0
+        ]
+      ],
+      "note": "The five steps. Slowed across the prepare/steer pair (28.76 s and 29.42 s are 0.66 s apart in the run) so both are readable. The t+ readout on screen is the real simulation clock and the rate badge says when playback is slowed.",
+      "claims": [
+        "C5",
+        "C6",
+        "C7",
+        "C8"
+      ]
+    },
+    {
+      "id": "S5",
+      "kind": "card",
+      "video_from": 52.0,
+      "video_to": 62.0,
+      "card": "compare",
+      "note": "Paired B0 vs P1, same seed, same exogenous trace. Includes the two rows where P1 is worse.",
+      "claims": [
+        "C9",
+        "C10"
+      ]
+    },
+    {
+      "id": "S6",
+      "kind": "app",
+      "video_from": 62.0,
+      "video_to": 72.0,
+      "route": "/capture",
+      "run_id": "run-3c69f9615f",
+      "policy": "P1",
+      "scenario": "satellite-fallback",
+      "seed": 70013,
+      "sim_keys": [
+        [
+          62.0,
+          53.0
+        ],
+        [
+          72.0,
+          63.0
+        ]
+      ],
+      "note": "Satellite fallback. Duplication starts 55.08 s while cellular still carries; the switch is held until 59.26 s to avoid a ping-pong.",
+      "claims": [
+        "C12"
+      ]
+    },
+    {
+      "id": "S7",
+      "kind": "card",
+      "video_from": 72.0,
+      "video_to": 82.5,
+      "card": "ablation",
+      "note": "The negative result. Prediction removed changes nothing; application-awareness removed costs 4x.",
+      "claims": [
+        "C11",
+        "C13",
+        "C15",
+        "C16"
+      ]
+    },
+    {
+      "id": "S8",
+      "kind": "card",
+      "video_from": 82.5,
+      "video_to": 92.5,
+      "card": "results",
+      "note": "Twenty paired trials, means with 95 % CIs, including the row where P1 loses.",
+      "claims": [
+        "C11",
+        "C12",
+        "C14"
+      ]
+    },
+    {
+      "id": "S9",
+      "kind": "card",
+      "video_from": 92.5,
+      "video_to": 103.0,
+      "card": "scope",
+      "note": "Scope and limitations. Not a footnote — a full card.",
+      "claims": [
+        "C17",
+        "C18",
+        "C19"
+      ]
+    },
+    {
+      "id": "S10",
+      "kind": "blender",
+      "video_from": 103.0,
+      "video_to": 109.5,
+      "source": "renders/outro/####.png",
+      "label": "rendered scene",
+      "note": "Closing card. CONTINUA / The network changes. The session doesn't. / by Team Kanban."
+    }
+  ],
+  "$narration": "Spoken lines. One entry becomes one SRT cue and one synthesised audio segment. Keep each under 14 seconds so the subtitle stays readable.",
+  "narration": [
+    {
+      "id": "N1",
+      "from": 0.6,
+      "to": 6.3,
+      "text": "A response vehicle drives out of coverage. The network changes. The session should not have to."
+    },
+    {
+      "id": "N2",
+      "from": 6.8,
+      "to": 12.5,
+      "text": "Everything here is a software simulation. No radios, no satellite, no hardware."
+    },
+    {
+      "id": "N3",
+      "from": 12.9,
+      "to": 20.3,
+      "text": "The reactive baseline waits for its link to fail. Here the session goes dark four times: seven point three two seconds, one full reconnect."
+    },
+    {
+      "id": "N4",
+      "from": 20.8,
+      "to": 29.9,
+      "text": "CONTINUA is the working application around that problem. Every panel reads from one engine over a live socket, and the execution mode is always on screen."
+    },
+    {
+      "id": "N5",
+      "from": 30.3,
+      "to": 36.8,
+      "text": "Five steps. Observe: receiver side facts only. The controller never sees the script the world runs from."
+    },
+    {
+      "id": "N6",
+      "from": 37.2,
+      "to": 41.6,
+      "text": "Predict: a short horizon on those same facts, three seconds ahead."
+    },
+    {
+      "id": "N7",
+      "from": 41.9,
+      "to": 46.8,
+      "text": "Prepare: at twenty eight point eight seconds it warms cellular while Wi-Fi is still carrying."
+    },
+    {
+      "id": "N8",
+      "from": 46.9,
+      "to": 52.4,
+      "text": "Steer, six tenths of a second later. Explain: it records why, as it decided."
+    },
+    {
+      "id": "N9",
+      "from": 52.6,
+      "to": 61.9,
+      "text": "Same seed, same trace, only the policy changed. Seven point three two seconds of interruption becomes zero point one six, and that remainder is the session starting up."
+    },
+    {
+      "id": "N10",
+      "from": 62.6,
+      "to": 71.8,
+      "text": "On the satellite route it holds the session through the fallback, and spends four point eight megabytes of satellite where the baseline spends forty seven."
+    },
+    {
+      "id": "N11",
+      "from": 72.6,
+      "to": 82.2,
+      "text": "Twenty paired trials say something we did not expect. Preparation is what removes the interruption. Take the predictor out and almost nothing changes."
+    },
+    {
+      "id": "N12",
+      "from": 83.0,
+      "to": 92.2,
+      "text": "What CONTINUA adds is the price: the same continuity at a third of the cost, a twelfth of the satellite data. It loses on application health."
+    },
+    {
+      "id": "N13",
+      "from": 92.6,
+      "to": 103.0,
+      "text": "Scope. A simulation, not a network. Emulation is unverified here and the kernel has no MPTCP. When every link is down: ten point six seconds, every policy."
+    },
+    {
+      "id": "N14",
+      "from": 103.6,
+      "to": 108.6,
+      "text": "CONTINUA. Predictive network continuity. By Team Kanban."
+    }
+  ],
+  "$overlays": "Burned-in text drawn by the capture page itself, in the product's own type. Short labels only. The narration is carried by the subtitle track, not duplicated here.",
+  "overlays": [
+    {
+      "from": 0.8,
+      "to": 6.3,
+      "kind": "title",
+      "text": "CONTINUA",
+      "sub": "Predictive Network Continuity · Team Kanban",
+      "place": "lower-left",
+      "shot": "S1"
+    },
+    {
+      "from": 7.0,
+      "to": 12.0,
+      "kind": "banner",
+      "text": "SOFTWARE SIMULATION — no radios, no satellite, no hardware"
+    },
+    {
+      "from": 12.6,
+      "to": 19.8,
+      "kind": "callout",
+      "text": "Baseline B0 · reactive",
+      "sub": "switches only after the carrying link is measurably unusable"
+    },
+    {
+      "from": 15.4,
+      "to": 19.8,
+      "kind": "stat",
+      "text": "4.56 s",
+      "sub": "session down · recorded outage window 73.06 → 77.62 s"
+    },
+    {
+      "from": 20.6,
+      "to": 29.6,
+      "kind": "callout",
+      "text": "One engine, one socket",
+      "sub": "every number on screen is a receiver-side fact from this run"
+    },
+    {
+      "from": 30.6,
+      "to": 36.3,
+      "kind": "step",
+      "text": "1 · OBSERVE",
+      "sub": "RTT, loss, jitter, queue depth — no access to the trace"
+    },
+    {
+      "from": 36.3,
+      "to": 41.3,
+      "kind": "step",
+      "text": "2 · PREDICT",
+      "sub": "3 s horizon · heuristic-trend-1.1"
+    },
+    {
+      "from": 41.3,
+      "to": 46.7,
+      "kind": "step",
+      "text": "3 · PREPARE",
+      "sub": "t+28.76 s · duplicate onto cellular while Wi-Fi still carries"
+    },
+    {
+      "from": 46.7,
+      "to": 49.7,
+      "kind": "step",
+      "text": "4 · STEER",
+      "sub": "t+29.42 s · session moved on a measured violation"
+    },
+    {
+      "from": 49.7,
+      "to": 51.8,
+      "kind": "step",
+      "text": "5 · EXPLAIN",
+      "sub": "reason recorded at decision time, not reconstructed"
+    },
+    {
+      "from": 62.6,
+      "to": 66.85,
+      "kind": "callout",
+      "text": "t+55.08 s · prepare satellite",
+      "sub": "cellular is still carrying"
+    },
+    {
+      "from": 66.85,
+      "to": 71.6,
+      "kind": "callout",
+      "text": "t+59.26 s · hold, then switch",
+      "sub": "\"holding to avoid a ping-pong switch\" — recorded reason"
+    },
+    {
+      "from": 103.5,
+      "to": 109.3,
+      "kind": "title",
+      "text": "CONTINUA",
+      "sub": "The network changes. The session doesn't. · by Team Kanban",
+      "place": "lower-left",
+      "shot": "S10"
+    }
+  ]
+}

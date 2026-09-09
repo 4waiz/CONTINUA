@@ -1,0 +1,48 @@
+{
+  "run_id": "run-3c69f9615f",
+  "mode": "simulation",
+  "scenario": {
+    "id": "satellite-fallback",
+    "title": "Satellite fallback in the remote sector",
+    "family": "fallback",
+    "description": "Cellular fades out early, forcing the satellite path while the rover is still moving fast. Exercises long activation delay and high base RTT against tight control deadlines.",
+    "duration_s": 105,
+    "speed_scale": 1.0,
+    "reverse": false,
+    "links": [
+      "wired",
+      "wifi",
+      "cellular",
+      "satellite"
+    ],
+    "workload": [
+      "control",
+      "telemetry",
+      "video",
+      "voice",
+      "bulk"
+    ],
+    "faults": [
+      {
+        "link": "cellular",
+        "kind": "degrade",
+        "start_s": 52.0,
+        "ramp_s": 8.0,
+        "duration_s": 45.0,
+        "severity": 0.97
+      }
+    ],
+    "background": []
+  },
+  "policy_id": "P1",
+  "seed": 70013,
+  "predictor": "heuristic",
+  "horizon_s": 3.0,
+  "engine_version": "2.0.0",
+  "code_commit": "5dd77cf386dcf672e311950a4d22fd9888423a40",
+  "started_at": "2026-09-08T12:43:14.024425+00:00",
+  "environment": {
+    "python": "3.12.10",
+    "platform": "win32"
+  }
+}

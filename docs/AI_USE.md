@@ -84,7 +84,41 @@ What that does **not** change:
 
 ---
 
-## 5. Ethical and practical notes
+## 5. Synthesised narration in the demo video
+
+The video's voice-over is **synthesised speech**, produced locally by the
+Windows speech API (`System.Speech.Synthesis`, voice "Microsoft David Desktop",
+en-US) through `scripts/speak.ps1`. This is stated here because a viewer has a
+right to know they are not listening to a person.
+
+What that involved, precisely:
+
+* **Local only.** Synthesis runs on this machine, in-process. No audio, text or
+  identifier left the host. No external service was called and no API credits
+  were purchased.
+* **No voice cloning and no imitation.** The voice is a generic system voice
+  that ships with Windows. No sample of any real person was used, and the
+  narration does not present itself as any named individual.
+* **The script is human-authored.** `video/narration.md` is the authority;
+  every sentence in it traces to a row in `docs/VIDEO_CLAIMS.md`. Synthesis
+  turns that text into audio and does nothing else — it does not write, edit or
+  summarise.
+* **Timing is measured, not assumed.** `scripts/build-narration.mjs` measures
+  each synthesised line with `ffprobe` and fails the build if a line cannot fit
+  its cue window, so the subtitles and the audio cannot drift apart. The first
+  draft of the script failed this check on eight of fourteen lines and was
+  rewritten.
+* **The subtitles are the same text.** The `.srt` is generated from the same
+  timeline entries as the audio, so a viewer reading rather than listening gets
+  exactly what was spoken.
+
+Nothing else in the video is generated. The 3D vehicle, the world, the caption
+cards and the interface are all this repository's own work, and every figure on
+screen is read from a recorded run.
+
+---
+
+## 6. Ethical and practical notes
 
 * **All data is synthetic.** No personal data, no real user traffic, no operator
   measurements. Nothing was scraped and nothing was collected from anyone.

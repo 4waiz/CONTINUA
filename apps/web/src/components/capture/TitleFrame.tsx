@@ -45,6 +45,11 @@ export function TitleFrame() {
       style={{ background: 'transparent' }}
       data-capture-ready={ready ? 'true' : 'false'}
     >
+      {/* globals.css paints `body`, and an opaque body defeats Playwright's
+          `omitBackground` — the plate comes back as RGB with no alpha and
+          covers the Blender render it was supposed to sit on top of. This
+          route is the only place the page ground must not be painted. */}
+      <style>{'html,body{background:transparent !important;}'}</style>
       <CaptureOverlays />
     </div>
   );

@@ -337,21 +337,35 @@ async function main() {
     await browser.close();
   }
 
+  const target = join(FRAMES, TEST_MODE ? 'capture-test.json' : 'capture.json');
+
+  // A `--shots` run re-captures part of the video, so it must *merge* into the
+  // existing record rather than replace it. Overwriting left the manifest
+  // claiming the whole video was two title plates — exactly the kind of quiet
+  // inaccuracy a build manifest exists to prevent.
+  let recorded = manifest;
+  if (only && existsSync(target)) {
+    const previous = JSON.parse(readFileSync(target, 'utf8'));
+    const replaced = new Set(manifest.map((entry) => entry.shot));
+    recorded = [...(previous.shots ?? []).filter((entry) => !replaced.has(entry.shot)), ...manifest];
+  }
+
   const record = {
     captured_at: new Date().toISOString(),
     test_mode: TEST_MODE,
+    partial: only ? [...only] : null,
     viewport: { width, height, device_scale_factor: 1 },
     fps,
     web: WEB,
     engine: ENGINE,
-    shots: manifest,
+    shots: recorded,
     elapsed_s: Number(((Date.now() - started) / 1000).toFixed(1)),
   };
-  const target = join(FRAMES, TEST_MODE ? 'capture-test.json' : 'capture.json');
   writeFileSync(target, `${JSON.stringify(record, null, 2)}\n`, 'utf8');
 
   const totalFrames = manifest.reduce((sum, entry) => sum + entry.frames, 0);
   console.log(`\ncaptured ${manifest.length} shot(s), ${totalFrames} frames in ${record.elapsed_s}s`);
+  if (only) console.log(`merged into a manifest of ${record.shots.length} shot(s)`);
   console.log(`manifest: ${target.replace(ROOT, '.')}`);
   if (!existsSync(join(ROOT, 'video/renders/intro'))) {
     console.log('\nstill to render: video/renders/intro and video/renders/outro (npm run video:renders)');

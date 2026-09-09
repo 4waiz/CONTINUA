@@ -4,7 +4,7 @@
 | --- | --- | --- |
 | 1 | Vehicle, world, route animation, scene components, design system, `/scene-lab` | **complete** |
 | 2 | Working application, network engine, controller, experiments | **complete** |
-| 3 | Competition video capture and edit | not started |
+| 3 | Demo video: claim ledger, deterministic capture, narration, edit | **complete** |
 
 ---
 

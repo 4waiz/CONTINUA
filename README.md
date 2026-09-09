@@ -65,6 +65,22 @@ this machine** — the reasons were probed, not assumed, and are recorded in
 | `npm run emulation:status` | Honest capability report for this host |
 | `npm run blender:all` | Regenerate every 3D asset |
 
+### The demo video
+
+Each step reads the one before it; `video/timeline.json` is the edit decision
+list and `docs/VIDEO_CLAIMS.md` is the gate.
+
+| Command | What it does |
+| --- | --- |
+| `npm run video:cards` | Extract the caption-card figures from recorded runs and experiments |
+| `npm run video:renders` | Blender opening and closing shots, 1920×1080 |
+| `npm run video:capture:test` | 5 s probe capture — run this before the full one |
+| `npm run video:capture` | Deterministic frame capture of every application shot and card (~6 min) |
+| `npm run video:narration` | Local TTS, measured and fitted to the timeline; fails if a line does not fit |
+| `npm run video:claims` | Banned phrases, claim resolution, timeline integrity |
+| `npm run video:build` | Composite, encode, poster, contact sheet, manifest |
+| `npm run video:qa` | Inspect the finished MP4 and write `docs/VIDEO_QA.md` |
+
 ## Layout
 
 ```
@@ -96,6 +112,9 @@ tests/               Engine (pytest) and browser (Playwright) suites
 | [`docs/SECURITY.md`](docs/SECURITY.md) | Threat model and known weaknesses |
 | [`docs/AI_USE.md`](docs/AI_USE.md) | Where ML is used, and why no LLM is in the routing loop |
 | [`docs/PHASE_2_HANDOFF.md`](docs/PHASE_2_HANDOFF.md) | Everything Phase 3 needs |
+| [`docs/VIDEO_CLAIMS.md`](docs/VIDEO_CLAIMS.md) | Every claim in the video, with its run ID, evidence mode and status |
+| [`docs/VIDEO_QA.md`](docs/VIDEO_QA.md) | What was checked in the finished MP4, and what was not |
+| [`docs/SUBMISSION_CHECKLIST.md`](docs/SUBMISSION_CHECKLIST.md) | Deliverables, reproduction steps, and what was deliberately not done |
 
 ## Measured
 
@@ -120,4 +139,4 @@ integrated graphics; 131 draw calls; 2.28 MB of runtime assets.
 | --- | --- | --- |
 | 1 | Vehicle, world, route animation, scene components, design system, `/scene-lab` | **complete** |
 | 2 | Network engine, controller, dashboard, experiments | **complete** |
-| 3 | Competition video capture and edit | not started |
+| 3 | Demo video: claim ledger, deterministic capture, narration, edit | **complete** |

@@ -1,0 +1,122 @@
+{
+  "rule": "Pick the representative trial for the demo video.\n\n**The rule, fixed before looking at any result:**\n\n    For a given scenario, take the completed 20-trial experiment on the `test`\n    seed block. Rank the CONTINUA (P1) trials by the primary metric for that\n    scenario. Choose the trial at the MEDIAN \u2014 the lower-median when the count\n    is even. Never the best.\n\nUsing the median is the whole point. Picking the best-looking run would make\nthe video an advertisement for an outlier; the median is what a viewer should\nexpect a typical run to look like, and the aggregate figures shown in the\nresults section describe the whole distribution rather than this one trial.\n\nOutput is written to `video/representative.json` so the capture and build\nscripts, and `docs/VIDEO_CLAIMS.md`, all read the same decision.",
+  "selections": {
+    "wifi-degradation": {
+      "scenario_id": "wifi-degradation",
+      "experiment_id": "exp-26f132d5d7",
+      "primary_metric": "continuity.total_interruption_s",
+      "selection_rule": "lower-median P1 trial by the primary metric; never the best",
+      "trials_considered": 20,
+      "chosen_trial": 9,
+      "chosen_seed": 70009,
+      "chosen_value": 0.16,
+      "distribution": {
+        "min": 0.16,
+        "median": 0.16,
+        "max": 0.16,
+        "mean": 0.16
+      },
+      "code_commit": "352acd58a178f231988fcdf8c9dd55385a2916bd",
+      "seeds": [
+        70000,
+        70001,
+        70002,
+        70003,
+        70004,
+        70005,
+        70006,
+        70007,
+        70008,
+        70009,
+        70010,
+        70011,
+        70012,
+        70013,
+        70014,
+        70015,
+        70016,
+        70017,
+        70018,
+        70019
+      ]
+    },
+    "satellite-fallback": {
+      "scenario_id": "satellite-fallback",
+      "experiment_id": "exp-966206c65b",
+      "primary_metric": "application.control.deadline_miss_pct",
+      "selection_rule": "lower-median P1 trial by the primary metric; never the best",
+      "trials_considered": 20,
+      "chosen_trial": 13,
+      "chosen_seed": 70013,
+      "chosen_value": 43.296,
+      "distribution": {
+        "min": 42.7016,
+        "median": 43.296,
+        "max": 43.823,
+        "mean": 43.4024
+      },
+      "code_commit": "35083345f76bdeb37c79dffe51b9468cdd54b14b",
+      "seeds": [
+        70000,
+        70001,
+        70002,
+        70003,
+        70004,
+        70005,
+        70006,
+        70007,
+        70008,
+        70009,
+        70010,
+        70011,
+        70012,
+        70013,
+        70014,
+        70015,
+        70016,
+        70017,
+        70018,
+        70019
+      ]
+    },
+    "cellular-congestion": {
+      "scenario_id": "cellular-congestion",
+      "experiment_id": "exp-64931cf540",
+      "primary_metric": "application.control.deadline_miss_pct",
+      "selection_rule": "lower-median P1 trial by the primary metric; never the best",
+      "trials_considered": 20,
+      "chosen_trial": 17,
+      "chosen_seed": 70017,
+      "chosen_value": 31.4438,
+      "distribution": {
+        "min": 30.2053,
+        "median": 31.4438,
+        "max": 32.205,
+        "mean": 31.4563
+      },
+      "code_commit": "d02080d28eb5764b7380828dc5dcd2ada7626324",
+      "seeds": [
+        70000,
+        70001,
+        70002,
+        70003,
+        70004,
+        70005,
+        70006,
+        70007,
+        70008,
+        70009,
+        70010,
+        70011,
+        70012,
+        70013,
+        70014,
+        70015,
+        70016,
+        70017,
+        70018,
+        70019
+      ]
+    }
+  }
+}

@@ -12,9 +12,11 @@ application footage does not read as a change of subject.
 
     node scripts/run-blender.mjs scripts/blender/render_video_shots.py
     node scripts/run-blender.mjs scripts/blender/render_video_shots.py -- --probe
+    node scripts/run-blender.mjs scripts/blender/render_video_shots.py -- --shot outro
 
 `--probe` renders a single frame of each shot so the framing and the per-frame
-cost can be checked before committing to 390 of them.
+cost can be checked before committing to 390 of them. `--shot` renders one shot,
+which is how an interrupted sequence is resumed without re-rendering the other.
 
 Output: video/renders/intro/0001.png…, video/renders/outro/0001.png…
 (git-ignored; the finished MP4 is the artefact, not the frames).
@@ -238,6 +240,11 @@ def render_shot(name: str, spec: dict, camera, probe: bool) -> None:
 
 def main() -> None:
     probe = "--probe" in sys.argv
+    only = None
+    if "--shot" in sys.argv:
+        only = sys.argv[sys.argv.index("--shot") + 1]
+        if only not in SHOTS:
+            raise SystemExit(f"unknown shot {only!r}; expected one of {', '.join(SHOTS)}")
 
     blend_path = lib.out_path("assets", "blender", "continua_rover.blend")
     if not os.path.exists(blend_path):
@@ -259,6 +266,8 @@ def main() -> None:
     bpy.context.scene.camera = camera
 
     for name, spec in SHOTS.items():
+        if only and name != only:
+            continue
         render_shot(name, spec, camera, probe)
 
     print("\n  done.")

@@ -1,0 +1,297 @@
+{
+  "title": "CONTINUA — Predictive Network Continuity",
+  "team": "Team Kanban",
+  "built_at": "2026-09-09T09:13:46.384Z",
+  "code_commit": "70124f49785493840ba1eb19bd7a664a4832250a",
+  "execution_mode": "simulation",
+  "evidence": {
+    "claims": "docs/VIDEO_CLAIMS.md",
+    "cards": "apps/web/public/video/cards.json",
+    "representative_selection": "video/representative.json",
+    "runs": [
+      "run-7d8750c2b7",
+      "run-d2819d215c",
+      "run-3c69f9615f"
+    ],
+    "run_metrics": "data/evidence/video/<run_id>/metrics.json",
+    "experiments": [
+      "exp-26f132d5d7",
+      "exp-64931cf540",
+      "exp-e70fe761a1",
+      "exp-657ef4a89a"
+    ]
+  },
+  "capture": {
+    "viewport": {
+      "width": 1920,
+      "height": 1080,
+      "device_scale_factor": 1
+    },
+    "fps": 30,
+    "captured_at": "2026-09-09T09:13:08.084Z",
+    "source": "replay of recorded runs (mode chip reads REPLAY · SIMULATION)",
+    "renderer": "Chromium via Playwright, --use-gl=angle"
+  },
+  "narration": {
+    "voice": "Microsoft David Desktop",
+    "synthesiser": "Windows System.Speech (local)",
+    "total_s": 109.5,
+    "cues": [
+      {
+        "id": "N1",
+        "from": 0.6,
+        "to": 6.3,
+        "window_s": 5.55,
+        "rate": 3,
+        "measured_s": 5.19,
+        "headroom_s": 0.36,
+        "fits": true,
+        "words": 16
+      },
+      {
+        "id": "N2",
+        "from": 6.8,
+        "to": 12.5,
+        "window_s": 5.55,
+        "rate": 3,
+        "measured_s": 5.13,
+        "headroom_s": 0.42,
+        "fits": true,
+        "words": 12
+      },
+      {
+        "id": "N3",
+        "from": 12.9,
+        "to": 20.3,
+        "window_s": 7.25,
+        "rate": 3,
+        "measured_s": 6.97,
+        "headroom_s": 0.28,
+        "fits": true,
+        "words": 24
+      },
+      {
+        "id": "N4",
+        "from": 20.8,
+        "to": 29.9,
+        "window_s": 8.95,
+        "rate": 2,
+        "measured_s": 8.29,
+        "headroom_s": 0.66,
+        "fits": true,
+        "words": 26
+      },
+      {
+        "id": "N5",
+        "from": 30.3,
+        "to": 36.8,
+        "window_s": 6.35,
+        "rate": 3,
+        "measured_s": 6.33,
+        "headroom_s": 0.02,
+        "fits": true,
+        "words": 17
+      },
+      {
+        "id": "N6",
+        "from": 37.2,
+        "to": 41.6,
+        "window_s": 4.25,
+        "rate": 3,
+        "measured_s": 3.83,
+        "headroom_s": 0.42,
+        "fits": true,
+        "words": 11
+      },
+      {
+        "id": "N7",
+        "from": 41.9,
+        "to": 46.8,
+        "window_s": 4.75,
+        "rate": 3,
+        "measured_s": 4.33,
+        "headroom_s": 0.42,
+        "fits": true,
+        "words": 15
+      },
+      {
+        "id": "N8",
+        "from": 46.9,
+        "to": 52.4,
+        "window_s": 5.35,
+        "rate": 3,
+        "measured_s": 5.23,
+        "headroom_s": 0.12,
+        "fits": true,
+        "words": 14
+      },
+      {
+        "id": "N9",
+        "from": 52.6,
+        "to": 61.9,
+        "window_s": 9.15,
+        "rate": 3,
+        "measured_s": 8.79,
+        "headroom_s": 0.36,
+        "fits": true,
+        "words": 28
+      },
+      {
+        "id": "N10",
+        "from": 62.6,
+        "to": 71.8,
+        "window_s": 9.05,
+        "rate": 0,
+        "measured_s": 8.99,
+        "headroom_s": 0.06,
+        "fits": true,
+        "words": 25
+      },
+      {
+        "id": "N11",
+        "from": 72.6,
+        "to": 82.2,
+        "window_s": 9.45,
+        "rate": 1,
+        "measured_s": 9.23,
+        "headroom_s": 0.22,
+        "fits": true,
+        "words": 23
+      },
+      {
+        "id": "N12",
+        "from": 83,
+        "to": 92.2,
+        "window_s": 9.05,
+        "rate": 1,
+        "measured_s": 8.83,
+        "headroom_s": 0.22,
+        "fits": true,
+        "words": 26
+      },
+      {
+        "id": "N13",
+        "from": 92.6,
+        "to": 103,
+        "window_s": 10.25,
+        "rate": 3,
+        "measured_s": 10.07,
+        "headroom_s": 0.18,
+        "fits": true,
+        "words": 27
+      },
+      {
+        "id": "N14",
+        "from": 103.6,
+        "to": 108.6,
+        "window_s": 4.85,
+        "rate": 2,
+        "measured_s": 4.74,
+        "headroom_s": 0.11,
+        "fits": true,
+        "words": 7
+      }
+    ]
+  },
+  "shots": [
+    {
+      "shot": "S1",
+      "kind": "blender",
+      "first_frame": 0,
+      "frames": 195
+    },
+    {
+      "shot": "S2",
+      "kind": "app",
+      "first_frame": 195,
+      "frames": 405
+    },
+    {
+      "shot": "S3",
+      "kind": "app",
+      "first_frame": 600,
+      "frames": 300
+    },
+    {
+      "shot": "S4",
+      "kind": "app",
+      "first_frame": 900,
+      "frames": 660
+    },
+    {
+      "shot": "S5",
+      "kind": "card",
+      "first_frame": 1560,
+      "frames": 300
+    },
+    {
+      "shot": "S6",
+      "kind": "app",
+      "first_frame": 1860,
+      "frames": 300
+    },
+    {
+      "shot": "S7",
+      "kind": "card",
+      "first_frame": 2160,
+      "frames": 315
+    },
+    {
+      "shot": "S8",
+      "kind": "card",
+      "first_frame": 2475,
+      "frames": 300
+    },
+    {
+      "shot": "S9",
+      "kind": "card",
+      "first_frame": 2775,
+      "frames": 315
+    },
+    {
+      "shot": "S10",
+      "kind": "blender",
+      "first_frame": 3090,
+      "frames": 195
+    }
+  ],
+  "output": {
+    "programs": [],
+    "stream_groups": [],
+    "streams": [
+      {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1920,
+        "height": 1080,
+        "pix_fmt": "yuv420p",
+        "r_frame_rate": "30/1"
+      },
+      {
+        "codec_name": "aac",
+        "codec_type": "audio",
+        "sample_rate": "48000",
+        "channels": 2,
+        "r_frame_rate": "0/0"
+      }
+    ],
+    "format": {
+      "format_name": "mov,mp4,m4a,3gp,3g2,mj2",
+      "duration": "109.500000",
+      "size": "18015850"
+    }
+  },
+  "build": [
+    "python scripts/build_video_cards.py",
+    "node scripts/run-blender.mjs scripts/blender/render_video_shots.py",
+    "node scripts/capture-demo.mjs",
+    "node scripts/build-narration.mjs",
+    "node scripts/build-demo.mjs"
+  ],
+  "attribution": {
+    "assets": "All 3D geometry, materials, world and UI are original to this repository.",
+    "voice": "Windows System.Speech, local synthesis. No cloned or imitated voice.",
+    "fonts": "System UI stack. No licensed font is embedded.",
+    "music": "none"
+  }
+}

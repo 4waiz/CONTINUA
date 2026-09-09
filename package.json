@@ -2,7 +2,7 @@
   "name": "continua",
   "version": "0.1.0",
   "private": true,
-  "description": "CONTINUA — Predictive Network Continuity. Interactive 3D mission scene by Team Kanban.",
+  "description": "CONTINUA \u2014 Predictive Network Continuity. Interactive 3D mission scene by Team Kanban.",
   "license": "UNLICENSED",
   "repository": {
     "type": "git",
@@ -38,7 +38,15 @@
     "test:phase2": "playwright test --config=tests/playwright.config.ts --project=desktop-1920 tests/phase2.spec.ts",
     "test:smoke": "playwright test --config=tests/playwright.config.ts --project=desktop-1920 --project=desktop-1440 --project=desktop-1280 tests/scene.spec.ts tests/evidence.spec.ts",
     "train:predictor": "python scripts/engine_cli.py continua_engine.controller.train_predictor --trials 5",
-    "typecheck": "tsc --noEmit -p apps/web/tsconfig.json"
+    "typecheck": "tsc --noEmit -p apps/web/tsconfig.json",
+    "video:build": "node scripts/build-demo.mjs",
+    "video:capture": "node scripts/capture-demo.mjs",
+    "video:capture:test": "node scripts/capture-demo.mjs --test",
+    "video:cards": "python scripts/build_video_cards.py",
+    "video:claims": "node scripts/check-claims.mjs",
+    "video:narration": "node scripts/build-narration.mjs",
+    "video:qa": "node scripts/qa-demo.mjs",
+    "video:renders": "node scripts/run-blender.mjs scripts/blender/render_video_shots.py"
   },
   "devDependencies": {
     "@playwright/test": "1.63.0",
