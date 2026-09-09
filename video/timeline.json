@@ -92,22 +92,22 @@
         ],
         [
           38.0,
-          28.4
+          28.3
         ],
         [
           40.0,
-          28.7
+          28.6
         ],
         [
-          46.0,
-          29.7
+          47.0,
+          30.1
         ],
         [
           52.0,
           35.0
         ]
       ],
-      "note": "The five steps. Slowed across the prepare/steer pair (28.76 s and 29.42 s are 0.66 s apart in the run) so both are readable. The t+ readout on screen is the real simulation clock and the rate badge says when playback is slowed.",
+      "note": "The five steps. Slowed across the prepare/steer pair (28.76 s and 29.42 s are 0.66 s apart in the run) so both are readable, but never below 0.36x: slower than that the vehicle moves less than a pixel per frame and the shot reads as frozen. The t+ readout is the real simulation clock and the rate badge says when playback is slowed.",
       "claims": [
         "C5",
         "C6",

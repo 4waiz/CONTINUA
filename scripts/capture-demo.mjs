@@ -106,10 +106,12 @@ async function startReplay(sourceRunId) {
 }
 
 async function seek(replayId, t) {
+  const target = Number(t.toFixed(4));
   await engine(`/api/runs/${replayId}/control`, {
     method: 'POST',
-    body: JSON.stringify({ action: 'seek', t: Number(t.toFixed(4)) }),
+    body: JSON.stringify({ action: 'seek', t: target }),
   });
+  return target;
 }
 
 // ---------------------------------------------------------------------------
@@ -234,13 +236,33 @@ async function captureApp(browser, shot) {
     : Math.round((shot.video_to - shot.video_from) * fps);
 
   const started = Date.now();
+  let stalls = 0;
   for (let frame = 0; frame < total; frame += 1) {
     const videoT = shot.video_from + frame / fps;
     const simT = simTimeAt(shot.sim_keys, videoT);
     const rate = rateAt(shot.sim_keys, videoT);
 
-    await seek(replayId, simT);
+    const applied = await seek(replayId, simT);
     await page.evaluate((payload) => window.__CONTINUA_OVERLAY__?.(payload), overlaysAt(videoT, rate));
+
+    // The control POST returns as soon as the engine has *published* the seek.
+    // The page learns about it over the WebSocket some milliseconds later, so
+    // screenshotting straight after the POST captured whatever was on screen
+    // before — for 40 % of frames, the previous frame again. Wait for the page
+    // to say it is on the requested time before believing anything it shows.
+    try {
+      await page.waitForFunction(
+        (target) => {
+          const capture = window.__CONTINUA_CAPTURE__;
+          return Boolean(capture) && Math.abs(capture.t - target) < 1e-3;
+        },
+        applied,
+        { timeout: 5000, polling: 'raf' },
+      );
+    } catch {
+      stalls += 1;
+    }
+
     // One rAF for React to commit the seek, a second for three.js to draw it.
     await page.evaluate(
       () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))),
@@ -265,6 +287,7 @@ async function captureApp(browser, shot) {
     console.warn(`  ${shot.id}: ${errors.length} console error(s) during capture`);
     for (const message of errors.slice(0, 5)) console.warn(`    ${message}`);
   }
+  if (stalls) console.warn(`  ${shot.id}: ${stalls} frame(s) captured before the page reached the seek`);
 
   return {
     shot: shot.id,
@@ -275,6 +298,7 @@ async function captureApp(browser, shot) {
     sim_from: simTimeAt(shot.sim_keys, shot.video_from),
     sim_to: simTimeAt(shot.sim_keys, shot.video_to),
     console_errors: errors.length,
+    stalled_frames: stalls,
     url,
   };
 }

@@ -40,10 +40,22 @@ function ClockSync({
   }, [clock, playing]);
 
   useEffect(() => {
-    // Correct drift rather than snapping every tick: snapping at 20 Hz makes
-    // the vehicle stutter, and free-running alone slowly desynchronises.
+    // While paused the timeline is being *scrubbed* — by someone dragging the
+    // transport, or by the video harness stepping one frame at a time — and the
+    // scene has to sit exactly on the cursor.
+    //
+    // The tolerance below exists for live playback, where the clock free-runs at
+    // 60 fps and snapping it to every engine tick makes the vehicle stutter.
+    // Applying that same tolerance to a paused scrub was wrong in both places it
+    // showed up: scrubbing by hand moved the vehicle in visible jumps, and
+    // frame-stepped capture froze it for ten frames and then jumped it, which is
+    // what made the recorded footage judder.
+    if (!playing) {
+      clock.setTime(t, false);
+      return;
+    }
     if (Math.abs(clock.time - t) > DRIFT_TOLERANCE_S) clock.setTime(t, false);
-  }, [clock, t]);
+  }, [clock, t, playing]);
 
   return null;
 }
