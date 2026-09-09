@@ -1,6 +1,6 @@
 # Narration — CONTINUA demo video
 
-271 words, 109.5 seconds. Spoken slowly on purpose: the video is dense with
+265 words, 109.5 seconds. Spoken slowly on purpose: the video is dense with
 numbers and the viewer needs room between them.
 
 The first draft of this script did not fit. Every line was synthesised and
@@ -57,23 +57,31 @@ and the timeline hold the same sentences, and fails the build if they diverge.
 
 *Enforced by `tests/engine/test_engine.py`, not just asserted here.*
 
-### N6 · 37.2 → 41.6 — predict
+### N6 · 37.1 → 41.2 — predict
 
 > Predict: a short horizon on those same facts, three seconds ahead.
 
-### N7 · 41.9 → 46.8 — prepare
+### N7 · 41.5 → 47.6 — prepare and steer
 
-> Prepare: at twenty eight point eight seconds it warms cellular while Wi-Fi is
-> still carrying.
+> Prepare: it warms cellular while Wi-Fi still carries. Steer: six tenths of a
+> second later, the session moves.
 
-*`run-d2819d215c`, `start_duplication` at t = 28.76 s.*
+*`run-d2819d215c`: `start_duplication` at t = 28.76 s, `switch` at t = 29.42 s.*
 
-### N8 · 46.9 → 52.4 — steer and explain
+These were two cues in the first cut, and they could not be. The two events are
+0.66 s apart in the run; giving each its own five-second line would have meant
+playing that stretch at 0.13x, which is slow enough that the vehicle moves less
+than a pixel between frames and the shot reads as frozen. At 0.36x — the slowest
+rate that still moves — they are 1.8 s apart on screen, which is one sentence,
+not two. The exact timestamps stay on the step captions, where they are readable
+without being spoken.
 
-> Steer, six tenths of a second later. Explain: it records why, as it decided.
+### N8 · 47.9 → 52.3 — explain
 
-*`switch` at t = 29.42 s. Recorded reason: "Moved the session from wifi to
-cellular on a measured violation: RTT 13 ms, loss 3.0 %."*
+> Explain: it records why, at the moment it decided.
+
+*Recorded reason at `switch`: "Moved the session from wifi to cellular on a
+measured violation: RTT 13 ms, loss 3.0 %."*
 
 ### N9 · 52.6 → 61.9 — the paired comparison
 

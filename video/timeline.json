@@ -91,23 +91,19 @@
           24.0
         ],
         [
-          38.0,
-          28.3
+          39.0,
+          27.9
         ],
         [
-          40.0,
-          28.6
-        ],
-        [
-          47.0,
-          30.1
+          46.0,
+          30.42
         ],
         [
           52.0,
           35.0
         ]
       ],
-      "note": "The five steps. Slowed across the prepare/steer pair (28.76 s and 29.42 s are 0.66 s apart in the run) so both are readable, but never below 0.36x: slower than that the vehicle moves less than a pixel per frame and the shot reads as frozen. The t+ readout is the real simulation clock and the rate badge says when playback is slowed.",
+      "note": "The five steps. Slowed across the prepare/steer pair (28.76 s and 29.42 s are 0.66 s apart in the run) so both are readable, but never below 0.36x: slower than that the vehicle moves less than a pixel between frames and the shot reads as frozen rather than slow. That floor is why prepare and steer share one narration cue — at a playback rate that still moves, they are 1.8 s apart on screen, not the 5 s two separate cues would need. The t+ readout is the real simulation clock and the rate badge says when playback is slowed.",
       "claims": [
         "C5",
         "C6",
@@ -236,21 +232,21 @@
     },
     {
       "id": "N6",
-      "from": 37.2,
-      "to": 41.6,
+      "from": 37.1,
+      "to": 41.2,
       "text": "Predict: a short horizon on those same facts, three seconds ahead."
     },
     {
       "id": "N7",
-      "from": 41.9,
-      "to": 46.8,
-      "text": "Prepare: at twenty eight point eight seconds it warms cellular while Wi-Fi is still carrying."
+      "from": 41.5,
+      "to": 47.6,
+      "text": "Prepare: it warms cellular while Wi-Fi still carries. Steer: six tenths of a second later, the session moves."
     },
     {
       "id": "N8",
-      "from": 46.9,
-      "to": 52.4,
-      "text": "Steer, six tenths of a second later. Explain: it records why, as it decided."
+      "from": 47.9,
+      "to": 52.3,
+      "text": "Explain: it records why, at the moment it decided."
     },
     {
       "id": "N9",
@@ -329,35 +325,35 @@
     },
     {
       "from": 30.6,
-      "to": 36.3,
+      "to": 36.9,
       "kind": "step",
       "text": "1 · OBSERVE",
       "sub": "RTT, loss, jitter, queue depth — no access to the trace"
     },
     {
-      "from": 36.3,
-      "to": 41.3,
+      "from": 36.9,
+      "to": 41.2,
       "kind": "step",
       "text": "2 · PREDICT",
       "sub": "3 s horizon · heuristic-trend-1.1"
     },
     {
-      "from": 41.3,
-      "to": 46.7,
+      "from": 41.2,
+      "to": 43.1,
       "kind": "step",
       "text": "3 · PREPARE",
       "sub": "t+28.76 s · duplicate onto cellular while Wi-Fi still carries"
     },
     {
-      "from": 46.7,
-      "to": 49.7,
+      "from": 43.1,
+      "to": 47.7,
       "kind": "step",
       "text": "4 · STEER",
       "sub": "t+29.42 s · session moved on a measured violation"
     },
     {
-      "from": 49.7,
-      "to": 51.8,
+      "from": 47.7,
+      "to": 51.9,
       "kind": "step",
       "text": "5 · EXPLAIN",
       "sub": "reason recorded at decision time, not reconstructed"
