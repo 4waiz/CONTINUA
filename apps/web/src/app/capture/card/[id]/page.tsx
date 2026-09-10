@@ -7,10 +7,15 @@ export const metadata: Metadata = {
 };
 
 /**
- * One caption card, at /capture/card/compare | ablation | results | scope.
- * The data comes from public/video/cards.json, which is generated from the
- * recorded runs by scripts/build_video_cards.py.
+ * The four cards the demo video is built from. Enumerated so the route can be
+ * statically exported: there is no server in the public deployment to render an
+ * arbitrary id on demand, and these are the only ids that exist.
  */
+export function generateStaticParams() {
+  return [{ id: 'compare' }, { id: 'ablation' }, { id: 'results' }, { id: 'scope' }];
+}
+
+/** /capture/card/compare | ablation | results | scope */
 export default async function Page({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   return <VideoCard cardId={id} />;

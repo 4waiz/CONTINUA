@@ -52,12 +52,11 @@
 html,
 body {
   height: 100%;
-  /* This is a fixed-viewport product: the shell is exactly one screen and only
-     inner regions scroll. Declaring it at the root as well as on `.app-shell`
-     closes the gap where an absolutely positioned descendant whose containing
-     block is the initial containing block escapes the shell's own clip and
-     lengthens the document. */
-  overflow: hidden;
+  /* Deliberately NOT `overflow: hidden`. The dashboard's no-scroll guarantee
+     comes from `.app-shell` being exactly `100dvh` and clipping its own
+     overflow — clamping the root as well added nothing (it does not even stop
+     programmatic scrolling) and it broke the one page that is a document rather
+     than an instrument: /reference-images could not scroll at all. */
 }
 
 body {

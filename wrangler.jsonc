@@ -1,0 +1,26 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "continua",
+  "compatibility_date": "2026-09-01",
+
+  // Keep the workers.dev hostname alive alongside the custom domain: it is a
+  // useful fallback while DNS settles and a stable URL for sharing a preview.
+  "workers_dev": true,
+
+  // CONTINUA has no server of its own. The Python engine runs separately, so
+  // the public site is a static export served straight from Cloudflare's edge —
+  // there is no Worker script, only assets.
+  "assets": {
+    "directory": "apps/web/out",
+    "not_found_handling": "404-page"
+  },
+
+  // The public hostname. Cloudflare creates the DNS record for this when the
+  // custom domain is attached, which needs DNS edit rights on the zone.
+  "routes": [
+    {
+      "pattern": "continua.kanbanstudios.ae",
+      "custom_domain": true
+    }
+  ]
+}
