@@ -115,7 +115,7 @@ test.describe('Mission dashboard', () => {
     // acknowledged samples either.
     await page.getByRole('button', { name: /Satellite/ }).first().click();
     await expect(
-      page.getByText('RSSI is a Wi-Fi measurement', { exact: false }),
+      page.getByText('RSSI is a Wi-Fi measurement', { exact: false }).first(),
     ).toBeVisible({ timeout: 15_000 });
 
     // Nothing anywhere may claim an RSSI for a non-Wi-Fi link.
@@ -188,8 +188,8 @@ test.describe('other sections', () => {
     await requireEngine(page);
     await page.goto('/scenario-lab', { waitUntil: 'domcontentloaded' });
 
-    await page.getByRole('button', { name: /video/ }).first().click(); // toggle a workload class
-    await page.getByRole('button', { name: /Launch configured run/ }).click();
+    await page.getByRole('button', { name: /video/i }).first().click(); // toggle a workload class
+    await page.getByRole('button', { name: /Run scenario/ }).first().click();
     await expect(page.getByText('CONNECTED', { exact: false })).toBeVisible({ timeout: 40_000 });
     await page.waitForTimeout(3000);
     await page.screenshot({ path: `${EVIDENCE}/p2-scenario-lab-${testInfo.project.name}.png` });
@@ -308,7 +308,20 @@ test.describe('failure handling', () => {
     // Point the client at a dead port by blocking the engine origin.
     await page.route('**/api/**', (route) => route.abort());
     await page.goto('/', { waitUntil: 'domcontentloaded' });
-    await expect(page.getByText(/Engine unreachable/)).toBeVisible({ timeout: 30_000 });
+
+    // Plain language first. The raw host:port is a developer detail and lives
+    // behind a disclosure rather than dominating the page.
+    await expect(page.getByText(/CONTINUA engine offline/)).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByText(/Simulation services are unavailable/)).toBeVisible();
+
+    // The interface must still be usable and must not invent numbers while the
+    // engine is gone: the scene renders as a preview and metrics show a dash.
+    await expect(page.getByText('SCENE PREVIEW')).toBeVisible();
+    await expect(page.getByText(/Waiting for engine/).first()).toBeVisible();
+
+    // The detail is reachable, and it names how to start the engine.
+    await page.getByRole('button', { name: /Detail/ }).click();
     await expect(page.getByText(/npm run engine/)).toBeVisible();
+    await expect(page.getByRole('button', { name: /Retry connection/ })).toBeVisible();
   });
 });

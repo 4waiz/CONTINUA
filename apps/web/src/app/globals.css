@@ -5,32 +5,44 @@
    Mirrors packages/scene/src/theme.ts — see docs/DESIGN_SPEC.md.
    Light mode by design. This is a daylight technical instrument, not a
    cyberpunk console.
+
+   The application is a **fixed-viewport** product: the shell is exactly one
+   screen tall and never scrolls. Only genuinely unbounded lists (the decision
+   log, an experiment table) scroll, and they scroll inside their own panel.
 --------------------------------------------------------------------------- */
 
 @theme {
-  --color-bg: #f7faff;
+  --color-bg: #f6f9ff;
   --color-surface: #ffffff;
-  --color-surface-muted: #f1f5fc;
-  --color-ink: #14213d;
-  --color-muted: #667593;
-  --color-line: #e2e9f5;
-  --color-line-strong: #ccd8ec;
-  --color-cyan: #12b9e8;
+  --color-surface-soft: #f8faff;
+  --color-surface-muted: #f3f7ff;
+  --color-ink: #111d3a;
+  --color-muted: #5d6b87;
+  --color-faint: #8995ab;
+  --color-line: rgb(90 110 160 / 0.14);
+  --color-line-strong: rgb(90 110 160 / 0.26);
+  --color-cyan: #14b8e8;
   --color-blue: #176bff;
-  --color-violet: #7c3cff;
-  --color-good: #12b981;
-  --color-warn: #f59e0b;
+  --color-indigo: #5156e8;
+  --color-violet: #7a3cff;
+  --color-good: #0db982;
+  --color-warn: #f5a524;
   --color-bad: #e5484d;
 
   --radius-panel: 18px;
-  --radius-control: 10px;
+  --radius-hero: 24px;
+  --radius-control: 11px;
 
   --font-sans:
     ui-sans-serif, -apple-system, 'Segoe UI', Inter, 'Helvetica Neue', Arial, system-ui, sans-serif;
   --font-mono: ui-monospace, 'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace;
 
-  --shadow-panel: 0 1px 2px rgb(20 33 61 / 0.04), 0 8px 24px -12px rgb(20 33 61 / 0.12);
-  --shadow-raised: 0 2px 4px rgb(20 33 61 / 0.05), 0 18px 42px -18px rgb(20 33 61 / 0.2);
+  /* Layered and soft. Never a single hard drop shadow. */
+  --shadow-panel: 0 1px 1px rgb(17 29 58 / 0.03), 0 4px 12px -6px rgb(17 29 58 / 0.08);
+  --shadow-raised: 0 1px 2px rgb(17 29 58 / 0.04), 0 12px 28px -14px rgb(17 29 58 / 0.16);
+  --shadow-hero: 0 2px 4px rgb(17 29 58 / 0.04), 0 28px 60px -30px rgb(17 29 58 / 0.24);
+
+  --brand-gradient: linear-gradient(96deg, #14b8e8 0%, #176bff 42%, #5156e8 68%, #7a3cff 100%);
 }
 
 :root {
@@ -40,15 +52,28 @@
 html,
 body {
   height: 100%;
+  /* This is a fixed-viewport product: the shell is exactly one screen and only
+     inner regions scroll. Declaring it at the root as well as on `.app-shell`
+     closes the gap where an absolutely positioned descendant whose containing
+     block is the initial containing block escapes the shell's own clip and
+     lengthens the document. */
+  overflow: hidden;
 }
 
 body {
   margin: 0;
-  background: var(--color-bg);
+  /* A very slight cool wash from the top-left, so a full-bleed white app does
+     not read as a blank page. Fixed attachment: it must not move when an inner
+     panel scrolls. */
+  background:
+    radial-gradient(1200px 620px at 8% -8%, rgb(23 107 255 / 0.055), transparent 60%),
+    radial-gradient(980px 520px at 100% 0%, rgb(122 60 255 / 0.045), transparent 62%),
+    var(--color-bg);
+  background-attachment: fixed;
   color: var(--color-ink);
   font-family: var(--font-sans);
-  font-size: 14px;
-  line-height: 1.55;
+  font-size: 15px;
+  line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
@@ -57,21 +82,80 @@ body {
   box-sizing: border-box;
 }
 
-/* --- primitives ---------------------------------------------------------- */
+/* --- app shell ----------------------------------------------------------- */
 
-.panel {
+/**
+ * One screen, no page scroll. `100dvh` rather than `100vh` so a mobile browser
+ * chrome bar cannot push the last row out of view.
+ */
+.app-shell {
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
+  gap: 14px;
+  padding: 16px 22px 18px;
+}
+
+@media (max-height: 800px) {
+  .app-shell {
+    gap: 10px;
+    padding: 11px 16px 13px;
+  }
+}
+
+/** Regions that own their own scrollbar, so the shell never gets one. */
+.scroll-y {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-line-strong) transparent;
+}
+
+.scroll-y::-webkit-scrollbar {
+  width: 9px;
+}
+
+.scroll-y::-webkit-scrollbar-thumb {
+  background: var(--color-line-strong);
+  border-radius: 999px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+
+/* --- surfaces ------------------------------------------------------------ */
+
+.panel,
+.card {
   background: var(--color-surface);
   border: 1px solid var(--color-line);
   border-radius: var(--radius-panel);
   box-shadow: var(--shadow-panel);
 }
 
+.card-hero {
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-hero);
+  box-shadow: var(--shadow-hero);
+}
+
+/** A card that is currently the subject: the active link, the running stage. */
+.card-active {
+  border-color: color-mix(in srgb, var(--color-blue) 34%, transparent);
+  box-shadow:
+    var(--shadow-raised),
+    0 0 0 3px color-mix(in srgb, var(--color-blue) 9%, transparent);
+}
+
 .panel-label {
-  font-size: 10.5px;
-  font-weight: 600;
-  letter-spacing: 0.09em;
+  font-size: 11.5px;
+  font-weight: 650;
+  letter-spacing: 0.085em;
   text-transform: uppercase;
-  color: var(--color-muted);
+  color: var(--color-faint);
 }
 
 .metric {
@@ -79,25 +163,35 @@ body {
   letter-spacing: -0.02em;
 }
 
+.brand-text {
+  background: var(--brand-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* --- controls ------------------------------------------------------------ */
+
 .control {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  height: 32px;
-  padding: 0 12px;
+  gap: 7px;
+  height: 36px;
+  padding: 0 14px;
   border-radius: var(--radius-control);
   border: 1px solid var(--color-line);
   background: var(--color-surface);
   color: var(--color-ink);
   font: inherit;
-  font-size: 12.5px;
-  font-weight: 550;
+  font-size: 13.5px;
+  font-weight: 560;
   cursor: pointer;
   transition:
-    background 120ms ease,
-    border-color 120ms ease,
-    color 120ms ease;
+    background 130ms ease,
+    border-color 130ms ease,
+    color 130ms ease,
+    box-shadow 130ms ease;
   white-space: nowrap;
 }
 
@@ -107,21 +201,87 @@ body {
 }
 
 .control:disabled {
-  opacity: 0.45;
+  opacity: 0.42;
   cursor: not-allowed;
 }
 
 .control[data-active='true'] {
-  background: color-mix(in srgb, var(--color-blue) 10%, white);
-  border-color: color-mix(in srgb, var(--color-blue) 38%, white);
+  background: color-mix(in srgb, var(--color-blue) 9%, white);
+  border-color: color-mix(in srgb, var(--color-blue) 34%, white);
   color: var(--color-blue);
+}
+
+/** The one button per screen that starts the work. */
+.control-primary {
+  background: var(--brand-gradient);
+  border-color: transparent;
+  color: white;
+  font-weight: 620;
+  box-shadow: 0 1px 2px rgb(23 107 255 / 0.22), 0 10px 22px -12px rgb(81 86 232 / 0.7);
+}
+
+.control-primary:hover:not(:disabled) {
+  background: var(--brand-gradient);
+  border-color: transparent;
+  filter: saturate(1.08) brightness(1.04);
+}
+
+select.control {
+  padding-right: 30px;
+  background-image: linear-gradient(45deg, transparent 50%, var(--color-muted) 50%),
+    linear-gradient(135deg, var(--color-muted) 50%, transparent 50%);
+  background-position:
+    calc(100% - 16px) 15px,
+    calc(100% - 11px) 15px;
+  background-size:
+    5px 5px,
+    5px 5px;
+  background-repeat: no-repeat;
+  appearance: none;
 }
 
 .control:focus-visible,
 .scrub:focus-visible,
-a:focus-visible {
+a:focus-visible,
+button:focus-visible {
   outline: 2px solid var(--color-blue);
   outline-offset: 2px;
+}
+
+/* --- navigation ---------------------------------------------------------- */
+
+.nav-pill {
+  display: inline-flex;
+  align-items: center;
+  height: 38px;
+  padding: 0 17px;
+  border-radius: 999px;
+  font-size: 14.5px;
+  font-weight: 560;
+  color: var(--color-muted);
+  border: 1px solid transparent;
+  transition:
+    background 140ms ease,
+    color 140ms ease,
+    border-color 140ms ease;
+  white-space: nowrap;
+}
+
+.nav-pill:hover {
+  background: var(--color-surface);
+  color: var(--color-ink);
+  border-color: var(--color-line);
+}
+
+.nav-pill[data-active='true'] {
+  background: linear-gradient(
+    96deg,
+    color-mix(in srgb, var(--color-blue) 11%, white),
+    color-mix(in srgb, var(--color-violet) 11%, white)
+  );
+  border-color: color-mix(in srgb, var(--color-blue) 26%, transparent);
+  color: var(--color-blue);
+  font-weight: 640;
 }
 
 /* --- timeline scrubber --------------------------------------------------- */
@@ -140,7 +300,7 @@ a:focus-visible {
   border-radius: 999px;
   background: linear-gradient(
     90deg,
-    var(--color-blue) 0%,
+    var(--color-cyan) 0%,
     var(--color-blue) calc(var(--progress, 0) * 100%),
     var(--color-line) calc(var(--progress, 0) * 100%),
     var(--color-line) 100%
@@ -168,7 +328,7 @@ a:focus-visible {
   border-radius: 999px;
   background: var(--color-surface);
   border: 2px solid var(--color-blue);
-  box-shadow: 0 1px 4px rgb(20 33 61 / 0.2);
+  box-shadow: 0 1px 4px rgb(17 29 58 / 0.22);
 }
 
 .scrub::-moz-range-thumb {
@@ -184,15 +344,18 @@ a:focus-visible {
 .scene-shell {
   position: relative;
   overflow: hidden;
-  border-radius: var(--radius-panel);
-  background: linear-gradient(180deg, #fbfcfe 0%, #eef3fd 100%);
+  border-radius: var(--radius-hero);
+  background: linear-gradient(180deg, #fbfcfe 0%, #edf3fd 100%);
   border: 1px solid var(--color-line);
+  box-shadow: var(--shadow-hero);
 }
 
 .scene-shell canvas {
   display: block;
   touch-action: none;
 }
+
+/* --- motion -------------------------------------------------------------- */
 
 @keyframes continua-sweep {
   0% {
@@ -212,8 +375,40 @@ a:focus-visible {
   animation: continua-sweep 1.35s ease-in-out infinite;
 }
 
+/** The backup path being warmed. Slow and quiet — it is a status, not an alarm. */
+@keyframes continua-breathe {
+  0%,
+  100% {
+    opacity: 0.42;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.breathe {
+  animation: continua-breathe 2.4s ease-in-out infinite;
+}
+
+/** The dashed flow along the network rail, in the direction traffic would move. */
+@keyframes continua-flow {
+  to {
+    stroke-dashoffset: -24;
+  }
+}
+
+.flow-line {
+  animation: continua-flow 1.6s linear infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .loading-sweep::after {
+  .loading-sweep::after,
+  .breathe,
+  .flow-line {
     animation: none;
+  }
+
+  * {
+    transition-duration: 1ms !important;
   }
 }

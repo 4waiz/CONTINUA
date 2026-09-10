@@ -14,10 +14,20 @@ import { useEngineRun } from '@/lib/useEngineRun';
 import { LINK_IDS, LINK_LABEL, type EngineLinkId, type PolicyIdString, type TrafficClassId } from '@continua/contracts/engine';
 import { TRAFFIC_CLASSES } from '@continua/contracts/engine';
 import { useCallback, useEffect, useState } from 'react';
-import { AppShell, RunIdentity } from './AppShell';
+import { AppShell, RunStatusBar } from './AppShell';
 import { MissionScene } from './mission/MissionScene';
-import { AccessStrip, ApplicationHealthPanel, PipelineTimeline } from './mission/panels';
-import { Panel, Toggle } from './ui/primitives';
+import { NetworkRail } from './mission/NetworkRail';
+import { PipelineRail } from './mission/PipelineRail';
+import {
+  FaultSection,
+  Field,
+  POLICY_LABEL,
+  PolicySelector,
+  ScenarioCard,
+  WorkloadChip,
+} from './scenario/controls';
+import { EngineStatus } from './ui/EngineStatus';
+import { Chip } from './ui/primitives';
 
 export function ScenarioLabView() {
   const [scenarios, setScenarios] = useState<ScenarioSpec[]>([]);
@@ -46,6 +56,8 @@ export function ScenarioLabView() {
   const [congestLink, setCongestLink] = useState<EngineLinkId | ''>('');
   const [congestFactor, setCongestFactor] = useState(0.3);
 
+  const [bootAttempt, setBootAttempt] = useState(0);
+
   const run = useEngineRun(runId);
   const playing = run.state?.status === 'running';
 
@@ -55,10 +67,11 @@ export function ScenarioLabView() {
         setScenarios(s.scenarios);
         setPolicies(p.policies);
       })
+      .then(() => setError(null))
       .catch((cause: unknown) =>
         setError(cause instanceof EngineApiError ? cause.message : 'Engine unreachable.'),
       );
-  }, []);
+  }, [bootAttempt]);
 
   const launch = useCallback(async () => {
     setBusy(true);
@@ -88,216 +101,300 @@ export function ScenarioLabView() {
     }
   }, [scenarioId, policyId, seed, workload, speedScale, durationS, faultLink, faultAt, faultFor, congestLink, congestFactor]);
 
+  const selectedScenario = scenarios.find((entry) => entry.id === scenarioId);
+  const enabledWorkloads = TRAFFIC_CLASSES.filter((cls) => workload[cls]);
+
+  /**
+   * The summary is a plain restatement of the configuration above it — no
+   * predicted outcome, because a single run does not have one. It exists so the
+   * operator can check what they are about to launch without re-reading four
+   * panels of controls.
+   */
+  const summaryRows: [string, string][] = [
+    ['Scenario', selectedScenario?.title ?? '—'],
+    ['Route', 'Facility → field → remote'],
+    [
+      'Duration',
+      durationS === '' ? `${selectedScenario?.duration_s ?? '—'} s (default)` : `${durationS} s`,
+    ],
+    ['Workloads', `${enabledWorkloads.length} of ${TRAFFIC_CLASSES.length} enabled`],
+    ['Policy', `${policyId} · ${POLICY_LABEL[policyId]?.name ?? policyId}`],
+    ['Predictor', 'heuristic-trend'],
+    ['Seed', String(seed)],
+    [
+      'Faults',
+      faultLink || congestLink
+        ? [
+            faultLink
+              ? `${LINK_LABEL[faultLink].label} down @ ${faultAt}s for ${faultFor}s`
+              : null,
+            congestLink
+              ? `${LINK_LABEL[congestLink].label} at ${Math.round(congestFactor * 100)} % capacity`
+              : null,
+          ]
+            .filter(Boolean)
+            .join(' · ')
+        : 'none',
+    ],
+  ];
+
   return (
     <AppShell
-      identity={
-        <RunIdentity state={run.state} connection={run.connection} stale={run.stale} dropped={run.droppedSequences} />
-      }
-      actions={
-        <>
-          <button type="button" className="control" onClick={launch} disabled={busy}>
-            ▶ Launch configured run
-          </button>
-          {runId && (
-            <button
-              type="button"
-              className="control"
-              data-active={playing}
-              onClick={() => api.controlRun(runId, { action: playing ? 'pause' : 'play' }).catch(() => undefined)}
-            >
-              {playing ? '❙❙ Pause' : '▶ Resume'}
-            </button>
-          )}
-        </>
+      bar={
+        <RunStatusBar
+          state={run.state}
+          connection={run.connection}
+          stale={run.stale}
+          dropped={run.droppedSequences}
+          actions={
+            <>
+              <button type="button" className="control control-primary" onClick={launch} disabled={busy}>
+                ▶ Run scenario
+              </button>
+              {runId && (
+                <button
+                  type="button"
+                  className="control"
+                  data-active={playing}
+                  onClick={() => api.controlRun(runId, { action: playing ? 'pause' : 'play' }).catch(() => undefined)}
+                >
+                  {playing ? '❙❙ Pause' : '▶ Resume'}
+                </button>
+              )}
+            </>
+          }
+        />
       }
     >
-      {error && (
-        <div className="panel border-[color:var(--color-bad)] px-3.5 py-2.5 text-[12px] text-[color:var(--color-bad)]">
-          {error}
-        </div>
-      )}
+      <div className="grid h-full min-h-0 grid-cols-1 grid-rows-[minmax(0,1fr)] gap-3 xl:grid-cols-[344px_minmax(0,1fr)_296px]">
+        {/* ---------------- configuration ---------------- */}
+        <div className="scroll-y flex flex-col gap-3 pr-0.5">
+          {error && (
+            <EngineStatus detail={error} onRetry={() => setBootAttempt((n) => n + 1)} retrying={busy} />
+          )}
 
-      <div className="grid grid-cols-1 gap-3 xl:grid-cols-[360px_minmax(0,1fr)]">
-        <div className="flex flex-col gap-3">
-          <Panel title="Base scenario">
-            <label className="flex flex-col gap-1">
-              <span className="panel-label">Scenario</span>
-              <select className="control" value={scenarioId} onChange={(e) => setScenarioId(e.target.value)}>
-                {scenarios.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.title}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <div className="mt-2 grid grid-cols-2 gap-2">
-              <label className="flex flex-col gap-1">
-                <span className="panel-label">Policy</span>
-                <select
-                  className="control"
-                  value={policyId}
-                  onChange={(e) => setPolicyId(e.target.value as PolicyIdString)}
-                >
-                  {policies.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.id}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="flex flex-col gap-1">
-                <span className="panel-label">Seed</span>
-                <input
-                  className="control"
-                  type="number"
-                  min={0}
-                  value={seed}
-                  onChange={(e) => setSeed(Number(e.target.value) || 0)}
+          <section className="panel px-4 py-3.5">
+            <h2 className="panel-label mb-2.5">Base scenario</h2>
+            <div className="grid grid-cols-2 gap-2">
+              {scenarios.map((entry) => (
+                <ScenarioCard
+                  key={entry.id}
+                  title={entry.title}
+                  description={entry.description}
+                  selected={entry.id === scenarioId}
+                  onSelect={() => setScenarioId(entry.id)}
                 />
-              </label>
+              ))}
+              {scenarios.length === 0 && (
+                <p className="col-span-2 text-[12px] text-[color:var(--color-muted)]">
+                  No scenarios — the engine is not reachable.
+                </p>
+              )}
             </div>
-          </Panel>
+          </section>
 
-          <Panel title="Movement">
-            <label className="flex flex-col gap-1">
-              <span className="panel-label">Speed scale · {speedScale.toFixed(2)}×</span>
-              <input
-                className="scrub"
-                type="range"
-                min={0.2}
-                max={3}
-                step={0.1}
-                value={speedScale}
-                style={{ ['--progress' as string]: String((speedScale - 0.2) / 2.8) }}
-                onChange={(e) => setSpeedScale(Number(e.target.value))}
-              />
-            </label>
-            <label className="mt-2 flex flex-col gap-1">
-              <span className="panel-label">Duration override (s)</span>
-              <input
-                className="control"
-                type="number"
-                min={5}
-                max={600}
-                placeholder="scenario default"
-                value={durationS}
-                onChange={(e) => setDurationS(e.target.value === '' ? '' : Number(e.target.value))}
-              />
-            </label>
-          </Panel>
+          <section className="panel px-4 py-3.5">
+            <h2 className="panel-label mb-2.5">Policy under test</h2>
+            <PolicySelector policies={policies} value={policyId} onChange={setPolicyId} />
+          </section>
 
-          <Panel title="Application workload">
-            <div className="space-y-1.5">
+          <section className="panel px-4 py-3.5">
+            <h2 className="panel-label mb-2.5">Application workloads</h2>
+            <div className="flex flex-wrap gap-1.5">
               {TRAFFIC_CLASSES.map((cls) => (
-                <Toggle
+                <WorkloadChip
                   key={cls}
-                  checked={workload[cls]}
-                  onChange={(next) => setWorkload((previous) => ({ ...previous, [cls]: next }))}
-                >
-                  {cls}
-                </Toggle>
+                  id={cls}
+                  enabled={workload[cls]}
+                  onToggle={() => setWorkload((current) => ({ ...current, [cls]: !current[cls] }))}
+                />
               ))}
             </div>
-          </Panel>
+            <p className="mt-2 text-[11px] leading-snug text-[color:var(--color-muted)]">
+              Disabled classes generate no traffic, so they neither compete for capacity nor appear
+              in the application-health score.
+            </p>
+          </section>
 
-          <Panel title="Inject network failure">
-            <label className="flex flex-col gap-1">
-              <span className="panel-label">Link</span>
-              <select
-                className="control"
-                value={faultLink}
-                onChange={(e) => setFaultLink(e.target.value as EngineLinkId | '')}
-              >
-                <option value="">none</option>
-                {LINK_IDS.map((link) => (
-                  <option key={link} value={link}>
-                    {LINK_LABEL[link].label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <div className="mt-2 grid grid-cols-2 gap-2">
-              <label className="flex flex-col gap-1">
-                <span className="panel-label">At (s)</span>
+          <section className="panel px-4 py-3.5">
+            <h2 className="panel-label mb-2.5">Run parameters</h2>
+            <div className="grid grid-cols-3 gap-2.5">
+              <Field label="Seed">
                 <input
-                  className="control"
+                  className="control w-full"
                   type="number"
                   min={0}
-                  value={faultAt}
-                  onChange={(e) => setFaultAt(Number(e.target.value) || 0)}
-                  disabled={!faultLink}
+                  max={2147483647}
+                  value={seed}
+                  onChange={(event) => setSeed(Number(event.target.value) || 0)}
                 />
-              </label>
-              <label className="flex flex-col gap-1">
-                <span className="panel-label">For (s)</span>
+              </Field>
+              <Field label="Speed x">
                 <input
-                  className="control"
+                  className="control w-full"
                   type="number"
-                  min={0.5}
-                  value={faultFor}
-                  onChange={(e) => setFaultFor(Number(e.target.value) || 1)}
-                  disabled={!faultLink}
+                  min={0.25}
+                  max={4}
+                  step={0.25}
+                  value={speedScale}
+                  onChange={(event) => setSpeedScale(Number(event.target.value) || 1)}
                 />
-              </label>
+              </Field>
+              <Field label="Duration s">
+                <input
+                  className="control w-full"
+                  type="number"
+                  min={10}
+                  max={600}
+                  placeholder="default"
+                  value={durationS}
+                  onChange={(event) =>
+                    setDurationS(event.target.value === '' ? '' : Number(event.target.value))
+                  }
+                />
+              </Field>
             </div>
-          </Panel>
+          </section>
 
-          <Panel title="Congestion">
-            <label className="flex flex-col gap-1">
-              <span className="panel-label">Link</span>
-              <select
-                className="control"
-                value={congestLink}
-                onChange={(e) => setCongestLink(e.target.value as EngineLinkId | '')}
-              >
-                <option value="">none</option>
-                {LINK_IDS.map((link) => (
-                  <option key={link} value={link}>
-                    {LINK_LABEL[link].label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="mt-2 flex flex-col gap-1">
-              <span className="panel-label">
-                Remaining capacity · {(congestFactor * 100).toFixed(0)}%
-              </span>
-              <input
-                className="scrub"
-                type="range"
-                min={0.05}
-                max={1}
-                step={0.05}
-                value={congestFactor}
-                style={{ ['--progress' as string]: String(congestFactor) }}
-                onChange={(e) => setCongestFactor(Number(e.target.value))}
-                disabled={!congestLink}
-              />
-            </label>
-          </Panel>
+          <FaultSection>
+            <div className="flex flex-col gap-2.5">
+              <div className="grid grid-cols-3 gap-2">
+                <Field label="Link down">
+                  <select
+                    className="control w-full"
+                    value={faultLink}
+                    onChange={(event) => setFaultLink(event.target.value as EngineLinkId | '')}
+                  >
+                    <option value="">none</option>
+                    {LINK_IDS.map((link) => (
+                      <option key={link} value={link}>
+                        {LINK_LABEL[link].label}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+                <Field label="At s">
+                  <input
+                    className="control w-full"
+                    type="number"
+                    min={0}
+                    value={faultAt}
+                    onChange={(event) => setFaultAt(Number(event.target.value) || 0)}
+                    disabled={!faultLink}
+                  />
+                </Field>
+                <Field label="For s">
+                  <input
+                    className="control w-full"
+                    type="number"
+                    min={1}
+                    value={faultFor}
+                    onChange={(event) => setFaultFor(Number(event.target.value) || 1)}
+                    disabled={!faultLink}
+                  />
+                </Field>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <Field label="Congest link">
+                  <select
+                    className="control w-full"
+                    value={congestLink}
+                    onChange={(event) => setCongestLink(event.target.value as EngineLinkId | '')}
+                  >
+                    <option value="">none</option>
+                    {LINK_IDS.map((link) => (
+                      <option key={link} value={link}>
+                        {LINK_LABEL[link].label}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+                <Field label="Capacity left">
+                  <select
+                    className="control w-full"
+                    value={congestFactor}
+                    onChange={(event) => setCongestFactor(Number(event.target.value))}
+                    disabled={!congestLink}
+                  >
+                    {[0.1, 0.2, 0.3, 0.5, 0.7].map((factor) => (
+                      <option key={factor} value={factor}>
+                        {Math.round(factor * 100)} %
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+              </div>
+            </div>
+          </FaultSection>
         </div>
 
-        <div className="flex min-h-[440px] flex-col gap-3">
-          {runId ? (
+        {/* ---------------- preview ---------------- */}
+        <div className="flex min-h-0 flex-col gap-3">
+          <div className="relative min-h-0 flex-1">
             <MissionScene
               source={run.source}
               t={run.state?.t ?? 0}
-              duration={run.state?.duration_s ?? 100}
+              duration={run.state?.duration_s ?? (durationS === '' ? 100 : Number(durationS))}
               playing={playing && !run.stale}
-              className="min-h-[46vh] flex-1"
+              className="absolute inset-0 h-full w-full"
+              preview={!runId}
             />
-          ) : (
-            <div className="scene-shell grid min-h-[46vh] flex-1 place-items-center">
-              <p className="max-w-sm p-6 text-center text-[13px] text-[color:var(--color-muted)]">
-                Configure a scenario on the left, then <strong>Launch configured run</strong>.
-              </p>
+            <div className="pointer-events-none absolute inset-x-4 top-4 flex items-start justify-between gap-4">
+              <div>
+                <p className="panel-label">Scenario preview</p>
+                <p className="text-[13px] font-semibold leading-tight">
+                  {selectedScenario?.title ?? 'Select a scenario'}
+                </p>
+              </div>
+              <Chip tone={runId ? 'blue' : 'muted'}>{runId ? 'RUNNING' : 'SCENE PREVIEW'}</Chip>
             </div>
-          )}
-          <AccessStrip event={run.latest} selected={selectedLink} onSelect={setSelectedLink} />
-          <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-            <ApplicationHealthPanel event={run.latest} />
-            <PipelineTimeline decisions={run.decisions} latest={run.latest} />
           </div>
+
+          <NetworkRail
+            event={run.latest}
+            selected={selectedLink}
+            onSelect={(link) => setSelectedLink(link)}
+          />
+          <PipelineRail event={run.latest} />
+        </div>
+
+        {/* ---------------- summary ---------------- */}
+        <div className="scroll-y flex flex-col gap-3 pr-0.5">
+          <section className="panel px-4 py-3.5">
+            <h2 className="panel-label mb-2.5">Scenario summary</h2>
+            <dl className="flex flex-col gap-2">
+              {summaryRows.map(([label, value]) => (
+                <div key={label} className="flex items-baseline justify-between gap-3">
+                  <dt className="shrink-0 text-[11.5px] text-[color:var(--color-muted)]">{label}</dt>
+                  <dd className="text-right text-[12.5px] font-semibold leading-snug">{value}</dd>
+                </div>
+              ))}
+            </dl>
+          </section>
+
+          <section className="panel px-4 py-3.5">
+            <h2 className="panel-label mb-2">What this run measures</h2>
+            <ul className="flex flex-col gap-1.5 text-[12px] leading-snug text-[color:var(--color-muted)]">
+              <li>Total interruption and session reconnects.</li>
+              <li>Per-class deadline attainment and p95 latency.</li>
+              <li>Satellite bytes and relative link cost.</li>
+              <li>Handovers performed, including unnecessary ones.</li>
+            </ul>
+            <p className="mt-2 text-[11px] leading-snug text-[color:var(--color-faint)]">
+              One run is one sample. Comparing against a baseline needs the paired trials on the
+              Experiments page — this page does not predict an outcome.
+            </p>
+          </section>
+
+          <button
+            type="button"
+            className="control control-primary h-11 w-full text-[14.5px]"
+            onClick={launch}
+            disabled={busy || scenarios.length === 0}
+          >
+            ▶ Run scenario
+          </button>
         </div>
       </div>
     </AppShell>

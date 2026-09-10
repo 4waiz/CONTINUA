@@ -11,6 +11,7 @@
 import { api, EngineApiError, type CapabilityReport, type ScenarioSpec } from '@/lib/api';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppShell } from './AppShell';
+import { ComparisonChart } from './experiments/ComparisonChart';
 import { Chip, Panel } from './ui/primitives';
 
 const POLICY_NOTE: Record<string, string> = {
@@ -35,6 +36,19 @@ const HEADLINE_METRICS: { key: string; label: string; unit: string; lowerIsBette
   { key: 'handovers', label: 'Handovers', unit: '', lowerIsBetter: true },
   { key: 'unnecessary_handovers', label: 'Unnecessary handovers', unit: '', lowerIsBetter: true },
 ];
+
+/**
+ * The six the brief asks for. The full eleven stay in the table below the
+ * charts — this is the first look, not the whole result.
+ */
+const CHART_METRICS = [
+  { key: 'total_interruption_s', label: 'Interruption', unit: 's', lowerIsBetter: true },
+  { key: 'control_p95_latency_ms', label: 'Command p95 latency', unit: 'ms', lowerIsBetter: true },
+  { key: 'control_deadline_miss_pct', label: 'Command deadline misses', unit: '%', lowerIsBetter: true },
+  { key: 'video_stall_ms', label: 'Video stall', unit: 'ms', lowerIsBetter: true },
+  { key: 'satellite_bytes', label: 'Satellite usage', unit: 'MB', lowerIsBetter: true },
+  { key: 'handovers', label: 'Handovers', unit: '', lowerIsBetter: true },
+] as const;
 
 interface Stat {
   n: number;
@@ -70,11 +84,35 @@ export function ExperimentsView() {
   const [error, setError] = useState<string | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  const loadStored = useCallback(async (id: string) => {
+    setError(null);
+    try {
+      const payload = await api.getExperiment(id);
+      setResults((payload.results ?? payload) as Record<string, unknown>);
+      setExperimentId(id);
+      setProgress({ status: 'completed' });
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : String(cause));
+    }
+  }, []);
+
   useEffect(() => {
     api.scenarios().then((s) => setScenarios(s.scenarios)).catch(() => undefined);
     api.capability().then(setCapability).catch(() => undefined);
-    api.listExperiments().then((r) => setStored(r.stored)).catch(() => undefined);
-  }, []);
+    api
+      .listExperiments()
+      .then((r) => {
+        setStored(r.stored);
+        // Land on results rather than an empty page. The largest completed
+        // experiment is the most informative default; picking one from the list
+        // replaces it.
+        const best = r.stored
+          .filter((row) => Number(row.completed ?? 0) > 0)
+          .sort((a, b) => Number(b.completed ?? 0) - Number(a.completed ?? 0))[0];
+        if (best) void loadStored(String(best.experiment_id));
+      })
+      .catch(() => undefined);
+  }, [loadStored]);
 
   const poll = useCallback((id: string) => {
     if (pollRef.current) clearInterval(pollRef.current);
@@ -116,27 +154,41 @@ export function ExperimentsView() {
     }
   }, [scenarioId, trials, poll]);
 
-  const loadStored = useCallback(async (id: string) => {
-    setError(null);
-    try {
-      const payload = await api.getExperiment(id);
-      setResults((payload.results ?? payload) as Record<string, unknown>);
-      setExperimentId(id);
-      setProgress({ status: 'completed' });
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : String(cause));
-    }
-  }, []);
+
 
   const aggregate = (results?.aggregate ?? null) as Record<string, Record<string, Stat>> | null;
   const deltas = (results?.paired_deltas ?? null) as Record<string, Record<string, { mean_delta_p1_minus_baseline: number; n_pairs: number; p1_lower_in_pairs: number }>> | null;
   const completed = (results?.trials_completed ?? null) as Record<string, number> | null;
   const policyNames = aggregate ? Object.keys(aggregate) : [];
 
+  /**
+   * Totals across every experiment on disk, not just the selected one. These
+   * are counts of runs actually recorded — there is no target, no percentage of
+   * a goal, and nothing here is estimated.
+   */
+  const totalRuns = stored.reduce((sum, row) => sum + Number(row.completed ?? 0), 0);
+  const scenariosTested = new Set(stored.map((row) => String(row.scenario_id))).size;
+  const selectedTrials = completed ? Object.values(completed).reduce((a, b) => a + b, 0) : 0;
+
+  const summary: { label: string; value: string; note: string }[] = [
+    { label: 'Runs recorded', value: String(totalRuns), note: `${stored.length} experiments on disk` },
+    { label: 'Runs in this result', value: String(selectedTrials), note: `${policyNames.length} policies compared` },
+    {
+      label: 'Scenarios tested',
+      value: String(scenariosTested),
+      note: 'distinct scenario specs',
+    },
+    {
+      label: 'Execution mode',
+      value: 'SIMULATION',
+      note: capability?.emulation_supported ? 'emulation available' : 'emulation not verified here',
+    },
+  ];
+
   return (
-    <AppShell>
-      <Panel dense>
-        <div className="flex flex-wrap items-end gap-3">
+    <AppShell
+      bar={
+        <div className="panel flex flex-wrap items-center gap-x-5 gap-y-2.5 px-5 py-3">
           <label className="flex flex-col gap-1">
             <span className="panel-label">Scenario</span>
             <select className="control min-w-[230px]" value={scenarioId} onChange={(e) => setScenarioId(e.target.value)}>
@@ -166,25 +218,150 @@ export function ExperimentsView() {
               {progress.done ?? 0}/{progress.total ?? 0} · {progress.label ?? ''}
             </span>
           )}
-          <p className="min-w-[240px] flex-1 text-[10.5px] leading-snug text-[color:var(--color-muted)]">
+          <p className="min-w-[240px] flex-1 text-[11px] leading-snug text-[color:var(--color-muted)]">
             Every policy runs against the same seed per trial, so all of them face identical link
             conditions, background demand and loss draws. Seeds come from the disjoint <code>test</code>{' '}
             block.
           </p>
         </div>
-      </Panel>
-
-      {error && (
-        <div className="panel border-[color:var(--color-bad)] px-3.5 py-2.5 text-[12px] text-[color:var(--color-bad)]">
-          {error}
+      }
+    >
+      <div className="flex h-full min-h-0 flex-col gap-3">
+        <div className="grid shrink-0 grid-cols-2 gap-3 lg:grid-cols-4">
+          {summary.map((item) => (
+            <div key={item.label} className="card px-4 py-3">
+              <p className="panel-label">{item.label}</p>
+              <p className="metric mt-1 text-[26px] font-semibold leading-none tracking-[-0.03em]">
+                {item.value}
+              </p>
+              <p className="mt-1 text-[11.5px] text-[color:var(--color-muted)]">{item.note}</p>
+            </div>
+          ))}
         </div>
-      )}
 
-      {aggregate && (
+        <div className="grid min-h-0 flex-1 grid-cols-1 grid-rows-[minmax(0,1fr)] gap-3 xl:grid-cols-[292px_minmax(0,1fr)]">
+          <div className="scroll-y flex flex-col gap-3 pr-0.5">
+            <section className="panel px-4 py-3.5">
+              <h2 className="panel-label mb-2">Stored experiments</h2>
+              {stored.length === 0 ? (
+                <p className="text-[12px] text-[color:var(--color-muted)]">None yet.</p>
+              ) : (
+                <ul className="flex flex-col gap-1">
+                  {stored
+                    .slice()
+                    .sort((a, b) => Number(b.completed ?? 0) - Number(a.completed ?? 0))
+                    .map((row) => {
+                      const active = experimentId === row.experiment_id;
+                      return (
+                        <li key={String(row.experiment_id)}>
+                          <button
+                            type="button"
+                            onClick={() => loadStored(String(row.experiment_id))}
+                            aria-pressed={active}
+                            className={`flex w-full items-baseline justify-between gap-2 rounded-[10px] border px-2.5 py-2 text-left transition ${
+                              active
+                                ? 'border-[color:color-mix(in_srgb,var(--color-blue)_36%,transparent)] bg-[color:color-mix(in_srgb,var(--color-blue)_7%,white)]'
+                                : 'border-transparent hover:border-[color:var(--color-line)]'
+                            }`}
+                          >
+                            <span
+                              className="truncate text-[12.5px] font-semibold"
+                              style={{ color: active ? 'var(--color-blue)' : undefined }}
+                            >
+                              {String(row.scenario_id)}
+                            </span>
+                            <span className="metric shrink-0 text-[11px] text-[color:var(--color-muted)]">
+                              {String(row.trials)} x {String(row.completed)}
+                            </span>
+                          </button>
+                        </li>
+                      );
+                    })}
+                </ul>
+              )}
+            </section>
+
+            <section className="panel px-4 py-3.5" id="capability">
+              <h2 className="panel-label mb-2">Execution capability</h2>
+              {capability ? (
+                <>
+                  <div className="mb-2 flex flex-wrap gap-1.5">
+                    <Chip tone="warn">SIMULATION available</Chip>
+                    <Chip tone={capability.emulation_supported ? 'good' : 'bad'}>
+                      EMULATION {capability.emulation_supported ? 'available' : 'NOT VERIFIED HERE'}
+                    </Chip>
+                    <Chip tone={capability.mptcp_supported ? 'good' : 'bad'}>
+                      MPTCP {capability.mptcp_supported ? 'available' : 'unavailable'}
+                    </Chip>
+                  </div>
+                  <p className="text-[11.5px] leading-snug">{capability.summary}</p>
+                  <details className="mt-2">
+                    <summary className="cursor-pointer text-[11.5px] text-[color:var(--color-muted)]">
+                      {capability.checks.length} capability checks on {capability.host_platform}
+                    </summary>
+                    <ul className="mt-1.5 space-y-0.5 text-[11px]">
+                      {capability.checks.map((check) => (
+                        <li key={check.name} className="flex items-start gap-1.5">
+                          <span style={{ color: check.ok ? 'var(--color-good)' : 'var(--color-bad)' }}>
+                            {check.ok ? 'ok' : 'x'}
+                          </span>
+                          <span className="font-[family-name:var(--font-mono)]">{check.name}</span>
+                          <span className="text-[color:var(--color-muted)]">- {check.detail}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </details>
+                </>
+              ) : (
+                <p className="text-[12px] text-[color:var(--color-muted)]">Probing...</p>
+              )}
+            </section>
+          </div>
+
+          <div className="scroll-y flex flex-col gap-3 pr-0.5">
+            {error && (
+              <div className="panel border-[color:var(--color-bad)] px-4 py-2.5 text-[12.5px] text-[color:var(--color-bad)]">
+                {error}
+              </div>
+            )}
+
+            {aggregate && (
+              <section className="panel px-4 py-3.5">
+                <h2 className="panel-label mb-2.5">Baseline comparison</h2>
+                <div className="grid grid-cols-1 gap-2.5 lg:grid-cols-2 2xl:grid-cols-3">
+                  {CHART_METRICS.map((metric) => (
+                    <ComparisonChart
+                      key={metric.key}
+                      title={metric.label}
+                      unit={metric.unit}
+                      scale={metric.unit === 'MB' ? 1e6 : 1}
+                      lowerIsBetter={metric.lowerIsBetter}
+                      policies={policyNames}
+                      values={Object.fromEntries(
+                        policyNames.map((policy) => [policy, aggregate[policy]?.[metric.key]]),
+                      )}
+                    />
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {!aggregate && (
+              <div className="panel grid flex-1 place-items-center px-6 py-10 text-center">
+                <div>
+                  <p className="text-[15px] font-semibold">No results loaded</p>
+                  <p className="mt-1 text-[12.5px] text-[color:var(--color-muted)]">
+                    Pick a stored experiment, or run a new paired comparison above.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {aggregate && (
         <Panel
           title={`Results · ${String(results?.scenario_id ?? '')}`}
           action={
-            <span className="text-[10.5px] text-[color:var(--color-muted)]">
+            <span className="text-[11px] text-[color:var(--color-muted)]">
               seed block {String(results?.seed_block ?? '')} · commit{' '}
               {String(results?.code_commit ?? '').slice(0, 10) || 'unknown'}
             </span>
@@ -205,7 +382,7 @@ export function ExperimentsView() {
                       title={POLICY_NOTE[name]}
                     >
                       {name}
-                      <div className="font-normal text-[10px] text-[color:var(--color-muted)]">
+                      <div className="font-normal text-[11px] text-[color:var(--color-muted)]">
                         n={completed?.[name] ?? 0}
                       </div>
                     </th>
@@ -232,7 +409,7 @@ export function ExperimentsView() {
                         {metric.unit ? (
                           <span className="text-[color:var(--color-muted)]"> ({metric.unit})</span>
                         ) : null}
-                        <span className="ml-1 text-[10px] text-[color:var(--color-muted)]">
+                        <span className="ml-1 text-[11px] text-[color:var(--color-muted)]">
                           {metric.lowerIsBetter ? '↓ better' : '↑ better'}
                         </span>
                       </th>
@@ -255,7 +432,7 @@ export function ExperimentsView() {
               </tbody>
             </table>
           </div>
-          <p className="mt-2 text-[10.5px] leading-snug text-[color:var(--color-muted)]">
+          <p className="mt-2 text-[11px] leading-snug text-[color:var(--color-muted)]">
             Green marks the best mean for that row — it does not mean the difference is
             statistically meaningful. Hover any cell for its 95 % confidence interval and trial
             count. With ~20 trials those intervals are wide; treat small gaps as inconclusive.
@@ -265,7 +442,7 @@ export function ExperimentsView() {
 
       {deltas && (
         <Panel title="Paired deltas · CONTINUA (P1) minus baseline">
-          <p className="mb-2 text-[10.5px] leading-snug text-[color:var(--color-muted)]">
+          <p className="mb-2 text-[11px] leading-snug text-[color:var(--color-muted)]">
             Computed per trial on identical conditions, which is far more sensitive than comparing
             means. Negative means P1 scored lower on that metric — good for interruption, cost and
             misses; bad for health score.
@@ -321,67 +498,8 @@ export function ExperimentsView() {
         </Panel>
       )}
 
-      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-        <Panel title="Stored experiments">
-          {stored.length === 0 ? (
-            <p className="text-[11.5px] text-[color:var(--color-muted)]">None yet.</p>
-          ) : (
-            <ul className="space-y-1">
-              {stored.map((row) => (
-                <li key={String(row.experiment_id)}>
-                  <button
-                    type="button"
-                    className="control w-full justify-between"
-                    onClick={() => loadStored(String(row.experiment_id))}
-                    data-active={experimentId === row.experiment_id}
-                  >
-                    <span className="truncate">{String(row.scenario_id)}</span>
-                    <span className="text-[10px] text-[color:var(--color-muted)]">
-                      {String(row.trials)} trials · {String(row.completed)} runs
-                    </span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </Panel>
-
-        <Panel title="Execution capability" className="scroll-mt-24" >
-          <div id="capability">
-            {capability ? (
-              <>
-                <div className="mb-2 flex flex-wrap gap-1.5">
-                  <Chip tone="warn">SIMULATION available</Chip>
-                  <Chip tone={capability.emulation_supported ? 'good' : 'bad'}>
-                    EMULATION {capability.emulation_supported ? 'available' : 'NOT VERIFIED HERE'}
-                  </Chip>
-                  <Chip tone={capability.mptcp_supported ? 'good' : 'bad'}>
-                    MPTCP {capability.mptcp_supported ? 'available' : 'unavailable'}
-                  </Chip>
-                </div>
-                <p className="text-[11.5px] leading-snug">{capability.summary}</p>
-                <details className="mt-2">
-                  <summary className="cursor-pointer text-[11px] text-[color:var(--color-muted)]">
-                    {capability.checks.length} capability checks on {capability.host_platform}
-                  </summary>
-                  <ul className="mt-1.5 space-y-0.5 text-[10.5px]">
-                    {capability.checks.map((check) => (
-                      <li key={check.name} className="flex items-start gap-1.5">
-                        <span style={{ color: check.ok ? 'var(--color-good)' : 'var(--color-bad)' }}>
-                          {check.ok ? '✓' : '✕'}
-                        </span>
-                        <span className="font-[family-name:var(--font-mono)]">{check.name}</span>
-                        <span className="text-[color:var(--color-muted)]">— {check.detail}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </details>
-              </>
-            ) : (
-              <p className="text-[11.5px] text-[color:var(--color-muted)]">Probing…</p>
-            )}
           </div>
-        </Panel>
+        </div>
       </div>
     </AppShell>
   );

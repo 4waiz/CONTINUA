@@ -79,7 +79,7 @@ export function Sparkline({
   if (!hasData) {
     return (
       <div
-        className="flex items-center justify-center text-[10px] text-[color:var(--color-muted)]"
+        className="flex items-center justify-center text-[11px] text-[color:var(--color-muted)]"
         style={{ height }}
       >
         no samples yet
@@ -129,7 +129,7 @@ export function TimeSeries({
       {title && <figcaption className="panel-label mb-1">{title}</figcaption>}
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 pb-1">
         {series.map((s) => (
-          <span key={s.label} className="flex items-center gap-1 text-[10.5px] text-[color:var(--color-muted)]">
+          <span key={s.label} className="flex items-center gap-1 text-[11px] text-[color:var(--color-muted)]">
             <span className="inline-block h-[2px] w-3 rounded" style={{ background: s.color }} />
             {s.label}
             {s.unit ? ` (${s.unit})` : ''}
@@ -174,7 +174,7 @@ export function TimeSeries({
         </div>
       )}
       {xLabels && (
-        <div className="mt-0.5 flex justify-between text-[10px] text-[color:var(--color-muted)]">
+        <div className="mt-0.5 flex justify-between text-[11px] text-[color:var(--color-muted)]">
           <span>{xLabels[0]}</span>
           <span>{xLabels[1]}</span>
           <span>{xLabels[2]}</span>
@@ -202,7 +202,7 @@ export function Bars({
   if (!hasData) {
     return (
       <div
-        className="flex items-center justify-center text-[10px] text-[color:var(--color-muted)]"
+        className="flex items-center justify-center text-[11px] text-[color:var(--color-muted)]"
         style={{ height }}
       >
         no samples yet

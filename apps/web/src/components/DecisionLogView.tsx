@@ -87,15 +87,15 @@ export function DecisionLogView() {
 
   return (
     <AppShell>
-      <div className="grid grid-cols-1 gap-3 xl:grid-cols-[280px_minmax(0,1fr)_330px]">
-        <Panel title="Recorded runs">
+      <div className="grid h-full min-h-0 grid-cols-1 grid-rows-[minmax(0,1fr)] gap-3 xl:grid-cols-[286px_minmax(0,1fr)_336px]">
+        <Panel title="Recorded runs" className="flex min-h-0 flex-col">
           {error && <p className="mb-2 text-[11.5px] text-[color:var(--color-bad)]">{error}</p>}
           {runs.length === 0 ? (
             <p className="text-[11.5px] text-[color:var(--color-muted)]">
               No runs recorded yet. Start one from Mission.
             </p>
           ) : (
-            <ul className="max-h-[70vh] space-y-1 overflow-y-auto">
+            <ul className="scroll-y flex-1 space-y-1">
               {runs.map((row) => (
                 <li key={row.run_id}>
                   <button
@@ -106,11 +106,11 @@ export function DecisionLogView() {
                   >
                     <span className="flex w-full items-center justify-between gap-2">
                       <span className="truncate font-semibold">{row.scenario_id}</span>
-                      <span className="shrink-0 text-[10px] text-[color:var(--color-muted)]">
+                      <span className="shrink-0 text-[11px] text-[color:var(--color-muted)]">
                         {row.policy_id}
                       </span>
                     </span>
-                    <span className="flex w-full items-center justify-between gap-2 text-[10px] font-normal text-[color:var(--color-muted)]">
+                    <span className="flex w-full items-center justify-between gap-2 text-[11px] font-normal text-[color:var(--color-muted)]">
                       <span className="font-[family-name:var(--font-mono)]">{row.run_id}</span>
                       <span>{row.events} ev</span>
                     </span>
@@ -122,6 +122,7 @@ export function DecisionLogView() {
         </Panel>
 
         <Panel
+          className="flex min-h-0 flex-col"
           title={`Decisions${run ? ` · ${run.scenario_id} · ${run.policy_id}` : ''}`}
           action={
             <button
@@ -141,7 +142,7 @@ export function DecisionLogView() {
               No {onlyActions ? 'actions' : 'events'} recorded for this run.
             </p>
           ) : (
-            <ul className="max-h-[70vh] space-y-1 overflow-y-auto">
+            <ul className="scroll-y flex-1 space-y-1">
               {rows.map((event) => (
                 <li key={event.seq}>
                   <button
@@ -158,20 +159,20 @@ export function DecisionLogView() {
                     }}
                   >
                     <div className="flex flex-wrap items-center gap-1.5">
-                      <span className="metric w-[54px] shrink-0 font-[family-name:var(--font-mono)] text-[10.5px] text-[color:var(--color-muted)]">
+                      <span className="metric w-[54px] shrink-0 font-[family-name:var(--font-mono)] text-[11px] text-[color:var(--color-muted)]">
                         t+{event.t.toFixed(1)}s
                       </span>
                       <Chip tone="blue">{STAGE_LABEL[event.stage]}</Chip>
                       <Chip tone="muted">{ACTION_LABEL[event.action?.kind ?? 'none']}</Chip>
                       {event.carrying && (
                         <span
-                          className="text-[10.5px] font-semibold"
+                          className="text-[11px] font-semibold"
                           style={{ color: NETWORK_COLOR[event.carrying] }}
                         >
                           {LINK_LABEL[event.carrying].label}
                         </span>
                       )}
-                      <span className="ml-auto text-[10px] text-[color:var(--color-muted)]">
+                      <span className="ml-auto text-[11px] text-[color:var(--color-muted)]">
                         #{event.seq}
                       </span>
                     </div>
@@ -183,7 +184,7 @@ export function DecisionLogView() {
           )}
         </Panel>
 
-        <div className="flex flex-col gap-3">
+        <div className="scroll-y flex flex-col gap-3 pr-0.5">
           <Panel title="Decision detail">
             {!selected ? (
               <p className="text-[11.5px] text-[color:var(--color-muted)]">
@@ -204,13 +205,13 @@ export function DecisionLogView() {
                 <div className="grid grid-cols-2 gap-2">
                   <div>
                     <div className="panel-label">Policy</div>
-                    <div className="metric font-[family-name:var(--font-mono)] text-[10.5px]">
+                    <div className="metric font-[family-name:var(--font-mono)] text-[11px]">
                       {selected.policy_id} · {selected.policy_version}
                     </div>
                   </div>
                   <div>
                     <div className="panel-label">Predictor</div>
-                    <div className="metric font-[family-name:var(--font-mono)] text-[10.5px]">
+                    <div className="metric font-[family-name:var(--font-mono)] text-[11px]">
                       {selected.prediction?.predictor ?? 'none'}
                     </div>
                   </div>
@@ -223,12 +224,12 @@ export function DecisionLogView() {
                       <Chip tone={selected.prediction.violation_expected ? 'violet' : 'muted'}>
                         {selected.prediction.violation_expected ? 'violation expected' : 'no violation'}
                       </Chip>
-                      <span className="text-[10.5px] text-[color:var(--color-muted)]">
+                      <span className="text-[11px] text-[color:var(--color-muted)]">
                         horizon {selected.prediction.horizon_s}s
                       </span>
                       {selected.prediction.score !== null && (
                         <span
-                          className="text-[10.5px]"
+                          className="text-[11px]"
                           title={
                             selected.prediction.calibrated
                               ? 'Calibrated probability.'
@@ -241,10 +242,10 @@ export function DecisionLogView() {
                       )}
                     </div>
                     <details className="mt-1.5">
-                      <summary className="cursor-pointer text-[10.5px] text-[color:var(--color-muted)]">
+                      <summary className="cursor-pointer text-[11px] text-[color:var(--color-muted)]">
                         Features used
                       </summary>
-                      <dl className="mt-1 grid grid-cols-2 gap-x-2 text-[10px]">
+                      <dl className="mt-1 grid grid-cols-2 gap-x-2 text-[11px]">
                         {Object.entries(selected.prediction.features).map(([key, value]) => (
                           <div key={key} className="flex justify-between gap-1">
                             <dt className="truncate text-[color:var(--color-muted)]">{key}</dt>
@@ -258,7 +259,7 @@ export function DecisionLogView() {
 
                 <div>
                   <div className="panel-label mb-1">Observations at that instant</div>
-                  <table className="w-full border-collapse text-[10.5px]">
+                  <table className="w-full border-collapse text-[11px]">
                     <thead>
                       <tr className="text-left text-[color:var(--color-muted)]">
                         <th className="font-medium">Link</th>
@@ -289,7 +290,7 @@ export function DecisionLogView() {
 
           {metrics && (
             <Panel title="Run metrics">
-              <pre className="max-h-[36vh] overflow-auto rounded-[8px] bg-[color:var(--color-surface-muted)] p-2 font-[family-name:var(--font-mono)] text-[10px] leading-snug">
+              <pre className="scroll-y max-h-[42vh] rounded-[8px] bg-[color:var(--color-surface-muted)] p-2 font-[family-name:var(--font-mono)] text-[11px] leading-snug">
                 {JSON.stringify(metrics, null, 2)}
               </pre>
             </Panel>

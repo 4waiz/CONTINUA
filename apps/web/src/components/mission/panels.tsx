@@ -126,7 +126,7 @@ export function SelectedLinkCards({
                 color={colour}
                 label="modelled coverage"
               />
-              <p className="mt-1 text-[10px] text-[color:var(--color-muted)]">
+              <p className="mt-1 text-[11px] text-[color:var(--color-muted)]">
                 Geometric, from distance to infrastructure. Not a measured signal level.
               </p>
             </div>
@@ -136,7 +136,7 @@ export function SelectedLinkCards({
 
       <Panel
         title="Round-trip time"
-        action={<span className="text-[10px] text-[color:var(--color-muted)]">{windowS}s window</span>}
+        action={<span className="text-[11px] text-[color:var(--color-muted)]">{windowS}s window</span>}
       >
         <div className="flex items-baseline gap-1.5">
           <MeasurementValue
@@ -147,20 +147,20 @@ export function SelectedLinkCards({
           />
           <span className="text-[11px] text-[color:var(--color-muted)]">ms</span>
           {observation?.jitter_ms != null && (
-            <span className="ml-auto text-[10.5px] text-[color:var(--color-muted)]">
+            <span className="ml-auto text-[11px] text-[color:var(--color-muted)]">
               jitter {observation.jitter_ms.toFixed(1)} ms
             </span>
           )}
         </div>
         <Sparkline values={series((o) => o.rtt_ms)} color={colour} />
-        <p className="mt-1 text-[10px] text-[color:var(--color-muted)]">
+        <p className="mt-1 text-[11px] text-[color:var(--color-muted)]">
           From acknowledged control packets and probes. Smoothed over {windowS}s.
         </p>
       </Panel>
 
       <Panel
         title="Packet loss"
-        action={<span className="text-[10px] text-[color:var(--color-muted)]">{windowS}s window</span>}
+        action={<span className="text-[11px] text-[color:var(--color-muted)]">{windowS}s window</span>}
       >
         <div className="flex items-baseline gap-1.5">
           <MeasurementValue
@@ -172,7 +172,7 @@ export function SelectedLinkCards({
           <span className="text-[11px] text-[color:var(--color-muted)]">%</span>
         </div>
         <Bars values={series((o) => o.loss_pct)} color={colour} />
-        <p className="mt-1 text-[10px] text-[color:var(--color-muted)]">
+        <p className="mt-1 text-[11px] text-[color:var(--color-muted)]">
           (sent − delivered) ÷ sent on this link over the window, including tail drops.
         </p>
       </Panel>
@@ -216,12 +216,12 @@ export function AccessStrip({
             <div className="flex items-center gap-1.5">
               <Dot color={colour} pulse={phase === 'activating' || phase === 'validating'} />
               <span className="text-[13px] font-semibold">{LINK_LABEL[link].label}</span>
-              <span className="text-[10px] text-[color:var(--color-muted)]">{LINK_LABEL[link].sublabel}</span>
+              <span className="text-[11px] text-[color:var(--color-muted)]">{LINK_LABEL[link].sublabel}</span>
               <span className="ml-auto">
                 <Chip tone={PHASE_TONE[phase] ?? 'muted'}>{phase.replace('_', ' ')}</Chip>
               </span>
             </div>
-            <dl className="mt-2 grid grid-cols-3 gap-1 text-[10.5px]">
+            <dl className="mt-2 grid grid-cols-3 gap-1 text-[11px]">
               <div>
                 <dt className="text-[color:var(--color-muted)]">RTT</dt>
                 <dd className="metric font-semibold">
@@ -276,7 +276,7 @@ export function ApplicationHealthPanel({ event }: { event: EngineEvent | null })
       title="Application health"
       action={
         <span
-          className="text-[10px] text-[color:var(--color-muted)]"
+          className="text-[11px] text-[color:var(--color-muted)]"
           title="app_health_v1: weighted mean of per-class deadline attainment. Full definition in docs/METRICS.md."
         >
           {app?.health_definition ?? 'app_health_v1'}
@@ -290,7 +290,7 @@ export function ApplicationHealthPanel({ event }: { event: EngineEvent | null })
         </div>
         <div className="flex-1">
           <Meter value={score} color={tone} label="application health" />
-          <p className="mt-1 text-[10px] leading-snug text-[color:var(--color-muted)]">
+          <p className="mt-1 text-[11px] leading-snug text-[color:var(--color-muted)]">
             Weighted deadline attainment across enabled classes. Reproducible from the receiver logs;
             not an opaque QoS index.
           </p>
@@ -356,7 +356,7 @@ export function ContinuityPanel({ event }: { event: EngineEvent | null }) {
   const app = event?.app ?? null;
   return (
     <Panel title="Session continuity">
-      <p className="mb-2 text-[10.5px] leading-snug text-[color:var(--color-muted)]">
+      <p className="mb-2 text-[11px] leading-snug text-[color:var(--color-muted)]">
         Whether the transport session survived — a different question from whether application
         deadlines were met.
       </p>
@@ -529,9 +529,11 @@ export function CameraPanel({ event }: { event: EngineEvent | null }) {
           </dd>
         </div>
       </dl>
-      <p className="mt-1.5 text-[10px] leading-snug text-[color:var(--color-muted)]">
-        This render is local and bypasses the modelled network. It visualises measured frame
-        delivery; it is not evidence that video was transported.
+      <p
+        className="mt-1.5 text-[11px] leading-snug text-[color:var(--color-muted)]"
+        title="This render is local and bypasses the modelled network. It visualises measured frame delivery; it is not evidence that video pixels were transported."
+      >
+        Local render of measured frame delivery — not transported pixels.
       </p>
     </Panel>
   );
@@ -608,7 +610,7 @@ export function PipelineTimeline({
               key={`${event.run_id}-${event.seq}`}
               className="flex items-start gap-2.5 rounded-[8px] border border-[color:var(--color-line)] px-2.5 py-1.5"
             >
-              <span className="metric mt-[1px] w-[52px] shrink-0 font-[family-name:var(--font-mono)] text-[10.5px] text-[color:var(--color-muted)]">
+              <span className="metric mt-[1px] w-[52px] shrink-0 font-[family-name:var(--font-mono)] text-[11px] text-[color:var(--color-muted)]">
                 t+{event.t.toFixed(1)}s
               </span>
               <Chip tone={STAGE_TONE[event.stage] ?? 'muted'}>

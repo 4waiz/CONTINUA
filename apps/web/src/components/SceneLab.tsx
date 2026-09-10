@@ -31,6 +31,8 @@ import {
   useThrottledSceneState,
 } from '@continua/scene';
 import { useMemo } from 'react';
+import { AppShell } from './AppShell';
+import { ScenePerformance } from './ScenePerformance';
 import { SceneStage } from './SceneStage';
 import { ButtonGroup, Chip, Dot, Panel, PreviewBadge, Stat, Toggle } from './ui/primitives';
 
@@ -183,11 +185,11 @@ function LinkPanel() {
               <div className="min-w-0 flex-1">
                 <div className="flex items-baseline gap-1.5">
                   <span className="text-[13px] font-semibold">{meta.label}</span>
-                  <span className="truncate text-[10.5px] text-[color:var(--color-muted)]">
+                  <span className="truncate text-[11px] text-[color:var(--color-muted)]">
                     {meta.sublabel}
                   </span>
                 </div>
-                <div className="text-[10.5px] text-[color:var(--color-muted)]">
+                <div className="text-[11px] text-[color:var(--color-muted)]">
                   {LINK_STATE_LABEL[link.state]}
                   {id === 'wired' && link.tethered ? ' · tethered' : ''}
                 </div>
@@ -255,11 +257,14 @@ function RunPanel() {
         <div className="mt-3 rounded-[10px] border border-[color:var(--color-line)] bg-[color:var(--color-surface-muted)] p-2.5">
           <div className="panel-label mb-1">Latest decision</div>
           <p className="text-[12px] leading-snug">{state.latestDecision.reason}</p>
-          {state.latestDecision.confidence !== undefined && (
-            <p className="mt-1 text-[10.5px] text-[color:var(--color-muted)]">
-              Model confidence {(state.latestDecision.confidence * 100).toFixed(0)}% · illustrative
-            </p>
-          )}
+          {/* The preview source used to print "Model confidence 99% - illustrative"
+              here. There is no model in the Phase 1 preview and nothing produced
+              a 99, so the number was decoration wearing the clothes of a
+              measurement — precisely what hard rule 1 forbids. What the panel can
+              honestly say is where the handoff plan comes from. */}
+          <p className="mt-1 text-[11px] text-[color:var(--color-muted)]">
+            Planned from route geometry and coverage radii — not a measurement.
+          </p>
         </div>
       )}
     </Panel>
@@ -296,7 +301,7 @@ function ViewPanel() {
             options={CAMERA_OPTIONS}
           />
           {settings.mode === 'inspect' && (
-            <p className="mt-1 text-[10.5px] text-[color:var(--color-muted)]">
+            <p className="mt-1 text-[11px] text-[color:var(--color-muted)]">
               Inspect mode uses the turntable camera.
             </p>
           )}
@@ -354,7 +359,7 @@ function ViewPanel() {
           </div>
         )}
 
-        <p className="text-[10.5px] leading-snug text-[color:var(--color-muted)]">
+        <p className="text-[11px] leading-snug text-[color:var(--color-muted)]">
           Space play/pause · ← → scrub · Shift+← → 10 s · C coverage · R reset
         </p>
       </div>
@@ -368,51 +373,41 @@ export function SceneLab() {
   useSceneKeyboard();
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-[1760px] flex-col gap-3 p-3 lg:p-4">
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <span
-            aria-hidden
-            className="block h-11 w-[3px] rounded-full"
-            style={{ background: 'linear-gradient(180deg,#176BFF,#7C3CFF)' }}
-          />
-          <div>
-            <h1 className="text-[26px] font-semibold leading-none tracking-[-0.02em]">
-              <span style={{ color: 'var(--color-blue)' }}>CONTINUA</span>{' '}
-              <span className="text-[color:var(--color-muted)]">Scene Lab</span>
-            </h1>
-            <p className="mt-1 text-[12.5px] text-[color:var(--color-muted)]">
-              Predictive Network Continuity · by Team Kanban · The network changes. The session doesn’t.
-            </p>
+    // Scene Lab used to carry its own header and a "← Dashboard" link, which made
+    // it feel like a separate tool. It is a page of the same product, so it gets
+    // the same shell and the same navigation.
+    <AppShell
+      bar={
+        <div className="panel flex flex-wrap items-center justify-between gap-x-6 gap-y-2 px-5 py-3">
+          <div className="flex items-center gap-3">
+            <Chip tone="muted">SCENE PREVIEW</Chip>
+            <div className="leading-tight">
+              <p className="text-[13.5px] font-semibold">Scene Lab</p>
+              <p className="text-[11.5px] text-[color:var(--color-muted)]">
+                Phase 1 visualisation and inspection — a deterministic geometric preview, not
+                measured network performance.
+              </p>
+            </div>
           </div>
+          <ScenePerformance />
         </div>
-        <div className="flex items-center gap-2">
-          <a className="control" href="/">
-            ← Dashboard
-          </a>
-        </div>
-      </header>
-
-      <div className="grid flex-1 grid-cols-1 gap-3 xl:grid-cols-[300px_minmax(0,1fr)_320px]">
-        <div className="order-2 flex flex-col gap-3 xl:order-1">
+      }
+    >
+      <div className="grid h-full min-h-0 grid-cols-1 grid-rows-[minmax(0,1fr)] gap-3 xl:grid-cols-[300px_minmax(0,1fr)_320px]">
+        <div className="scroll-y order-2 flex flex-col gap-3 pr-0.5 xl:order-1">
           <ViewPanel />
         </div>
 
-        <div className="order-1 flex min-h-[420px] flex-col gap-3 xl:order-2">
-          <SceneStage className="min-h-[46vh] flex-1 xl:min-h-[62vh]" />
+        <div className="order-1 flex min-h-0 flex-col gap-3 xl:order-2">
+          <SceneStage className="min-h-0 flex-1" />
           <Transport />
         </div>
 
-        <div className="order-3 flex flex-col gap-3">
+        <div className="scroll-y order-3 flex flex-col gap-3 pr-0.5">
           <LinkPanel />
           <RunPanel />
         </div>
       </div>
-
-      <footer className="pb-1 text-center text-[11px] text-[color:var(--color-muted)]">
-        Phase 1 — vehicle, world and visual foundation. Values shown are a deterministic geometric
-        preview, not measured network performance.
-      </footer>
-    </main>
+    </AppShell>
   );
 }

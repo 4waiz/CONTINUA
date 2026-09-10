@@ -13,7 +13,12 @@
  * comes verbatim from an engine event.
  */
 
-import { SceneRuntimeProvider, useSceneRuntime, type EngineSceneStateSource } from '@continua/scene';
+import {
+  previewSource,
+  SceneRuntimeProvider,
+  useSceneRuntime,
+  type EngineSceneStateSource,
+} from '@continua/scene';
 import { useEffect } from 'react';
 import { SceneStage } from '../SceneStage';
 
@@ -60,19 +65,35 @@ function ClockSync({
   return null;
 }
 
+/**
+ * @param preview  no run exists yet. The scene is driven by the Phase 1 preview
+ *   source and plays its own route loop, so the operator sees the world rather
+ *   than an empty rectangle. Nothing in preview is a measurement, and the
+ *   caller is responsible for badging it `SCENE PREVIEW` — `SceneState.source`
+ *   carries the same fact for anything that reads the state directly.
+ */
 export function MissionScene({
   source,
   t,
   duration,
   playing,
   className,
+  preview = false,
 }: {
   source: EngineSceneStateSource;
   t: number;
   duration: number;
   playing: boolean;
   className?: string;
+  preview?: boolean;
 }) {
+  if (preview) {
+    return (
+      <SceneRuntimeProvider source={previewSource}>
+        <SceneStage className={className} />
+      </SceneRuntimeProvider>
+    );
+  }
   return (
     <SceneRuntimeProvider source={source}>
       <ClockSync t={t} duration={duration} playing={playing} />
