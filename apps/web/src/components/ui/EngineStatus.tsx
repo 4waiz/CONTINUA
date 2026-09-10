@@ -9,8 +9,8 @@
  * to try again. The address is a developer detail and lives behind a disclosure.
  *
  * Critically, this is a *strip*, not a takeover: the rest of the interface still
- * renders, the 3D scene still loads in preview, and every metric shows an em
- * dash rather than a fabricated value.
+ * renders, the 3D scene still loads in preview, and every metric shows a
+ * placeholder rather than a fabricated value.
  */
 
 import { useState } from 'react';

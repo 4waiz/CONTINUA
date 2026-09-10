@@ -19,6 +19,7 @@
 
 import type { ConnectionState } from '@/lib/useEngineRun';
 import type { EngineRunState } from '@continua/contracts/engine';
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import type { ReactNode } from 'react';
@@ -75,6 +76,19 @@ export function ConnectionBadge({
   stale: boolean;
   dropped: number;
 }) {
+  if (IS_PUBLIC_PREVIEW && connection !== 'error') {
+    // There is no engine at the other end of anything here, so "CONNECTED"
+    // would be a lie told with a green pulsing dot. What is actually happening
+    // is playback of a run that shipped with the page.
+    return (
+      <Chip
+        tone="violet"
+        title="Playing a run recorded by the CONTINUA engine and bundled with this page. No engine connection exists on the public site."
+      >
+        RECORDED
+      </Chip>
+    );
+  }
   if (connection === 'connected' && stale) {
     return (
       <Chip tone="warn" title="Connected, but no engine message has arrived recently. Values shown are the last received, not current.">
@@ -206,10 +220,21 @@ export function BrandHeader() {
           style={{ background: 'var(--brand-gradient)' }}
         />
         <div className="leading-none">
-          <h1 className="brand-text text-[clamp(28px,2.2vw,36px)] font-semibold leading-[1.02] tracking-[-0.035em]">
-            CONTINUA
+          {/* The supplied wordmark, un-matted to alpha by
+              `scripts/build-brand-logo.mjs` so it sits on the page ground
+              rather than on a pale card of its own. It stays inside the h1: the
+              document still has a level-one heading, and its text is the alt. */}
+          <h1 className="leading-none">
+            <Image
+              src="/brand/continua-logo.png"
+              alt="CONTINUA"
+              width={560}
+              height={61}
+              priority
+              className="h-[clamp(26px,2.05vw,34px)] w-auto"
+            />
           </h1>
-          <p className="mt-[7px] text-[14px] font-medium leading-none text-[color:var(--color-ink)]">
+          <p className="mt-[9px] text-[14px] font-medium leading-none text-[color:var(--color-ink)]">
             Predictive Network Continuity
           </p>
           <p className="mt-[5px] text-[12.5px] leading-none text-[color:var(--color-muted)]">

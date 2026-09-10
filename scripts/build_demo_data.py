@@ -1,49 +1,74 @@
 #!/usr/bin/env python3
 """
-Bake the recorded evidence into static files the deployed site can play.
+Bake the recorded evidence into static files the deployed site plays.
 
 The CONTINUA engine is Python - FastAPI, numpy, scikit-learn - and cannot run on
-Cloudflare Workers. A frontend deployed on its own would be honest but inert:
-the scene preview, an "engine offline" strip, and an em dash in every metric.
+Cloudflare Workers. Rather than deploy a frontend that asks visitors to install
+Python, this script runs **the whole scenario-by-policy matrix through the real
+engine** and exports every run, so the deployed site can play any combination a
+visitor selects with no backend at all.
 
-So the public build does not talk to an engine at all. It **replays runs that
-were actually recorded**, from JSON served as static assets. That is not a
-compromise on honesty: replay is a first-class mode the engine already supports,
-every number comes from a real recorded run, and the UI badges it `REPLAY ·
-SIMULATION` exactly as it does locally.
+That is not a compromise on honesty. Replay is a first-class mode the engine
+already supports, every number comes from a run the engine actually executed,
+and the interface badges it `REPLAY - SIMULATION` exactly as it does locally.
+Re-implementing the simulator in TypeScript would have been the alternative, and
+it would have produced a second set of numbers that disagreed with the ones in
+every document and every experiment. Recording the real thing does not.
 
-What it cannot do, and the deployed site says so: start a new run with a
-different scenario, policy or seed, or execute a fresh experiment. Those need
-the engine.
-
-    python scripts/build_demo_data.py
+    python scripts/build_demo_data.py            # the full matrix
+    python scripts/build_demo_data.py --policies P1,B0
 
 Output: apps/web/public/demo/
-    index.json          catalogue: runs, scenarios, policies, capability
-    runs/<id>.json      full event stream for one recorded run
-    experiments/<id>.json  aggregate results, already small
+    index.json              catalogue: runs, scenarios, experiments, capability
+    runs/<id>.json          one run, columnar (see `encode_events`)
+    experiments/<id>.json   aggregate results, already small
+
+## Why the run files are columnar
+
+An event is a deep object of about 200 fields, and a run is a thousand events.
+Written per event, the field *names* are 78 % of the bytes: forty runs came to
+168 MB. Transposed into one array per field path, the names are written once and
+the same forty runs come to under 40 MB, with no value altered and none
+dropped - `decodeRun` in `apps/web/src/lib/staticDemo.ts` reverses it exactly.
 """
 
 from __future__ import annotations
 
-import json
+import argparse
 import gzip
+import json
 import shutil
+import sys
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parent.parent
-RUNS = ROOT / "data" / "runs"
+sys.path.insert(0, str(ROOT / "services" / "engine"))
+
 EXPERIMENTS = ROOT / "data" / "experiments"
-SCENARIOS = ROOT / "services" / "engine" / "continua_engine" / "scenarios"
+CAPABILITY = ROOT / "data" / "emulation_capability.json"
 OUT = ROOT / "apps" / "web" / "public" / "demo"
 
-#: The runs the public build offers. Chosen for what they demonstrate, and named
-#: here so the set is auditable rather than "whatever was on disk".
-DEMO_RUNS = [
-    ("run-d2819d215c", "CONTINUA holds the session through a Wi-Fi fade"),
-    ("run-7d8750c2b7", "The reactive baseline, same seed and same trace"),
-    ("run-3c69f9615f", "Satellite fallback on the remote sector"),
+#: Every policy a visitor can select. The two ablations are deliberately absent:
+#: they exist to answer "does the predictor pay for itself", which is a question
+#: about aggregates across twenty trials, not about watching one run. Their
+#: results are on the Experiments page, where that comparison belongs.
+POLICIES = ["B0", "B1", "B2", "P1"]
+
+#: The seed every demo run uses. One seed, fixed here, so that any two policies
+#: a visitor compares faced a byte-identical exogenous trace - the same pairing
+#: discipline the experiments use. Taken from the `test` block.
+DEMO_SEED = 70009
+
+#: The scenarios a visitor sees first. The rest of the catalogue follows in its
+#: own order; naming these here only decides what is at the top of the list.
+SCENARIO_FIRST = [
+    "wifi-degradation",
+    "baseline-journey",
+    "sudden-failure",
+    "cellular-congestion",
+    "satellite-fallback",
 ]
 
 #: Experiment results worth shipping: the completed 20-trial test-block runs.
@@ -58,12 +83,15 @@ DEMO_EXPERIMENTS = [
 ]
 
 
+# ---------------------------------------------------------------------------
+# Shrinking, without changing what anything says
+# ---------------------------------------------------------------------------
+
+
 def round_floats(node: Any, digits: int = 3) -> Any:
     """
-    Shrink the payload without changing what it says.
-
     The simulator emits full double precision; nothing in the interface renders
-    more than one or two decimals. Rounding to three keeps every displayed value
+    more than two decimals. Rounding to three keeps every displayed value
     identical and takes roughly a third off the wire.
     """
     if isinstance(node, float):
@@ -75,126 +103,233 @@ def round_floats(node: Any, digits: int = 3) -> Any:
     return node
 
 
-def export_run(run_id: str, blurb: str) -> dict:
-    directory = RUNS / run_id
-    events_path = directory / "events.jsonl"
-    manifest_path = directory / "manifest.json"
-    if not events_path.exists():
-        raise SystemExit(
-            f"missing {events_path}\n"
-            "Recorded runs are git-ignored. Re-create them with the engine running:\n"
-            "  python scripts/engine_cli.py ... or start them from the Mission page."
-        )
+def encode_events(events: list[dict]) -> dict:
+    """
+    Transpose a list of events into one array per field path.
 
-    events = [round_floats(json.loads(line)) for line in events_path.read_text(encoding="utf-8").splitlines() if line.strip()]
-    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    metrics_path = directory / "metrics.json"
-    metrics = json.loads(metrics_path.read_text(encoding="utf-8")) if metrics_path.exists() else None
+    Two kinds of column come out:
 
-    payload = {
-        "run_id": run_id,
-        "blurb": blurb,
-        "manifest": manifest,
-        "metrics": round_floats(metrics) if metrics else None,
-        "duration_s": events[-1]["t"] if events else 0,
-        "events": events,
+    * ``columns[path]`` - the leaf values, one entry per event, ``null`` where
+      that event did not carry the field.
+    * ``objects[path]`` - a 0/1 presence array for every path that holds a
+      nested object, because ``prediction: null`` and ``prediction: {...}`` are
+      different facts and the decoder has to be able to tell them apart.
+
+    A column whose every entry is ``null`` is dropped: the decoder produces
+    ``null`` for a path it never sees, so the round trip is unchanged.
+    """
+    leaf_paths: dict[str, None] = {}
+    object_paths: dict[str, None] = {}
+
+    flattened: list[tuple[dict[str, Any], dict[str, int]]] = []
+    for event in events:
+        leaves: dict[str, Any] = {}
+        objects: dict[str, int] = {}
+
+        def walk(node: dict, prefix: str) -> None:
+            for key, value in node.items():
+                path = f"{prefix}{key}"
+                if isinstance(value, dict):
+                    objects[path] = 1
+                    object_paths.setdefault(path, None)
+                    walk(value, f"{path}.")
+                else:
+                    leaves[path] = value
+                    leaf_paths.setdefault(path, None)
+
+        walk(event, "")
+        flattened.append((leaves, objects))
+
+    # A path that is an object in one event and absent in another is an object
+    # path, not a leaf: drop it from the leaf set so it is not written twice.
+    for path in object_paths:
+        leaf_paths.pop(path, None)
+
+    columns: dict[str, list] = {}
+    for path in leaf_paths:
+        values = [leaves.get(path) for leaves, _ in flattened]
+        if any(value is not None for value in values):
+            columns[path] = values
+
+    presence = {
+        path: [objects.get(path, 0) for _, objects in flattened] for path in object_paths
+    }
+    return {"count": len(events), "columns": columns, "objects": presence}
+
+
+# ---------------------------------------------------------------------------
+# Running the matrix
+# ---------------------------------------------------------------------------
+
+
+def build_run(scenario_id: str, policy_value: str, blurb: str) -> dict:
+    """Execute one run through the real engine and write it out."""
+    from continua_engine.contracts import ExecutionMode, PolicyId
+    from continua_engine.sim.exogenous import get_scenario
+    from continua_engine.sim.simulator import Simulation
+
+    # Scenario specs are plain dicts loaded from `scenarios.json`.
+    scenario = get_scenario(scenario_id)
+    started_at = datetime.now(timezone.utc).isoformat()
+    sim = Simulation(
+        scenario,
+        seed=DEMO_SEED,
+        policy_id=PolicyId(policy_value),
+        predictor_kind="heuristic",
+        horizon_s=3.0,
+        mode=ExecutionMode.SIMULATION,
+    )
+    result = sim.run()
+
+    events = [round_floats(event.model_dump(mode="json")) for event in result.events]
+    duration_s = events[-1]["t"] if events else 0.0
+
+    manifest = {
+        "run_id": sim.run_id,
+        "mode": "simulation",
+        "scenario": {
+            "id": scenario["id"],
+            "title": scenario["title"],
+            "family": scenario.get("family", ""),
+        },
+        "policy_id": policy_value,
+        "seed": DEMO_SEED,
+        "predictor": "heuristic",
+        "horizon_s": 3.0,
+        "started_at": started_at,
+        "engine_version": events[0]["schema_version"] if events else "2.0.0",
     }
 
-    target = OUT / "runs" / f"{run_id}.json"
+    payload = {
+        "run_id": sim.run_id,
+        "blurb": blurb,
+        "manifest": manifest,
+        "metrics": round_floats(result.metrics),
+        "duration_s": duration_s,
+        "encoding": "columnar-1",
+        "events": encode_events(events),
+    }
+
+    target = OUT / "runs" / f"{sim.run_id}.json"
     target.parent.mkdir(parents=True, exist_ok=True)
     text = json.dumps(payload, separators=(",", ":"))
     target.write_text(text, encoding="utf-8")
 
     raw = len(text.encode("utf-8"))
     packed = len(gzip.compress(text.encode("utf-8"), 9))
-    print(f"  {run_id}  {len(events):>5} events  {raw / 1e6:.2f} MB raw  {packed / 1e6:.2f} MB gzip")
+    print(
+        f"  {scenario_id:22} {policy_value:3} {sim.run_id}  "
+        f"{len(events):>5} ev  {raw / 1e6:5.2f} MB  {packed / 1e6:4.2f} MB gz"
+    )
 
     return {
-        "run_id": run_id,
+        "run_id": sim.run_id,
         "blurb": blurb,
-        "scenario_id": manifest["scenario"]["id"],
-        "scenario_title": manifest["scenario"].get("title", manifest["scenario"]["id"]),
-        "policy_id": manifest["policy_id"],
-        "seed": manifest["seed"],
-        "predictor": manifest.get("predictor"),
-        "mode": manifest.get("mode", "simulation"),
-        "started_at": manifest.get("started_at"),
-        "duration_s": payload["duration_s"],
+        "scenario_id": scenario["id"],
+        "scenario_title": scenario["title"],
+        "policy_id": policy_value,
+        "seed": DEMO_SEED,
+        "predictor": "heuristic",
+        "mode": "simulation",
+        "started_at": started_at,
+        "duration_s": duration_s,
         "events": len(events),
     }
 
 
+def export_experiments() -> list[dict]:
+    summaries = []
+    for experiment_id in DEMO_EXPERIMENTS:
+        source = EXPERIMENTS / f"{experiment_id}.json"
+        if not source.exists():
+            print(f"  skipped {experiment_id} (not on disk)")
+            continue
+        payload = round_floats(json.loads(source.read_text(encoding="utf-8")))
+        target = OUT / "experiments" / f"{experiment_id}.json"
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(json.dumps(payload, separators=(",", ":")), encoding="utf-8")
+        # Match the row shape `/api/experiments` returns, which is the store's
+        # index rather than the result document: the Experiments page sorts and
+        # labels by `completed` and `trials`, and the result document spells
+        # those `trials_completed` (per policy) and `trials_requested`.
+        completed = payload.get("trials_completed") or {}
+        summaries.append(
+            {
+                "experiment_id": payload.get("experiment_id"),
+                "created_at": payload.get("started_at"),
+                "scenario_id": payload.get("scenario_id"),
+                "trials": payload.get("trials_requested"),
+                "policies": ",".join(payload.get("policies") or []),
+                "status": "completed" if not payload.get("failures") else "partial",
+                "completed": sum(completed.values()) if isinstance(completed, dict) else 0,
+                "predictor": payload.get("predictor"),
+                "notes": "",
+            }
+        )
+    return summaries
+
+
 def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--policies",
+        default=",".join(POLICIES),
+        help=f"comma-separated policy ids (default: {','.join(POLICIES)})",
+    )
+    parser.add_argument(
+        "--scenarios",
+        default="",
+        help="comma-separated scenario ids (default: the whole catalogue)",
+    )
+    args = parser.parse_args()
+
+    from continua_engine.sim.exogenous import get_scenario, scenario_catalogue
+
+    policies = [entry.strip() for entry in args.policies.split(",") if entry.strip()]
+    known = list(scenario_catalogue())
+    scenarios = [entry.strip() for entry in args.scenarios.split(",") if entry.strip()] or [
+        *[entry for entry in SCENARIO_FIRST if entry in known],
+        *[entry for entry in known if entry not in SCENARIO_FIRST],
+    ]
+
     if OUT.exists():
         shutil.rmtree(OUT)
     OUT.mkdir(parents=True)
 
-    print("runs:")
-    runs = [export_run(run_id, blurb) for run_id, blurb in DEMO_RUNS]
+    print(f"Recording {len(scenarios)} scenarios x {len(policies)} policies, seed {DEMO_SEED}")
+    summaries = []
+    for scenario_id in scenarios:
+        scenario = get_scenario(scenario_id)
+        for policy in policies:
+            summaries.append(build_run(scenario_id, policy, scenario["title"]))
 
-    print("\nexperiments:")
-    experiments = []
-    (OUT / "experiments").mkdir(parents=True, exist_ok=True)
-    for exp_id in DEMO_EXPERIMENTS:
-        source = EXPERIMENTS / f"{exp_id}.json"
-        if not source.exists():
-            print(f"  {exp_id}  MISSING - skipped")
-            continue
-        data = json.loads(source.read_text(encoding="utf-8"))
-        # `raw` holds every individual trial and is only used to recompute the
-        # aggregate. The site renders the aggregate and the paired deltas.
-        data.pop("raw", None)
-        text = json.dumps(round_floats(data), separators=(",", ":"))
-        (OUT / "experiments" / f"{exp_id}.json").write_text(text, encoding="utf-8")
-        experiments.append(
-            {
-                "experiment_id": exp_id,
-                "scenario_id": data["scenario_id"],
-                "trials": data["trials_requested"],
-                "completed": sum(data.get("trials_completed", {}).values()),
-                "seed_block": data.get("seed_block"),
-                "predictor": data.get("predictor"),
-                "code_commit": data.get("code_commit"),
-            }
-        )
-        print(f"  {exp_id}  {data['scenario_id']}  {len(text) / 1e3:.0f} kB")
+    print("\nExperiments")
+    experiments = export_experiments()
 
-    # --- catalogues the UI asks the engine for -----------------------------
-    scenario_specs = []
-    catalogue = SCENARIOS / "catalogue.json"
-    if catalogue.exists():
-        scenario_specs = json.loads(catalogue.read_text(encoding="utf-8")).get("scenarios", [])
-    else:
-        for path in sorted(SCENARIOS.glob("*.json")):
-            if path.name in {"link_profiles.json"}:
-                continue
-            spec = json.loads(path.read_text(encoding="utf-8"))
-            if isinstance(spec, dict) and "id" in spec:
-                scenario_specs.append(spec)
-            elif isinstance(spec, dict) and "scenarios" in spec:
-                scenario_specs.extend(spec["scenarios"])
-
-    capability_path = ROOT / "data" / "emulation_capability.json"
-    capability = json.loads(capability_path.read_text(encoding="utf-8")) if capability_path.exists() else None
+    catalogue = list(scenario_catalogue().values())
+    capability = (
+        json.loads(CAPABILITY.read_text(encoding="utf-8")) if CAPABILITY.exists() else None
+    )
 
     index = {
-        "generated_at": __import__("datetime").datetime.now(__import__("datetime").timezone.utc).isoformat(),
+        "generated_at": datetime.now(timezone.utc).isoformat(),
         "note": (
-            "Static replay data for the public deployment. Every value here was produced by a "
-            "recorded run of the CONTINUA engine; nothing is synthesised for the demo. The "
-            "deployed site cannot start new runs or experiments because the engine is Python "
-            "and does not run at the edge."
+            "Every run here was executed by the CONTINUA engine and is replayed exactly as "
+            "recorded. Nothing is synthesised for the demo and no value is computed in the "
+            "browser. The engine itself is Python and runs locally; this site plays its output."
         ),
-        "runs": runs,
+        "seed": DEMO_SEED,
+        "policies": policies,
+        "runs": summaries,
         "experiments": experiments,
-        "scenarios": round_floats(scenario_specs),
+        "scenarios": catalogue,
         "capability": capability,
     }
     (OUT / "index.json").write_text(json.dumps(index, separators=(",", ":")), encoding="utf-8")
 
-    total = sum(p.stat().st_size for p in OUT.rglob("*.json"))
-    print(f"\nwrote {OUT.relative_to(ROOT)}  {total / 1e6:.2f} MB across {len(list(OUT.rglob('*.json')))} files")
-    print(f"  {len(runs)} runs, {len(experiments)} experiments, {len(scenario_specs)} scenarios")
+    total = sum(path.stat().st_size for path in OUT.rglob("*") if path.is_file())
+    files = sum(1 for path in OUT.rglob("*") if path.is_file())
+    print(f"\nwrote {OUT.relative_to(ROOT)}  {total / 1e6:.2f} MB across {files} files")
 
 
 if __name__ == "__main__":

@@ -8,8 +8,25 @@
 /reference/*
   Cache-Control: public, max-age=31536000, immutable
 
+/brand/*
+  Cache-Control: public, max-age=31536000, immutable
+
 /_next/static/*
   Cache-Control: public, max-age=31536000, immutable
+
+# A run id and an experiment id are assigned when the thing is recorded, so a
+# given URL's bytes never change. Cache them the way the build output is cached.
+/demo/runs/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/demo/experiments/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# The catalogue is the one file a redeploy rewrites in place, and it is what
+# points at every run id. Served stale, a returning visitor gets a page of 404s,
+# so it must be revalidated. `no-cache` still allows a 304.
+/demo/index.json
+  Cache-Control: public, no-cache
 
 /*
   X-Content-Type-Options: nosniff

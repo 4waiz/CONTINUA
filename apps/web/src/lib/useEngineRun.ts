@@ -26,9 +26,12 @@ import {
   parseSocketMessage,
   type EngineEvent,
   type EngineRunState,
+  type EngineSocketMessage,
 } from '@continua/contracts/engine';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { socketUrl } from './api';
+import { IS_PUBLIC_PREVIEW } from './deployment';
+import { getStaticPlayer } from './staticDemo';
 
 export type ConnectionState = 'idle' | 'connecting' | 'connected' | 'disconnected' | 'error';
 
@@ -75,6 +78,70 @@ const DECISION_LIMIT = 200;
 const STALE_AFTER_MS = 4000;
 const UI_THROTTLE_MS = 180;
 
+/**
+ * Everything applying a message needs to touch. Passing it explicitly keeps
+ * `applyMessage` outside the component, so the WebSocket transport and the
+ * static replay transport run the *same* code rather than two switches that
+ * drift apart.
+ */
+interface MessageSink {
+  source: EngineSceneStateSource;
+  lastSeq: { current: number };
+  pending: { current: EngineEvent[] };
+  patch: (change: Partial<StreamBuffer>) => void;
+  countDropped: (gap: number) => void;
+}
+
+function applyMessage(message: EngineSocketMessage, sink: MessageSink): void {
+  switch (message.type) {
+    case 'snapshot':
+      // A fresh subscription: start the timeline over.
+      sink.source.reset(message.state.run_id, message.state.duration_s);
+      sink.lastSeq.current = 0;
+      if (message.event) {
+        sink.source.ingest(message.event);
+        sink.lastSeq.current = message.event.seq;
+        sink.pending.current.push(message.event);
+      }
+      sink.patch({ state: message.state });
+      break;
+    case 'seek':
+      // A seek moves the cursor; it does NOT invalidate the timeline.
+      // Resetting the buffer here blanked every chart on each scrub, and
+      // left `sampleAt` with a single event and nothing to interpolate
+      // between - which frame-stepped capture would have inherited.
+      // Sequence tracking restarts because a backward seek rebuilds the
+      // simulation from the same seed; the re-emitted events are
+      // identical and are deduplicated by `seq`.
+      sink.lastSeq.current = 0;
+      if (message.event) {
+        sink.source.ingest(message.event);
+        sink.lastSeq.current = message.event.seq;
+        sink.pending.current.push(message.event);
+      }
+      sink.patch({ state: message.state });
+      break;
+    case 'event': {
+      const event = message.event;
+      const expected = sink.lastSeq.current + 1;
+      if (sink.lastSeq.current > 0 && event.seq > expected) {
+        sink.countDropped(event.seq - expected);
+      }
+      if (event.seq > sink.lastSeq.current) sink.lastSeq.current = event.seq;
+      sink.source.ingest(event);
+      sink.pending.current.push(event);
+      break;
+    }
+    case 'tick':
+    case 'status':
+      sink.patch({ state: message.state });
+      break;
+    case 'error':
+      sink.patch({ connection: 'error', error: message.detail });
+      break;
+  }
+}
+
 export interface EngineRunOptions {
   /**
    * How often buffered events are handed to React. Defaults to 180 ms, which
@@ -87,8 +154,16 @@ export interface EngineRunOptions {
 
 export function useEngineRun(runId: string | null, options: EngineRunOptions = {}): EngineRunHandle {
   const throttleMs = options.throttleMs ?? UI_THROTTLE_MS;
-  // One buffer per run: a new run can never inherit the previous timeline.
-  const source = useMemo(() => new EngineSceneStateSource(runId ?? 'engine', 100), [runId]);
+  /**
+   * One source for the life of the hook, emptied by `reset` when the run
+   * changes. Building a new one per run also worked, but it changed the object
+   * identity the scene runtime is memoised on, so every run change rebuilt the
+   * runtime and reloaded the scene - which now happens on every policy change,
+   * not just when a run is started. `reset` clears the events, the dedup set
+   * and the cursor while keeping the listeners, so a new run still cannot
+   * inherit the previous one's timeline.
+   */
+  const [source] = useState(() => new EngineSceneStateSource('engine', 100));
 
   const [buffer, setBuffer] = useState<StreamBuffer>(EMPTY);
   const [stale, setStale] = useState(false);
@@ -136,7 +211,7 @@ export function useEngineRun(runId: string | null, options: EngineRunOptions = {
     return () => clearInterval(timer);
   }, []);
 
-  // --- socket lifecycle -----------------------------------------------------
+  // --- transport lifecycle --------------------------------------------------
   useEffect(() => {
     if (!runId) return;
 
@@ -155,6 +230,48 @@ export function useEngineRun(runId: string | null, options: EngineRunOptions = {
         const base = previous.runId === runId ? previous : { ...EMPTY, runId };
         return { ...base, ...change };
       });
+
+    const sink: MessageSink = {
+      source,
+      lastSeq: lastSeqRef,
+      pending: pendingRef,
+      patch,
+      countDropped: (gap) =>
+        setBuffer((previous) =>
+          previous.runId === runId ? { ...previous, dropped: previous.dropped + gap } : previous,
+        ),
+    };
+
+    // The public deployment has no engine and therefore no socket. Recorded
+    // runs are played locally through the same message shapes, so everything
+    // below this point behaves identically either way.
+    if (IS_PUBLIC_PREVIEW) {
+      const player = getStaticPlayer(runId);
+      const unsubscribe = player.subscribe((message) => {
+        lastMessageAtRef.current = Date.now();
+        setStale(false);
+        applyMessage(message, sink);
+      });
+      patch({ connection: 'connected', error: null, attempts: 0 });
+      player
+        .load()
+        .then(() => {
+          // Autoplay, so a visitor sees the mission move rather than a still
+          // frame with a play button. An explicit pause is respected.
+          if (!disposed && !player.userPaused) player.play();
+        })
+        .catch((cause: unknown) => {
+          if (disposed) return;
+          patch({
+            connection: 'error',
+            error: cause instanceof Error ? cause.message : 'Could not load the recorded run.',
+          });
+        });
+      return () => {
+        disposed = true;
+        unsubscribe();
+      };
+    }
 
     const connect = () => {
       if (disposed) return;
@@ -179,57 +296,7 @@ export function useEngineRun(runId: string | null, options: EngineRunOptions = {
         }
         const message = parseSocketMessage(parsed);
         if (!message) return;
-
-        switch (message.type) {
-          case 'snapshot':
-            // A fresh subscription: start the timeline over.
-            source.reset(message.state.run_id, message.state.duration_s);
-            lastSeqRef.current = 0;
-            if (message.event) {
-              source.ingest(message.event);
-              lastSeqRef.current = message.event.seq;
-              pendingRef.current.push(message.event);
-            }
-            patch({ state: message.state });
-            break;
-          case 'seek':
-            // A seek moves the cursor; it does NOT invalidate the timeline.
-            // Resetting the buffer here blanked every chart on each scrub, and
-            // left `sampleAt` with a single event and nothing to interpolate
-            // between - which frame-stepped capture would have inherited.
-            // Sequence tracking restarts because a backward seek rebuilds the
-            // simulation from the same seed; the re-emitted events are
-            // identical and are deduplicated by `seq`.
-            lastSeqRef.current = 0;
-            if (message.event) {
-              source.ingest(message.event);
-              lastSeqRef.current = message.event.seq;
-              pendingRef.current.push(message.event);
-            }
-            patch({ state: message.state });
-            break;
-          case 'event': {
-            const event = message.event;
-            const expected = lastSeqRef.current + 1;
-            if (lastSeqRef.current > 0 && event.seq > expected) {
-              const gap = event.seq - expected;
-              setBuffer((previous) =>
-                previous.runId === runId ? { ...previous, dropped: previous.dropped + gap } : previous,
-              );
-            }
-            if (event.seq > lastSeqRef.current) lastSeqRef.current = event.seq;
-            source.ingest(event);
-            pendingRef.current.push(event);
-            break;
-          }
-          case 'tick':
-          case 'status':
-            patch({ state: message.state });
-            break;
-          case 'error':
-            patch({ connection: 'error', error: message.detail });
-            break;
-        }
+        applyMessage(message, sink);
       };
 
       socket.onerror = () => {

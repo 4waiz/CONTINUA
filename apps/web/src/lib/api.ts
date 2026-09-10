@@ -8,6 +8,8 @@
  */
 
 import type { EngineRunState, PolicyIdString } from '@continua/contracts/engine';
+import { IS_PUBLIC_PREVIEW } from './deployment';
+import { demoApi, NeedsEngineError, staticControl } from './staticDemo';
 
 export const ENGINE_BASE =
   process.env.NEXT_PUBLIC_ENGINE_URL?.replace(/\/$/, '') ?? 'http://127.0.0.1:8000';
@@ -127,7 +129,7 @@ export interface RunRow {
   horizon_s: number | null;
 }
 
-export const api = {
+const live = {
   health: () => request<EngineHealth>('/api/health'),
   scenarios: () => request<{ scenarios: ScenarioSpec[] }>('/api/scenarios'),
   policies: () =>
@@ -194,6 +196,35 @@ export const api = {
     ),
   getExperiment: (id: string) => request<Record<string, unknown>>(`/api/experiments/${id}`),
 };
+
+/**
+ * On the public deployment there is no engine to talk to, so reads are served
+ * from runs the engine recorded earlier and playback is driven by a local
+ * player. The two verbs that genuinely need a running engine - starting a fresh
+ * run and executing an experiment - fail loudly rather than appear to work.
+ *
+ * Nothing here fabricates a value. `demoApi` returns what was measured and
+ * exported; anything absent stays absent and the UI renders it as unavailable.
+ */
+const preview: Partial<typeof live> = {
+  ...demoApi,
+
+  health: () => Promise.reject(new NeedsEngineError('Reading engine health')),
+  profiles: () => Promise.reject(new NeedsEngineError('Reading link profiles')),
+  startRun: () => Promise.reject(new NeedsEngineError('Starting a new run')),
+  startExperiment: () => Promise.reject(new NeedsEngineError('Running an experiment')),
+
+  controlRun: (runId, body) => Promise.resolve(staticControl(runId, body)),
+
+  // A replay of a replay is the same recording from the top.
+  replay: (runId) => {
+    staticControl(runId, { action: 'reset' });
+    const { state } = staticControl(runId, { action: 'play' });
+    return Promise.resolve({ run_id: runId, state });
+  },
+};
+
+export const api: typeof live = IS_PUBLIC_PREVIEW ? { ...live, ...preview } : live;
 
 export function socketUrl(runId: string): string {
   const base = ENGINE_BASE.replace(/^http/, 'ws');

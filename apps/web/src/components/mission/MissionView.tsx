@@ -13,7 +13,7 @@
  * 1. **Every control does something.** There are no decorative buttons, no
  *    placeholder tables and no hard-coded counters.
  * 2. **A value that does not exist is not a zero.** With no run, or with the
- *    engine down, the metric cards show an em dash and say what they are
+ *    engine down, the metric cards show a placeholder rule and say what they are
  *    waiting for. The 3D scene still renders - from the Phase 1 preview source,
  *    badged `SCENE PREVIEW` - because an empty grey rectangle is a worse answer
  *    than an honest one.
@@ -22,7 +22,8 @@
 import { api, EngineApiError, type PolicySpec, type ScenarioSpec } from '@/lib/api';
 import { useEngineRun } from '@/lib/useEngineRun';
 import { EngineStatus } from '@/components/ui/EngineStatus';
-import { IS_PUBLIC_PREVIEW, REPO_URL } from '@/lib/deployment';
+import { IS_PUBLIC_PREVIEW } from '@/lib/deployment';
+import { demoIndex, findDemoRun, type DemoRunSummary } from '@/lib/staticDemo';
 import { MetricCard } from '@/components/ui/MetricCard';
 import type { EngineLinkId, PolicyIdString } from '@continua/contracts/engine';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -52,12 +53,23 @@ export function MissionView() {
   const [policyId, setPolicyId] = useState<PolicyIdString>('P1');
   const [seed, setSeed] = useState(1);
   const [predictor] = useState<'heuristic' | 'learned' | 'none'>('heuristic');
-  const [runId, setRunId] = useState<string | null>(null);
+  const [startedRunId, setStartedRunId] = useState<string | null>(null);
   const [selectedLink, setSelectedLink] = useState<EngineLinkId>('wifi');
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [bootError, setBootError] = useState<string | null>(null);
   const [bootAttempt, setBootAttempt] = useState(0);
+  const [demoRuns, setDemoRuns] = useState<DemoRunSummary[]>([]);
+
+  /**
+   * Which run is on screen. Locally that is whichever one the operator started.
+   * On the public build every scenario-and-policy pair was recorded ahead of
+   * time, so the selection *is* the run: derived here rather than pushed
+   * through an effect, which would render one frame of the previous run first.
+   */
+  const runId = IS_PUBLIC_PREVIEW
+    ? (findDemoRun(demoRuns, scenarioId, policyId)?.run_id ?? null)
+    : startedRunId;
 
   const run = useEngineRun(runId);
   const playing = run.state?.status === 'running';
@@ -83,6 +95,25 @@ export function MissionView() {
       cancelled = true;
     };
   }, [bootAttempt]);
+
+  // The catalogue of recordings, so a scenario-and-policy selection can be
+  // resolved to the run the engine produced for it.
+  useEffect(() => {
+    if (!IS_PUBLIC_PREVIEW) return;
+    let cancelled = false;
+    demoIndex()
+      .then((index) => {
+        if (cancelled) return;
+        setDemoRuns(index.runs);
+      })
+      .catch((cause: unknown) => {
+        if (cancelled) return;
+        setBootError(cause instanceof Error ? cause.message : 'Could not load the recorded runs.');
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Follow the carrying link unless the operator has pinned one. Derived during
   // render rather than synchronised from an effect: the effect version renders
@@ -118,7 +149,7 @@ export function MissionView() {
         const response = await api.startRun({
           control: { scenario_id: scenarioId, policy_id: policyId, seed, speed: 1, predictor, horizon_s: 3 },
         });
-        setRunId(response.run_id);
+        setStartedRunId(response.run_id);
         setPinned(false);
       }, 'Run started.'),
     [act, scenarioId, policyId, seed, predictor],
@@ -138,7 +169,7 @@ export function MissionView() {
       act(async () => {
         if (!runId) throw new Error('Start a run first, then replay it.');
         const response = await api.replay(runId);
-        setRunId(response.run_id);
+        setStartedRunId(response.run_id);
       }, 'Replaying the recorded run.'),
     [act, runId],
   );
@@ -191,14 +222,24 @@ export function MissionView() {
   const rttDelta = rttTrend.length > 6 ? rttTrend[rttTrend.length - 1] - rttTrend[rttTrend.length - 7] : null;
 
   const transport = IS_PUBLIC_PREVIEW ? (
-    // Nothing here can start a run: the engine is Python and runs locally. Show
-    // the way to the real thing instead of four disabled buttons.
+    // Every scenario and policy here resolves to a recording, so the transport
+    // is the same instrument as the local build minus the one verb that needs a
+    // live engine: composing a run nobody recorded.
     <>
-      <a className="control control-primary no-underline" href={REPO_URL} target="_blank" rel="noreferrer">
-        Run it locally
-      </a>
-      <a className="control no-underline" href="/reference-images/">
-        Supporting materials
+      <button
+        type="button"
+        className="control control-primary"
+        onClick={() => control(playing ? 'pause' : 'play')}
+        disabled={busy || !runId}
+        data-active={playing}
+      >
+        {playing ? '❙❙ Pause' : '▶ Play'}
+      </button>
+      <button type="button" className="control" onClick={() => control('reset')} disabled={busy || !runId}>
+        ↺ Restart
+      </button>
+      <a className="control no-underline" href="/experiments">
+        ⇄ Compare policies
       </a>
     </>
   ) : (
@@ -353,16 +394,15 @@ export function MissionView() {
               </div>
             </div>
 
-            {/* Timeline + run setup, one compact row. Hidden in the public
-                preview, where none of it can do anything. */}
-            <div
-              className="panel flex flex-wrap items-center gap-3 px-4 py-2.5"
-              hidden={IS_PUBLIC_PREVIEW}
-            >
+            {/* Timeline + run setup, one compact row. */}
+            <div className="panel flex flex-wrap items-center gap-3 px-4 py-2.5">
               <select
                 className="control min-w-[190px]"
                 value={scenarioId}
-                onChange={(event) => setScenarioId(event.target.value)}
+                onChange={(event) => {
+                  setScenarioId(event.target.value);
+                  setPinned(false);
+                }}
                 aria-label="Scenario"
                 disabled={scenarios.length === 0}
               >
@@ -376,7 +416,10 @@ export function MissionView() {
               <select
                 className="control"
                 value={policyId}
-                onChange={(event) => setPolicyId(event.target.value as PolicyIdString)}
+                onChange={(event) => {
+                  setPolicyId(event.target.value as PolicyIdString);
+                  setPinned(false);
+                }}
                 aria-label="Policy"
                 disabled={policies.length === 0}
               >
@@ -388,7 +431,12 @@ export function MissionView() {
                   </option>
                 ))}
               </select>
-              <label className="flex items-center gap-2 text-[12px] text-[color:var(--color-muted)]">
+              {/* A recording's seed is a fact of the recording, shown in the
+                  run bar. There is nothing to type in. */}
+              <label
+                className="flex items-center gap-2 text-[12px] text-[color:var(--color-muted)]"
+                hidden={IS_PUBLIC_PREVIEW}
+              >
                 Seed
                 <input
                   className="control w-[84px]"

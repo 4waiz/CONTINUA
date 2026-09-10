@@ -192,9 +192,10 @@ export function Field({ label, children }: { label: string; children: ReactNode 
  * is the part of the configuration that deliberately breaks something and
  * should never be confused with the baseline setup.
  */
-export function FaultSection({ children }: { children: ReactNode }) {
+export function FaultSection({ children, hidden }: { children: ReactNode; hidden?: boolean }) {
   return (
     <section
+      hidden={hidden}
       className="rounded-[14px] border px-3.5 py-3"
       style={{
         borderColor: 'color-mix(in srgb, var(--color-warn) 32%, transparent)',

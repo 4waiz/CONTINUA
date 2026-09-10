@@ -11,6 +11,7 @@
 import { api, EngineApiError, type CapabilityReport, type ScenarioSpec } from '@/lib/api';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppShell } from './AppShell';
+import { IS_PUBLIC_PREVIEW, REPO_URL } from '@/lib/deployment';
 import { ComparisonChart } from './experiments/ComparisonChart';
 import { Chip, Panel } from './ui/primitives';
 
@@ -189,7 +190,9 @@ export function ExperimentsView() {
     <AppShell
       bar={
         <div className="panel flex flex-wrap items-center gap-x-5 gap-y-2.5 px-5 py-3">
-          <label className="flex flex-col gap-1">
+          {/* Executing a comparison needs the engine. Viewing the ones already
+              executed does not, and that is what this page is mostly for. */}
+          <label className="flex flex-col gap-1" hidden={IS_PUBLIC_PREVIEW}>
             <span className="panel-label">Scenario</span>
             <select className="control min-w-[230px]" value={scenarioId} onChange={(e) => setScenarioId(e.target.value)}>
               {scenarios.map((s) => (
@@ -199,7 +202,7 @@ export function ExperimentsView() {
               ))}
             </select>
           </label>
-          <label className="flex flex-col gap-1">
+          <label className="flex flex-col gap-1" hidden={IS_PUBLIC_PREVIEW}>
             <span className="panel-label">Paired trials</span>
             <input
               className="control w-[92px]"
@@ -210,15 +213,24 @@ export function ExperimentsView() {
               onChange={(e) => setTrials(Math.max(1, Number(e.target.value) || 1))}
             />
           </label>
-          <button type="button" className="control" onClick={start} disabled={progress?.status === 'running'}>
-            ⇄ Run comparison
-          </button>
+          {IS_PUBLIC_PREVIEW ? (
+            <a className="control no-underline" href={REPO_URL} target="_blank" rel="noreferrer">
+              Run your own comparison
+            </a>
+          ) : (
+            <button type="button" className="control" onClick={start} disabled={progress?.status === 'running'}>
+              ⇄ Run comparison
+            </button>
+          )}
           {progress && progress.status === 'running' && (
             <span className="text-[11.5px] text-[color:var(--color-muted)]">
               {progress.done ?? 0}/{progress.total ?? 0} · {progress.label ?? ''}
             </span>
           )}
           <p className="min-w-[240px] flex-1 text-[11px] leading-snug text-[color:var(--color-muted)]">
+            {IS_PUBLIC_PREVIEW
+              ? 'These experiments were executed by the CONTINUA engine and are shown exactly as recorded. '
+              : ''}
             Every policy runs against the same seed per trial, so all of them face identical link
             conditions, background demand and loss draws. Seeds come from the disjoint <code>test</code>{' '}
             block.

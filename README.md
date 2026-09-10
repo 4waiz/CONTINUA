@@ -10,6 +10,10 @@ session survives every handoff.
 
 ![CONTINUA dashboard](assets/previews/browser/dashboard-1920.png)
 
+**Live: <https://continua.kanbanstudios.ae>** - the full interface, playing runs
+the engine recorded. Every scenario and every policy is there; see
+[The public deployment](#the-public-deployment) for what it can and cannot do.
+
 ## Run it
 
 ```bash
@@ -64,6 +68,32 @@ this machine** - the reasons were probed, not assumed, and are recorded in
 | `npm run train:predictor` | Retrain the learned predictor |
 | `npm run emulation:status` | Honest capability report for this host |
 | `npm run blender:all` | Regenerate every 3D asset |
+
+### The public deployment
+
+The engine is Python and does not run in a browser, so
+<https://continua.kanbanstudios.ae> has no backend at all. Instead the whole
+scenario-by-policy matrix is executed by the real engine ahead of time and
+exported, and the site replays it: selecting a scenario and a policy plays the
+run the engine produced for that pair, badged `REPLAY - SIMULATION` with the
+source run id and its recording time, exactly as a replay is badged locally.
+
+Re-implementing the simulator in TypeScript was the alternative. It would have
+produced a second set of numbers disagreeing with the ones in every document
+here, so it was not done. The one thing the deployment therefore cannot do is
+*compose* a run nobody has executed: the Scenario Lab's fault-injection and
+workload overrides are hidden there, and the page says so.
+
+| Command | What it does |
+| --- | --- |
+| `python scripts/build_demo_data.py` | Run the matrix through the engine and export it to `apps/web/public/demo/` (~3 min, 40 runs, 43 MB, about 4 MB on the wire) |
+| `node scripts/build-brand-logo.mjs` | Un-matte `logo.png` to a transparent wordmark |
+| `CONTINUA_STATIC=1 NEXT_PUBLIC_PUBLIC_PREVIEW=1 npm run build` | Static export into `apps/web/out/` |
+| `npx wrangler deploy` | Publish to Cloudflare |
+
+Run files are columnar: one array per field path rather than one object per
+event, which is the same data at a third of the size. `decodeRun` in
+`apps/web/src/lib/staticDemo.ts` reverses it.
 
 ### The demo video
 

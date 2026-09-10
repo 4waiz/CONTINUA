@@ -5,7 +5,7 @@
  * read it honestly.
  *
  * The rule this component exists to enforce: **a value that does not exist is
- * not a zero.** Pass `value={null}` and the card renders an em dash and the
+ * not a zero.** Pass `value={null}` and the card renders a placeholder and the
  * reason it is unavailable, rather than a confident `0.0 ms` that an operator
  * would act on. That is why `value` is `number | null` and there is no default.
  */

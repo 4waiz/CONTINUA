@@ -28,21 +28,30 @@ function ClockSync({
   t,
   duration,
   playing,
+  enabled,
 }: {
   t: number;
   duration: number;
   playing: boolean;
+  /**
+   * False while the scene is showing the Phase 1 preview, which drives its own
+   * looping clock. This component still mounts, so that arriving at a run does
+   * not change the shape of the tree underneath the provider - see below.
+   */
+  enabled: boolean;
 }) {
   const { clock } = useSceneRuntime();
 
   useEffect(() => {
+    if (!enabled) return;
     if (duration > 0 && Math.abs(clock.duration - duration) > 0.5) clock.setDuration(duration);
-  }, [clock, duration]);
+  }, [clock, duration, enabled]);
 
   useEffect(() => {
+    if (!enabled) return;
     if (playing) clock.play();
     else clock.pause();
-  }, [clock, playing]);
+  }, [clock, playing, enabled]);
 
   useEffect(() => {
     // While paused the timeline is being *scrubbed* - by someone dragging the
@@ -55,12 +64,13 @@ function ClockSync({
     // showed up: scrubbing by hand moved the vehicle in visible jumps, and
     // frame-stepped capture froze it for ten frames and then jumped it, which is
     // what made the recorded footage judder.
+    if (!enabled) return;
     if (!playing) {
       clock.setTime(t, false);
       return;
     }
     if (Math.abs(clock.time - t) > DRIFT_TOLERANCE_S) clock.setTime(t, false);
-  }, [clock, t, playing]);
+  }, [clock, t, playing, enabled]);
 
   return null;
 }
@@ -87,16 +97,14 @@ export function MissionScene({
   className?: string;
   preview?: boolean;
 }) {
-  if (preview) {
-    return (
-      <SceneRuntimeProvider source={previewSource}>
-        <SceneStage className={className} />
-      </SceneRuntimeProvider>
-    );
-  }
+  // One tree, whether or not a run has arrived yet. Returning a *different*
+  // tree for preview put `SceneStage` at a different child index, so the moment
+  // a run appeared React unmounted the canvas and built a new one - a WebGL
+  // context and a glTF reload for a change of data source. Swapping only the
+  // `source` prop rebuilds the runtime and leaves everything below it alone.
   return (
-    <SceneRuntimeProvider source={source}>
-      <ClockSync t={t} duration={duration} playing={playing} />
+    <SceneRuntimeProvider source={preview ? previewSource : source}>
+      <ClockSync t={t} duration={duration} playing={playing} enabled={!preview} />
       <SceneStage className={className} />
     </SceneRuntimeProvider>
   );

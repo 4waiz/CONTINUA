@@ -242,7 +242,7 @@ export function parseSocketMessage(raw: unknown): EngineSocketMessage | null {
 /**
  * Format a measurement that may not exist.
  *
- * The whole point: `null` renders as an em dash and the caller can show
+ * The whole point: `null` renders as a placeholder and the caller can show
  * "unavailable". It never renders as `0`, because zero latency and unknown
  * latency are completely different claims.
  */

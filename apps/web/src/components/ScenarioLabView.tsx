@@ -27,6 +27,9 @@ import {
   WorkloadChip,
 } from './scenario/controls';
 import { EngineStatus } from './ui/EngineStatus';
+import { PreviewNote } from './ui/PreviewNote';
+import { IS_PUBLIC_PREVIEW } from '@/lib/deployment';
+import { demoIndex, findDemoRun, type DemoRunSummary } from '@/lib/staticDemo';
 import { Chip } from './ui/primitives';
 
 export function ScenarioLabView() {
@@ -35,7 +38,8 @@ export function ScenarioLabView() {
   const [scenarioId, setScenarioId] = useState('baseline-journey');
   const [policyId, setPolicyId] = useState<PolicyIdString>('P1');
   const [seed, setSeed] = useState(7);
-  const [runId, setRunId] = useState<string | null>(null);
+  const [startedRunId, setStartedRunId] = useState<string | null>(null);
+  const [demoRuns, setDemoRuns] = useState<DemoRunSummary[]>([]);
   const [selectedLink, setSelectedLink] = useState<EngineLinkId>('wifi');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -57,6 +61,31 @@ export function ScenarioLabView() {
   const [congestFactor, setCongestFactor] = useState(0.3);
 
   const [bootAttempt, setBootAttempt] = useState(0);
+
+  /**
+   * Which run is on screen. Locally it is the one `launch` composed. On the
+   * public build every scenario-and-policy pair was recorded ahead of time, so
+   * the tiles resolve straight to a recording - derived during render, because
+   * synchronising it from an effect renders one frame of the previous run.
+   */
+  const runId = IS_PUBLIC_PREVIEW
+    ? (findDemoRun(demoRuns, scenarioId, policyId)?.run_id ?? null)
+    : startedRunId;
+
+  useEffect(() => {
+    if (!IS_PUBLIC_PREVIEW) return;
+    let cancelled = false;
+    demoIndex()
+      .then((index) => {
+        if (!cancelled) setDemoRuns(index.runs);
+      })
+      .catch((cause: unknown) => {
+        if (!cancelled) setError(cause instanceof Error ? cause.message : String(cause));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const run = useEngineRun(runId);
   const playing = run.state?.status === 'running';
@@ -93,7 +122,7 @@ export function ScenarioLabView() {
         control: { scenario_id: scenarioId, policy_id: policyId, seed, speed: 2, predictor: 'heuristic', horizon_s: 3 },
         overrides,
       });
-      setRunId(response.run_id);
+      setStartedRunId(response.run_id);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : String(cause));
     } finally {
@@ -105,38 +134,54 @@ export function ScenarioLabView() {
   const enabledWorkloads = TRAFFIC_CLASSES.filter((cls) => workload[cls]);
 
   /**
-   * The summary is a plain restatement of the configuration above it - no
-   * predicted outcome, because a single run does not have one. It exists so the
-   * operator can check what they are about to launch without re-reading four
-   * panels of controls.
+   * The summary is a plain restatement of what is on screen - no predicted
+   * outcome, because a single run does not have one.
+   *
+   * Which configuration it restates depends on where the run came from. Locally
+   * it is the form above, so the operator can check what they are about to
+   * launch without re-reading four panels. On the public build the run was
+   * recorded before the visitor arrived, so the form is hidden and the numbers
+   * are read off the run itself - otherwise the seed box's default would sit
+   * here claiming to be the seed of a recording made at 70009.
    */
-  const summaryRows: [string, string][] = [
-    ['Scenario', selectedScenario?.title ?? ' - '],
-    ['Route', 'Facility → field → remote'],
-    [
-      'Duration',
-      durationS === '' ? `${selectedScenario?.duration_s ?? ' - '} s (default)` : `${durationS} s`,
-    ],
-    ['Workloads', `${enabledWorkloads.length} of ${TRAFFIC_CLASSES.length} enabled`],
-    ['Policy', `${policyId} · ${POLICY_LABEL[policyId]?.name ?? policyId}`],
-    ['Predictor', 'heuristic-trend'],
-    ['Seed', String(seed)],
-    [
-      'Faults',
-      faultLink || congestLink
-        ? [
-            faultLink
-              ? `${LINK_LABEL[faultLink].label} down @ ${faultAt}s for ${faultFor}s`
-              : null,
-            congestLink
-              ? `${LINK_LABEL[congestLink].label} at ${Math.round(congestFactor * 100)} % capacity`
-              : null,
-          ]
-            .filter(Boolean)
-            .join(' · ')
-        : 'none',
-    ],
-  ];
+  const summaryRows: [string, string][] = IS_PUBLIC_PREVIEW
+    ? [
+        ['Scenario', run.state?.scenario_title ?? selectedScenario?.title ?? ' - '],
+        ['Route', 'Facility → field → remote'],
+        ['Duration', run.state ? `${Math.round(run.state.duration_s)} s` : ' - '],
+        ['Workloads', 'all 5 classes'],
+        ['Policy', `${policyId} · ${POLICY_LABEL[policyId]?.name ?? policyId}`],
+        ['Predictor', run.state?.predictor ?? 'heuristic-trend'],
+        ['Seed', run.state ? String(run.state.seed) : ' - '],
+        ['Recorded', run.state?.source?.recorded_at?.slice(0, 10) ?? ' - '],
+      ]
+    : [
+        ['Scenario', selectedScenario?.title ?? ' - '],
+        ['Route', 'Facility → field → remote'],
+        [
+          'Duration',
+          durationS === '' ? `${selectedScenario?.duration_s ?? ' - '} s (default)` : `${durationS} s`,
+        ],
+        ['Workloads', `${enabledWorkloads.length} of ${TRAFFIC_CLASSES.length} enabled`],
+        ['Policy', `${policyId} · ${POLICY_LABEL[policyId]?.name ?? policyId}`],
+        ['Predictor', 'heuristic-trend'],
+        ['Seed', String(seed)],
+        [
+          'Faults',
+          faultLink || congestLink
+            ? [
+                faultLink
+                  ? `${LINK_LABEL[faultLink].label} down @ ${faultAt}s for ${faultFor}s`
+                  : null,
+                congestLink
+                  ? `${LINK_LABEL[congestLink].label} at ${Math.round(congestFactor * 100)} % capacity`
+                  : null,
+              ]
+                .filter(Boolean)
+                .join(' · ')
+            : 'none',
+        ],
+      ];
 
   return (
     <AppShell
@@ -148,17 +193,31 @@ export function ScenarioLabView() {
           dropped={run.droppedSequences}
           actions={
             <>
-              <button type="button" className="control control-primary" onClick={launch} disabled={busy}>
-                ▶ Run scenario
-              </button>
+              {/* Composing a run is the one thing the public build cannot do,
+                  so it links to the two things it can rather than offering a
+                  button that fails. */}
+              {!IS_PUBLIC_PREVIEW && (
+                <button type="button" className="control control-primary" onClick={launch} disabled={busy}>
+                  ▶ Run scenario
+                </button>
+              )}
               {runId && (
                 <button
                   type="button"
-                  className="control"
+                  className={IS_PUBLIC_PREVIEW ? 'control control-primary' : 'control'}
                   data-active={playing}
                   onClick={() => api.controlRun(runId, { action: playing ? 'pause' : 'play' }).catch(() => undefined)}
                 >
-                  {playing ? '❙❙ Pause' : '▶ Resume'}
+                  {playing ? '❙❙ Pause' : '▶ Play'}
+                </button>
+              )}
+              {IS_PUBLIC_PREVIEW && runId && (
+                <button
+                  type="button"
+                  className="control"
+                  onClick={() => api.controlRun(runId, { action: 'reset' }).catch(() => undefined)}
+                >
+                  ↺ Restart
                 </button>
               )}
             </>
@@ -169,8 +228,12 @@ export function ScenarioLabView() {
       <div className="grid h-full min-h-0 grid-cols-1 grid-rows-[minmax(0,1fr)] gap-3 xl:grid-cols-[344px_minmax(0,1fr)_296px]">
         {/* ---------------- configuration ---------------- */}
         <div className="scroll-y flex flex-col gap-3 pr-0.5">
-          {error && (
-            <EngineStatus detail={error} onRetry={() => setBootAttempt((n) => n + 1)} retrying={busy} />
+          {IS_PUBLIC_PREVIEW ? (
+            <PreviewNote />
+          ) : (
+            error && (
+              <EngineStatus detail={error} onRetry={() => setBootAttempt((n) => n + 1)} retrying={busy} />
+            )
           )}
 
           <section className="panel px-4 py-3.5">
@@ -198,7 +261,9 @@ export function ScenarioLabView() {
             <PolicySelector policies={policies} value={policyId} onChange={setPolicyId} />
           </section>
 
-          <section className="panel px-4 py-3.5">
+          {/* The three panels below build a derived scenario spec, which is a
+              run that has to be executed. Hidden on the public build. */}
+          <section className="panel px-4 py-3.5" hidden={IS_PUBLIC_PREVIEW}>
             <h2
               className="panel-label mb-2.5 cursor-help"
               title="Disabled classes generate no traffic, so they neither compete for capacity nor appear in the application-health score."
@@ -218,7 +283,7 @@ export function ScenarioLabView() {
 
           </section>
 
-          <section className="panel px-4 py-3.5">
+          <section className="panel px-4 py-3.5" hidden={IS_PUBLIC_PREVIEW}>
             <h2 className="panel-label mb-2.5">Run parameters</h2>
             <div className="grid grid-cols-3 gap-2.5">
               <Field label="Seed">
@@ -258,7 +323,7 @@ export function ScenarioLabView() {
             </div>
           </section>
 
-          <FaultSection>
+          <FaultSection hidden={IS_PUBLIC_PREVIEW}>
             <div className="flex flex-col gap-2.5">
               <div className="grid grid-cols-3 gap-2">
                 <Field label="Link down">
@@ -386,14 +451,18 @@ export function ScenarioLabView() {
 
           </section>
 
-          <button
-            type="button"
-            className="control control-primary h-11 w-full text-[14.5px]"
-            onClick={launch}
-            disabled={busy || scenarios.length === 0}
-          >
-            ▶ Run scenario
-          </button>
+          {/* Composing a run is the one verb the public build does not have,
+              so it does not get the page's biggest button. */}
+          {!IS_PUBLIC_PREVIEW && (
+            <button
+              type="button"
+              className="control control-primary h-11 w-full text-[14.5px]"
+              onClick={launch}
+              disabled={busy || scenarios.length === 0}
+            >
+              ▶ Run scenario
+            </button>
+          )}
         </div>
       </div>
     </AppShell>

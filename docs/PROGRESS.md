@@ -268,7 +268,7 @@ as the centre column at full height. With no run it renders from the Phase 1
 `previewSource` and is badged `SCENE PREVIEW`, so the first thing a visitor sees
 is the vehicle and the route rather than an empty panel.
 
-**New components.** `MetricCard` (big number, sparkline, and an em dash rather
+**New components.** `MetricCard` (big number, sparkline, and a placeholder rather
 than a zero when there is no measurement), `NetworkRail` (four candidate paths
 to one gateway, never a chain), `PipelineRail` (the five stages, driven by the
 engine's reported stage and the reason it wrote at decision time), `HealthPanel`
@@ -305,3 +305,40 @@ a measured renderer readout (FPS, draw calls, triangles, geometries).
 
 No engine code, no contracts, no metric definitions, no experiment results. The
 redesign moved numbers around the screen; it did not produce any.
+
+---
+
+## Public deployment
+
+<https://continua.kanbanstudios.ae>, Cloudflare Workers static assets from
+`apps/web/out`. No backend: the Python engine cannot run at the edge.
+
+**How it works.** `scripts/build_demo_data.py` runs all 10 scenarios against
+B0, B1, B2 and P1 at seed 70009 - one seed for all of them, so any two policies
+a visitor compares faced a byte-identical exogenous trace, the same pairing
+discipline the experiments use - and exports 40 recorded runs. The site's
+`StaticRunPlayer` emits the same message shapes the engine's WebSocket does, so
+`useEngineRun` consumes both through one `applyMessage` and no component knows
+which transport it is on. The run bar reads `REPLAY - SIMULATION` with the run
+id, seed and recording date.
+
+**Size.** Per-event JSON came to 4.2 MB a run, because roughly three quarters of
+it was field names repeated a thousand times. Transposed to one array per field
+path it is 0.9-1.7 MB a run, 43 MB for the matrix, and about 0.1 MB gzipped for
+the one run a visitor actually loads. No value is altered or dropped;
+`decodeRun` reverses the transpose exactly, including the presence markers that
+keep `prediction: null` distinct from `prediction: {}`.
+
+**What it cannot do**, and says so on the page: compose a run that was never
+recorded. The Scenario Lab's override controls (fault injection, congestion,
+workload, seed, speed, duration) derive a scenario spec with no recording behind
+it, so they are hidden rather than shown broken. The ten catalogue scenarios
+already cover those cases, from a sudden Wi-Fi drop to the loss of every path.
+
+**Two fixes this surfaced.** `useEngineRun` built a new `EngineSceneStateSource`
+per run, which changed the identity `SceneRuntimeProvider` memoises on and
+reloaded the 3D scene on every run change - now one source for the life of the
+hook, emptied by `reset`. And `MissionScene` returned a different element tree
+for preview, putting `SceneStage` at a different child index, so arriving at a
+run unmounted and rebuilt the canvas; it now renders one tree and swaps only the
+`source` prop.

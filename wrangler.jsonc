@@ -7,9 +7,9 @@
   // useful fallback while DNS settles and a stable URL for sharing a preview.
   "workers_dev": true,
 
-  // CONTINUA has no server of its own. The Python engine runs separately, so
-  // the public site is a static export served straight from Cloudflare's edge —
-  // there is no Worker script, only assets.
+  // CONTINUA has no server of its own. The Python engine runs separately, and
+  // its recorded runs ship as static JSON, so the public site is an export
+  // served straight from Cloudflare's edge: no Worker script, only assets.
   "assets": {
     "directory": "apps/web/out",
     "not_found_handling": "404-page"
