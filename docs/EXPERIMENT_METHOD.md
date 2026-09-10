@@ -1,4 +1,4 @@
-# CONTINUA — experiment method
+# CONTINUA - experiment method
 
 How the comparison is run, and the specific ways it is designed not to flatter
 CONTINUA.
@@ -18,7 +18,7 @@ CONTINUA.
 
 All six are the *same class*, `ContinuaController`, differing only in the flags
 on `PolicyConfig`. There is no separate "baseline" code path that could be
-quietly worse than it needs to be — a test asserts the policies differ only by
+quietly worse than it needs to be - a test asserts the policies differ only by
 configuration.
 
 **B2 exists specifically so that the cost claim can be tested.** Without it,
@@ -39,7 +39,7 @@ session. **This is a simplified MPTCP-inspired model, not MPTCP.** See
 The core of the design.
 
 For trial `i`, one seed is derived: `seed = block_base + i`. That seed
-generates the **exogenous trace** — per-link quality over time, background
+generates the **exogenous trace** - per-link quality over time, background
 demand, Gilbert–Elliott burst-loss state, jitter noise and the loss-decision
 pool. The trace is built **before any policy runs** and is a pure function of
 `(scenario, seed)`.
@@ -76,10 +76,10 @@ A test asserts the three blocks do not intersect.
 ## 4. Procedure
 
 ```bash
-# 1. Smoke first — 2 trials on every scenario, ~3 minutes.
+# 1. Smoke first - 2 trials on every scenario, ~3 minutes.
 python -m continua_engine.experiments --smoke
 
-# 2. The reported comparison — 20 paired trials on the six core scenarios.
+# 2. The reported comparison - 20 paired trials on the six core scenarios.
 python -m continua_engine.experiments --trials 20 --block test
 
 # 3. Optional: everything in the catalogue.

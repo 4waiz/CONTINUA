@@ -315,7 +315,7 @@ export function ApplicationHealthPanel({ event }: { event: EngineEvent | null })
               cls === 'telemetry'
                 ? health.freshness_ms != null
                   ? `${health.freshness_ms.toFixed(0)} ms old`
-                  : '—'
+                  : ' - '
                 : cls === 'video'
                   ? `${health.frames_delivered}/${health.frames_expected} frames`
                   : cls === 'bulk'
@@ -340,7 +340,7 @@ export function ApplicationHealthPanel({ event }: { event: EngineEvent | null })
                   )}
                 </td>
                 <td className="py-1 text-right metric">
-                  {health.p95_latency_ms != null ? health.p95_latency_ms.toFixed(0) : '—'}
+                  {health.p95_latency_ms != null ? health.p95_latency_ms.toFixed(0) : ' - '}
                 </td>
                 <td className="py-1 text-right text-[color:var(--color-muted)]">{detail}</td>
               </tr>
@@ -357,13 +357,13 @@ export function ContinuityPanel({ event }: { event: EngineEvent | null }) {
   return (
     <Panel title="Session continuity">
       <p className="mb-2 text-[11px] leading-snug text-[color:var(--color-muted)]">
-        Whether the transport session survived — a different question from whether application
+        Whether the transport session survived - a different question from whether application
         deadlines were met.
       </p>
       <div className="grid grid-cols-3 gap-2">
         <div>
           <div className="panel-label">Session</div>
-          <div className="metric text-[12px] font-semibold">{app?.session_id ?? '—'}</div>
+          <div className="metric text-[12px] font-semibold">{app?.session_id ?? ' - '}</div>
         </div>
         <div>
           <div className="panel-label">Reconnects</div>
@@ -371,19 +371,19 @@ export function ContinuityPanel({ event }: { event: EngineEvent | null }) {
             className="metric text-[20px] font-semibold leading-none"
             style={{ color: (app?.session_reconnects ?? 0) > 0 ? 'var(--color-bad)' : 'var(--color-good)' }}
           >
-            {app?.session_reconnects ?? '—'}
+            {app?.session_reconnects ?? ' - '}
           </div>
         </div>
         <div>
           <div className="panel-label">Outage</div>
           <div className="metric text-[20px] font-semibold leading-none">
-            {app ? `${app.outage_s.toFixed(1)}s` : '—'}
+            {app ? `${app.outage_s.toFixed(1)}s` : ' - '}
           </div>
         </div>
       </div>
       {app?.in_outage && (
         <div className="mt-2 rounded-[8px] border border-[color:var(--color-bad)] bg-[color-mix(in_srgb,var(--color-bad)_8%,white)] p-2 text-[11.5px]">
-          <strong>No usable path.</strong> This is a genuine outage in the model — no software can
+          <strong>No usable path.</strong> This is a genuine outage in the model - no software can
           create connectivity where none exists.
           {app.safe_stop && ' The vehicle is holding a simulated safe-stop.'}
         </div>
@@ -439,7 +439,7 @@ export function TelemetryPanel({
  *
  * The frame counter is redrawn **only when the engine reports a newly delivered
  * frame**, so a stall in the model is a visible freeze here. It is a generated
- * test pattern, not transported pixels, and it is labelled as such — a local
+ * test pattern, not transported pixels, and it is labelled as such - a local
  * render that bypasses the network is not evidence that video survived.
  */
 export function CameraPanel({ event }: { event: EngineEvent | null }) {
@@ -515,26 +515,21 @@ export function CameraPanel({ event }: { event: EngineEvent | null }) {
         <div>
           <dt className="panel-label">Delivered</dt>
           <dd className="metric font-semibold">
-            {video ? `${video.frames_delivered}/${video.frames_expected}` : '—'}
+            {video ? `${video.frames_delivered}/${video.frames_expected}` : ' - '}
           </dd>
         </div>
         <div>
           <dt className="panel-label">Stall</dt>
-          <dd className="metric font-semibold">{video ? `${(video.stall_ms ?? 0).toFixed(0)} ms` : '—'}</dd>
+          <dd className="metric font-semibold">{video ? `${(video.stall_ms ?? 0).toFixed(0)} ms` : ' - '}</dd>
         </div>
         <div>
           <dt className="panel-label">Miss %</dt>
           <dd className="metric font-semibold">
-            {video?.deadline_miss_pct != null ? video.deadline_miss_pct.toFixed(1) : '—'}
+            {video?.deadline_miss_pct != null ? video.deadline_miss_pct.toFixed(1) : ' - '}
           </dd>
         </div>
       </dl>
-      <p
-        className="mt-1.5 text-[11px] leading-snug text-[color:var(--color-muted)]"
-        title="This render is local and bypasses the modelled network. It visualises measured frame delivery; it is not evidence that video pixels were transported."
-      >
-        Local render of measured frame delivery — not transported pixels.
-      </p>
+
     </Panel>
   );
 }

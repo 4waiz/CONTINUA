@@ -1,7 +1,7 @@
 """
 The world, as the engine sees it.
 
-Reads `packages/contracts/world.json` — the same file `packages/scene` reads —
+Reads `packages/contracts/world.json` - the same file `packages/scene` reads -
 so the route the vehicle drives in the browser and the route the simulator
 measures coverage along are the same route. `tests/engine/test_route_parity.py`
 asserts both implementations agree on the arc length.
@@ -74,8 +74,8 @@ def _angle_delta(a: float, b: float) -> float:
 class Route:
     """Catmull-Rom spline resampled at a constant arc-length step.
 
-    Deliberately mirrors `packages/scene/src/world/route.ts` step for step —
-    same tessellation count, same resampling, same central-difference tangents —
+    Deliberately mirrors `packages/scene/src/world/route.ts` step for step -
+    same tessellation count, same resampling, same central-difference tangents -
     because the two must agree on what "distance 412 m" means.
     """
 
@@ -192,7 +192,7 @@ class Coverage:
     """Geometric coverage 0..1 per link at a world position.
 
     This is a *model*, not a measurement, and the only place the simulator
-    consults geography. The controller never calls it — it only ever sees
+    consults geography. The controller never calls it - it only ever sees
     statistics derived from delivered packets.
     """
 
@@ -246,8 +246,8 @@ class Coverage:
 class MotionProfile:
     """Distance travelled as a function of time.
 
-    Integrated once, up front, into a table — the same approach Phase 1 uses in
-    the browser — so the vehicle's position at time t is a lookup, not a
+    Integrated once, up front, into a table - the same approach Phase 1 uses in
+    the browser - so the vehicle's position at time t is a lookup, not a
     stateful accumulation that could drift between a live run and its replay.
     """
 

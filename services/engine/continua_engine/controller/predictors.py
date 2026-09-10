@@ -25,7 +25,7 @@ from ..contracts import LinkId, LinkObservation, Prediction, VehicleObservation
 
 VIOLATION_DEFINITION = (
     "The carrying path is in violation when, within the horizon, either "
-    "(a) its smoothed RTT exceeds 150 ms — the control-class deadline — or "
+    "(a) its smoothed RTT exceeds 150 ms - the control-class deadline - or "
     "(b) its windowed loss exceeds 3.0 %, or "
     "(c) it becomes unusable. Identical definition is used for the heuristic, "
     "the learned model and the offline labels."
@@ -219,7 +219,7 @@ class LearnedPredictor(BasePredictor):
 
     Loads from `models/predictor.json` (a plain, inspectable export). If the file
     is missing, unreadable or the wrong feature version, this predictor reports
-    itself unavailable and the controller falls back to the heuristic — it never
+    itself unavailable and the controller falls back to the heuristic - it never
     silently degrades to guessing.
     """
 

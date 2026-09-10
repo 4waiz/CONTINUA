@@ -2,7 +2,7 @@
 """
 Bake the recorded evidence into static files the deployed site can play.
 
-The CONTINUA engine is Python — FastAPI, numpy, scikit-learn — and cannot run on
+The CONTINUA engine is Python - FastAPI, numpy, scikit-learn - and cannot run on
 Cloudflare Workers. A frontend deployed on its own would be honest but inert:
 the scene preview, an "engine offline" strip, and an em dash in every metric.
 
@@ -138,7 +138,7 @@ def main() -> None:
     for exp_id in DEMO_EXPERIMENTS:
         source = EXPERIMENTS / f"{exp_id}.json"
         if not source.exists():
-            print(f"  {exp_id}  MISSING — skipped")
+            print(f"  {exp_id}  MISSING - skipped")
             continue
         data = json.loads(source.read_text(encoding="utf-8"))
         # `raw` holds every individual trial and is only used to recompute the

@@ -109,8 +109,8 @@ SECRET_PATTERNS: list[tuple[str, re.Pattern[str]]] = [
 
 # Paths that must never be checkpointed even if a caller marks them ready.
 # Directory prefixes (trailing slash) and exact file names are handled
-# separately so that `.env.example` — the one credential-shaped file we *do*
-# want tracked — is not caught by a naive `.env` prefix match.
+# separately so that `.env.example` - the one credential-shaped file we *do*
+# want tracked - is not caught by a naive `.env` prefix match.
 NEVER_STAGE_PREFIXES = (
     ".checkpoint/",
     "node_modules/",
@@ -128,7 +128,7 @@ def is_excluded(rel_path: str) -> bool:
     rel = rel_path.replace("\\", "/").strip("/")
     if rel in NEVER_STAGE_EXACT:
         return True
-    # `.env`, `.env.local`, `apps/web/.env.production` — but never `.env.example`.
+    # `.env`, `.env.local`, `apps/web/.env.production` - but never `.env.example`.
     name = rel.rsplit("/", 1)[-1]
     if name.startswith(".env") and name != ".env.example":
         return True
@@ -207,7 +207,7 @@ def save_state(state: dict) -> None:
 
 
 # --------------------------------------------------------------------------
-# Locking — serialises all Git operations across agent and supervisor
+# Locking - serialises all Git operations across agent and supervisor
 # --------------------------------------------------------------------------
 
 
@@ -352,7 +352,7 @@ def ensure_branch(branch: str) -> str:
     if head == branch:
         return branch
     if head not in PROTECTED_BRANCHES and head != "HEAD":
-        # An established development branch already exists — respect it.
+        # An established development branch already exists - respect it.
         log("INFO", f"using established development branch '{head}' (requested '{branch}')")
         return head
 
@@ -412,10 +412,10 @@ def push_with_backoff(branch: str, state: dict) -> tuple[bool, str]:
 
         if any(token in combined for token in ("authentication failed", "could not read username",
                                                "permission denied", "403 forbidden", "invalid username or password")):
-            return False, "AUTH: authentication failed — local work preserved, nothing rewritten"
+            return False, "AUTH: authentication failed - local work preserved, nothing rewritten"
         if any(token in combined for token in ("non-fast-forward", "fetch first", "rejected", "behind its remote")):
             return False, ("DIVERGED: remote has commits this branch does not contain. "
-                           "Local work preserved; resolve manually with `git pull --rebase` — "
+                           "Local work preserved; resolve manually with `git pull --rebase` - "
                            "the supervisor will not force-push or reset")
         if any(token in combined for token in ("could not resolve host", "timed out", "connection reset",
                                                "network is unreachable", "failed to connect", "operation timed out",
@@ -425,7 +425,7 @@ def push_with_backoff(branch: str, state: dict) -> tuple[bool, str]:
                 log("WARN", f"transient network failure on push (attempt {attempt}/{PUSH_RETRIES}); retrying in {delay:.0f}s")
                 time.sleep(delay)
                 continue
-            return False, "NETWORK: push failed after bounded retries — commit is safe locally"
+            return False, "NETWORK: push failed after bounded retries - commit is safe locally"
         return False, f"PUSH FAILED: {result.stderr.strip()[:400]}"
     return False, "NETWORK: exhausted retries"
 
@@ -518,7 +518,7 @@ def do_checkpoint(branch: str, message: str | None, push: bool, owner: str = "su
             save_state(state)
             for error in errors[:8]:
                 log("ERROR", f"content check: {error}")
-            log("ERROR", "checkpoint aborted — files unstaged, working tree untouched")
+            log("ERROR", "checkpoint aborted - files unstaged, working tree untouched")
             return "failed"
 
         subject = message or f"checkpoint: {summarise(staged)}"
@@ -545,7 +545,7 @@ def do_checkpoint(branch: str, message: str | None, push: bool, owner: str = "su
 
         sha = git("rev-parse", "HEAD").stdout.strip()
         state["commits"] += 1
-        log("OK", f"committed {sha[:10]} — {subject} ({len(staged)} files)")
+        log("OK", f"committed {sha[:10]} - {subject} ({len(staged)} files)")
 
         if not push or not state.get("push_enabled", True):
             state["last_attempt_result"] = "committed (push disabled)"
@@ -662,7 +662,7 @@ def cmd_start(args: argparse.Namespace) -> int:
         creationflags = subprocess.CREATE_NEW_PROCESS_GROUP | getattr(subprocess, "DETACHED_PROCESS", 0)
     # `--branch` belongs to the top-level parser, so it must precede the
     # subcommand. Putting it after `start` makes argparse reject the relaunch
-    # and the daemon dies the instant it is spawned — silently, because the
+    # and the daemon dies the instant it is spawned - silently, because the
     # parent has already returned "started".
     command = [
         sys.executable, str(Path(__file__).resolve()),
@@ -723,7 +723,7 @@ def cmd_status(_args: argparse.Namespace) -> int:
     print(f"  git lock          : {(_lock_info() or {}).get('owner', 'free')}")
     print(f"  ready paths       : {len(marked)}")
     for path in marked[:20]:
-        print(f"      - {path}")
+        print(f"     - {path}")
     if len(marked) > 20:
         print(f"      ... {len(marked) - 20} more")
     print(f"  attempts          : {state.get('attempts')} "

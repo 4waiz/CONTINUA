@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * Scenario Lab — build a run, then watch it.
+ * Scenario Lab - build a run, then watch it.
  *
  * Every knob here maps to a validated field on `ScenarioOverrides` in the
  * engine. Overrides never mutate the catalogue: they produce a derived spec
@@ -105,17 +105,17 @@ export function ScenarioLabView() {
   const enabledWorkloads = TRAFFIC_CLASSES.filter((cls) => workload[cls]);
 
   /**
-   * The summary is a plain restatement of the configuration above it — no
+   * The summary is a plain restatement of the configuration above it - no
    * predicted outcome, because a single run does not have one. It exists so the
    * operator can check what they are about to launch without re-reading four
    * panels of controls.
    */
   const summaryRows: [string, string][] = [
-    ['Scenario', selectedScenario?.title ?? '—'],
+    ['Scenario', selectedScenario?.title ?? ' - '],
     ['Route', 'Facility → field → remote'],
     [
       'Duration',
-      durationS === '' ? `${selectedScenario?.duration_s ?? '—'} s (default)` : `${durationS} s`,
+      durationS === '' ? `${selectedScenario?.duration_s ?? ' - '} s (default)` : `${durationS} s`,
     ],
     ['Workloads', `${enabledWorkloads.length} of ${TRAFFIC_CLASSES.length} enabled`],
     ['Policy', `${policyId} · ${POLICY_LABEL[policyId]?.name ?? policyId}`],
@@ -187,7 +187,7 @@ export function ScenarioLabView() {
               ))}
               {scenarios.length === 0 && (
                 <p className="col-span-2 text-[12px] text-[color:var(--color-muted)]">
-                  No scenarios — the engine is not reachable.
+                  No scenarios - the engine is not reachable.
                 </p>
               )}
             </div>
@@ -199,7 +199,12 @@ export function ScenarioLabView() {
           </section>
 
           <section className="panel px-4 py-3.5">
-            <h2 className="panel-label mb-2.5">Application workloads</h2>
+            <h2
+              className="panel-label mb-2.5 cursor-help"
+              title="Disabled classes generate no traffic, so they neither compete for capacity nor appear in the application-health score."
+            >
+              Application workloads
+            </h2>
             <div className="flex flex-wrap gap-1.5">
               {TRAFFIC_CLASSES.map((cls) => (
                 <WorkloadChip
@@ -210,10 +215,7 @@ export function ScenarioLabView() {
                 />
               ))}
             </div>
-            <p className="mt-2 text-[11px] leading-snug text-[color:var(--color-muted)]">
-              Disabled classes generate no traffic, so they neither compete for capacity nor appear
-              in the application-health score.
-            </p>
+
           </section>
 
           <section className="panel px-4 py-3.5">
@@ -381,10 +383,7 @@ export function ScenarioLabView() {
               <li>Satellite bytes and relative link cost.</li>
               <li>Handovers performed, including unnecessary ones.</li>
             </ul>
-            <p className="mt-2 text-[11px] leading-snug text-[color:var(--color-faint)]">
-              One run is one sample. Comparing against a baseline needs the paired trials on the
-              Experiments page — this page does not predict an outcome.
-            </p>
+
           </section>
 
           <button

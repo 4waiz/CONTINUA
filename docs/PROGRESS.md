@@ -1,4 +1,4 @@
-# CONTINUA — progress
+# CONTINUA - progress
 
 | Phase | Scope | State |
 | --- | --- | --- |
@@ -13,13 +13,13 @@
 
 ```bash
 npm install
-npm run engine              # engine on http://127.0.0.1:8000 — leave running
+npm run engine              # engine on http://127.0.0.1:8000 - leave running
 npm run build && npm start  # app on http://localhost:3000
 ```
 
 | URL | Section |
 | --- | --- |
-| <http://localhost:3000> | **Mission** — live run, scene, link cards, health, pipeline |
+| <http://localhost:3000> | **Mission** - live run, scene, link cards, health, pipeline |
 | <http://localhost:3000/scenario-lab> | Configure failures, congestion, movement, workload |
 | <http://localhost:3000/experiments> | Paired comparison + execution capability report |
 | <http://localhost:3000/decision-log> | Every action with its observations and reason |
@@ -28,7 +28,7 @@ npm run build && npm start  # app on http://localhost:3000
 
 ---
 
-# Phase 2 — feature matrix
+# Phase 2 - feature matrix
 
 ## Implemented and tested
 
@@ -59,7 +59,7 @@ npm run build && npm start  # app on http://localhost:3000
 | Feature | Why |
 | --- | --- |
 | Linux emulation topology (namespaces, veth, netem, tbf, both directions) | Scripts written and parse cleanly, **never executed**: no passwordless sudo on the dev host |
-| MPTCP endpoint configuration and subflow verification | **Impossible here** — the WSL2 kernel has `CONFIG_MPTCP` unset |
+| MPTCP endpoint configuration and subflow verification | **Impossible here** - the WSL2 kernel has `CONFIG_MPTCP` unset |
 | Mininet-WiFi topologies | Not installed |
 
 ## Planned / not done
@@ -83,7 +83,7 @@ simulator; multi-user API auth; run-storage retention; Phase 3 video capture.
 | Plus | 10-scenario smoke pass (2 trials), and a 20-trial learned-predictor comparison |
 | Wall time | ~25 min for the core matrix |
 
-## Headline — `wifi-degradation`, 20 paired trials
+## Headline - `wifi-degradation`, 20 paired trials
 
 | Metric | B0 | B1 | B2 | **P1** | P1-noPred | P1-noApp |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -98,11 +98,11 @@ simulator; multi-user API auth; run-storage retention; Phase 3 video capture.
 | Cost units | 3.44 | 4.77 | 4.31 | **1.25** | 1.23 | 4.78 |
 | Handovers | 3.0 | 3.6 | 5.5 | 5.3 | 4.3 | 6.2 |
 
-**CONTINUA matches always-on redundancy (B2) on continuity — 0 reconnects,
-0.16 s interruption — using 4.8 MB of satellite instead of 61.2 MB (−92 %) and
+**CONTINUA matches always-on redundancy (B2) on continuity - 0 reconnects,
+0.16 s interruption - using 4.8 MB of satellite instead of 61.2 MB (−92 %) and
 1.25 cost units instead of 4.31 (−71 %), with 37 % less video stall.**
 
-## Where CONTINUA wins hardest — `cellular-congestion`
+## Where CONTINUA wins hardest - `cellular-congestion`
 
 Availability stays high, so a coverage-only policy sees nothing wrong while
 queues build:
@@ -115,15 +115,15 @@ queues build:
 | Satellite (MB) | 47.6 | 61.4 | 63.8 | **4.8** |
 | Cost units | 3.34 | 4.98 | 4.36 | **1.15** |
 
-## Negative and inconclusive results — reported, not buried
+## Negative and inconclusive results - reported, not buried
 
 **1. Prediction does not pay for itself.** The `P1 − P1-noPred` ablation is a
 wash at both predictor qualities tested:
 
 | | P1 heuristic | P1 learned | P1-noPred |
 | --- | --- | --- | --- |
-| Prediction recall | 0.14 | **0.78** | — |
-| Prediction precision | — | 0.65 | — |
+| Prediction recall | 0.14 | **0.78** | - |
+| Prediction precision | - | 0.65 | - |
 | False positives / run | 7.5 | **101.4** | 0 |
 | Unnecessary handovers | 0.15 | 1.25 | 0 |
 | Total interruption (s) | 0.16 | 0.16 | 0.16 |
@@ -145,7 +145,7 @@ protect control and video; bulk carries weight 0.05 in `app_health_v1`, so the
 composite penalises the trade that the per-class numbers show is worth making.
 
 **3. `sudden-failure` shows no prediction benefit**, as predicted in the method
-document — a 200 ms drop with no preceding trend is not forecastable.
+document - a 200 ms drop with no preceding trend is not forecastable.
 
 **4. `total-loss` shows no policy difference in outage duration** (10.78 s for
 every multipath policy). Correct: no policy can carry a session through a total
@@ -191,13 +191,13 @@ runtime assets.
 Recorded because each was found by looking at output, not by reading code:
 
 1. **Retransmission storm.** A fixed 120 ms RTO against the satellite path's
-   620 ms RTT retransmitted every control packet forever — 122 491 retransmits
+   620 ms RTT retransmitted every control packet forever - 122 491 retransmits
    for 2 100 packets. Replaced with a Jacobson/Karels adaptive RTO, bounded
    attempts, and no retransmission past a deadline.
 2. **Switch thrashing.** The controller would move to a backup on any measured
    violation, even when the backup was worse, producing 13 handovers per run. It
    now requires the candidate to actually be better, plus a 0.4 s risk debounce.
-3. **Video goodput counted twice** — per packet *and* per completed frame —
+3. **Video goodput counted twice** - per packet *and* per completed frame -
    producing a nonsensical **−12.7 % overhead**.
 4. **Prediction precision of 0.997 that meant nothing.** Predictions were being
    scored while the carrying path was *already* in violation. Once on satellite
@@ -207,9 +207,9 @@ Recorded because each was found by looking at output, not by reading code:
 5. **Throttle actions emitted every step** while a throttle stayed in force,
    burying real events under ~2 200 repeats per run.
 6. **`rssiDbm` guarded on the wrong field** in `engineSource`, publishing
-   `undefined` for links that have no RSSI at all — "present but unknown" rather
+   `undefined` for links that have no RSSI at all - "present but unknown" rather
    than "does not exist". Caught by a browser test.
-7. **React Compiler violations** in five components — setState inside effects and
+7. **React Compiler violations** in five components - setState inside effects and
    a ref read during render. Fixed by deriving values instead, not by
    suppressing the rules.
 8. **Application health computed 50×/s and discarded.** Building five Pydantic
@@ -247,7 +247,7 @@ of time. Full detail in [`PHASE_1_HANDOFF.md`](PHASE_1_HANDOFF.md).
 
 ---
 
-# Phase 3.1 — UI/UX overhaul
+# Phase 3.1 - UI/UX overhaul
 
 The application worked and looked like an internal admin panel: a narrow centre
 column, a blank rectangle where the 3D world should be, 10px type, and browser
@@ -260,7 +260,7 @@ engine, the contracts or a single measurement.
 scrolls; only unbounded regions (the decision list, the results column) scroll
 inside their own panel. A dashboard the operator has to scroll is one that hides
 the thing that just changed. `scripts/ui-screenshots.mjs` asserts this at
-1920x1080, 1440x900 and 1366x768 — and separately asserts that **no content is
+1920x1080, 1440x900 and 1366x768 - and separately asserts that **no content is
 unreachable**, which is the failure mode a fixed viewport actually risks.
 
 **The 3D world became the hero.** Mission and Scenario Lab both mount the scene
@@ -290,12 +290,12 @@ a measured renderer readout (FPS, draw calls, triangles, geometries).
 ## Honesty fixes found along the way
 
 * The cellular link was labelled **5G** across contracts, scene, `world.json` and
-  the link profiles — a leftover from the Phase 1 design reference. The profile
+  the link profiles - a leftover from the Phase 1 design reference. The profile
   is a shaped software link; it now reads `Cellular`. `CLAUDE.md` §1 forbids the
   old label.
 * Scene Lab printed **"Model confidence 99% · illustrative"**. There is no model
   in the Phase 1 preview and nothing produced a 99: it was decoration wearing the
-  clothes of a measurement. Replaced with what the panel can honestly say — the
+  clothes of a measurement. Replaced with what the panel can honestly say - the
   handoff plan comes from route geometry and coverage radii.
 * The connection badge was briefly renamed `LIVE STREAM`. Reverted: this project
   is deliberate about the word *live*, and the badge describes a socket to a

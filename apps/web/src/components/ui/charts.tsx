@@ -4,7 +4,7 @@
  * Small, honest charts.
  *
  * Every series accepts `(number | null)[]`. A `null` is a gap in the data and is
- * drawn as a gap — the line breaks. Charts here never interpolate across
+ * drawn as a gap - the line breaks. Charts here never interpolate across
  * missing measurements, because a continuous line through a hole implies the
  * value was measured when it was not.
  */

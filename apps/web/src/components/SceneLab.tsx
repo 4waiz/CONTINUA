@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * `/scene-lab` — the controls, readouts and layout around the scene.
+ * `/scene-lab` - the controls, readouts and layout around the scene.
  *
  * The readouts are throttled reads of the same scene state the renderer uses,
  * never a parallel simulation, and everything is labelled with its provenance:
@@ -162,7 +162,7 @@ function LinkPanel() {
   return (
     <Panel title="Access networks" action={<PreviewBadge source={state.source} />}>
       <p className="mb-3 text-[11.5px] leading-snug text-[color:var(--color-muted)]">
-        Four alternative links to one gateway — not a chain. At most one carries the session.
+        Four alternative links to one gateway - not a chain. At most one carries the session.
       </p>
       <ul className="space-y-1.5">
         {ACCESS_NETWORKS.map((id: AccessNetworkId) => {
@@ -197,7 +197,7 @@ function LinkPanel() {
               <div
                 className="h-1.5 w-14 shrink-0 overflow-hidden rounded-full"
                 style={{ background: 'var(--color-line)' }}
-                title={`Modelled coverage ${(link.coverage * 100).toFixed(0)}% — geometric, not a measured signal level`}
+                title={`Modelled coverage ${(link.coverage * 100).toFixed(0)}% - geometric, not a measured signal level`}
               >
                 <div
                   className="h-full rounded-full transition-[width] duration-200"
@@ -232,10 +232,10 @@ function RunPanel() {
         />
         <Stat
           label="Active link"
-          value={activeMeta?.label ?? '—'}
+          value={activeMeta?.label ?? ' - '}
           tone={state.active ? NETWORK_COLOR[state.active] : undefined}
         />
-        <Stat label="Session" value={state.traffic.handoffCount >= 0 ? 'Continuous' : '—'} tone="var(--color-good)" />
+        <Stat label="Session" value={state.traffic.handoffCount >= 0 ? 'Continuous' : ' - '} tone="var(--color-good)" />
       </div>
 
       <dl className="mt-3 space-y-1 border-t border-[color:var(--color-line)] pt-2.5 text-[11.5px]">
@@ -260,10 +260,10 @@ function RunPanel() {
           {/* The preview source used to print "Model confidence 99% - illustrative"
               here. There is no model in the Phase 1 preview and nothing produced
               a 99, so the number was decoration wearing the clothes of a
-              measurement — precisely what hard rule 1 forbids. What the panel can
+              measurement - precisely what hard rule 1 forbids. What the panel can
               honestly say is where the handoff plan comes from. */}
           <p className="mt-1 text-[11px] text-[color:var(--color-muted)]">
-            Planned from route geometry and coverage radii — not a measurement.
+            Planned from route geometry and coverage radii - not a measurement.
           </p>
         </div>
       )}
@@ -384,7 +384,7 @@ export function SceneLab() {
             <div className="leading-tight">
               <p className="text-[13.5px] font-semibold">Scene Lab</p>
               <p className="text-[11.5px] text-[color:var(--color-muted)]">
-                Phase 1 visualisation and inspection — a deterministic geometric preview, not
+                Phase 1 visualisation and inspection - a deterministic geometric preview, not
                 measured network performance.
               </p>
             </div>

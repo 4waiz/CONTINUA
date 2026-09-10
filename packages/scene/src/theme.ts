@@ -3,7 +3,7 @@
  *
  * One source of truth for both the 3D scene and the dashboard chrome, so a
  * violet in the link beam is the same violet as the satellite chip. Light mode
- * only — see docs/DESIGN_SPEC.md.
+ * only - see docs/DESIGN_SPEC.md.
  */
 
 export const COLOR = {

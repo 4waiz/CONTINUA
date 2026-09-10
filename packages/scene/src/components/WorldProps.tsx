@@ -3,8 +3,8 @@
 /**
  * World dressing: the authored Blender props, placed on the terrain.
  *
- * Unique structures are cloned once. Everything repeated — barriers, poles,
- * containers, signs, boulders — goes through one `InstancedMesh` per glTF
+ * Unique structures are cloned once. Everything repeated - barriers, poles,
+ * containers, signs, boulders - goes through one `InstancedMesh` per glTF
  * primitive, so a hundred barriers still cost one draw call each.
  */
 

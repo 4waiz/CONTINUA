@@ -193,7 +193,7 @@ export class Route {
 
   /**
    * Heading averaged over +/- `radius` metres. Used by the follow camera so it
-   * tracks the road's general direction rather than every kink — deterministic,
+   * tracks the road's general direction rather than every kink - deterministic,
    * unlike a spring, and therefore safe for frame-accurate capture.
    */
   smoothHeadingAt(distance: number, radius = 26): number {
@@ -234,7 +234,7 @@ export class Route {
       }
     }
     if (best === Infinity) {
-      // Far outside every bucket — fall back to a coarse scan.
+      // Far outside every bucket - fall back to a coarse scan.
       for (let i = 0; i < this.samples.length; i += 8) {
         const sample = this.samples[i]!;
         const distSq = (sample.x - x) ** 2 + (sample.z - z) ** 2;

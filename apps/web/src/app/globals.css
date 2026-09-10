@@ -2,7 +2,7 @@
 
 /* ---------------------------------------------------------------------------
    CONTINUA design tokens.
-   Mirrors packages/scene/src/theme.ts — see docs/DESIGN_SPEC.md.
+   Mirrors packages/scene/src/theme.ts - see docs/DESIGN_SPEC.md.
    Light mode by design. This is a daylight technical instrument, not a
    cyberpunk console.
 
@@ -54,7 +54,7 @@ body {
   height: 100%;
   /* Deliberately NOT `overflow: hidden`. The dashboard's no-scroll guarantee
      comes from `.app-shell` being exactly `100dvh` and clipping its own
-     overflow — clamping the root as well added nothing (it does not even stop
+     overflow - clamping the root as well added nothing (it does not even stop
      programmatic scrolling) and it broke the one page that is a document rather
      than an instrument: /reference-images could not scroll at all. */
 }
@@ -374,7 +374,7 @@ button:focus-visible {
   animation: continua-sweep 1.35s ease-in-out infinite;
 }
 
-/** The backup path being warmed. Slow and quiet — it is a status, not an alarm. */
+/** The backup path being warmed. Slow and quiet - it is a status, not an alarm. */
 @keyframes continua-breathe {
   0%,
   100% {

@@ -13,7 +13,7 @@
  *
  * **Two of the slides are marked superseded.** Slides 8 and 9 report results
  * that were produced before the engine existed, and they disagree with the
- * measured experiments now in this repository — the satellite-share figure even
+ * measured experiments now in this repository - the satellite-share figure even
  * has the ordering the wrong way round. They are still shown, because deleting
  * inconvenient history is its own kind of dishonesty, but each one carries a
  * note and a link to the measured result. Where the two disagree, the
@@ -75,35 +75,27 @@ export function ReferenceImagesView() {
         <h2 className="text-[30px] font-semibold leading-tight tracking-[-0.03em]">
           Supporting materials
         </h2>
-        <p className="mt-2 text-[15px] leading-relaxed text-[color:var(--color-muted)]">
-          Ten engineering sheets prepared for the ATP 2026 EDGE proposal — the concept, the route,
-          the handoff logic, the calculations behind it and the testbed they were meant to run on.
+        <p className="mt-1.5 text-[15px] text-[color:var(--color-muted)]">
+          Ten engineering sheets from the ATP 2026 EDGE proposal.
         </p>
       </header>
 
-      {/* The one thing a reader has to know before looking at slides 8 and 9. */}
-      <aside
-        className="max-w-[980px] rounded-[16px] border px-5 py-4"
-        style={{
-          borderColor: 'color-mix(in srgb, var(--color-warn) 34%, transparent)',
-          background: 'color-mix(in srgb, var(--color-warn) 6%, white)',
-        }}
-      >
-        <h3 className="text-[14px] font-semibold">These are preliminary, and two of them are out of date</h3>
-        <p className="mt-1.5 text-[13.5px] leading-relaxed text-[color:var(--color-muted)]">
-          They were drawn while the design was being worked out, before the engine produced any
-          measurements. Slides <strong>8</strong> and <strong>9</strong> report results that the
-          measured experiments in this repository now contradict — for example they show CONTINUA
-          using <em>more</em> satellite data than the single-path baseline, where the 20-trial paired
-          runs measure roughly ten times <em>less</em>. Where a slide and a measurement disagree, the
-          measurement is correct.
-        </p>
-        <p className="mt-2 text-[13.5px]">
-          <Link href="/experiments" className="font-semibold text-[color:var(--color-blue)]">
-            See the measured results →
-          </Link>
-        </p>
-      </aside>
+      {/* One line. The detail sits on the two slides it actually concerns. */}
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[13.5px]">
+        <span
+          className="cursor-help rounded-full px-2.5 py-[3px] text-[11.5px] font-semibold uppercase tracking-[0.06em]"
+          style={{ color: '#9a6606', background: 'color-mix(in srgb, var(--color-warn) 13%, white)' }}
+          title="Drawn while the design was being worked out, before the engine produced any measurements."
+        >
+          Preliminary
+        </span>
+        <span className="text-[color:var(--color-muted)]">
+          Two sheets report results the measured experiments now supersede.
+        </span>
+        <Link href="/experiments" className="font-semibold text-[color:var(--color-blue)]">
+          Measured results →
+        </Link>
+      </div>
 
       {error && (
         <p className="text-[13.5px] text-[color:var(--color-bad)]">
@@ -125,7 +117,7 @@ export function ReferenceImagesView() {
                   export has no image optimiser, and these are pre-sized WebP. */}
               <img
                 src={slide.thumb}
-                alt={`Supporting material ${slide.slide} of 10 — ${slide.title}`}
+                alt={`Supporting material ${slide.slide} of 10 - ${slide.title}`}
                 width={slide.width}
                 height={slide.height}
                 loading="lazy"
@@ -141,11 +133,12 @@ export function ReferenceImagesView() {
                 </span>
                 {slide.superseded && (
                   <span
-                    className="rounded-full px-2 py-[2px] text-[11px] font-semibold uppercase tracking-[0.06em]"
+                    className="cursor-help rounded-full px-2 py-[2px] text-[11px] font-semibold uppercase tracking-[0.06em]"
                     style={{
                       color: '#9a6606',
                       background: 'color-mix(in srgb, var(--color-warn) 14%, white)',
                     }}
+                    title="Figures on this sheet predate the engine and disagree with the measured experiments. See the Experiments page."
                   >
                     Superseded
                   </span>
@@ -155,24 +148,15 @@ export function ReferenceImagesView() {
               <p className="text-[13px] leading-relaxed text-[color:var(--color-muted)]">
                 {slide.summary}
               </p>
-              {slide.superseded && (
-                <p className="mt-auto pt-1.5 text-[12px] leading-snug text-[color:var(--color-muted)]">
-                  Figures on this sheet predate the engine.{' '}
-                  <Link href="/experiments" className="font-semibold text-[color:var(--color-blue)]">
-                    Measured results
-                  </Link>
-                </p>
-              )}
+
             </figcaption>
           </figure>
         ))}
       </div>
 
-      <footer className="border-t border-[color:var(--color-line)] pt-4 text-[12.5px] leading-relaxed text-[color:var(--color-muted)]">
-        {manifest?.note}
-        <span className="mx-1.5">·</span>
+      <footer className="border-t border-[color:var(--color-line)] pt-4 text-[12.5px] text-[color:var(--color-muted)]">
         <Link href="/" className="font-semibold text-[color:var(--color-blue)]">
-          Back to the mission dashboard
+          ← Mission dashboard
         </Link>
       </footer>
 
@@ -205,7 +189,7 @@ export function ReferenceImagesView() {
           {/* eslint-disable-next-line @next/next/no-img-element -- see above */}
           <img
             src={lightbox.full}
-            alt={`Supporting material ${lightbox.slide} of 10 — ${lightbox.title}`}
+            alt={`Supporting material ${lightbox.slide} of 10 - ${lightbox.title}`}
             className="min-h-0 flex-1 rounded-[12px] object-contain"
             onClick={(event) => event.stopPropagation()}
           />

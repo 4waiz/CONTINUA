@@ -8,7 +8,7 @@
  * it. Everything is `pointer-events-none` and sits above the scene.
  *
  * The rate badge is not decoration. When the harness slows playback so a pair
- * of events 0.66 s apart is readable, the badge says so — next to a `t+`
+ * of events 0.66 s apart is readable, the badge says so - next to a `t+`
  * readout that is always the run's real clock.
  */
 
@@ -44,7 +44,7 @@ export function CaptureOverlays() {
 
 /**
  * Two placements. `lower-left` sits the title on a soft gradient scrim so the
- * rendered vehicle behind it stays visible — an opening title, not a cover.
+ * rendered vehicle behind it stays visible - an opening title, not a cover.
  * The default is centred over a wash, which is what an end card wants.
  */
 function TitleCard({ overlay }: { overlay: CaptureOverlay }) {

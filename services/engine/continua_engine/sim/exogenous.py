@@ -8,7 +8,7 @@ Every policy under comparison is then replayed against byte-identical
 conditions, which is what makes the trials paired.
 
 The controller is never given this object. It only ever sees statistics derived
-from packets that were actually delivered, acknowledged or timed out — so it
+from packets that were actually delivered, acknowledged or timed out - so it
 cannot see a fault coming except through the same signals a real system would
 have.
 """
@@ -120,7 +120,7 @@ def build_trace(
     """Generate the exogenous trace for one (scenario, seed).
 
     Uses independent RNG streams per concern so that adding, say, a background
-    load to a scenario does not shift the burst-loss draws — otherwise two
+    load to a scenario does not shift the burst-loss draws - otherwise two
     scenarios that should differ in one dimension would differ in all of them.
     """
     route = route or Route()

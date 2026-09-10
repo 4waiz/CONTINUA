@@ -6,7 +6,7 @@ Pick the representative trial for the demo video.
 
     For a given scenario, take the completed 20-trial experiment on the `test`
     seed block. Rank the CONTINUA (P1) trials by the primary metric for that
-    scenario. Choose the trial at the MEDIAN — the lower-median when the count
+    scenario. Choose the trial at the MEDIAN - the lower-median when the count
     is even. Never the best.
 
 Using the median is the whole point. Picking the best-looking run would make

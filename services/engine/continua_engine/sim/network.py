@@ -4,7 +4,7 @@ The causal network model.
 Traffic is generated, enqueued on a path, drained at that path's current
 capacity, delayed, possibly lost, and delivered to a receiver that keeps its own
 log. **Every metric in this project is computed from the receiver's log**, from
-acknowledgements, or from timeouts — never from the sender's intention and never
+acknowledgements, or from timeouts - never from the sender's intention and never
 scripted. There is no `handoff_succeeded = True` anywhere.
 
 Documented simplifications (see `docs/ASSUMPTIONS.md` for the full list):

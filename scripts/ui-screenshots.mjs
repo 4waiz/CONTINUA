@@ -78,12 +78,9 @@ async function measure(page) {
     // is no better. What the user can actually do is decided by the computed
     // overflow of the scrolling element.
     const scroller = document.scrollingElement ?? doc;
-    const rootOverflow = getComputedStyle(doc).overflowY;
-    const canScrollPage =
-      rootOverflow !== 'hidden' && scroller.scrollHeight - scroller.clientHeight > 2;
 
     // The defect that matters is content pushed out of view with **no**
-    // scrollable ancestor to reach it — that is genuinely unreachable, and it is
+    // scrollable ancestor to reach it - that is genuinely unreachable, and it is
     // what a fixed-viewport layout gets wrong when a column grows unbounded.
     const unreachable = [];
     for (const element of document.querySelectorAll('body *')) {
@@ -119,7 +116,7 @@ async function measure(page) {
       }));
 
     return {
-      pageScrollsY: canScrollPage,
+      scrollTop: scroller.scrollTop,
       unreachable: unreachable.slice(0, 5),
       innerScrollRegions: inner,
       fontSizes: [...sizes.values()].sort((a, b) => a.size - b.size).slice(0, 5),
@@ -163,7 +160,18 @@ async function main() {
 
       const name = `${target.id}${suffix}-${viewport.width}x${viewport.height}.png`;
       await page.screenshot({ path: join(OUT, name), animations: 'disabled' });
-      const metrics = await measure(page);
+
+      // Scroll the way a person does. A wheel event respects `overflow: hidden`
+      // where setting `scrollTop` does not, and `scrollHeight` counts overflow
+      // an ancestor has already clipped - both of which reported this app as
+      // scrollable when it is not.
+      await page.mouse.move(viewport.width / 2, viewport.height / 2);
+      await page.mouse.wheel(0, 600);
+      await page.waitForTimeout(250);
+      const pageScrollsY = (await page.evaluate(() => (document.scrollingElement ?? document.documentElement).scrollTop)) > 2;
+      await page.mouse.wheel(0, -600);
+
+      const metrics = { ...(await measure(page)), pageScrollsY };
 
       report.push({ page: target.id, ...viewport, file: name, ...metrics, errors: errors.slice(0, 4) });
       const flag = metrics.pageScrollsY || metrics.unreachable.length > 0 ? '!' : ' ';

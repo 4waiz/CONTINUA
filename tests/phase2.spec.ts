@@ -312,12 +312,20 @@ test.describe('failure handling', () => {
     // Plain language first. The raw host:port is a developer detail and lives
     // behind a disclosure rather than dominating the page.
     await expect(page.getByText(/CONTINUA engine offline/)).toBeVisible({ timeout: 30_000 });
-    await expect(page.getByText(/Simulation services are unavailable/)).toBeVisible();
+    await expect(page.getByText(/scene is a preview · no measurements/)).toBeVisible();
 
     // The interface must still be usable and must not invent numbers while the
-    // engine is gone: the scene renders as a preview and metrics show a dash.
+    // engine is gone: the scene renders as a preview and every metric card
+    // shows a placeholder rather than a value. The reason is on the
+    // placeholder's accessible name - the dashboard does not repeat the same
+    // sentence down a column of four cards.
     await expect(page.getByText('SCENE PREVIEW')).toBeVisible();
-    await expect(page.getByText(/Waiting for engine/).first()).toBeVisible();
+    await expect(page.getByLabel('Waiting for engine').first()).toBeVisible();
+    const numericMetrics = await page
+      .locator('article.card >> css=span.metric')
+      .filter({ hasText: /\d/ })
+      .count();
+    expect(numericMetrics, 'no metric card may show a number with no engine').toBe(0);
 
     // The detail is reachable, and it names how to start the engine.
     await page.getByRole('button', { name: /Detail/ }).click();

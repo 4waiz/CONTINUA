@@ -9,7 +9,7 @@
  * overlay for the frame it is about to grab and the page renders exactly that.
  *
  * A plain external store rather than component state, because the writer is
- * outside React entirely. `useSyncExternalStore` is correct here — unlike the
+ * outside React entirely. `useSyncExternalStore` is correct here - unlike the
  * scene's per-frame ref, this value changes about a dozen times in the whole
  * video and every change goes through `set`, so subscribers really are notified.
  *

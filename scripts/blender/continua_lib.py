@@ -11,7 +11,7 @@ Conventions (also documented in docs/ASSET_MANIFEST.md):
           gltf.z = -blender.y
       so in the runtime asset: forward **+X**, up **+Y**, wheel spin axis
       **local Z**, steering axis **local Y**.
-    * Everything is built from primitives and explicit bmesh geometry — no
+    * Everything is built from primitives and explicit bmesh geometry - no
       booleans, no procedural-only shaders, so the export is faithful.
 """
 
@@ -247,7 +247,7 @@ def bm_bar(bm: bmesh.types.BMesh, p0: Sequence[float], p1: Sequence[float],
 
     `width` is the extent along the bar's local Y, `height` along its local Z.
     For bars lying in the X-Z plane the rotation is a pure Y-axis turn, so
-    `width` stays the global-Y thickness — which is what every pillar, rail and
+    `width` stays the global-Y thickness - which is what every pillar, rail and
     wheel-arch segment in this project relies on.
     """
     start, end = Vector(p0), Vector(p1)
@@ -277,7 +277,7 @@ def bm_sphere(bm: bmesh.types.BMesh, center: Sequence[float], radius: float,
 def bm_arc_band(bm: bmesh.types.BMesh, center_xz: Sequence[float], y: float, radius: float,
                 start_deg: float, end_deg: float, steps: int,
                 band_width: float, band_thickness: float) -> None:
-    """A swept band following an arc in the X-Z plane — used for wheel arches."""
+    """A swept band following an arc in the X-Z plane - used for wheel arches."""
     points = arc_points(center_xz[0], center_xz[1], radius, start_deg, end_deg, steps)
     for index in range(len(points) - 1):
         (x0, z0), (x1, z1) = points[index], points[index + 1]
@@ -288,7 +288,7 @@ def bm_prism(bm: bmesh.types.BMesh, profile_xz: Sequence[tuple[float, float]],
              y_min: float, y_max: float) -> None:
     """Extrude a closed 2-D profile (in the X-Z plane) along Y.
 
-    The profile may be concave — that is how the wheel arches are cut out of
+    The profile may be concave - that is how the wheel arches are cut out of
     the body side. Vertices must be ordered around the outline.
     """
     verts = [bm.verts.new((x, y_min, z)) for x, z in profile_xz]
@@ -481,7 +481,7 @@ def export_glb(filepath: str, objects: Sequence[bpy.types.Object], *, draco: boo
     }
     # Read the *live* operator's RNA. `bpy.types.EXPORT_SCENE_OT_gltf` can
     # still resolve to a stub when the add-on was enabled during this run,
-    # which silently drops every keyword — including `filepath`.
+    # which silently drops every keyword - including `filepath`.
     valid = {p.identifier for p in bpy.ops.export_scene.gltf.get_rna_type().properties}
     if "filepath" not in valid:
         raise RuntimeError(

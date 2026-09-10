@@ -1,4 +1,4 @@
-# Model card — CONTINUA link-violation predictor
+# Model card - CONTINUA link-violation predictor
 
 **Version** `202609081132` · logistic regression · 13 features
 **Artefact** `services/engine/continua_engine/models/predictor.json`
@@ -13,7 +13,7 @@ carrying the session:
 
 > Will this path violate an application threshold within the next **3 seconds**?
 
-**Violation** (identical for the heuristic, the model and the offline labels —
+**Violation** (identical for the heuristic, the model and the offline labels -
 `predictors.VIOLATION_DEFINITION`):
 
 > smoothed RTT > **150 ms** (the control-class deadline), **or** windowed loss
@@ -32,7 +32,7 @@ to a backup path, inside this simulator.
 * Any real network. It was trained on synthetic data from a model that does not
   include TCP congestion control, real radio behaviour or real traffic.
 * Anything safety-critical. A missed warning here costs a simulated deadline.
-* Being read as a probability — see §6.
+* Being read as a probability - see §6.
 
 **An LLM is not in this loop, and must not be.** Routing decisions are made by
 this tabular model or the trend heuristic, both of which run in microseconds and
@@ -47,7 +47,7 @@ Thirteen, all observable at decision time:
 `coverage_slope`, `speed_mps`, `rtt_over_deadline`, `alt_best_coverage`
 
 Slopes are least-squares fits over a trailing 2 s window. `coverage` is
-`modelled_coverage` — a geometric value from the world model, not a measurement;
+`modelled_coverage` - a geometric value from the world model, not a measurement;
 in a real deployment this feature would have to be replaced by something
 measurable, and the model retrained.
 
@@ -101,7 +101,7 @@ precision. That is the honest case for it.
 never actually violated is counted as an `unnecessary_handover` and appears in
 the same experiment table as the wins.
 
-## 6. Calibration — and why the score is not a probability
+## 6. Calibration - and why the score is not a probability
 
 | | Value |
 | --- | --- |
@@ -111,7 +111,7 @@ the same experiment table as the wins.
 | **`calibrated`** | **`false`** |
 
 The model beats the base rate on Brier score, but its mean absolute calibration
-error is 0.136 — a bucket of samples scored "0.7" contains roughly 57–83 %
+error is 0.136 - a bucket of samples scored "0.7" contains roughly 57–83 %
 positives. That is **not** good enough to call the output a probability, so the
 artefact carries `calibrated: false`, the API forwards it, and the UI labels the
 value "uncalibrated" wherever it appears.
@@ -142,7 +142,7 @@ visible rather than silent.
 * Class balance (~55 % positive) is an artefact of scenario mix, not a property
   of real networks.
 * The tuning set includes the held-out families, so threshold selection saw them
-  — but the *test* comparison did not, and no result in this repository is scored
+ - but the *test* comparison did not, and no result in this repository is scored
   on tuning data.
 
 ## 9. Reproducing

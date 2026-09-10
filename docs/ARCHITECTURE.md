@@ -1,4 +1,4 @@
-# CONTINUA — architecture
+# CONTINUA - architecture
 
 ## 1. Shape of the repository
 
@@ -10,7 +10,7 @@ apps/web/                Next.js 16 frontend
   public/models/         Runtime .glb assets
 services/engine/         The Python engine
   continua_engine/contracts.py     Authoritative event and metric schema (Pydantic)
-  continua_engine/world.py         Route, coverage, motion — reads packages/contracts/world.json
+  continua_engine/world.py         Route, coverage, motion - reads packages/contracts/world.json
   continua_engine/sim/             exogenous trace, network model, simulator loop
   continua_engine/controller/      state machine, policies, predictors, training
   continua_engine/experiments/     metrics, paired runner, CLI
@@ -23,7 +23,7 @@ packages/scene/          The reusable 3D scene
   src/core/clock.ts      Deterministic scene clock
   src/world/             route, terrain, road, sites
   src/preview/           Phase 1 preview state source
-  src/engine/            EngineSceneStateSource — the Phase 2 seam
+  src/engine/            EngineSceneStateSource - the Phase 2 seam
   src/components/        React Three Fiber components
 packages/contracts/      Shared types (src/index.ts, src/engine.ts) and world.json
 scripts/blender/         Reproducible asset generation and export
@@ -63,7 +63,7 @@ the UI which it is looking at, and the HUD is required to display it.
 
 `<ContinuaScene>` owns the `<Canvas>` and nothing else. It is mounted by the
 dashboard, by `/scene-lab`, and (in Phase 3) by the capture harness. Everything
-page-specific — panels, controls, chrome — lives in `apps/web`.
+page-specific - panels, controls, chrome - lives in `apps/web`.
 
 ### c. React ↔ render loop
 
@@ -77,7 +77,7 @@ React renders the scene graph once. After that:
   and also updates immediately on a seek.
 
 This is why the React Compiler lint rules are switched off for
-`packages/scene/**` and only there — see the comment in `eslint.config.mjs`.
+`packages/scene/**` and only there - see the comment in `eslint.config.mjs`.
 
 ## 3. Determinism
 
@@ -89,7 +89,7 @@ This is why the React Compiler lint rules are switched off for
 * `PreviewSceneStateSource` integrates its speed profile into a time→distance
   table **once**, at construction, and plans every handoff in **one forward pass
   over the whole route**. Scrubbing backwards therefore produces exactly the
-  states that playing forwards produced — there is no hysteresis that depends on
+  states that playing forwards produced - there is no hysteresis that depends on
   playback history.
 * All cameras are pure functions of `t`. There are no springs and no
   lerp-toward-target. Smoothness comes from `route.smoothHeadingAt(d, radius)`,
@@ -142,7 +142,7 @@ the current one below 0.20. The resulting plan for the shipped route:
 
 | t | from → to | why |
 | --- | --- | --- |
-| 0.0 s | — → wired | session established at the dock |
+| 0.0 s | - → wired | session established at the dock |
 | 9.7 s | wired → wifi | tether released, yard cell takes over |
 | 41.6 s | wifi → cellular | leaving Wi-Fi range, macro site available |
 | 71.9 s | cellular → satellite | corridor coverage fading in the remote sector |
@@ -169,7 +169,7 @@ Each is pre-warmed 55 m ahead, which is what the dashed beam and the
 
 ## 7. Testing
 
-`tests/scene.spec.ts` — behaviour, run against a production build:
+`tests/scene.spec.ts` - behaviour, run against a production build:
 
 * both pages render, no console errors, `SCENE PREVIEW` present
 * the `.glb` assets are actually requested and return 200
@@ -179,7 +179,7 @@ Each is pre-warmed 55 m ahead, which is what the dashed beam and the
   assembly survive export, and the expected material names are present
 * wheel angle equals `distance / 0.405 m` and steering actually varies
 
-`tests/evidence.spec.ts` — captures the inspection set at deterministic
+`tests/evidence.spec.ts` - captures the inspection set at deterministic
 timestamps into `tests/output/evidence/`.
 
 Three viewport projects (1920×1080, 1440×900, 1280×720) plus a `gpu` project
@@ -192,7 +192,7 @@ measurement rather than a software-rasteriser artefact.
   (`packages/scene/src/engine/engineSource.ts`) implements `SceneStateSource`
   from a buffer of engine events, and `SceneRuntimeProvider` takes it as its
   `source`. **No scene component changed.** The optional `rssiDbm`, `latencyMs`,
-  `jitterMs`, `lossPct` and `throughputMbps` fields are now populated — each
+  `jitterMs`, `lossPct` and `throughputMbps` fields are now populated - each
   guarded on its own presence, so a link with no RSSI omits the field entirely
   rather than reporting `undefined`.
 * **Phase 3** drives `clock.setTime(t)` in fixed steps and reads
@@ -250,14 +250,14 @@ has no path back to the trace.
 
 Seeking a live run **rebuilds the simulation from the same seed and
 fast-forwards**. That is exact, not approximate, because the simulation is
-deterministic — which is also why replay can be asserted equal to the original.
+deterministic - which is also why replay can be asserted equal to the original.
 
 ## 12. Boundaries added in Phase 2
 
 | Boundary | Contract |
 | --- | --- |
 | Engine ↔ frontend | `EngineEvent` (Pydantic) mirrored by `packages/contracts/src/engine.ts`, **validated at the boundary** by `parseEngineEvent`; an unrecognised payload is rejected, not rendered |
-| Engine ↔ scene | `EngineSceneStateSource implements SceneStateSource` — the Phase 1 seam, unchanged |
+| Engine ↔ scene | `EngineSceneStateSource implements SceneStateSource` - the Phase 1 seam, unchanged |
 | Controller ↔ world | `LinkObservation` only. No trace access, enforced by test |
 | Predictor ↔ controller | `Prediction`, carrying its own features, threshold and calibration flag |
 | Simulator ↔ store | `EngineEvent` JSONL + `manifest.json` with scenario, seed, commit and environment |

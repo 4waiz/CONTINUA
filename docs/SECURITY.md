@@ -1,4 +1,4 @@
-# CONTINUA — security posture
+# CONTINUA - security posture
 
 **CONTINUA is a research prototype. It has not been security-audited, it has not
 been penetration-tested, and it should not be exposed to an untrusted network.**
@@ -60,9 +60,9 @@ Every request body is a Pydantic model with explicit bounds:
 **No frontend value ever reaches a shell.** The only `subprocess` calls in the
 project are:
 
-1. `store.code_commit()` — a fixed `git rev-parse HEAD` argument list, no shell.
-2. `emulation/capability.py` — fixed, hard-coded probe commands. Read-only.
-3. `emulation/adapter.py` — invokes only the three fixed script paths under
+1. `store.code_commit()` - a fixed `git rev-parse HEAD` argument list, no shell.
+2. `emulation/capability.py` - fixed, hard-coded probe commands. Read-only.
+3. `emulation/adapter.py` - invokes only the three fixed script paths under
    `scripts/emulation/`. No user input is interpolated into any of them.
 
 Run identifiers are used as directory names. They are generated server-side
@@ -82,15 +82,15 @@ rules:
   required capability is present. There is no "try anyway" path.
 * The topology scripts:
   * create only `continua-`/`cnt-` prefixed namespaces and devices;
-  * **never modify the host default route** — routes are added inside namespaces
+  * **never modify the host default route** - routes are added inside namespaces
     only;
-  * **never modify the host firewall** — no `iptables`/`nftables` rules at all;
+  * **never modify the host firewall** - no `iptables`/`nftables` rules at all;
   * never touch an interface outside the topology;
   * are idempotent, and `cleanup.sh` removes exactly what `setup.sh` created.
 * `verify.sh` reports what the kernel actually negotiated. A plain-TCP fallback
   is recorded as plain TCP, never counted as MPTCP.
 
-**On the development host these scripts have not been executed** — passwordless
+**On the development host these scripts have not been executed** - passwordless
 sudo is unavailable and the kernel lacks `CONFIG_MPTCP`. See
 `data/emulation_capability.json`.
 
@@ -140,7 +140,7 @@ Stated rather than left to be discovered:
 
 ## 8. If this were to be deployed
 
-Not a roadmap — a statement of what is missing:
+Not a roadmap - a statement of what is missing:
 
 authentication and per-user authorisation; TLS; rate limiting and quotas; run
 storage limits and retention; structured audit logging; CSRF protection on the

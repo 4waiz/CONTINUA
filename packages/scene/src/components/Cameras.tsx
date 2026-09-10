@@ -3,7 +3,7 @@
 /**
  * Camera rigs.
  *
- * Every camera is a pure function of `clock.time` — no springs, no smoothing
+ * Every camera is a pure function of `clock.time` - no springs, no smoothing
  * over previous frames. That means scrubbing to a timestamp reproduces exactly
  * the frame you would have got by playing to it, which Phase 3 capture needs,
  * and it also removes the jitter a naive lerp-to-target introduces.

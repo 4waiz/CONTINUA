@@ -196,7 +196,7 @@ export function useEngineRun(runId: string | null, options: EngineRunOptions = {
             // A seek moves the cursor; it does NOT invalidate the timeline.
             // Resetting the buffer here blanked every chart on each scrub, and
             // left `sampleAt` with a single event and nothing to interpolate
-            // between — which frame-stepped capture would have inherited.
+            // between - which frame-stepped capture would have inherited.
             // Sequence tracking restarts because a backward seek rebuilds the
             // simulation from the same seed; the re-emitted events are
             // identical and are deduplicated by `seq`.

@@ -9,7 +9,7 @@
  *
  * The scene clock free-runs so vehicle motion interpolates smoothly at 60 fps,
  * and is corrected back to the engine's authoritative time whenever it drifts.
- * Motion is interpolated; **metrics are not** — every number the scene displays
+ * Motion is interpolated; **metrics are not** - every number the scene displays
  * comes verbatim from an engine event.
  */
 
@@ -45,8 +45,8 @@ function ClockSync({
   }, [clock, playing]);
 
   useEffect(() => {
-    // While paused the timeline is being *scrubbed* — by someone dragging the
-    // transport, or by the video harness stepping one frame at a time — and the
+    // While paused the timeline is being *scrubbed* - by someone dragging the
+    // transport, or by the video harness stepping one frame at a time - and the
     // scene has to sit exactly on the cursor.
     //
     // The tolerance below exists for live playback, where the clock free-runs at
@@ -69,7 +69,7 @@ function ClockSync({
  * @param preview  no run exists yet. The scene is driven by the Phase 1 preview
  *   source and plays its own route loop, so the operator sees the world rather
  *   than an empty rectangle. Nothing in preview is a measurement, and the
- *   caller is responsible for badging it `SCENE PREVIEW` — `SceneState.source`
+ *   caller is responsible for badging it `SCENE PREVIEW` - `SceneState.source`
  *   carries the same fact for anything that reads the state directly.
  */
 export function MissionScene({

@@ -1,5 +1,5 @@
 {
-  "$comment": "Immutable scenario specifications. A scenario fixes the exogenous world: route speed, which links exist, what faults occur and when, and what background demand competes for capacity. It says NOTHING about policy. Every policy under test is run against the identical exogenous trace for a given seed — that is what makes the comparison paired and fair.",
+  "$comment": "Immutable scenario specifications. A scenario fixes the exogenous world: route speed, which links exist, what faults occur and when, and what background demand competes for capacity. It says NOTHING about policy. Every policy under test is run against the identical exogenous trace for a given seed - that is what makes the comparison paired and fair.",
   "version": "1.1.0",
   "scenarios": [
     {

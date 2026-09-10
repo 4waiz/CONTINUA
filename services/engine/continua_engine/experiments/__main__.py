@@ -60,7 +60,7 @@ def headline(summary: dict) -> None:
             entry = aggregate[policy].get(key, {})
             mean = entry.get("mean")
             if mean is None:
-                cells.append(f"{'—':>13}")
+                cells.append(f"{' - ':>13}")
             else:
                 value = mean / 1e6 if key == "satellite_bytes" else mean
                 cells.append(f"{value:>13.{digits}f}")

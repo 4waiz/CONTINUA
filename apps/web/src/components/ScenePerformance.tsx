@@ -7,7 +7,7 @@
  * draw calls, triangles and geometry counts come from three.js's own
  * `renderer.info`, which the scene publishes on `window.__CONTINUA__.three`.
  * If the scene has not mounted yet there is nothing to report and this renders
- * nothing — a performance readout that invents numbers is worse than no
+ * nothing - a performance readout that invents numbers is worse than no
  * performance readout.
  *
  * Deliberately discreet: it belongs to Scene Lab, which is the technical view.
@@ -66,9 +66,9 @@ export function ScenePerformance() {
 
   const items: [string, string][] = [
     ['FPS', String(stats.fps)],
-    ['Draw calls', stats.calls ? String(stats.calls) : '—'],
-    ['Triangles', stats.triangles ? `${(stats.triangles / 1000).toFixed(0)}k` : '—'],
-    ['Geometries', stats.geometries ? String(stats.geometries) : '—'],
+    ['Draw calls', stats.calls ? String(stats.calls) : ' - '],
+    ['Triangles', stats.triangles ? `${(stats.triangles / 1000).toFixed(0)}k` : ' - '],
+    ['Geometries', stats.geometries ? String(stats.geometries) : ' - '],
   ];
 
   return (

@@ -13,7 +13,7 @@ what the kernel actually did. It is deliberately conservative:
 * It runs no command constructed from user input. The topology is fixed, the
   script paths are fixed, and the only variables are numbers that have already
   been range-checked.
-* It never touches the host default route or firewall — that is enforced in the
+* It never touches the host default route or firewall - that is enforced in the
   shell scripts, and this module only ever invokes those scripts.
 
 **Status on the development host: NOT VERIFIED HERE.** The WSL2 kernel has

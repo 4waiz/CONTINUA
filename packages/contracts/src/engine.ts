@@ -4,7 +4,7 @@
  * These are *validated at the boundary*, not merely asserted: `parseEngineEvent`
  * rejects a payload whose shape it does not recognise rather than letting the
  * dashboard render something it cannot vouch for. If the two sides drift, the
- * UI shows a schema error — which is a far better failure than a plausible
+ * UI shows a schema error - which is a far better failure than a plausible
  * looking number that means nothing.
  *
  * The honesty rule from Phase 1 still holds and is enforced by the types:
@@ -97,7 +97,7 @@ export interface EngineClassHealth {
 export interface EngineApplicationHealth {
   window_s: number;
   classes: Partial<Record<TrafficClassId, EngineClassHealth>>;
-  /** `app_health_v1`. Definition in docs/METRICS.md — never an unexplained score. */
+  /** `app_health_v1`. Definition in docs/METRICS.md - never an unexplained score. */
   health_score: number | null;
   health_definition: string;
   session_id: string;
@@ -236,7 +236,7 @@ export function parseSocketMessage(raw: unknown): EngineSocketMessage | null {
 }
 
 // ---------------------------------------------------------------------------
-// Display helpers — the honesty layer
+// Display helpers - the honesty layer
 // ---------------------------------------------------------------------------
 
 /**
@@ -251,7 +251,7 @@ export function formatMeasurement(
   options: { unit?: string; digits?: number } = {},
 ): { text: string; available: boolean } {
   if (value === null || value === undefined || !Number.isFinite(value)) {
-    return { text: '—', available: false };
+    return { text: ' - ', available: false };
   }
   const digits = options.digits ?? 0;
   return { text: `${value.toFixed(digits)}${options.unit ?? ''}`, available: true };

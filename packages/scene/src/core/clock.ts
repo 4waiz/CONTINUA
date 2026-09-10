@@ -4,7 +4,7 @@ import type { PlaybackState, Seconds } from '@continua/contracts';
  * The scene's single source of time.
  *
  * `setTime(t)` fully determines the frame. Nothing in the scene reads
- * `Date.now()` or `performance.now()` for state — real time only ever advances
+ * `Date.now()` or `performance.now()` for state - real time only ever advances
  * the clock, and `advance(dt)` can be replaced by fixed steps for capture.
  *
  * Subscribers are notified on transport changes (play/pause/seek/speed), not on
@@ -120,7 +120,7 @@ export class SceneClock {
     };
   }
 
-  /** Force a notification — used after a scrub finishes. */
+  /** Force a notification - used after a scrub finishes. */
   emit(): void {
     const snapshot = this.state;
     for (const listener of this.listeners) listener(snapshot);

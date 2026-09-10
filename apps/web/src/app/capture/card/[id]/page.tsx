@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { VideoCard } from '@/components/capture/VideoCard';
 
 export const metadata: Metadata = {
-  title: 'Card — CONTINUA',
+  title: 'Card - CONTINUA',
   description: 'Full-frame evidence card for the demo video.',
 };
 

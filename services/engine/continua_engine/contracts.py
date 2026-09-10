@@ -2,7 +2,7 @@
 CONTINUA engine contracts.
 
 The authoritative schema. `packages/contracts/src/engine.ts` mirrors these
-shapes for the frontend and is validated at the boundary — if the two drift, the
+shapes for the frontend and is validated at the boundary - if the two drift, the
 frontend rejects the payload rather than rendering something invented.
 
 Design rules that show up throughout:
@@ -115,7 +115,7 @@ class LinkObservation(BaseModel):
     """What the controller can see about one path at one instant.
 
     Everything here is derived from delivered/acknowledged/timed-out packets in
-    the trailing window. Nothing reads the exogenous trace directly — that would
+    the trailing window. Nothing reads the exogenous trace directly - that would
     leak the future into the policy.
     """
 
@@ -131,7 +131,7 @@ class LinkObservation(BaseModel):
     loss_pct: float | None = None
     #: Application goodput carried by this path over the window.
     throughput_mbps: float | None = None
-    #: Only Wi-Fi reports RSSI. Every other link reports ``None`` — they have no
+    #: Only Wi-Fi reports RSSI. Every other link reports ``None`` - they have no
     #: equivalent measurement, and inventing one would be dishonest.
     rssi_dbm: float | None = None
     #: Modelled radio/coverage quality 0..1 (simulation only, labelled as modelled).
@@ -161,8 +161,8 @@ class VehicleObservation(BaseModel):
 class ClassHealth(BaseModel):
     """Receiver-derived performance for one traffic class.
 
-    All of it comes from the receiver's own logs — arrivals, acknowledgements
-    and timeouts — never from the sender's intent.
+    All of it comes from the receiver's own logs - arrivals, acknowledgements
+    and timeouts - never from the sender's intent.
     """
 
     traffic_class: TrafficClass

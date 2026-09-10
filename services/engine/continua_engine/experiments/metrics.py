@@ -142,7 +142,7 @@ def _score_predictions(sim: "Simulation") -> dict:
     defined in `predictors.VIOLATION_DEFINITION`, actually occurred on the path
     that was carrying at t, at some point inside (t, t+h].
 
-    This is scored after the run using the recorded observation series — the
+    This is scored after the run using the recorded observation series - the
     controller never had access to it at decision time.
     """
     events = sim.events

@@ -6,7 +6,7 @@ recorded evidence, into one small JSON file the web app can render.
 Nothing here computes anything new. It reads `data/runs/*/metrics.json`,
 `data/experiments/exp-*.json` and `data/emulation_capability.json`, copies the
 figures out and records where each one came from. If a source file is missing
-the script fails loudly rather than emitting a card with a hole in it — a blank
+the script fails loudly rather than emitting a card with a hole in it - a blank
 number on screen is exactly the failure mode the whole project is trying to
 avoid.
 
@@ -112,7 +112,7 @@ def build_compare() -> dict:
         ],
         "against_us": [
             row("Handovers performed", ("control_plane", "handovers"), "int",
-                note="more, not fewer — preparing a path costs transitions"),
+                note="more, not fewer - preparing a path costs transitions"),
             row("Bulk transfer completed", ("application", "bulk", "bytes_completed"), "bytes", "higher",
                 note="deliberately throttled to protect control and video"),
         ],
@@ -159,7 +159,7 @@ def build_ablation() -> dict:
             variant("B2", "Always-multipath baseline", "keep a second path warm at all times"),
         ],
         "reading": [
-            "Preparation removes the interruption — the always-multipath baseline reaches the same 0.16 s.",
+            "Preparation removes the interruption - the always-multipath baseline reaches the same 0.16 s.",
             "Prediction is not what removed it. Ablating the predictor changes nothing we can measure.",
             "Application-awareness is what makes it affordable, and under congestion it is what holds the control channel.",
         ],
@@ -312,7 +312,7 @@ def build_scope() -> dict:
                 "source": "packages/contracts/world.json",
             },
         ],
-        "next": "Hardware in the loop, a real radio, and a field trial are the next step — not a result.",
+        "next": "Hardware in the loop, a real radio, and a field trial are the next step - not a result.",
         "sources": {
             "files": ["data/emulation_capability.json", f"data/experiments/{EXP_TOTAL_LOSS}.json"],
             "mode": "simulation",

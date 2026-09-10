@@ -1,5 +1,5 @@
 """
-CONTINUA — rover generation.
+CONTINUA - rover generation.
 
 Builds `CONTINUA Rover Mk1`, a compact off-road inspection SUV, from scratch and
 exports it for the browser runtime.
@@ -30,7 +30,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import continua_lib as lib  # noqa: E402
 
 # ==========================================================================
-# Dimensions — every number in metres, all in one place
+# Dimensions - every number in metres, all in one place
 # ==========================================================================
 
 WHEELBASE = 2.85
@@ -128,7 +128,7 @@ def apply_two_tone(obj: bpy.types.Object, materials: dict) -> None:
 
 
 def build_greenhouse(materials: dict) -> bpy.types.Object:
-    """Roof panel and pillars — the painted parts of the cabin above the belt."""
+    """Roof panel and pillars - the painted parts of the cabin above the belt."""
     bm = bmesh.new()
 
     roof_front, roof_rear = 0.50, -2.16
@@ -363,7 +363,7 @@ def build_mirrors(materials: dict) -> bpy.types.Object:
 
 
 # ==========================================================================
-# Roof sensor assembly — the reason this rover exists
+# Roof sensor assembly - the reason this rover exists
 # ==========================================================================
 
 
@@ -393,7 +393,7 @@ def build_sensors(materials: dict, detail: str) -> list[bpy.types.Object]:
     for y in (-0.09, 0.09):
         lib.bm_cylinder(lens, (0.17, y, rack_z + 0.10), 0.045, 0.05, 14, axis="X")
 
-    # Satellite terminal dome and GNSS puck — the story's remote link.
+    # Satellite terminal dome and GNSS puck - the story's remote link.
     lib.bm_cylinder(housing, (-1.42, -0.44, rack_z + 0.035), 0.14, 0.05, 18, axis="Z")
     lib.bm_sphere(housing, (-1.42, -0.44, rack_z + 0.06), 0.125, 16, 8, scale=(1.0, 1.0, 0.80))
     lib.bm_cylinder(housing, (-1.42, 0.44, rack_z + 0.04), 0.075, 0.045, 14, axis="Z")
@@ -428,7 +428,7 @@ def build_sensors(materials: dict, detail: str) -> list[bpy.types.Object]:
 
 
 # ==========================================================================
-# Identification text — small, and ours
+# Identification text - small, and ours
 # ==========================================================================
 
 
@@ -642,7 +642,7 @@ def report(objects: list[bpy.types.Object]) -> int:
 
 
 def main() -> None:
-    lib.banner("CONTINUA — building rover (hero detail)")
+    lib.banner("CONTINUA - building rover (hero detail)")
     lib.reset_scene("CONTINUA_Vehicle")
     _, objects = build_vehicle("hero")
     hero_tris = report(objects)
@@ -650,7 +650,7 @@ def main() -> None:
     lib.save_blend(lib.out_path("assets", "blender", "continua_rover.blend"))
     lib.export_glb(lib.out_path("apps", "web", "public", "models", "continua_rover.glb"), objects)
 
-    lib.banner("CONTINUA — building rover (LOD1)")
+    lib.banner("CONTINUA - building rover (LOD1)")
     lib.reset_scene("CONTINUA_Vehicle_LOD1")
     _, lod_objects = build_vehicle("lod1")
     lod_tris = report(lod_objects)

@@ -9,6 +9,9 @@ const config = [
   {
     ignores: [
       '**/.next/**',
+      // The static export for the public deployment: thousands of generated
+      // files, none of them ours.
+      '**/out/**',
       '**/node_modules/**',
       '**/dist/**',
       '**/next-env.d.ts',
@@ -29,7 +32,7 @@ const config = [
       // R3F puts three.js objects into JSX; the a11y and next rules that assume
       // DOM elements do not apply to <mesh>, <group> and friends.
       'react/no-unknown-property': 'off',
-      // App Router only — this rule looks for a `pages/` directory and warns
+      // App Router only - this rule looks for a `pages/` directory and warns
       // loudly when it cannot find one.
       '@next/next/no-html-link-for-pages': 'off',
     },
@@ -40,7 +43,7 @@ const config = [
     // Fiber is meant to be driven and exactly what keeps React out of the
     // render loop. The React Compiler rules assume a pure-render component
     // model and flag every one of those mutations, so they are switched off
-    // here — and only here. Component-level correctness in the app UI still
+    // here - and only here. Component-level correctness in the app UI still
     // gets the full rule set.
     files: ['packages/scene/src/**/*.{ts,tsx}'],
     rules: {

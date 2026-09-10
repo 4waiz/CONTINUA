@@ -5,8 +5,8 @@
  *
  * The panel this replaces led with three lines of prose explaining what
  * `app_health_v1` is, then a four-column table of numbers. The explanation is
- * still exactly one click away — it is the `title` on the metric name, and the
- * full definition is in `docs/METRICS.md` — but an operator scanning for which
+ * still exactly one click away - it is the `title` on the metric name, and the
+ * full definition is in `docs/METRICS.md` - but an operator scanning for which
  * traffic class is in trouble needs a bar, not a paragraph.
  *
  * What has not changed: nothing here is invented. A class the engine has not
@@ -42,7 +42,7 @@ function toneFor(missPct: number | null): { color: string; label: string } {
   return { color: 'var(--color-bad)', label: 'Degraded' };
 }
 
-/** One line of secondary fact per class — the thing you'd check next. */
+/** One line of secondary fact per class - the thing you'd check next. */
 function detailFor(cls: TrafficClassId, health: NonNullable<EngineEvent['app']>['classes'][TrafficClassId]) {
   if (!health) return null;
   if (cls === 'telemetry') {
@@ -56,7 +56,7 @@ function detailFor(cls: TrafficClassId, health: NonNullable<EngineEvent['app']>[
     return `${(health.bytes_completed / 1e6).toFixed(1)} MB complete`;
   }
   return health.p95_latency_ms != null
-    ? `p95 ${health.p95_latency_ms.toFixed(0)} ms · ${health.deadline_miss_pct?.toFixed(1) ?? '—'} % missed`
+    ? `p95 ${health.p95_latency_ms.toFixed(0)} ms · ${health.deadline_miss_pct?.toFixed(1) ?? ' - '} % missed`
     : `${health.delivered}/${health.sent} delivered`;
 }
 
@@ -82,7 +82,7 @@ export function HealthPanel({ event }: { event: EngineEvent | null }) {
           className="cursor-help text-[11px] text-[color:var(--color-faint)] underline decoration-dotted underline-offset-2"
           title={
             app?.health_definition ??
-            'app_health_v1 — weighted mean of per-class deadline attainment, reproducible from the receiver logs. Full definition in docs/METRICS.md.'
+            'app_health_v1 - weighted mean of per-class deadline attainment, reproducible from the receiver logs. Full definition in docs/METRICS.md.'
           }
         >
           app_health_v1
@@ -94,7 +94,7 @@ export function HealthPanel({ event }: { event: EngineEvent | null }) {
           className="metric text-[34px] font-semibold leading-none tracking-[-0.035em]"
           style={{ color: scoreTone }}
         >
-          {score !== null ? score.toFixed(0) : '—'}
+          {score !== null ? score.toFixed(0) : ' - '}
         </span>
         <div className="flex-1 pb-1">
           <div className="h-[7px] w-full overflow-hidden rounded-full bg-[color:var(--color-surface-muted)]">
@@ -103,15 +103,11 @@ export function HealthPanel({ event }: { event: EngineEvent | null }) {
               style={{ width: `${score ?? 0}%`, background: scoreTone }}
             />
           </div>
-          <p className="mt-1 text-[11px] text-[color:var(--color-muted)]">
-            {score !== null ? 'weighted deadline attainment · / 100' : 'no class has enough samples yet'}
-          </p>
+
         </div>
       </div>
 
-      {present.length === 0 ? (
-        <p className="text-[12px] text-[color:var(--color-muted)]">Waiting for engine.</p>
-      ) : (
+      {present.length === 0 ? null : (
         <ul className="flex flex-col gap-2.5">
           {present.map((cls) => {
             const health = app!.classes[cls]!;

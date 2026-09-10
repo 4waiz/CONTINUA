@@ -4,7 +4,7 @@
  *
  * Voice: the Windows speech API, running locally on this machine. Nothing is
  * uploaded, no paid service is called, and no real person is imitated or
- * cloned — see `docs/AI_USE.md` and `scripts/speak.ps1`.
+ * cloned - see `docs/AI_USE.md` and `scripts/speak.ps1`.
  *
  * The interesting part is the fitting. Each cue in `video/timeline.json` owns a
  * window, and a clip that overruns its window would either collide with the
@@ -17,7 +17,7 @@
  *
  * That ceiling is deliberately low. The first cut let lines run at the fastest
  * rate the speech API offers, and the result was a script full of decimals read
- * at three and a half words a second with no pauses — technically in sync, and
+ * at three and a half words a second with no pauses - technically in sync, and
  * unlistenable. Anything above +18 % now fails the build instead.
  *
  *   node scripts/build-narration.mjs

@@ -1,5 +1,5 @@
 """
-CONTINUA — world prop library.
+CONTINUA - world prop library.
 
 Builds the reusable infrastructure that dresses the mission route and exports it
 as one glTF whose top-level nodes are instanced by the runtime.
@@ -12,7 +12,7 @@ Outputs
 
 Every prop is authored at the world origin with its base on z = 0, so the
 runtime places it with a position and a single yaw. Node names are the contract
-— `packages/scene/src/world/props.ts` looks them up by name. Per-prop authored
+- `packages/scene/src/world/props.ts` looks them up by name. Per-prop authored
 orientation is recorded in docs/ASSET_MANIFEST.md.
 """
 
@@ -157,7 +157,7 @@ def prop_wifi_mast(materials: dict) -> bpy.types.Object:
 
 
 def prop_cell_tower(materials: dict) -> bpy.types.Object:
-    """A tapered lattice mast with three sector panels — the 5G site."""
+    """A tapered lattice mast with three sector panels - the 5G site."""
     steel, panel, accent = bmesh.new(), bmesh.new(), bmesh.new()
 
     height, base_half, top_half, bays = 24.0, 1.9, 0.62, 10
@@ -274,7 +274,7 @@ def prop_light_pole(materials: dict) -> bpy.types.Object:
 
 
 def prop_barrier(materials: dict) -> bpy.types.Object:
-    """Jersey barrier — a real profile, extruded. Instanced along service roads."""
+    """Jersey barrier - a real profile, extruded. Instanced along service roads."""
     body, stripe = bmesh.new(), bmesh.new()
     profile = [
         (-0.30, 0.0), (0.30, 0.0), (0.22, 0.14), (0.12, 0.55),
@@ -323,7 +323,7 @@ def prop_rock(materials: dict, name: str, seed: int, radius: float) -> bpy.types
 
 
 def main() -> None:
-    lib.banner("CONTINUA — building world props")
+    lib.banner("CONTINUA - building world props")
     lib.reset_scene("CONTINUA_Props")
     materials = lib.continua_materials()
 

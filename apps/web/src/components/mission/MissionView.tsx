@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * The Mission dashboard — the flagship view.
+ * The Mission dashboard - the flagship view.
  *
  * Layout is a fixed three-column grid inside one viewport: measurements on the
  * left, the world in the middle, application health on the right. It does not
@@ -14,19 +14,21 @@
  *    placeholder tables and no hard-coded counters.
  * 2. **A value that does not exist is not a zero.** With no run, or with the
  *    engine down, the metric cards show an em dash and say what they are
- *    waiting for. The 3D scene still renders — from the Phase 1 preview source,
- *    badged `SCENE PREVIEW` — because an empty grey rectangle is a worse answer
+ *    waiting for. The 3D scene still renders - from the Phase 1 preview source,
+ *    badged `SCENE PREVIEW` - because an empty grey rectangle is a worse answer
  *    than an honest one.
  */
 
 import { api, EngineApiError, type PolicySpec, type ScenarioSpec } from '@/lib/api';
 import { useEngineRun } from '@/lib/useEngineRun';
 import { EngineStatus } from '@/components/ui/EngineStatus';
+import { IS_PUBLIC_PREVIEW, REPO_URL } from '@/lib/deployment';
 import { MetricCard } from '@/components/ui/MetricCard';
 import type { EngineLinkId, PolicyIdString } from '@continua/contracts/engine';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AppShell, RunStatusBar } from '../AppShell';
 import { Chip } from '../ui/primitives';
+import { FullscreenButton } from './FullscreenButton';
 import { MissionScene } from './MissionScene';
 import { NetworkRail } from './NetworkRail';
 import { PipelineRail } from './PipelineRail';
@@ -59,6 +61,8 @@ export function MissionView() {
 
   const run = useEngineRun(runId);
   const playing = run.state?.status === 'running';
+  // The element that goes fullscreen: the scene and its overlay chrome.
+  const stageRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -186,7 +190,18 @@ export function MissionView() {
 
   const rttDelta = rttTrend.length > 6 ? rttTrend[rttTrend.length - 1] - rttTrend[rttTrend.length - 7] : null;
 
-  const transport = (
+  const transport = IS_PUBLIC_PREVIEW ? (
+    // Nothing here can start a run: the engine is Python and runs locally. Show
+    // the way to the real thing instead of four disabled buttons.
+    <>
+      <a className="control control-primary no-underline" href={REPO_URL} target="_blank" rel="noreferrer">
+        Run it locally
+      </a>
+      <a className="control no-underline" href="/reference-images/">
+        Supporting materials
+      </a>
+    </>
+  ) : (
     <>
       <button type="button" className="control control-primary" onClick={start} disabled={busy}>
         ▶ Start run
@@ -225,7 +240,7 @@ export function MissionView() {
       }
     >
       <div className="relative flex h-full min-h-0 flex-col gap-3">
-        {bootError && (
+        {bootError && !IS_PUBLIC_PREVIEW && (
           <EngineStatus
             detail={bootError}
             retrying={busy}
@@ -244,7 +259,7 @@ export function MissionView() {
               tone={(wifi?.rssi_dbm ?? 0) < -82 ? 'bad' : (wifi?.rssi_dbm ?? 0) < -74 ? 'warn' : 'good'}
               status={wifiStatus}
               statusTone={wifiPhase === 'unavailable' ? 'bad' : wifiPhase === 'carrying' ? 'good' : 'neutral'}
-              context={`${wifi?.samples ?? 0} samples · ${wifi?.window_s ?? 2}s window`}
+              context={undefined}
               history={rssiTrend}
               unavailableReason="Waiting for engine"
             />
@@ -255,9 +270,10 @@ export function MissionView() {
               format={(v) => v.toFixed(0)}
               tone={(observation?.rtt_ms ?? 0) > 150 ? 'warn' : 'neutral'}
               context={
-                rttDelta === null
-                  ? `${observation?.window_s ?? 2}s window`
-                  : `${rttDelta >= 0 ? '↑' : '↓'} ${Math.abs(rttDelta).toFixed(0)} ms over the last ${observation?.window_s ?? 2}s windows`
+                // Only worth a line when it actually moved.
+                rttDelta !== null && Math.abs(rttDelta) >= 1
+                  ? `${rttDelta > 0 ? '↑' : '↓'} ${Math.abs(rttDelta).toFixed(0)} ms`
+                  : undefined
               }
               history={rttTrend}
             />
@@ -267,7 +283,7 @@ export function MissionView() {
               unit="%"
               format={(v) => v.toFixed(1)}
               tone={(observation?.loss_pct ?? 0) > 3 ? 'bad' : (observation?.loss_pct ?? 0) > 1 ? 'warn' : 'good'}
-              context={`${observation?.window_s ?? 2}s window · receiver-side`}
+              context="receiver-side"
               history={lossTrend}
             />
             <MetricCard
@@ -280,7 +296,7 @@ export function MissionView() {
               statusTone={app?.in_outage ? 'bad' : 'good'}
               context={
                 app
-                  ? `${app.session_reconnects} reconnect${app.session_reconnects === 1 ? '' : 's'} · cumulative outage${app.safe_stop ? ' · safe stop entered' : ''}`
+                  ? `${app.session_reconnects} reconnect${app.session_reconnects === 1 ? '' : 's'}${app.safe_stop ? ' · safe stop' : ''}`
                   : undefined
               }
             />
@@ -288,7 +304,7 @@ export function MissionView() {
 
           {/* ---------------- centre: the world ---------------- */}
           <div className="flex min-h-0 flex-col gap-3">
-            <div className="relative min-h-0 flex-1">
+            <div ref={stageRef} className="relative min-h-0 flex-1 bg-[color:var(--color-bg)]">
               <MissionScene
                 source={run.source}
                 t={t}
@@ -307,12 +323,13 @@ export function MissionView() {
                       Emergency response / industrial inspection
                     </p>
                   </div>
-                  <div className="pointer-events-auto">
+                  <div className="pointer-events-auto flex items-center gap-2">
                     {runId ? (
                       <Chip tone="blue">PREDICTIVE HANDOFF</Chip>
                     ) : (
                       <Chip tone="muted">SCENE PREVIEW</Chip>
                     )}
+                    <FullscreenButton target={stageRef} />
                   </div>
                 </div>
 
@@ -336,8 +353,12 @@ export function MissionView() {
               </div>
             </div>
 
-            {/* Timeline + run setup, one compact row. */}
-            <div className="panel flex flex-wrap items-center gap-3 px-4 py-2.5">
+            {/* Timeline + run setup, one compact row. Hidden in the public
+                preview, where none of it can do anything. */}
+            <div
+              className="panel flex flex-wrap items-center gap-3 px-4 py-2.5"
+              hidden={IS_PUBLIC_PREVIEW}
+            >
               <select
                 className="control min-w-[190px]"
                 value={scenarioId}
@@ -345,7 +366,7 @@ export function MissionView() {
                 aria-label="Scenario"
                 disabled={scenarios.length === 0}
               >
-                {scenarios.length === 0 && <option>No scenarios — engine offline</option>}
+                {scenarios.length === 0 && <option>No scenarios - engine offline</option>}
                 {scenarios.map((entry) => (
                   <option key={entry.id} value={entry.id}>
                     {entry.title}
@@ -359,11 +380,11 @@ export function MissionView() {
                 aria-label="Policy"
                 disabled={policies.length === 0}
               >
-                {policies.length === 0 && <option>—</option>}
+                {policies.length === 0 && <option> - </option>}
                 {policies.map((entry) => (
                   <option key={entry.id} value={entry.id}>
                     {entry.id}
-                    {entry.id === 'P1' ? ' — CONTINUA' : ''}
+                    {entry.id === 'P1' ? ' - CONTINUA' : ''}
                   </option>
                 ))}
               </select>

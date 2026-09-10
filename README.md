@@ -1,11 +1,11 @@
 # CONTINUA
 
-**Predictive Network Continuity** — by Team Kanban
+**Predictive Network Continuity** - by Team Kanban
 *The network changes. The session doesn't.*
 
 An interactive 3D scene following an unarmed emergency-response / industrial
 inspection rover as it drives from a wired docking facility, through Wi-Fi and
-cellular coverage, into a remote satellite-served sector — and shows how the
+cellular coverage, into a remote satellite-served sector - and shows how the
 session survives every handoff.
 
 ![CONTINUA dashboard](assets/previews/browser/dashboard-1920.png)
@@ -14,13 +14,13 @@ session survives every handoff.
 
 ```bash
 npm install
-npm run engine              # engine on 127.0.0.1:8000 — leave this running
+npm run engine              # engine on 127.0.0.1:8000 - leave this running
 npm run build && npm start  # app on localhost:3000
 ```
 
 | URL | Section |
 | --- | --- |
-| <http://localhost:3000> | **Mission** — live run, 3D scene, link cards, application health |
+| <http://localhost:3000> | **Mission** - live run, 3D scene, link cards, application health |
 | <http://localhost:3000/scenario-lab> | Inject failures and congestion, change speed and workload |
 | <http://localhost:3000/experiments> | Paired policy comparison and the execution-capability report |
 | <http://localhost:3000/decision-log> | Every controller action with its observations and reason |
@@ -35,16 +35,16 @@ Node 20.11+ and Python 3.11+ required. Engine dependencies:
 **Phases 1–2 of 3: the vehicle and world, and a working application-aware
 connectivity prototype.**
 
-A Python engine simulates four access paths — finite queues, capacity, delay,
+A Python engine simulates four access paths - finite queues, capacity, delay,
 jitter, correlated burst loss, activation delay, competing demand and per-byte
-cost — and carries five real traffic classes across them. A controller observes,
+cost - and carries five real traffic classes across them. A controller observes,
 predicts, prepares a backup, steers, and explains itself. The 3D scene
 visualises the experiment; it is not the networking engine.
 
 **Everything here is a deterministic software model.** It is not a live
 mobile-network test. The execution mode is stamped on every event, on the
 dashboard and in the capture frame. Emulation and MPTCP are **not verified on
-this machine** — the reasons were probed, not assumed, and are recorded in
+this machine** - the reasons were probed, not assumed, and are recorded in
 `data/emulation_capability.json`.
 
 ![Rover close-up](assets/previews/browser/view-02-vehicle-closeup.png)
@@ -74,7 +74,7 @@ list and `docs/VIDEO_CLAIMS.md` is the gate.
 | --- | --- |
 | `npm run video:cards` | Extract the caption-card figures from recorded runs and experiments |
 | `npm run video:renders` | Blender opening and closing shots, 1920×1080 |
-| `npm run video:capture:test` | 5 s probe capture — run this before the full one |
+| `npm run video:capture:test` | 5 s probe capture - run this before the full one |
 | `npm run video:capture` | Deterministic frame capture of every application shot and card (~6 min) |
 | `npm run video:narration` | Local TTS, measured and fitted to the timeline; fails if a line does not fit |
 | `npm run video:claims` | Banned phrases, claim resolution, timeline integrity |
@@ -84,14 +84,14 @@ list and `docs/VIDEO_CLAIMS.md` is the gate.
 ## Layout
 
 ```
-apps/web/            Next.js 16 frontend — Mission, Scenario Lab, Experiments, Decision Log
-services/engine/     Python engine — simulator, controller, predictors, API, experiments
+apps/web/            Next.js 16 frontend - Mission, Scenario Lab, Experiments, Decision Log
+services/engine/     Python engine - simulator, controller, predictors, API, experiments
 packages/scene/      Reusable 3D scene, plus the engine-driven scene source
 packages/contracts/  Shared types (TypeScript + Python) and world.json
 scripts/emulation/   Linux namespace / netem topology scripts
 assets/              .blend sources, reference imagery, renders, browser evidence
 data/                Experiment results and capability report (run logs are git-ignored)
-docs/                Ten documents — see below
+docs/                Ten documents - see below
 tests/               Engine (pytest) and browser (Playwright) suites
 ```
 
@@ -118,7 +118,7 @@ tests/               Engine (pytest) and browser (Playwright) suites
 
 ## Measured
 
-**720 paired experiment runs** — 20 trials × 6 policies × 6 core scenarios,
+**720 paired experiment runs** - 20 trials × 6 policies × 6 core scenarios,
 0 failures. On `wifi-degradation`, CONTINUA matches always-on redundancy on
 continuity (0 reconnects, 0.16 s interruption) while using **4.8 MB of satellite
 instead of 61.2 MB (−92 %)**, **1.25 cost units instead of 4.31 (−71 %)** and
@@ -126,7 +126,7 @@ instead of 61.2 MB (−92 %)**, **1.25 cost units instead of 4.31 (−71 %)** an
 misses from 49 % to **31 %**.
 
 **And an honest negative result:** prediction does not pay for itself. The
-`P1 − P1-noPred` ablation is a wash at both predictor qualities tested — the
+`P1 − P1-noPred` ablation is a wash at both predictor qualities tested - the
 value is in *preparation* and *application-awareness*, not in prediction. Full
 numbers, including where CONTINUA loses, are in `docs/PROGRESS.md`.
 

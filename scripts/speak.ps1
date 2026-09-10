@@ -12,7 +12,7 @@
 
   1. **The OneCore voices, not the old SAPI5 "Desktop" ones.** They are reached
      through WinRT (Windows.Media.SpeechSynthesis), which also exposes Microsoft
-     Mark — a voice System.Speech cannot see at all. If WinRT is unavailable the
+     Mark - a voice System.Speech cannot see at all. If WinRT is unavailable the
      script falls back to System.Speech and says so on stdout, so the caller can
      record which engine actually produced the audio.
 

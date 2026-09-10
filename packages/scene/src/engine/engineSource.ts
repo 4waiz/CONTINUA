@@ -5,7 +5,7 @@
  * specified: a `SceneStateSource` whose `sampleAt(t)` is **pure**. Engine events
  * arrive over a websocket and are buffered; `sampleAt` interpolates the
  * buffered timeline. It never returns "whatever arrived last", so scrubbing and
- * replay reproduce the same frames — which is what Phase 3 capture needs.
+ * replay reproduce the same frames - which is what Phase 3 capture needs.
  *
  * The scene renders vehicle motion by interpolating between recorded distances.
  * It does **not** invent metrics: every link statistic, health figure and

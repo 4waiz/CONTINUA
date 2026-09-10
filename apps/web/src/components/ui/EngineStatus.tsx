@@ -5,7 +5,7 @@
  *
  * The version this replaces was a full-width red banner containing a raw
  * host:port, which read as a stack trace and dominated the page. An operator
- * needs to know two things — that simulation services are unavailable, and how
+ * needs to know two things - that simulation services are unavailable, and how
  * to try again. The address is a developer detail and lives behind a disclosure.
  *
  * Critically, this is a *strip*, not a takeover: the rest of the interface still
@@ -41,13 +41,15 @@ export function EngineStatus({
         className="h-[9px] w-[9px] shrink-0 rounded-full"
         style={{ background: 'var(--color-warn)' }}
       />
-      <div className="min-w-0 flex-1">
-        <p className="text-[13.5px] font-semibold leading-tight">CONTINUA engine offline</p>
-        <p className="text-[12px] leading-tight text-[color:var(--color-muted)]">
-          Simulation services are unavailable. The scene below is a preview; no measurements are
-          being produced.
-        </p>
-      </div>
+      <p
+        className="min-w-0 flex-1 text-[13.5px] font-semibold leading-tight"
+        title="Simulation services are unavailable. The scene is a preview and no measurements are being produced."
+      >
+        CONTINUA engine offline
+        <span className="ml-2 font-normal text-[color:var(--color-muted)]">
+          scene is a preview · no measurements
+        </span>
+      </p>
 
       <button type="button" className="control" onClick={onRetry} disabled={retrying}>
         {retrying ? 'Retrying…' : 'Retry connection'}
@@ -65,7 +67,7 @@ export function EngineStatus({
       {open && (
         <p className="w-full font-[family-name:var(--font-mono)] text-[11.5px] text-[color:var(--color-muted)]">
           {detail}
-          <span className="ml-2 opacity-70">— start it with `npm run engine`</span>
+          <span className="ml-2 opacity-70">- start it with `npm run engine`</span>
         </p>
       )}
     </div>

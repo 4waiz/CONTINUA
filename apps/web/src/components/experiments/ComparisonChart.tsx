@@ -9,7 +9,7 @@
  * still carries the exact figures and confidence intervals.
  *
  * The 95 % CI is drawn as a whisker rather than being dropped, because a
- * difference the intervals overlap on is not a difference — and this project
+ * difference the intervals overlap on is not a difference - and this project
  * does not get to show a bar chart that hides that.
  */
 

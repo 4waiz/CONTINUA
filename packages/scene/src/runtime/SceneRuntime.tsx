@@ -176,7 +176,7 @@ export function useThrottledSceneState(intervalMs = 200): SceneState {
 
     // Poll the frame scratch state at a human-readable rate. Deliberately not
     // `useSyncExternalStore`: its snapshot must be derived from a store React
-    // can observe, and a ref mutated inside `useFrame` is not that — the
+    // can observe, and a ref mutated inside `useFrame` is not that - the
     // snapshot never changed identity from React's point of view and the
     // panels froze on their first value.
     const timer = setInterval(() => {

@@ -22,6 +22,7 @@ import type { EngineRunState } from '@continua/contracts/engine';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import type { ReactNode } from 'react';
+import { IS_PUBLIC_PREVIEW } from '@/lib/deployment';
 import { Chip, Dot } from './ui/primitives';
 
 const NAV = [
@@ -34,7 +35,15 @@ const NAV = [
 
 export function ModeBadge({ state }: { state: EngineRunState | null }) {
   if (!state) {
-    return <Chip tone="muted">NO RUN</Chip>;
+    // The public build has no engine to run anything, so "NO RUN" would read as
+    // a state waiting to change. It is not going to change.
+    return IS_PUBLIC_PREVIEW ? (
+      <Chip tone="blue" title="A static build of the CONTINUA interface. The simulation engine is Python and runs locally.">
+        PUBLIC PREVIEW
+      </Chip>
+    ) : (
+      <Chip tone="muted">NO RUN</Chip>
+    );
   }
   if (state.mode === 'replay') {
     const source = state.source;
@@ -43,7 +52,7 @@ export function ModeBadge({ state }: { state: EngineRunState | null }) {
         tone="violet"
         title={`Replay of ${source?.run_id ?? 'unknown run'} recorded ${source?.recorded_at ?? 'unknown time'} in ${source?.mode ?? 'unknown'} mode`}
       >
-        REPLAY · {source?.mode?.toUpperCase() ?? '—'}
+        REPLAY · {source?.mode?.toUpperCase() ?? ' - '}
       </Chip>
     );
   }
@@ -134,17 +143,20 @@ export function RunStatusBar({
     <div className="panel flex flex-wrap items-center gap-x-6 gap-y-2.5 px-5 py-3">
       <div className="flex items-center gap-2.5">
         <ModeBadge state={state} />
-        <ConnectionBadge connection={connection} stale={stale} dropped={dropped} />
+        {/* A connection badge with nothing to connect to is noise. */}
+        {!(IS_PUBLIC_PREVIEW && !state) && (
+          <ConnectionBadge connection={connection} stale={stale} dropped={dropped} />
+        )}
       </div>
 
       <div className="h-8 w-px shrink-0 bg-[color:var(--color-line)]" />
 
       <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-7 gap-y-2">
         <RunFact label="Status" value={<span className={status.tone === 'good' ? 'text-[color:var(--color-good)]' : undefined}>{status.label}</span>} />
-        <RunFact label="Scenario" value={state?.scenario_title || state?.scenario_id || '—'} />
-        <RunFact label="Policy" value={state?.policy_id ? `${state.policy_id}${state.policy_id === 'P1' ? ' · CONTINUA' : ''}` : '—'} />
-        <RunFact label="Run" value={state?.run_id ?? '—'} mono />
-        <RunFact label="Seed" value={state?.seed ?? '—'} mono />
+        <RunFact label="Scenario" value={state?.scenario_title || state?.scenario_id || ' - '} />
+        <RunFact label="Policy" value={state?.policy_id ? `${state.policy_id}${state.policy_id === 'P1' ? ' · CONTINUA' : ''}` : ' - '} />
+        <RunFact label="Run" value={state?.run_id ?? ' - '} mono />
+        <RunFact label="Seed" value={state?.seed ?? ' - '} mono />
       </div>
 
       {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
@@ -174,10 +186,10 @@ export function RunIdentity({
         <ConnectionBadge connection={connection} stale={stale} dropped={dropped} />
       </div>
       <div className="flex flex-wrap items-center gap-x-7 gap-y-2">
-        <RunFact label="Scenario" value={state?.scenario_title || state?.scenario_id || '—'} />
-        <RunFact label="Policy" value={state?.policy_id ?? '—'} />
-        <RunFact label="Run" value={state?.run_id ?? '—'} mono />
-        <RunFact label="Seed" value={state?.seed ?? '—'} mono />
+        <RunFact label="Scenario" value={state?.scenario_title || state?.scenario_id || ' - '} />
+        <RunFact label="Policy" value={state?.policy_id ?? ' - '} />
+        <RunFact label="Run" value={state?.run_id ?? ' - '} mono />
+        <RunFact label="Seed" value={state?.seed ?? ' - '} mono />
       </div>
     </div>
   );

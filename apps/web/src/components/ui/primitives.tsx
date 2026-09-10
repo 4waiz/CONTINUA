@@ -2,7 +2,7 @@
 
 /**
  * The small set of chrome primitives the CONTINUA dashboard is built from.
- * Spacious rounded panels, hairline borders, restrained shadows — and no
+ * Spacious rounded panels, hairline borders, restrained shadows - and no
  * decorative metrics: every value rendered here is passed in by a caller that
  * knows where it came from.
  */

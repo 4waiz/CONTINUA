@@ -1,5 +1,5 @@
 """
-CONTINUA — preview renders.
+CONTINUA - preview renders.
 
 Opens `assets/blender/continua_rover.blend`, builds a light studio that matches
 the CONTINUA design language (pale ground, soft daylight, no bloom) and renders
@@ -120,7 +120,7 @@ def configure_render() -> None:
         if hasattr(eevee, attribute):
             setattr(eevee, attribute, value)
 
-    # Restrained, film-like tone mapping — the CONTINUA look is not blown out.
+    # Restrained, film-like tone mapping - the CONTINUA look is not blown out.
     view = scene.view_settings
     try:
         view.view_transform = "AgX"
@@ -134,9 +134,9 @@ def configure_render() -> None:
 def main() -> None:
     blend_path = lib.out_path("assets", "blender", "continua_rover.blend")
     if not os.path.exists(blend_path):
-        raise SystemExit(f"missing {blend_path} — run build_vehicle.py first")
+        raise SystemExit(f"missing {blend_path} - run build_vehicle.py first")
 
-    lib.banner("CONTINUA — preview renders")
+    lib.banner("CONTINUA - preview renders")
     bpy.ops.wm.open_mainfile(filepath=blend_path)
 
     # Remove any camera/light left in the source file so the studio is definitive.

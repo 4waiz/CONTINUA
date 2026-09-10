@@ -148,7 +148,7 @@ test.describe('CONTINUA dashboard', () => {
 test.describe('determinism and rig integrity', () => {
   // These assert behaviour, not layout, so one viewport is enough.
   test.beforeEach(({}, testInfo) => {
-    // Behaviour, not layout — one viewport is enough. The `gpu` project also
+    // Behaviour, not layout - one viewport is enough. The `gpu` project also
     // runs these so `npm run test:perf` can report a real hardware frame rate.
     test.skip(
       !['desktop-1920', 'gpu'].includes(testInfo.project.name),
@@ -321,7 +321,7 @@ test.describe('determinism and rig integrity', () => {
     );
 
     // A frame-rate threshold here would only assert the speed of whatever
-    // machine ran the suite — the default project rasterises in software via
+    // machine ran the suite - the default project rasterises in software via
     // SwiftShader and tops out around 4 fps by design. What must hold is that
     // the render loop is genuinely producing frames; the real hardware number
     // is measured by the `gpu` project and recorded in docs/PROGRESS.md.

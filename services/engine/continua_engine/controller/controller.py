@@ -2,7 +2,7 @@
 The CONTINUA controller: Observe → Predict → Prepare → Steer → Explain.
 
 Every policy under comparison is implemented here behind one interface, so the
-baselines and CONTINUA differ only in the flags set in `PolicyConfig` — not in
+baselines and CONTINUA differ only in the flags set in `PolicyConfig` - not in
 which code path they take through the simulator. That is deliberate: it removes
 the most common way a comparison quietly stops being fair.
 
@@ -190,7 +190,7 @@ class ContinuaController:
         """How good a path looks right now, 0..1. Used only for ranking.
 
         Falls back to modelled coverage when there are not yet enough delivered
-        packets to compute statistics — a path that has never carried traffic
+        packets to compute statistics - a path that has never carried traffic
         has no RTT, and pretending it has one would be inventing a measurement.
         """
         if obs.phase is LinkPhase.UNAVAILABLE:

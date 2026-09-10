@@ -15,7 +15,7 @@
 // Primitives
 // ---------------------------------------------------------------------------
 
-/** Right-handed, Y-up, metres — matching the exported glTF runtime assets. */
+/** Right-handed, Y-up, metres - matching the exported glTF runtime assets. */
 export interface Vec3 {
   x: number;
   y: number;
@@ -70,7 +70,7 @@ export interface LinkStatus {
   readonly state: LinkState;
   /**
    * Modelled coverage strength, 0..1. In Phase 1 this is a geometric coverage
-   * value derived from distance to the site — it is **not** a measured RSSI.
+   * value derived from distance to the site - it is **not** a measured RSSI.
    */
   readonly coverage: number;
   /** Only present once a real engine is attached. Never synthesised for display. */
@@ -152,8 +152,8 @@ export interface MissionZone {
 // ---------------------------------------------------------------------------
 
 /**
- * `preview` — geometry-derived illustration produced by Phase 1.
- * `engine`  — measured/decided by the Phase 2 predictive engine.
+ * `preview` - geometry-derived illustration produced by Phase 1.
+ * `engine` - measured/decided by the Phase 2 predictive engine.
  *
  * The HUD must display the source. Preview values are never labelled as
  * measured performance.

@@ -40,20 +40,21 @@ const PHASE_LABEL: Record<Phase, string> = {
 /** The headline figure per link: what an operator would look at first. */
 function headline(event: EngineEvent | null, link: EngineLinkId): { value: string; caption: string } {
   const observation = event?.links[link];
-  if (!observation) return { value: '—', caption: 'no measurement' };
+  if (!observation) return { value: ' - ', caption: 'no measurement' };
 
   if (link === 'wifi' && observation.rssi_dbm !== null) {
-    return { value: `${observation.rssi_dbm.toFixed(0)} dBm`, caption: 'signal strength' };
+    return { value: `${observation.rssi_dbm.toFixed(0)} dBm`, caption: '' };
   }
   if (observation.rtt_ms !== null) {
-    return { value: `${observation.rtt_ms.toFixed(0)} ms`, caption: `round trip · ${observation.window_s}s` };
+    return { value: `${observation.rtt_ms.toFixed(0)} ms`, caption: '' };
   }
-  // Say why a link has no signal figure rather than leaving a blank: RSSI is a
-  // Wi-Fi measurement and no other link has one to report.
-  if (link !== 'wifi') {
+  // Say why a link shows no signal figure rather than leaving a blank - but
+  // only where someone might expect one. Nobody looks for an RSSI on Ethernet,
+  // so that note on the wired card was just noise.
+  if (link === 'cellular' || link === 'satellite') {
     return { value: 'unavailable', caption: 'RSSI is a Wi-Fi measurement' };
   }
-  return { value: 'unavailable', caption: 'no samples this window' };
+  return { value: 'unavailable', caption: '' };
 }
 
 export function NetworkRail({
@@ -93,6 +94,13 @@ export function NetworkRail({
           className="flow-line"
         />
       </svg>
+
+      <span
+        className="absolute -top-[3px] left-1/2 z-10 -translate-x-1/2 cursor-help rounded-full border border-[color:var(--color-line)] bg-white px-2.5 py-[1px] text-[11px] font-semibold uppercase tracking-[0.07em] text-[color:var(--color-faint)]"
+        title="Four alternative paths to one gateway - not a chain traffic passes through in sequence. The solid rail is the session; a breathing dot is a backup being warmed."
+      >
+        Gateway
+      </span>
 
       <div className="grid grid-cols-4 gap-3 pt-[18px]">
         {LINK_IDS.map((link) => {
@@ -153,10 +161,7 @@ export function NetworkRail({
         })}
       </div>
 
-      <p className="mt-2 text-[11px] text-[color:var(--color-faint)]">
-        Four alternative paths to one gateway — not a chain traffic passes through in sequence. The
-        solid rail is the session; a breathing dot is a backup being warmed.
-      </p>
+
     </div>
   );
 }

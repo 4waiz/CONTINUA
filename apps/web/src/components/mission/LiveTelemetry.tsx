@@ -4,7 +4,7 @@
  * One chart, four things it can show.
  *
  * The panel this replaces stacked two charts and gave the second one the
- * heading "Application health" — directly under a panel already called
+ * heading "Application health" - directly under a panel already called
  * Application Health, which read as a duplicate. One chart with an explicit
  * toggle is both smaller and less confusing, and it lets the operator choose
  * the series rather than guessing which two we picked for them.

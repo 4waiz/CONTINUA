@@ -1,7 +1,7 @@
 {
   "$comment": "The edit decision list for CONTINUA_Team_Kanban_Demo.mp4. Edited by hand, consumed by scripts/capture-demo.mjs, scripts/build-demo.mjs and scripts/check-claims.mjs. Every claim id in `claims` must exist in docs/VIDEO_CLAIMS.md or the build fails.",
   "video": {
-    "title": "CONTINUA — Predictive Network Continuity",
+    "title": "CONTINUA - Predictive Network Continuity",
     "team": "Team Kanban",
     "width": 1920,
     "height": 1080,
@@ -173,7 +173,7 @@
       "video_from": 98.0,
       "video_to": 110.5,
       "card": "scope",
-      "note": "Scope and limitations. Not a footnote — a full card.",
+      "note": "Scope and limitations. Not a footnote - a full card.",
       "claims": [
         "C17",
         "C18",
@@ -292,7 +292,7 @@
       "from": 7.0,
       "to": 12.0,
       "kind": "banner",
-      "text": "SOFTWARE SIMULATION — no radios, no satellite, no hardware"
+      "text": "SOFTWARE SIMULATION - no radios, no satellite, no hardware"
     },
     {
       "from": 12.6,
@@ -320,7 +320,7 @@
       "to": 37.9,
       "kind": "step",
       "text": "1 · OBSERVE",
-      "sub": "RTT, loss, jitter, queue depth — no access to the trace"
+      "sub": "RTT, loss, jitter, queue depth - no access to the trace"
     },
     {
       "from": 37.9,
@@ -362,7 +362,7 @@
       "to": 76.6,
       "kind": "callout",
       "text": "t+59.26 s · hold, then switch",
-      "sub": "\"holding to avoid a ping-pong switch\" — recorded reason"
+      "sub": "\"holding to avoid a ping-pong switch\" - recorded reason"
     },
     {
       "from": 111.0,

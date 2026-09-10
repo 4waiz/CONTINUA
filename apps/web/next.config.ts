@@ -7,7 +7,7 @@ import path from 'node:path';
  * The site has no server of its own: the CONTINUA engine is Python and runs
  * separately, so every page here is either static or client-rendered against
  * that engine over the network. That makes `output: 'export'` the honest build
- * — nothing is silently server-rendered at the edge — and it deploys to
+ * - nothing is silently server-rendered at the edge - and it deploys to
  * Cloudflare as plain assets.
  *
  * The normal `npm run build` is unchanged, because the video capture pipeline

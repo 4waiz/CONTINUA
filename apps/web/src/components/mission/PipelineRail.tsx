@@ -6,7 +6,7 @@
  * The stage shown as current is the one the **engine** reports in
  * `event.stage`; it is not inferred from the UI's own idea of what should be
  * happening. The message under the active stage is the reason string the
- * controller wrote at decision time, not a caption composed here — which is the
+ * controller wrote at decision time, not a caption composed here - which is the
  * whole point of the Explain step existing at all.
  */
 
@@ -60,6 +60,7 @@ export function PipelineRail({ event }: { event: EngineEvent | null }) {
             <li key={stage.id}>
               <div
                 className="relative flex h-full flex-col gap-1 rounded-[14px] border px-3 py-2.5 transition"
+                title={stage.blurb}
                 style={{
                   borderColor: active
                     ? `color-mix(in srgb, ${stage.color} 45%, transparent)`
@@ -87,9 +88,13 @@ export function PipelineRail({ event }: { event: EngineEvent | null }) {
                     {stage.title}
                   </span>
                 </div>
-                <span className="text-[11.5px] leading-snug text-[color:var(--color-muted)]">
-                  {stage.blurb}
-                </span>
+                {/* Five permanent captions is four too many: the stage that is
+                    happening explains itself, the rest are just names. */}
+                {active && (
+                  <span className="text-[11.5px] leading-snug text-[color:var(--color-muted)]">
+                    {stage.blurb}
+                  </span>
+                )}
               </div>
             </li>
           );

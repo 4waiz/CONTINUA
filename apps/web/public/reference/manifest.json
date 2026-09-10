@@ -1,13 +1,13 @@
 {
-  "set": "ATP 2026 EDGE — supporting materials",
+  "set": "ATP 2026 EDGE - supporting materials",
   "team": "Team Kanban",
   "count": 10,
-  "note": "Preliminary engineering materials produced for the proposal. Where a slide reports results, the measured experiments in this repository supersede it — see docs/PROGRESS.md and the Experiments page.",
+  "note": "Preliminary engineering materials produced for the proposal. Where a slide reports results, the measured experiments in this repository supersede it - see docs/PROGRESS.md and the Experiments page.",
   "slides": [
     {
       "slide": 1,
       "title": "System Concept Sketch",
-      "summary": "The whole idea on one page: a rover leaving a facility, four candidate access networks reaching one gateway, and the observe / predict / prepare loop between them.",
+      "summary": "Rover, four candidate networks, one gateway, and the loop between them.",
       "superseded": false,
       "full": "/reference/supporting-01.webp",
       "thumb": "/reference/supporting-01-thumb.webp",
@@ -18,7 +18,7 @@
     {
       "slide": 2,
       "title": "Route & Coverage Drawing",
-      "summary": "The four zones the route crosses — facility dock, campus, field corridor, remote hills — and where each network is available, including the handoff overlaps.",
+      "summary": "The four zones the route crosses, and where each network reaches.",
       "superseded": false,
       "full": "/reference/supporting-02.webp",
       "thumb": "/reference/supporting-02-thumb.webp",
@@ -29,7 +29,7 @@
     {
       "slide": 3,
       "title": "Handoff Logic Flow",
-      "summary": "Observe, Predict, Prepare, Steer, Explain as a state flow, with the inputs each stage reads and the audit record the last one writes.",
+      "summary": "Observe, Predict, Prepare, Steer, Explain as a state flow.",
       "superseded": false,
       "full": "/reference/supporting-03.webp",
       "thumb": "/reference/supporting-03-thumb.webp",
@@ -40,7 +40,7 @@
     {
       "slide": 4,
       "title": "Prediction Calculation",
-      "summary": "The heuristic worked by hand: two RSSI samples, a slope, a three-second extrapolation, and the threshold crossing that triggers preparation.",
+      "summary": "The heuristic worked by hand: slope, extrapolation, threshold.",
       "superseded": false,
       "full": "/reference/supporting-04.webp",
       "thumb": "/reference/supporting-04-thumb.webp",
@@ -51,7 +51,7 @@
     {
       "slide": 5,
       "title": "Link Selection Score",
-      "summary": "The weighted utility that ranks candidate paths, with a worked comparison between two links.",
+      "summary": "The weighted utility that ranks candidate paths.",
       "superseded": false,
       "full": "/reference/supporting-05.webp",
       "thumb": "/reference/supporting-05-thumb.webp",
@@ -62,7 +62,7 @@
     {
       "slide": 6,
       "title": "Testbed Architecture",
-      "summary": "How a run is produced: scenario generator, traffic generator, the network layer, and receiver-side logs as the only source of metrics.",
+      "summary": "How a run is produced, end to end.",
       "superseded": false,
       "full": "/reference/supporting-06.webp",
       "thumb": "/reference/supporting-06-thumb.webp",
@@ -73,7 +73,7 @@
     {
       "slide": 7,
       "title": "Scenario Matrix & Assumptions",
-      "summary": "The six scenarios, what each one is designed to test, and the assumptions shared across all of them.",
+      "summary": "Six scenarios and the assumptions shared across them.",
       "superseded": false,
       "full": "/reference/supporting-07.webp",
       "thumb": "/reference/supporting-07-thumb.webp",
@@ -84,7 +84,7 @@
     {
       "slide": 8,
       "title": "Baseline Comparison Results",
-      "summary": "Early comparison of B0, B1 and P1 on interruption, deadline misses and handoffs.",
+      "summary": "Early B0 / B1 / P1 comparison.",
       "superseded": true,
       "full": "/reference/supporting-08.webp",
       "thumb": "/reference/supporting-08-thumb.webp",
@@ -95,7 +95,7 @@
     {
       "slide": 9,
       "title": "Application-Level Test Results",
-      "summary": "Early receiver-side figures: video stall, telemetry freshness, one-way delay and satellite share.",
+      "summary": "Early receiver-side figures.",
       "superseded": true,
       "full": "/reference/supporting-09.webp",
       "thumb": "/reference/supporting-09-thumb.webp",
@@ -106,7 +106,7 @@
     {
       "slide": 10,
       "title": "References & Evidence Notes",
-      "summary": "Literature and tools the design draws on, and the list of materials making up the evidence package.",
+      "summary": "Literature, tools, and the evidence package.",
       "superseded": false,
       "full": "/reference/supporting-10.webp",
       "thumb": "/reference/supporting-10-thumb.webp",

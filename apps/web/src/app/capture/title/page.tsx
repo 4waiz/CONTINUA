@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 import { TitleFrame } from '@/components/capture/TitleFrame';
 
 export const metadata: Metadata = {
-  title: 'Title — CONTINUA',
+  title: 'Title - CONTINUA',
   description: 'Transparent title plate for the demo video.',
 };
 

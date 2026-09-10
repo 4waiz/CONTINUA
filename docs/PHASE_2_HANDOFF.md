@@ -1,4 +1,4 @@
-# CONTINUA — Phase 2 → Phase 3 handoff
+# CONTINUA - Phase 2 → Phase 3 handoff
 
 Everything Phase 3 (competition video capture and edit) needs.
 
@@ -8,9 +8,9 @@ Everything Phase 3 (competition video capture and edit) needs.
 
 A working, application-aware connectivity prototype:
 
-* A **causal software network simulator** — finite queues, capacity, delay,
+* A **causal software network simulator** - finite queues, capacity, delay,
   jitter, correlated burst loss, activation delay, competing background demand,
-  and per-byte cost — driving five traffic classes with real receivers.
+  and per-byte cost - driving five traffic classes with real receivers.
 * A **controller** implementing Observe → Predict → Prepare → Steer → Explain,
   with eight explicit states, hysteresis, minimum dwell time and switching
   penalties.
@@ -20,8 +20,8 @@ A working, application-aware connectivity prototype:
   uncalibrated and falling back when unavailable.
 * A **FastAPI backend** with REST control, a WebSocket event stream, SQLite run
   metadata and JSONL evidence.
-* A **four-section dashboard** — Mission, Scenario Lab, Experiments, Decision
-  Log — plus a fixed 16:9 capture view, all driven by computed engine state.
+* A **four-section dashboard** - Mission, Scenario Lab, Experiments, Decision
+  Log - plus a fixed 16:9 capture view, all driven by computed engine state.
 * **Paired experiments**: 20 trials × 6 policies × 6 core scenarios, 720 runs,
   0 failures.
 
@@ -37,7 +37,7 @@ preview source, exactly as the Phase 1 handoff specified.
 
 A fixed 16:9 frame with no navigation and no dev overlays. It always shows the
 execution mode, run id, scenario, policy and seed. **There is no "LIVE" badge
-during playback** — a replay says REPLAY, with the source run and recording time
+during playback** - a replay says REPLAY, with the source run and recording time
 in its tooltip.
 
 ### Ready signal
@@ -92,8 +92,8 @@ curl -s -X POST http://127.0.0.1:8000/api/runs \
 ```
 
 Why this one: it is where CONTINUA's advantage is largest and clearest.
-Availability stays high the whole time — a coverage-only policy sees nothing
-wrong — while background demand takes 86 % of the cell and queues build.
+Availability stays high the whole time - a coverage-only policy sees nothing
+wrong - while background demand takes 86 % of the cell and queues build.
 CONTINUA's application-aware policy defers bulk and adapts video, and the
 numbers separate decisively:
 
@@ -151,7 +151,7 @@ sudo ./scripts/emulation/cleanup.sh
 | --- | --- |
 | `data/experiments/*.json` | Per-experiment: seeds, per-run metrics, aggregates with 95 % CIs, paired deltas, commit |
 | `data/experiments/index.json` | Which experiments were run, when, and how long they took |
-| `data/runs/<run_id>/` | `manifest.json` (scenario, seed, policy, commit, environment), `events.jsonl`, `metrics.json`. Git-ignored — regenerate from the seed |
+| `data/runs/<run_id>/` | `manifest.json` (scenario, seed, policy, commit, environment), `events.jsonl`, `metrics.json`. Git-ignored - regenerate from the seed |
 | `data/emulation_capability.json` | The probe output that says why emulation is unverified here |
 | `services/engine/continua_engine/models/` | `predictor.json` and `training_report.json` |
 | `tests/output/evidence/` | Browser screenshots |
@@ -168,7 +168,7 @@ sudo ./scripts/emulation/cleanup.sh
 * Determinism: same seed → identical event stream (test).
 * No future-information leakage (test walks the controller's attributes).
 * Command deduplication, outage reporting, replay equivalence (tests).
-* 36 engine tests, 11 Phase 2 browser tests, 11 Phase 1 scene tests — all pass.
+* 36 engine tests, 11 Phase 2 browser tests, 11 Phase 1 scene tests - all pass.
 * The learned predictor's precision/recall/calibration on held-out tuning runs.
 
 ### NOT verified here
@@ -213,8 +213,8 @@ have.
 
 | | P1 (learned) | P1-noPred |
 | --- | --- | --- |
-| Prediction recall | **0.782** | — |
-| Prediction precision | 0.648 | — |
+| Prediction recall | **0.782** | - |
+| Prediction precision | 0.648 | - |
 | False positives per run | **101.4** | 0 |
 | Unnecessary handovers | 1.25 | 0 |
 | Total interruption | 0.16 s | 0.16 s |
@@ -227,7 +227,7 @@ Raising recall from 0.14 to 0.78 bought a **12 % cost reduction** and a
 **1.1-point drop in app health**, at the price of ~101 false alarms per run.
 Prediction still does not pay for itself.
 
-### Why — the mechanism worth understanding
+### Why - the mechanism worth understanding
 
 Both P1 and P1-noPred **pre-warm a backup path proactively**. That is what
 removes the interruption; it happens whether or not anything is predicted. The
@@ -269,12 +269,12 @@ at either predictor quality tested. The demonstrated wins are:
 ## 9. Known limitations carried into Phase 3
 
 * Emulation unverified (above).
-* No congestion control in the model — see `docs/ASSUMPTIONS.md` §2.
+* No congestion control in the model - see `docs/ASSUMPTIONS.md` §2.
 * Bulk transfer is fluid, not packetised.
 * The learned predictor is uncalibrated (mean absolute calibration error 0.136).
 * `app_health_v1` weights are a product judgement, not derived.
 * 20 trials gives wide confidence intervals; small gaps are inconclusive.
-* Run storage is unbounded and the API is unauthenticated (loopback only) —
+* Run storage is unbounded and the API is unauthenticated (loopback only) -
   see `docs/SECURITY.md`.
 * Live-run seeking rebuilds and fast-forwards, which takes ~1–2 s for a long
   scenario.

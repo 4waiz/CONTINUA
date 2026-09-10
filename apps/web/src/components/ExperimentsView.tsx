@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * Experiments — run the paired comparison, read the result honestly.
+ * Experiments - run the paired comparison, read the result honestly.
  *
  * The table reports means with 95 % confidence intervals and the number of
  * completed trials. Where CONTINUA loses, it says so: the paired-delta column
@@ -39,7 +39,7 @@ const HEADLINE_METRICS: { key: string; label: string; unit: string; lowerIsBette
 
 /**
  * The six the brief asks for. The full eleven stay in the table below the
- * charts — this is the first look, not the whole result.
+ * charts - this is the first look, not the whole result.
  */
 const CHART_METRICS = [
   { key: 'total_interruption_s', label: 'Interruption', unit: 's', lowerIsBetter: true },
@@ -59,7 +59,7 @@ interface Stat {
 }
 
 function formatStat(stat: Stat | undefined, unit: string): string {
-  if (!stat || stat.mean === null || stat.n === 0) return '—';
+  if (!stat || stat.mean === null || stat.n === 0) return ' - ';
   const scale = unit === 'MB' ? 1e6 : 1;
   const mean = stat.mean / scale;
   const digits = Math.abs(mean) >= 100 ? 0 : Math.abs(mean) >= 10 ? 1 : 2;
@@ -163,7 +163,7 @@ export function ExperimentsView() {
 
   /**
    * Totals across every experiment on disk, not just the selected one. These
-   * are counts of runs actually recorded — there is no target, no percentage of
+   * are counts of runs actually recorded - there is no target, no percentage of
    * a goal, and nothing here is estimated.
    */
   const totalRuns = stored.reduce((sum, row) => sum + Number(row.completed ?? 0), 0);
@@ -433,7 +433,7 @@ export function ExperimentsView() {
             </table>
           </div>
           <p className="mt-2 text-[11px] leading-snug text-[color:var(--color-muted)]">
-            Green marks the best mean for that row — it does not mean the difference is
+            Green marks the best mean for that row - it does not mean the difference is
             statistically meaningful. Hover any cell for its 95 % confidence interval and trial
             count. With ~20 trials those intervals are wide; treat small gaps as inconclusive.
           </p>
@@ -444,7 +444,7 @@ export function ExperimentsView() {
         <Panel title="Paired deltas · CONTINUA (P1) minus baseline">
           <p className="mb-2 text-[11px] leading-snug text-[color:var(--color-muted)]">
             Computed per trial on identical conditions, which is far more sensitive than comparing
-            means. Negative means P1 scored lower on that metric — good for interruption, cost and
+            means. Negative means P1 scored lower on that metric - good for interruption, cost and
             misses; bad for health score.
           </p>
           <div className="overflow-x-auto">
@@ -475,7 +475,7 @@ export function ExperimentsView() {
                       ['app_health_score', 1],
                     ].map(([key, scale]) => {
                       const entry = row[key as string];
-                      if (!entry) return <td key={String(key)} className="py-1.5 pr-3 text-right">—</td>;
+                      if (!entry) return <td key={String(key)} className="py-1.5 pr-3 text-right"> - </td>;
                       const value = entry.mean_delta_p1_minus_baseline / (scale as number);
                       const good = key === 'app_health_score' ? value > 0 : value < 0;
                       return (

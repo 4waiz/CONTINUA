@@ -17,8 +17,8 @@
  *    app. FFmpeg fades the transparent plate captured from `/capture/title`
  *    over them.
  * 3. **Every frame is hard-linked into one ordered sequence.** Rather than
- *    encoding ten segments and concatenating them — which re-encodes, and
- *    invites a frame-count mismatch at every join — the shots are laid into a
+ *    encoding ten segments and concatenating them - which re-encodes, and
+ *    invites a frame-count mismatch at every join - the shots are laid into a
  *    single `%06d.png` sequence and encoded once. Hard links cost no disk, and
  *    a card still is simply linked once per frame it is held for.
  * 4. **One encode.** H.264, yuv420p, 30 fps, faststart, AAC narration.
@@ -231,7 +231,7 @@ function wrap(text, limit = LINE_LIMIT) {
  *
  * Wrapping to lines and then taking two at a time is the obvious approach and
  * it reads badly: it broke "The network changes. The session should" / "not
- * have to." across two cards. So sentences are the unit — they are packed
+ * have to." across two cards. So sentences are the unit - they are packed
  * greedily while the result still fits two lines, and only a sentence too long
  * for two lines on its own is broken, at its last comma.
  */
@@ -281,7 +281,7 @@ function segment(text) {
     }
     // A sentence too long for two lines is split into equal parts, not greedily.
     // Filling each card to the brim and letting the remainder fall off the end
-    // produced a 0.36-second card reading "seven." — technically two lines, and
+    // produced a 0.36-second card reading "seven." - technically two lines, and
     // unreadable.
     const parts = splitEvenly(sentence);
     chunks.push(...parts.slice(0, -1));

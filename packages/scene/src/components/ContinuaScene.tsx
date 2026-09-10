@@ -47,7 +47,7 @@ function SceneDriver({ frozen }: { frozen: boolean }) {
  * Fires once the scene has actually drawn.
  *
  * It lives inside the `<Suspense>` boundary, so it cannot mount until every
- * glTF has resolved — which makes it a far more trustworthy "ready" signal than
+ * glTF has resolved - which makes it a far more trustworthy "ready" signal than
  * drei's `useProgress`, whose loading-manager counters can settle at zero when
  * assets come from the preload cache.
  */
@@ -69,7 +69,7 @@ function FirstFrameSignal({ onFirstFrame }: { onFirstFrame?: () => void }) {
  * Publishes the live renderer state on `window.__CONTINUA__.three`.
  *
  * The browser smoke tests need to walk the real scene graph to prove the
- * exported rig survived — node names, materials, triangle counts. There is no
+ * exported rig survived - node names, materials, triangle counts. There is no
  * supported way to reach it from outside the Canvas, so the scene hands it out
  * explicitly. Preview data only.
  */
@@ -131,7 +131,7 @@ export interface ContinuaSceneProps {
   className?: string;
   /** Rendered inside the canvas' Suspense boundary. */
   fallback?: ReactNode;
-  /** Canvas created — WebGL is alive, but assets may still be loading. */
+  /** Canvas created - WebGL is alive, but assets may still be loading. */
   onReady?: () => void;
   /** Assets resolved and the scene has drawn. Use this to hide a loader. */
   onFirstFrame?: () => void;

@@ -1,8 +1,8 @@
-# CONTINUA — metric definitions
+# CONTINUA - metric definitions
 
 Every metric, its unit, its measurement window and where in the code it is
-computed. **All of them are derived from receiver-side facts** — arrivals,
-acknowledgements and timeouts — never from what the controller intended.
+computed. **All of them are derived from receiver-side facts** - arrivals,
+acknowledgements and timeouts - never from what the controller intended.
 
 Implementation: `services/engine/continua_engine/experiments/metrics.py` and
 `sim/simulator.py`.
@@ -38,7 +38,7 @@ Computed every simulation step over a trailing window of **2.0 s**
 
 **Non-carrying paths are probed** at 5 Hz with 96-byte acknowledged packets so a
 backup has genuine measurements rather than an assumed value. Probe bytes count
-toward `link_bytes` and toward loss statistics — the overhead is not hidden.
+toward `link_bytes` and toward loss statistics - the overhead is not hidden.
 
 ---
 
@@ -88,7 +88,7 @@ app_health_v1 = 100 × Σ(weight × attainment) ÷ Σ(weight)
 ```
 
 * A class with no samples is **excluded from both sums**, not scored as zero.
-* If no class has samples, the score is `null` — not `0`.
+* If no class has samples, the score is `null` - not `0`.
 * The weights are a **product judgement**, stated here so they can be argued
   with. They are not derived from anything.
 
@@ -121,7 +121,7 @@ are separate claims: a session can survive while missing every deadline.
 | `satellite_bytes` | B | The expensive one, broken out because it is the interesting cost |
 | `goodput_bytes` | B | Useful application bytes delivered |
 | `overhead_pct` | % | `100 × (total_link_bytes − goodput_bytes) ÷ total_link_bytes` |
-| `cost_units` | arbitrary | `Σ(link_MB × cost_per_mb) + Σ(activations × activation_cost)`. Relative units only — see `docs/ASSUMPTIONS.md` §4 |
+| `cost_units` | arbitrary | `Σ(link_MB × cost_per_mb) + Σ(activations × activation_cost)`. Relative units only - see `docs/ASSUMPTIONS.md` §4 |
 
 **Controller-generated traffic is separable from background demand**: background
 load is a capacity reduction applied by the exogenous trace and never appears in
@@ -134,7 +134,7 @@ load is a capacity reduction applied by the exogenous trace and never appears in
 | Metric | Definition |
 | --- | --- |
 | `handovers` | Times the carrying path changed |
-| `unnecessary_handovers` | Handovers taken on a **predicted** violation when the incumbent had not actually violated. Counted against the predictive policy on purpose — a false alarm has a cost and it is not hidden |
+| `unnecessary_handovers` | Handovers taken on a **predicted** violation when the incumbent had not actually violated. Counted against the predictive policy on purpose - a false alarm has a cost and it is not hidden |
 | `backup_activations` | Times a non-carrying path was activated |
 | `duplication_windows` | Distinct periods of control duplication |
 | `control_timeouts` / `control_retransmits` | Acknowledgement timeouts and resulting retransmissions |
@@ -147,7 +147,7 @@ Scored offline, after the run, against what the recorded observations show
 actually happened. The controller never had this information.
 
 **Violation definition** (identical for the heuristic, the learned model and the
-offline labels — `predictors.VIOLATION_DEFINITION`):
+offline labels - `predictors.VIOLATION_DEFINITION`):
 
 > The carrying path is in violation when its smoothed RTT exceeds **150 ms**
 > (the control-class deadline), **or** its windowed loss exceeds **3.0 %**,
@@ -156,12 +156,12 @@ offline labels — `predictors.VIOLATION_DEFINITION`):
 A prediction at time `t` with horizon `h` is a **true positive** if a violation
 occurred on the then-carrying path at some point in `(t, t+h]`.
 
-**Scoring rule — the important part:** predictions are scored **only while the
+**Scoring rule - the important part:** predictions are scored **only while the
 carrying path is not already in violation**. Once the rover is on satellite, the
 620 ms base RTT puts it permanently past the 150 ms control deadline; "predicting"
 that ongoing condition is not a forecast. Including those rows lifted precision
 to 0.997 for free. Excluding them dropped the heuristic to a recall of about
-0.10 — a much less flattering and much more honest number. The count of excluded
+0.10 - a much less flattering and much more honest number. The count of excluded
 rows is reported as `skipped_already_violating`.
 
 | Metric | Definition |

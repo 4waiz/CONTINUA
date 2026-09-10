@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * Decision Log — the audit trail.
+ * Decision Log - the audit trail.
  *
  * Every row is an action the controller actually took, with the observations it
  * was based on, the policy version and which predictor produced the prediction.
@@ -233,7 +233,7 @@ export function DecisionLogView() {
                           title={
                             selected.prediction.calibrated
                               ? 'Calibrated probability.'
-                              : 'Uncalibrated score — deliberately not labelled a probability.'
+                              : 'Uncalibrated score - deliberately not labelled a probability.'
                           }
                         >
                           score {selected.prediction.score}
@@ -274,10 +274,10 @@ export function DecisionLogView() {
                           <td className="py-0.5 font-medium">{link}</td>
                           <td className="py-0.5 text-right">{obs?.phase}</td>
                           <td className="metric py-0.5 text-right">
-                            {obs?.rtt_ms != null ? `${obs.rtt_ms.toFixed(0)}ms` : '—'}
+                            {obs?.rtt_ms != null ? `${obs.rtt_ms.toFixed(0)}ms` : ' - '}
                           </td>
                           <td className="metric py-0.5 text-right">
-                            {obs?.loss_pct != null ? `${obs.loss_pct.toFixed(1)}%` : '—'}
+                            {obs?.loss_pct != null ? `${obs.loss_pct.toFixed(1)}%` : ' - '}
                           </td>
                         </tr>
                       ))}

@@ -1,4 +1,4 @@
-# CONTINUA — assumptions and simplifications
+# CONTINUA - assumptions and simplifications
 
 Everything this project models that is *not* a measurement of a real network,
 stated plainly. If a number in the dashboard traces back to something on this
@@ -26,7 +26,7 @@ and the capture frame.
 | **Satellite constellations** | Likewise a shaped profile with a long base RTT. There is no orbital mechanics, no beam handover, no ground-station scheduling and no weather. |
 | **Wi-Fi PHY/MAC** | No CSMA/CA, no rate adaptation, no contention with other stations beyond the aggregate `background` load, no channel model. RSSI is a *linear mapping from modelled coverage*, not a propagation calculation. |
 | **Cross-traffic beyond the aggregate** | Competing demand is a scalar fraction of link capacity, not simulated flows. |
-| **Application internals** | Video is a synthetic frame stream, not a codec. Voice-like traffic is a constant-bitrate stream with voice-like packet size and cadence — there is no codec, no jitter buffer, no PLC and no call setup. It is deliberately named "voice-like". |
+| **Application internals** | Video is a synthetic frame stream, not a codec. Voice-like traffic is a constant-bitrate stream with voice-like packet size and cadence - there is no codec, no jitter buffer, no PLC and no call setup. It is deliberately named "voice-like". |
 
 ## 3. Deliberate modelling choices
 
@@ -55,7 +55,7 @@ and the capture frame.
 
 ## 4. Synthetic link profiles
 
-`services/engine/continua_engine/scenarios/link_profiles.json` — **plausible
+`services/engine/continua_engine/scenarios/link_profiles.json` - **plausible
 starting profiles, not measured operator data.** They were chosen so the four
 access classes behave distinguishably, and they are kept in a file precisely so
 that no one has to read implementation code to find out what was assumed.
@@ -90,7 +90,7 @@ policies against each other, not to price a deployment.
 
 Deadlines are **application requirements chosen for this demonstration**, not
 observed values from any real system. The 150 ms control deadline is why the
-satellite path, at 620 ms base RTT, cannot meet the control deadline at all —
+satellite path, at 620 ms base RTT, cannot meet the control deadline at all -
 that is a real consequence of the assumptions, and it is reported rather than
 hidden.
 
@@ -98,11 +98,11 @@ hidden.
 
 Geometric, from `packages/contracts/world.json`:
 
-* **Wired** — full within 14 m of the dock, zero beyond 20 m.
-* **Wi-Fi** — full within 42 % of a 155 m radius from the nearest of three APs,
+* **Wired** - full within 14 m of the dock, zero beyond 20 m.
+* **Wi-Fi** - full within 42 % of a 155 m radius from the nearest of three APs,
   falling to zero at the edge.
-* **Cellular** — one macro site, 330 m radius, same falloff shape.
-* **Satellite** — 0.42 everywhere, rising to 0.87 in the remote sector.
+* **Cellular** - one macro site, 330 m radius, same falloff shape.
+* **Satellite** - 0.42 everywhere, rising to 0.87 in the remote sector.
 
 This is **not** a propagation model. There is no path loss, no fading, no
 terrain masking, no antenna pattern and no interference. It is labelled
@@ -112,7 +112,7 @@ to treat it as a measurement.
 ## 7. Where the honesty rules are enforced
 
 * A measurement that does not exist is `None`/`null` and renders as
-  "unavailable" — never `0`.
+  "unavailable" - never `0`.
 * RSSI is reported **only** for Wi-Fi. Every other link returns `None`, and a
   test asserts it.
 * `modelled_coverage` is always labelled as modelled.
@@ -127,8 +127,8 @@ Probed, not assumed (`data/emulation_capability.json`):
 
 * Kernel: `6.18.33.2-microsoft-standard-WSL2`
 * `CONFIG_MPTCP` **is not set** → `ip mptcp` fails → **MPTCP is impossible here**
-* `iproute2`, `tc`, `sch_netem`, `ss`, `tcpdump`, `python3` — all present
-* Passwordless `sudo` — **not available**, so namespaces cannot be created
+* `iproute2`, `tc`, `sch_netem`, `ss`, `tcpdump`, `python3` - all present
+* Passwordless `sudo` - **not available**, so namespaces cannot be created
   non-interactively
 
 **Verdict: emulation is NOT VERIFIED HERE.** The adapter, the topology scripts

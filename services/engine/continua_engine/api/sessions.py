@@ -6,7 +6,7 @@ it renders whatever the session publishes, and may interpolate vehicle motion
 between events. It must not invent metrics.
 
 Seeking a live simulation rebuilds it from the same seed and fast-forwards.
-That is exact, not approximate, because the simulation is deterministic — the
+That is exact, not approximate, because the simulation is deterministic - the
 same seed and scenario always reproduce the same run, so "rewinding" and
 replaying gives byte-identical state.
 """
@@ -286,7 +286,7 @@ class ReplaySession:
     """Playback of a stored run.
 
     Emits exactly the events that were recorded. Nothing is re-rolled, no fault
-    is re-drawn and no metric is recomputed — a replay that produced a different
+    is re-drawn and no metric is recomputed - a replay that produced a different
     outcome would not be a replay.
     """
 

@@ -1,4 +1,4 @@
-# SUBMISSION_CHECKLIST — CONTINUA, by Team Kanban
+# SUBMISSION_CHECKLIST - CONTINUA, by Team Kanban
 
 Everything a reviewer needs, where it is, and what state it is actually in.
 Nothing on this list is marked done from memory: each row names the command or
@@ -22,17 +22,17 @@ Repository: <https://github.com/4waiz/CONTINUA>
 
 | Question a reviewer will ask | Where it is answered |
 | --- | --- |
-| Where does each number in the video come from? | `docs/VIDEO_CLAIMS.md` — every spoken and displayed claim, with its run ID, evidence mode, source file, and implemented / measured / proposed status |
+| Where does each number in the video come from? | `docs/VIDEO_CLAIMS.md` - every spoken and displayed claim, with its run ID, evidence mode, source file, and implemented / measured / proposed status |
 | Which trace is shown, and why that one? | `scripts/select_representative.py` (the rule, fixed before looking at results) and `video/representative.json` (the outcome) |
-| Are the numbers on the cards hand-typed? | No. `scripts/build_video_cards.py` extracts them into `apps/web/public/video/cards.json`; the cards render that file and show `—` for anything missing |
+| Are the numbers on the cards hand-typed? | No. `scripts/build_video_cards.py` extracts them into `apps/web/public/video/cards.json`; the cards render that file and show ` - ` for anything missing |
 | Is anything overclaimed? | `node scripts/check-claims.mjs` fails the build on 19 banned phrases and on any claim ID a shot cites that is not declared |
 | What is the video *not* evidence of? | `docs/VIDEO_QA.md` § "What this QA does not establish", and the scope card in the video itself |
 
 ## 3. Honesty, stated in the video itself
 
-Not in a footnote — spoken and on screen:
+Not in a footnote - spoken and on screen:
 
-- [x] "Everything here is a software simulation. No radios, no satellite, no hardware." — at 6.8 s, before any result
+- [x] "Everything here is a software simulation. No radios, no satellite, no hardware." - at 6.8 s, before any result
 - [x] Every application shot carries a `REPLAY · SIMULATION` chip and the source run ID
 - [x] The remaining 0.16 s of interruption is explained as session start-up, in the same breath as the headline
 - [x] The paired-comparison card carries a **"Where CONTINUA is worse"** block (more handovers, less bulk completed)
@@ -68,7 +68,7 @@ manifest **are** tracked.
 | Branch | `continua/build` |
 | Secrets, `.env`, private MCP settings | Not tracked. `.env.example` is the only credential-shaped file (`.gitignore`, and the checkpoint supervisor's secret scan) |
 | Dependencies, caches, frame sequences, raw renders | Not tracked (`.gitignore`) |
-| Run event logs (`data/runs/`) | Not tracked — regenerable from `(scenario, seed, policy)`. The three runs the video cites have their `metrics.json` and `manifest.json` tracked under `data/evidence/video/` |
+| Run event logs (`data/runs/`) | Not tracked - regenerable from `(scenario, seed, policy)`. The three runs the video cites have their `metrics.json` and `manifest.json` tracked under `data/evidence/video/` |
 | Experiment results (`data/experiments/`) | Tracked. This is the evidence |
 | Large files | Checked before commit; nothing requires Git LFS |
 
@@ -93,21 +93,21 @@ manifest **are** tracked.
 
 These require the user's decision, and none of them has been taken:
 
-- [ ] **Public deployment** — nothing is deployed anywhere
-- [ ] **Publishing the video to YouTube or any other platform** — the MP4 is in the repository only
+- [ ] **Public deployment** - nothing is deployed anywhere
+- [ ] **Publishing the video to YouTube or any other platform** - the MP4 is in the repository only
 - [ ] **Changing repository visibility**
 - [ ] **Submitting the competition application**
 
 Also not done, because this host cannot:
 
-- [ ] **Emulation run** — `data/emulation_capability.json` records `sudo_nopasswd` missing; the scripts exist and are unverified here
-- [ ] **MPTCP** — `CONFIG_MPTCP` unset on this kernel; no run may be described as multipath TCP
-- [ ] **Hardware, radio or field trial** — future work, spoken in the future tense in the video
+- [ ] **Emulation run** - `data/emulation_capability.json` records `sudo_nopasswd` missing; the scripts exist and are unverified here
+- [ ] **MPTCP** - `CONFIG_MPTCP` unset on this kernel; no run may be described as multipath TCP
+- [ ] **Hardware, radio or field trial** - future work, spoken in the future tense in the video
 
 ## 8. Before submitting
 
-1. `node scripts/qa-demo.mjs` — must exit zero.
+1. `node scripts/qa-demo.mjs` - must exit zero.
 2. Watch the MP4 end to end, with sound, at full screen.
 3. Read `docs/VIDEO_CLAIMS.md` §3 and confirm nothing in the final cut breaks it.
-4. `python scripts/checkpoint.py status` — confirm the last **verified** push, not the last attempt.
-5. `git status` — clean, and the deliverables are tracked.
+4. `python scripts/checkpoint.py status` - confirm the last **verified** push, not the last attempt.
+5. `git status` - clean, and the deliverables are tracked.

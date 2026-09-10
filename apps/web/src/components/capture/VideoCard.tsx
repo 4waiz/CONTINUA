@@ -4,10 +4,10 @@
  * Full-frame caption cards for the demo video.
  *
  * These are rendered by the product itself, in the product's own type and
- * palette, from `public/video/cards.json` — which `scripts/build_video_cards.py`
+ * palette, from `public/video/cards.json` - which `scripts/build_video_cards.py`
  * extracts verbatim from the recorded runs and experiments. Nothing here
  * computes a result, and nothing here has a hard-coded number: if the extract
- * is missing a field the card renders `—` and the capture script refuses to
+ * is missing a field the card renders ` - ` and the capture script refuses to
  * continue, because a blank on screen is the one failure this project cannot
  * ship.
  *
@@ -40,7 +40,7 @@ interface Row {
 type Format = 'int' | 'seconds' | 'percent' | 'bytes' | 'units' | 'number' | 'ratio';
 
 function fmt(value: number | null | undefined, format: Format): string {
-  if (value === null || value === undefined || Number.isNaN(value)) return '—';
+  if (value === null || value === undefined || Number.isNaN(value)) return ' - ';
   switch (format) {
     case 'int':
       return String(Math.round(value));
@@ -176,7 +176,7 @@ function Compare({ card }: { card: CardData }) {
       </div>
 
       {/* The rows share whatever height is left rather than each claiming a
-          fixed slice — eight rows and a footnote have to fit 1080 exactly. */}
+          fixed slice - eight rows and a footnote have to fit 1080 exactly. */}
       <div className="flex min-h-0 flex-1 flex-col justify-between py-1">
         {rows.map((row) => {
           const v = verdict(row);
@@ -219,7 +219,7 @@ function Fragmentish({ row }: { row: Row }) {
     <>
       <div className="text-[20px] leading-[1.3]">
         {row.label}
-        {row.note ? <span className="ml-3 text-[16px] text-[color:var(--color-muted)]">— {row.note}</span> : null}
+        {row.note ? <span className="ml-3 text-[16px] text-[color:var(--color-muted)]">- {row.note}</span> : null}
       </div>
       <div className="metric text-right text-[23px] text-[color:var(--color-muted)]">{fmt(row.baseline, row.format)}</div>
       <div className="metric text-right text-[23px] font-semibold text-[color:var(--color-warn)]">
@@ -274,7 +274,7 @@ function Ablation({ card }: { card: CardData }) {
             <div className="metric text-right text-[24px]">{fmt(variant.interruption_s, 'seconds')}</div>
             <div className="metric text-right text-[24px]">{fmt(variant.cost_units, 'units')}</div>
             <div className="metric text-right text-[24px]">
-              {variant.satellite_mb === null ? '—' : `${variant.satellite_mb.toFixed(1)} MB`}
+              {variant.satellite_mb === null ? ' - ' : `${variant.satellite_mb.toFixed(1)} MB`}
             </div>
             <div className="metric text-right text-[24px]">
               {fmt(variant.congestion_control_miss_pct, 'percent')}

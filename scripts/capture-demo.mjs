@@ -21,7 +21,7 @@
  *   node scripts/capture-demo.mjs --shots S4,S5  # named shots only
  *
  * Requires the engine on :8000 and the web app on :3000. Frames land in
- * `video/frames/<shot>/` (git-ignored — they are large and regenerable).
+ * `video/frames/<shot>/` (git-ignored - they are large and regenerable).
  */
 
 import { chromium } from '@playwright/test';
@@ -131,7 +131,7 @@ async function captureCard(browser, shot) {
   await page.waitForTimeout(350);
 
   // A card whose content is taller or wider than the frame ships as a cropped
-  // table with the honest rows sliced off the bottom — the exact failure this
+  // table with the honest rows sliced off the bottom - the exact failure this
   // project cannot afford. Refuse rather than warn.
   const overflow = await page.evaluate(() => {
     const frame = document.querySelector('[data-card-frame]');
@@ -172,7 +172,7 @@ async function captureCard(browser, shot) {
 /**
  * The two title plates that sit over the Blender shots, captured with a
  * transparent background so FFmpeg can fade them in over the rendered frames.
- * Same component and tokens as the in-app overlays — see TitleFrame.tsx.
+ * Same component and tokens as the in-app overlays - see TitleFrame.tsx.
  */
 async function captureTitle(browser, overlay) {
   const directory = join(FRAMES, `title-${overlay.shot}`);
@@ -248,7 +248,7 @@ async function captureApp(browser, shot) {
     // The control POST returns as soon as the engine has *published* the seek.
     // The page learns about it over the WebSocket some milliseconds later, so
     // screenshotting straight after the POST captured whatever was on screen
-    // before — for 40 % of frames, the previous frame again. Wait for the page
+    // before - for 40 % of frames, the previous frame again. Wait for the page
     // to say it is on the requested time before believing anything it shows.
     try {
       await page.waitForFunction(
@@ -272,7 +272,7 @@ async function captureApp(browser, shot) {
 
     if (frame % 60 === 0 || frame === total - 1) {
       const elapsed = (Date.now() - started) / 1000;
-      const rate2 = frame ? (frame / elapsed).toFixed(1) : '—';
+      const rate2 = frame ? (frame / elapsed).toFixed(1) : ' - ';
       process.stdout.write(`\r  ${shot.id}  ${frame + 1}/${total} frames  (${rate2}/s)   `);
     }
   }
@@ -365,7 +365,7 @@ async function main() {
 
   // A `--shots` run re-captures part of the video, so it must *merge* into the
   // existing record rather than replace it. Overwriting left the manifest
-  // claiming the whole video was two title plates — exactly the kind of quiet
+  // claiming the whole video was two title plates - exactly the kind of quiet
   // inaccuracy a build manifest exists to prevent.
   let recorded = manifest;
   if (only && existsSync(target)) {

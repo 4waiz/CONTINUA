@@ -3,9 +3,9 @@
  *
  * Three concepts are kept deliberately separate here and everywhere downstream:
  *
- *   1. the ROUTE      — where the vehicle physically drives (`world/route.ts`)
- *   2. COVERAGE       — where a network is *available* (`coverageAt` below)
- *   3. the ACTIVE LINK — the one connection carrying the session right now
+ *   1. the ROUTE     - where the vehicle physically drives (`world/route.ts`)
+ *   2. COVERAGE      - where a network is *available* (`coverageAt` below)
+ *   3. the ACTIVE LINK - the one connection carrying the session right now
  *
  * The four access networks are alternative links to the same gateway. Nothing
  * in this file arranges them in series.

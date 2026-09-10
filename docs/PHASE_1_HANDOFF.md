@@ -1,4 +1,4 @@
-# CONTINUA — Phase 1 → Phase 2 handoff
+# CONTINUA - Phase 1 → Phase 2 handoff
 
 Everything Phase 2 needs to attach a real predictive network engine without
 touching the 3D scene.
@@ -36,7 +36,7 @@ markers (which feature-detect it with `instanceof`).
 | --- | --- | --- |
 | `vehicle.position` / `heading` / `pitch` / `roll` | `Rover`, all cameras, `Lighting` shadow target | **yes** |
 | `vehicle.distance` | Wheel rotation, camera anchoring, HUD | **yes** |
-| `vehicle.wheelAngle` | Wheel spin — must equal `distance / 0.405` | **yes** |
+| `vehicle.wheelAngle` | Wheel spin - must equal `distance / 0.405` | **yes** |
 | `vehicle.steerAngle` | Front-wheel steering, suspension roll | **yes** |
 | `vehicle.speedMps` | Suspension trim, HUD | **yes** |
 | `links[network].state` | Link beams, panels, the link fan | **yes** |
@@ -45,7 +45,7 @@ markers (which feature-detect it with `instanceof`).
 | `active` / `warming` / `degraded` | Beam selection, chips | **yes** |
 | `zone` | Zone list, timeline caption | yes |
 | `traffic.*`, `latestDecision` | HUD panels only | optional |
-| `links[*].rssiDbm`, `latencyMs`, `jitterMs`, `lossPct`, `throughputMbps` | **Nothing yet** — reserved for you | optional |
+| `links[*].rssiDbm`, `latencyMs`, `jitterMs`, `lossPct`, `throughputMbps` | **Nothing yet** - reserved for you | optional |
 
 ### The one rule that must survive
 
@@ -69,7 +69,7 @@ If a genuinely live, non-reproducible mode is needed, add
 
 When you switch to `'engine'`, you also take on the obligation that every number
 displayed is measured. The dashboard currently shows only quantities Phase 1 can
-honestly produce — coverage, progress, handoff count, speed, heading. Add dBm /
+honestly produce - coverage, progress, handoff count, speed, heading. Add dBm /
 ms / % panels **only** once the corresponding optional fields are populated by
 real measurement, and remove the "illustrative" qualifiers at the same time.
 
@@ -80,12 +80,12 @@ reproduced.
 
 `packages/scene/src/world/sites.ts`:
 
-* `SITES` — the infrastructure list. Each entry carries `network`, world `x`/`z`,
+* `SITES` - the infrastructure list. Each entry carries `network`, world `x`/`z`,
   `yaw`, `linkHeight` (where a beam attaches), and inspector copy.
-* `coverageAt(network, x, z)` — the geometric model. **Replace this** with your
+* `coverageAt(network, x, z)` - the geometric model. **Replace this** with your
   propagation model, or leave it and let the engine override `LinkStatus`
   directly.
-* `NETWORK_PRIORITY`, `USABLE_COVERAGE` — the selection policy.
+* `NETWORK_PRIORITY`, `USABLE_COVERAGE` - the selection policy.
 
 The handoff planner is `PreviewSceneStateSource.planHandoffs()`. It is a single
 forward pass with enter/exit thresholds; your engine will replace it entirely.
@@ -104,7 +104,7 @@ add a `prop_*` function in `scripts/blender/build_props.py`.
 | Design tokens | `packages/scene/src/theme.ts` | Mirrored in `globals.css` |
 
 Changing the route changes the length, the duration, the zone boundaries and the
-handoff plan automatically — all of them read from the same samples.
+handoff plan automatically - all of them read from the same samples.
 
 ## 5. Debug and capture handle
 
@@ -117,7 +117,7 @@ handoff plan automatically — all of them read from the same samples.
   source,         // the active SceneStateSource
   settings,       // { get(), set(patch), subscribe(fn) }
   getFrame(),     // the SceneState published for the current frame
-  three,          // { scene, gl, camera } — the live renderer
+  three,          // { scene, gl, camera } - the live renderer
   version: 'phase-1',
 }
 ```
@@ -133,7 +133,7 @@ back with `readPixels` or `toBlob`.
 1. **Record/replay harness first.** Get a buffered engine timeline behind
    `sampleAt` before anything else, so determinism never regresses.
 2. **`LinkStatus` measurements.** Populate `rssiDbm`, `latencyMs`, `jitterMs`,
-   `lossPct`, `throughputMbps`. Add the corresponding dashboard panels — this is
+   `lossPct`, `throughputMbps`. Add the corresponding dashboard panels - this is
    where the reference's left rail and telemetry chart finally become truthful.
 3. **The five-stage pipeline.** `assets/reference/continua-pipeline-5stage.png`
    (Observe → Predict → Prepare → Steer → Explain) maps onto `DecisionKind`,
@@ -142,7 +142,7 @@ back with `readPixels` or `toBlob`.
 4. **Real propagation.** Replace `coverageAt` with terrain-aware path loss;
    `terrain.height` gives you the profile between any two points.
 5. **Degradation and duplication.** `LinkState` already has `degraded`, and the
-   contract's comment allows two links briefly during a duplicated handoff — the
+   contract's comment allows two links briefly during a duplicated handoff - the
    beam renderer will draw both without changes.
 
 ## 7. What not to change

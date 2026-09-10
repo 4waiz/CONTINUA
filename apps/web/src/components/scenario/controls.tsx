@@ -4,7 +4,7 @@
  * The Scenario Lab's input controls, as a laboratory rather than a settings form.
  *
  * The version these replace was a column of `<select>` elements and five
- * full-width toggle bars, which gave every option the same visual weight — the
+ * full-width toggle bars, which gave every option the same visual weight - the
  * base scenario, the thing the whole run is about, looked exactly like the
  * seed. Here the scenario is a grid of tiles, the policy is a segmented control
  * with the comparison spelled out, and workloads are chips carrying their
@@ -68,7 +68,7 @@ export const POLICY_LABEL: Record<string, { name: string; blurb: string }> = {
   B0: { name: 'Single path', blurb: 'Switch only after the carrying link fails' },
   B1: { name: 'Reactive multipath', blurb: 'Bring up a backup once trouble is measured' },
   B2: { name: 'Always-on redundancy', blurb: 'Keep a second path warm at all times' },
-  P1: { name: 'CONTINUA', blurb: 'Predict, prepare, steer — and account for the cost' },
+  P1: { name: 'CONTINUA', blurb: 'Predict, prepare, steer - and account for the cost' },
   'P1-noPred': { name: 'CONTINUA · no predictor', blurb: 'Ablation: preparation without forecasting' },
   'P1-noApp': { name: 'CONTINUA · no app-awareness', blurb: 'Ablation: no per-class throttling' },
 };

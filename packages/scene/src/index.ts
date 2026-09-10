@@ -1,5 +1,5 @@
 /**
- * @continua/scene — the reusable CONTINUA 3D scene.
+ * @continua/scene - the reusable CONTINUA 3D scene.
  *
  * Deliberately usable outside `/scene-lab`: the landing page mounts the same
  * `<ContinuaScene>` inside a dashboard frame, and the Phase 3 capture harness

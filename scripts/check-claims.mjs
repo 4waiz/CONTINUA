@@ -6,9 +6,9 @@
  * stops the build rather than producing an MP4 that has to be retracted. It
  * checks five things:
  *
- *   1. Banned phrases. A fixed list of claims this project cannot support —
+ *   1. Banned phrases. A fixed list of claims this project cannot support -
  *      "99.99 % uptime", "zero downtime", "live satellite", "MPTCP", and the
- *      rest — must not appear in the narration or in any burned-in overlay.
+ *      rest - must not appear in the narration or in any burned-in overlay.
  *      The reason each one is banned is in docs/VIDEO_CLAIMS.md §3.
  *   2. Every claim id cited by a shot resolves to a row in VIDEO_CLAIMS.md.
  *   3. The narration in timeline.json and the narration in narration.md are
@@ -31,7 +31,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (relative) => readFileSync(join(ROOT, relative), 'utf8');
 
 /**
- * Each entry is [pattern, why]. The patterns are deliberately loose — it is
+ * Each entry is [pattern, why]. The patterns are deliberately loose - it is
  * better to trip on a sentence that turns out to be fine and reword it than to
  * let a variant through.
  *
@@ -52,7 +52,7 @@ const BANNED = [
   [/\bproduction[- ]ready\b/i, 'not audited, not deployed'],
   [/\benterprise[- ]grade\b/i, 'unsupported'],
   [/\bbattle[- ]tested\b/i, 'unsupported'],
-  [/\bsecure by design\b/i, 'see docs/SECURITY.md — that is a goal, not evidence'],
+  [/\bsecure by design\b/i, 'see docs/SECURITY.md - that is a goal, not evidence'],
   [/\bAI\s+(decides|routes|chooses|controls)\b/i, 'no LLM is in the routing loop'],
   [/\b(real[- ]time|live)\s+network\b/i, 'it is a simulation'],
   [/\blive\s+test\b/i, 'it is a simulation'],
@@ -75,7 +75,7 @@ const narrationDoc = read('video/narration.md');
 
 const cardsPath = 'apps/web/public/video/cards.json';
 if (!existsSync(join(ROOT, cardsPath))) {
-  fail(`${cardsPath} is missing — run: python scripts/build_video_cards.py`);
+  fail(`${cardsPath} is missing - run: python scripts/build_video_cards.py`);
 }
 const cards = existsSync(join(ROOT, cardsPath)) ? JSON.parse(read(cardsPath)).cards : {};
 
@@ -91,14 +91,14 @@ for (const { where, text } of [...spoken, ...burned]) {
   for (const [pattern, why] of BANNED) {
     if (!pattern.test(text)) continue;
     if (pattern.source === '\\bMPTCP\\b' && text.includes(MPTCP_EXEMPTION)) continue;
-    fail(`banned phrase in ${where}: ${pattern} — ${why}\n      "${text}"`);
+    fail(`banned phrase in ${where}: ${pattern} - ${why}\n      "${text}"`);
   }
 }
 
 // --- 2. claim ids resolve --------------------------------------------------
 
 const declared = new Set([...claimsDoc.matchAll(/^\|\s*(C\d+)\s*\|/gm)].map((match) => match[1]));
-if (declared.size === 0) fail('docs/VIDEO_CLAIMS.md declares no claim rows — has the table format changed?');
+if (declared.size === 0) fail('docs/VIDEO_CLAIMS.md declares no claim rows - has the table format changed?');
 
 for (const shot of timeline.shots) {
   for (const claim of shot.claims ?? []) {
@@ -156,7 +156,7 @@ if (end < 60 || end > 120) fail(`duration ${end}s is outside the required 60–1
 
 for (const line of timeline.narration) {
   if (line.to > end) fail(`narration ${line.id} ends at ${line.to}s, past the end of the video`);
-  if (line.to - line.from > 14) fail(`narration ${line.id} runs ${(line.to - line.from).toFixed(1)}s — too long for one subtitle`);
+  if (line.to - line.from > 14) fail(`narration ${line.id} runs ${(line.to - line.from).toFixed(1)}s - too long for one subtitle`);
 }
 for (const [index, overlay] of timeline.overlays.entries()) {
   if (overlay.to > end) fail(`overlay ${index} ends at ${overlay.to}s, past the end of the video`);
@@ -183,7 +183,7 @@ const REQUIRED = [
   [/team kanban/, 'the video must end with "by Team Kanban"'],
 ];
 for (const [pattern, why] of REQUIRED) {
-  if (!pattern.test(allText)) fail(`${why} — ${pattern} not found in narration or overlays`);
+  if (!pattern.test(allText)) fail(`${why} - ${pattern} not found in narration or overlays`);
 }
 
 // A simulation disclosure has to arrive early, not at the end.

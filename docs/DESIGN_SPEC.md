@@ -1,4 +1,4 @@
-# CONTINUA — design specification
+# CONTINUA - design specification
 
 Reference analysis and the token set derived from it.
 
@@ -40,14 +40,14 @@ The reference joins Wired → Wi-Fi → 5G → Satellite with a single flowing l
 which reads as a sequence packets traverse. They are not: they are four
 *alternative* links to one session gateway, and exactly one carries the session
 at a time. `apps/web/src/components/LinkFan.tsx` draws four candidates
-converging on a single gateway node — carrying link solid, pre-warming link
+converging on a single gateway node - carrying link solid, pre-warming link
 dashed, available links faint, out-of-coverage greyed. Wired only appears while
 the rover is physically tethered.
 
 **2. The reference's numbers are design content, not results.**
 `-67 dBm`, `24 ms`, `0.01 %`, `99.99 %`, `96 score` are illustrative. Phase 1
 has no measurement engine, so the dashboard shows the quantities that genuinely
-exist — modelled coverage, route progress, planned handoffs, speed, heading —
+exist - modelled coverage, route progress, planned handoffs, speed, heading -
 and every panel carries a `SCENE PREVIEW` badge. No dBm, no latency, no loss
 figures are invented anywhere.
 
@@ -56,7 +56,7 @@ figures are invented anywhere.
 Defined once in `packages/scene/src/theme.ts` and mirrored as CSS custom
 properties in `apps/web/src/app/globals.css`.
 
-### Colour — interface
+### Colour - interface
 
 | Token | Value | Use |
 | --- | --- | --- |
@@ -72,7 +72,7 @@ properties in `apps/web/src/app/globals.css`.
 | `good` | `#12B981` | session continuity |
 | `warn` | `#F59E0B` | the preview badge |
 
-### Colour — scene
+### Colour - scene
 
 Deliberately desaturated and a step darker than the UI so the white vehicle
 stays the brightest object in frame.
@@ -105,7 +105,7 @@ stays the brightest object in frame.
 
 * **Soft daylight.** One directional key at intensity 0.95 whose shadow frustum
   follows the rover, a hemisphere fill at 0.30, ambient at 0.05, and a locally
-  generated environment map built from three `Lightformer`s — no HDR download,
+  generated environment map built from three `Lightformer`s - no HDR download,
   so the scene renders identically offline. Tone mapping ACES at exposure 0.88.
 * **Pale terrain** with a subtle triangulated survey wireframe laid exactly on
   the surface, and low-poly ridge silhouettes far beyond the playable bounds.
@@ -122,9 +122,9 @@ to make a network diagram meaningless:
 
 | Concept | How it is drawn |
 | --- | --- |
-| **Route** — where the rover drives | A physical road ribbon on the terrain, with shoulder and centre line |
-| **Coverage** — where a network is available | Translucent ground footprints, off by default, toggled per session |
-| **Active link** — what carries the session | One bright arced beam from the rover's roof mast to the serving site |
+| **Route** - where the rover drives | A physical road ribbon on the terrain, with shoulder and centre line |
+| **Coverage** - where a network is available | Translucent ground footprints, off by default, toggled per session |
+| **Active link** - what carries the session | One bright arced beam from the rover's roof mast to the serving site |
 
 Pre-warming links use the same beam form, dashed and at 40 % opacity. The wired
 tether sags *downward* like a cable; radio links bow *upward*.

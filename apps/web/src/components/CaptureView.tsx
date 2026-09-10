@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * Capture view — a fixed 16:9 frame for Phase 3 video.
+ * Capture view - a fixed 16:9 frame for Phase 3 video.
  *
  * Deliberately spare: no navigation, no dev overlays, nothing to crop around.
  * It exposes a deterministic seek and an asset-ready signal on
@@ -103,15 +103,15 @@ export function CaptureView({ runId, fullBleed = false }: { runId: string | null
         </div>
 
         <div className="pointer-events-none absolute right-[1.6%] top-[2.4%] text-right text-[0.76vw] leading-[1.5] text-[color:var(--color-muted)]">
-          {/* In replay, cite the run the evidence actually came from — the
+          {/* In replay, cite the run the evidence actually came from - the
               replay session's own id means nothing to anyone reading
               docs/VIDEO_CLAIMS.md. */}
           <div className="font-[family-name:var(--font-mono)]">
-            {run.state?.source?.run_id ?? run.state?.run_id ?? '—'}
+            {run.state?.source?.run_id ?? run.state?.run_id ?? ' - '}
           </div>
           <div>{run.state?.scenario_title || run.state?.scenario_id || ''}</div>
           <div>
-            policy {run.state?.policy_id ?? '—'} · seed {run.state?.seed ?? '—'} · t+
+            policy {run.state?.policy_id ?? ' - '} · seed {run.state?.seed ?? ' - '} · t+
             {(run.state?.t ?? 0).toFixed(1)}s
           </div>
         </div>
@@ -143,10 +143,10 @@ export function CaptureView({ runId, fullBleed = false }: { runId: string | null
           <div className="rounded-[0.6vw] border border-[color:var(--color-line)] bg-white/90 px-[0.9vw] py-[0.5vw] text-right backdrop-blur">
             <div className="panel-label text-[0.62vw]">App health · app_health_v1</div>
             <div className="metric text-[1.6vw] font-semibold leading-none">
-              {app?.health_score != null ? app.health_score.toFixed(0) : '—'}
+              {app?.health_score != null ? app.health_score.toFixed(0) : ' - '}
             </div>
             <div className="text-[0.72vw] text-[color:var(--color-muted)]">
-              reconnects {app?.session_reconnects ?? '—'} · outage {(app?.outage_s ?? 0).toFixed(1)}s
+              reconnects {app?.session_reconnects ?? ' - '} · outage {(app?.outage_s ?? 0).toFixed(1)}s
             </div>
           </div>
         </div>

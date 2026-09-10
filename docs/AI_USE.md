@@ -1,4 +1,4 @@
-# CONTINUA — AI use
+# CONTINUA - AI use
 
 Where machine learning and AI appear in this project, and where they
 deliberately do not.
@@ -22,8 +22,8 @@ prediction horizon, impossible to calibrate, and impossible to audit per
 decision. There is no code path through which one could be invoked from the
 controller.
 
-The `predictors.py` module has exactly three implementations —
-`NullPredictor`, `HeuristicPredictor`, `LearnedPredictor` — and `make_predictor`
+The `predictors.py` module has exactly three implementations -
+`NullPredictor`, `HeuristicPredictor`, `LearnedPredictor` - and `make_predictor`
 can only return one of those.
 
 ---
@@ -76,7 +76,7 @@ What that does **not** change:
 
 * Every number reported was produced by running the code, not by asking a model
   to estimate it.
-* Every capability claim was verified by executing the thing it describes —
+* Every capability claim was verified by executing the thing it describes -
   which is why emulation is marked NOT VERIFIED HERE rather than described as
   working.
 * The defects listed in `docs/PROGRESS.md` were found by looking at output and
@@ -101,7 +101,7 @@ What that involved, precisely:
   narration does not present itself as any named individual.
 * **The script is human-authored.** `video/narration.md` is the authority;
   every sentence in it traces to a row in `docs/VIDEO_CLAIMS.md`. Synthesis
-  turns that text into audio and does nothing else — it does not write, edit or
+  turns that text into audio and does nothing else - it does not write, edit or
   summarise.
 * **Timing is measured, not assumed.** `scripts/build-narration.mjs` measures
   each synthesised line with `ffprobe` and fails the build if a line cannot fit
@@ -130,7 +130,7 @@ screen is read from a recorded run.
   strongest feature (`coverage`) has no real-world counterpart as implemented.
 * **Automation bias is a real risk** with a system like this. It is mitigated
   here by recording, for every action, the observations it was based on, the
-  policy version, the predictor identity and a reason written at decision time —
+  policy version, the predictor identity and a reason written at decision time -
   all visible in the Decision Log. An operator can always ask *why*, and get an
   answer that was not reconstructed after the fact.
 * **Failure is shown as failure.** When every path is gone, the system reports a

@@ -4,7 +4,7 @@
  * Ground: terrain surface, survey wireframe, distant ridges and the road.
  *
  * All of it is generated once from `terrain.height`, which is also what the
- * rover and the cameras read — so the road cannot float, the wheels cannot sink
+ * rover and the cameras read - so the road cannot float, the wheels cannot sink
  * and the camera cannot dip through a hill.
  */
 
@@ -76,7 +76,7 @@ function buildTerrainGeometry(segmentsX: number, segmentsZ: number): BufferGeome
   return geometry;
 }
 
-/** Coarse wireframe sitting exactly on the terrain — the "survey surface". */
+/** Coarse wireframe sitting exactly on the terrain - the "survey surface". */
 function buildSurveyGrid(step = 16): BufferGeometry {
   const { minX, maxX, minZ, maxZ } = TERRAIN;
   const points: number[] = [];

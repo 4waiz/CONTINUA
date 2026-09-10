@@ -100,7 +100,7 @@ export class Terrain {
     return lerp(base, roadY, blend);
   }
 
-  /** Surface normal by central differences — used for body pitch and roll. */
+  /** Surface normal by central differences - used for body pitch and roll. */
   normalAt(x: number, z: number, epsilon = 1.5): [number, number, number] {
     const hx = this.height(x + epsilon, z) - this.height(x - epsilon, z);
     const hz = this.height(x, z + epsilon) - this.height(x, z - epsilon);

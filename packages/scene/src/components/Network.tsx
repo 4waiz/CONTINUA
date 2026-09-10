@@ -5,9 +5,9 @@
  *
  * Three separate ideas, drawn three separate ways so they can never be confused:
  *
- *   COVERAGE     — translucent ground footprints, only when toggled on.
- *   ACTIVE LINK  — one bright beam from the rover's roof to the serving site.
- *   WARMING LINK — the same beam, faint, for a link being pre-established.
+ *   COVERAGE    - translucent ground footprints, only when toggled on.
+ *   ACTIVE LINK - one bright beam from the rover's roof to the serving site.
+ *   WARMING LINK - the same beam, faint, for a link being pre-established.
  *
  * There is never a chain from wired to Wi-Fi to cellular to satellite: they are
  * alternative links to one gateway, and at most one carries the session.

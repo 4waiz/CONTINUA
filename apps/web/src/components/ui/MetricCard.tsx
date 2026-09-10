@@ -42,7 +42,7 @@ export function MetricCard({
   unit?: string;
   format?: (value: number) => string;
   tone?: MetricTone;
-  /** Short state word — "Degrading", "Active". Optional. */
+  /** Short state word - "Degrading", "Active". Optional. */
   status?: string;
   statusTone?: MetricTone;
   /** One line under the number saying what window or source it came from. */
@@ -54,7 +54,7 @@ export function MetricCard({
   const has = value !== null && Number.isFinite(value);
 
   return (
-    <article className="card flex flex-col gap-2 px-4 py-3.5">
+    <article className="card flex flex-col gap-2 px-4 py-3">
       <header className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 text-[color:var(--color-faint)]">
           {icon}
@@ -75,14 +75,27 @@ export function MetricCard({
 
       <div className="flex items-end justify-between gap-3">
         <div className="flex min-w-0 items-baseline gap-1.5">
-          <span
-            className="metric text-[30px] font-semibold leading-none tracking-[-0.035em]"
-            style={{ color: has ? TONE_COLOR[tone] : 'var(--color-faint)' }}
-          >
-            {has ? format(value) : '—'}
-          </span>
-          {has && unit && (
-            <span className="text-[14px] font-medium text-[color:var(--color-muted)]">{unit}</span>
+          {has ? (
+            <>
+              <span
+                className="metric text-[30px] font-semibold leading-none tracking-[-0.035em]"
+                style={{ color: TONE_COLOR[tone] }}
+              >
+                {format(value)}
+              </span>
+              {unit && (
+                <span className="text-[14px] font-medium text-[color:var(--color-muted)]">{unit}</span>
+              )}
+            </>
+          ) : (
+            // A dash and a rule, not a sentence. Four cards in a column each
+            // explaining that they are waiting is noise, and the run bar
+            // already says the engine is offline.
+            <span
+              className="mb-1.5 block h-[3px] w-9 rounded-full bg-[color:var(--color-line-strong)]"
+              title={unavailableReason}
+              aria-label={unavailableReason}
+            />
           )}
         </div>
         {history && history.length > 1 && (
@@ -98,9 +111,9 @@ export function MetricCard({
         )}
       </div>
 
-      <p className="text-[11.5px] leading-snug text-[color:var(--color-muted)]">
-        {has ? context : unavailableReason}
-      </p>
+      {has && context && (
+        <p className="text-[11.5px] leading-snug text-[color:var(--color-muted)]">{context}</p>
+      )}
     </article>
   );
 }

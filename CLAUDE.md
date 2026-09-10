@@ -1,14 +1,14 @@
-# CONTINUA — project rules
+# CONTINUA - project rules
 
-**CONTINUA — Predictive Network Continuity**, by Team Kanban.
+**CONTINUA - Predictive Network Continuity**, by Team Kanban.
 *The network changes. The session doesn't.*
 
 Repository: <https://github.com/4waiz/CONTINUA>
 
 An unarmed emergency-response / industrial-inspection rover drives from a wired
 docking facility, through Wi-Fi and cellular coverage, into a remote
-satellite-served environment. CONTINUA visualises that journey and — from
-Phase 2 — the predictive network handoffs that keep its session alive.
+satellite-served environment. CONTINUA visualises that journey and - from
+Phase 2 - the predictive network handoffs that keep its session alive.
 
 | Phase | Scope | State |
 | --- | --- | --- |
@@ -71,7 +71,7 @@ python scripts/checkpoint.py stop              # at phase completion
 * **Content gates before commit.** Merge-conflict markers, trailing-whitespace
   warnings, a narrow secret scan (GitHub / AWS / Google / Slack / OpenAI /
   Anthropic tokens, private-key blocks, hardcoded credential assignments), and
-  file-size limits — warn at 5 MB, refuse above 45 MB unless Git LFS tracks
+  file-size limits - warn at 5 MB, refuse above 45 MB unless Git LFS tracks
   the file. On failure it unstages and leaves the working tree untouched.
 * **Branch safety.** Works on `continua/build`, or an already-established
   development branch if one is checked out. `main` and `master` are protected:
@@ -83,7 +83,7 @@ python scripts/checkpoint.py stop              # at phase completion
   immediately, preserve everything, and report.
 * **Honest logging.** Every attempt is logged as OK / SKIP / ERROR with a
   timestamp. A machine asleep, offline, or with nothing ready produces skipped
-  attempts — never a fabricated five-minute cadence.
+  attempts - never a fabricated five-minute cadence.
 * **The log cannot feed itself.** All supervisor state lives in `.checkpoint/`,
   which is git-ignored, so a checkpoint can never be caused by logging the
   previous checkpoint.
@@ -92,7 +92,7 @@ python scripts/checkpoint.py stop              # at phase completion
 
 Check size before the first commit that contains a binary. Git LFS is
 available; if a deliverable is genuinely large, track it with LFS, commit, then
-verify the upload with `git lfs ls-files` and a fresh-clone smoke check — a
+verify the upload with `git lfs ls-files` and a fresh-clone smoke check - a
 committed pointer file is not proof of an uploaded object. **Never silently
 omit an oversized deliverable**: if it cannot be pushed, say so explicitly.
 
@@ -115,7 +115,7 @@ tests/engine/        pytest engine suite
 tests/               Playwright browser suites
 ```
 
-npm workspaces only — no Turborepo/Nx. `packages/*` are TypeScript source
+npm workspaces only - no Turborepo/Nx. `packages/*` are TypeScript source
 packages consumed through `transpilePackages`.
 
 ---
@@ -140,9 +140,9 @@ neon spaghetti, illegible glass panels, decorative fake metrics.
 
 Three concepts stay visually distinct and must never be merged:
 
-1. **Route** — where the vehicle physically drives.
-2. **Coverage** — where a network is *available* (optional overlay).
-3. **Active link** — the one connection currently carrying the session.
+1. **Route** - where the vehicle physically drives.
+2. **Coverage** - where a network is *available* (optional overlay).
+3. **Active link** - the one connection currently carrying the session.
 
 The four access networks are **alternative links to a gateway**, not a chain
 packets traverse in sequence. Wired is drawn **only while docked or tethered**.
@@ -170,7 +170,7 @@ packets traverse in sequence. Wired is drawn **only while docked or tethered**.
 
 `packages/scene/src/clock.ts` owns simulation time. `setTime(t)` fully
 determines vehicle pose, wheel angle, steering and camera. Nothing reads
-`Date.now()` for scene state. The same `t` must always produce the same frame —
+`Date.now()` for scene state. The same `t` must always produce the same frame -
 this is what makes Phase 3 video capture reproducible.
 
 Animation runs inside `useFrame` mutating refs. React state is **not** updated
@@ -202,6 +202,6 @@ calling it finished.
   test block**, and it is used once.
 * Report negative and inconclusive results. Do not re-run a comparison until a
   better number appears, and do not edit a scenario to change an outcome.
-* Count the costs of proactivity — unnecessary handovers, false positives,
-  duplicate bytes — in the same table as the wins.
+* Count the costs of proactivity - unnecessary handovers, false positives,
+  duplicate bytes - in the same table as the wins.
 * Never put an LLM in the real-time routing loop.

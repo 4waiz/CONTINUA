@@ -1,4 +1,4 @@
-# VIDEO_CLAIMS — every claim in the demo video, and what backs it
+# VIDEO_CLAIMS - every claim in the demo video, and what backs it
 
 This file was written **before** the video was edited, and it is the gate: a
 sentence that cannot be traced to a row in these tables does not go in the
@@ -32,8 +32,8 @@ Status vocabulary:
 | --- | --- | --- |
 | Execution mode of every application shot | `SIMULATION` | `manifest.json` `mode` field of each run |
 | Simulator | Discrete-time causal software model, 50 steps/s | `services/engine/continua_engine/sim/simulator.py` |
-| Emulation footage | **none** — no emulated run appears in the video | `data/emulation_capability.json` |
-| Hardware / radio / satellite footage | **none** | — |
+| Emulation footage | **none** - no emulated run appears in the video | `data/emulation_capability.json` |
+| Hardware / radio / satellite footage | **none** | - |
 | Code commit at capture | recorded in `video/manifest.json` at build time | `scripts/build-demo.mjs` |
 | Predictor in the shown runs | `heuristic-trend-1.1` | run `metrics.json` → `prediction.predictor` |
 
@@ -43,7 +43,7 @@ labelled **rendered scene**, not captured telemetry.
 
 ### Playback rate
 
-One stretch — the five-step sequence, shot S4 — is played at **0.36x** so that
+One stretch - the five-step sequence, shot S4 - is played at **0.36x** so that
 two controller actions 0.66 s apart in the run are both readable. Whenever the
 rate is not 1.0 the frame carries a badge saying so, next to a `t+` readout that
 is always the run's own clock, never video time. No other shot is retimed, and
@@ -61,7 +61,7 @@ rule in its docstring and writes the outcome to `video/representative.json`:
 For `wifi-degradation` the primary metric is `continuity.total_interruption_s`;
 all 20 P1 trials returned 0.16 s, so the median trial is representative by
 construction. Trial 9, seed 70009, was selected. The baseline shot is the **same
-seed, same scenario, same exogenous trace** — only the policy differs.
+seed, same scenario, same exogenous trace** - only the policy differs.
 
 ---
 
@@ -69,14 +69,14 @@ seed, same scenario, same exogenous trace** — only the policy differs.
 
 Times are the caption cue points in `video/timeline.json`.
 
-Several claims are **shown but not spoken** — the caption cards carry more
+Several claims are **shown but not spoken** - the caption cards carry more
 precision than a voice-over can. Those rows say so rather than quoting a
 sentence nobody says.
 
 | # | Claim, as it appears | Run / experiment | Mode | Source file | Status |
 | --- | --- | --- | --- | --- | --- |
 | C1 | "A response vehicle drives out of coverage." (N1) | route + coverage model, 24 control points, 917 m | simulation | `packages/contracts/world.json`, `packages/scene/src/world/route.ts` | implemented |
-| C2 | "Everything here is a software simulation. No radios, no satellite, no hardware." (N2) | — | — | `docs/ASSUMPTIONS.md` §1 | implemented |
+| C2 | "Everything here is a software simulation. No radios, no satellite, no hardware." (N2) | - | - | `docs/ASSUMPTIONS.md` §1 | implemented |
 | C3 | "The reactive baseline waits for its link to fail." (N3) | policy `B0` = switch only on measured unusability | simulation | `services/engine/continua_engine/controller/controller.py` → `POLICY_LIBRARY['B0']` | implemented |
 | C4 | "The session goes dark four times: seven point three two seconds." (N3) | `run-7d8750c2b7` | simulation | `data/runs/run-7d8750c2b7/metrics.json` → `continuity` | **measured** |
 | C5 | "Five steps." plus the five step captions (N5–N8) | controller state machine | simulation | `services/engine/continua_engine/controller/controller.py` | implemented |
@@ -87,13 +87,13 @@ sentence nobody says.
 | C10 | "…and that remainder is the session starting up." (N9), plus the card footnote | outage window 0.00–0.20 s, present in every policy including the baselines | simulation | `data/runs/*/events.jsonl` → `app.in_outage` | **measured** |
 | C11 | "Twenty paired trials say something we did not expect. Preparation is what removes the interruption." (N11) | `exp-26f132d5d7`, policies B2 and P1 | simulation | `data/experiments/exp-26f132d5d7.json` → `aggregate` | **measured** |
 | C12 | "What CONTINUA adds is the price: the same continuity at a third of the cost, a twelfth of the satellite data." (N12), with the exact figures on the results card | `exp-26f132d5d7`, P1 vs B2 | simulation | same | **measured** |
-| C13 | Ablation card only — not spoken. "…without application-awareness: 4.78 cost units, 62.3 MB satellite" | ablation `P1-noApp` | simulation | same → `aggregate['P1-noApp']` | **measured** |
-| C14 | Results and ablation cards only — not spoken. Congestion column, P1 31.5 % vs B2 49.2 % | `exp-64931cf540`, P1 vs B2 | simulation | `data/experiments/exp-64931cf540.json` | **measured** |
+| C13 | Ablation card only - not spoken. "…without application-awareness: 4.78 cost units, 62.3 MB satellite" | ablation `P1-noApp` | simulation | same → `aggregate['P1-noApp']` | **measured** |
+| C14 | Results and ablation cards only - not spoken. Congestion column, P1 31.5 % vs B2 49.2 % | `exp-64931cf540`, P1 vs B2 | simulation | `data/experiments/exp-64931cf540.json` | **measured** |
 | C15 | "Take the predictor out and almost nothing changes." (N11) | ablation `P1-noPred` | simulation | `data/experiments/exp-26f132d5d7.json`, `docs/EXPERIMENT_METHOD.md` | **measured** |
-| C16 | Predictor card only — not spoken. Recall 0.140 → 0.782, false positives 7.5 → 101, app health 68.8 → 67.9 | `exp-e70fe761a1` (learned predictor) | simulation | `data/experiments/exp-e70fe761a1.json`, `docs/MODEL_CARD.md` | **measured** |
+| C16 | Predictor card only - not spoken. Recall 0.140 → 0.782, false positives 7.5 → 101, app health 68.8 → 67.9 | `exp-e70fe761a1` (learned predictor) | simulation | `data/experiments/exp-e70fe761a1.json`, `docs/MODEL_CARD.md` | **measured** |
 | C17 | "Total loss: ten point six seconds, every policy." (N13) | `exp-657ef4a89a` (`total-loss`) | simulation | `data/experiments/exp-657ef4a89a.json` | **measured** |
-| C18 | "Emulation is unverified here and the kernel has no MPTCP." (N13), and the scope card | capability probe | — | `data/emulation_capability.json`, `docs/ASSUMPTIONS.md` | **not verified here** |
-| C19 | Scope card only — not spoken. "Hardware in the loop, a real radio, and a field trial are the next step — not a result." | — | — | `docs/PHASE_2_HANDOFF.md` | **proposed** |
+| C18 | "Emulation is unverified here and the kernel has no MPTCP." (N13), and the scope card | capability probe | - | `data/emulation_capability.json`, `docs/ASSUMPTIONS.md` | **not verified here** |
+| C19 | Scope card only - not spoken. "Hardware in the loop, a real radio, and a field trial are the next step - not a result." | - | - | `docs/PHASE_2_HANDOFF.md` | **proposed** |
 
 ---
 
@@ -120,12 +120,12 @@ Runs: `run-7d8750c2b7` (B0) and `run-d2819d215c` (P1). Files:
 `data/runs/<run_id>/metrics.json`.
 
 **Shown alongside, not hidden:** P1 performed **5** handovers to B0's 3, and
-completed **67.8 MB** of bulk transfer against B0's **138.5 MB** — bulk is
+completed **67.8 MB** of bulk transfer against B0's **138.5 MB** - bulk is
 deliberately throttled to protect control and video. Both appear on the card.
 
 ### 2b. The aggregate card (S7)
 
-`exp-26f132d5d7` — `wifi-degradation`, `test` seed block, 20 paired trials per
+`exp-26f132d5d7` - `wifi-degradation`, `test` seed block, 20 paired trials per
 policy, heuristic predictor, commit `352acd58a1`. Mean [95 % CI].
 
 | Displayed | B0 | B2 | P1 |
@@ -202,15 +202,15 @@ Checked mechanically over `video/narration.md` and `video/timeline.json` by
 
 Not optional, and each has a caption card as well as narration:
 
-1. **"Software simulation"** — within the first fifteen seconds, before any
+1. **"Software simulation"** - within the first fifteen seconds, before any
    result is shown.
-2. **The remaining 0.16 s** — stated when the continuity figure is first shown,
+2. **The remaining 0.16 s** - stated when the continuity figure is first shown,
    in the same breath, not in a footnote.
-3. **Prediction did not help** — the ablation is in the video, not only in the
+3. **Prediction did not help** - the ablation is in the video, not only in the
    repository.
-4. **Emulation is unverified on this host and MPTCP is unavailable** — stated,
+4. **Emulation is unverified on this host and MPTCP is unavailable** - stated,
    with the reason.
-5. **Total loss defeats it** — 10.6 s, all policies.
+5. **Total loss defeats it** - 10.6 s, all policies.
 6. **`by Team Kanban`** on the final card.
 
 ---

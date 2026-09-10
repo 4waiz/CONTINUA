@@ -3,13 +3,13 @@
  *
  * Everything here is derived from route geometry and coverage distance. It is
  * an *illustration* of how a predictive handoff sequence looks, not a
- * measurement of one — `kind` is `'preview'` and the HUD is required to say so.
+ * measurement of one - `kind` is `'preview'` and the HUD is required to say so.
  * Phase 2 swaps this implementation for the real engine behind the same
  * `SceneStateSource` interface.
  *
  * `sampleAt(t)` is a pure function. Handoffs are resolved once, up front, over
  * the whole route, so scrubbing backwards yields exactly the same states as
- * playing forwards — which is what makes offline capture reproducible.
+ * playing forwards - which is what makes offline capture reproducible.
  */
 
 import {
@@ -109,7 +109,7 @@ export class PreviewSceneStateSource implements SceneStateSource {
   }
 
   // -------------------------------------------------------------------------
-  // Handoff planning — one forward pass, done once
+  // Handoff planning - one forward pass, done once
   // -------------------------------------------------------------------------
 
   private static planHandoffs(): Handoff[] {

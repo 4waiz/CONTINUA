@@ -1,5 +1,5 @@
 """
-CONTINUA — the opening and closing shots of the demo video.
+CONTINUA - the opening and closing shots of the demo video.
 
 These are the only frames in the video that are not the running application, so
 they are labelled `rendered scene` on the timeline and nothing in them is
@@ -248,9 +248,9 @@ def main() -> None:
 
     blend_path = lib.out_path("assets", "blender", "continua_rover.blend")
     if not os.path.exists(blend_path):
-        raise SystemExit(f"missing {blend_path} — run build_vehicle.py first")
+        raise SystemExit(f"missing {blend_path} - run build_vehicle.py first")
 
-    lib.banner("CONTINUA — video opening and closing shots")
+    lib.banner("CONTINUA - video opening and closing shots")
     bpy.ops.wm.open_mainfile(filepath=blend_path)
 
     for obj in [o for o in bpy.data.objects if o.type in {"CAMERA", "LIGHT"}]:
