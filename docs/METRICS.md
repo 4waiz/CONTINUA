@@ -89,6 +89,11 @@ app_health_v1 = 100 × Σ(weight × attainment) ÷ Σ(weight)
 
 * A class with no samples is **excluded from both sums**, not scored as zero.
 * If no class has samples, the score is `null` - not `0`.
+* **Phase 4 caveat.** Control's attainment is judged against the deadline of
+  the mode each command was sent under, so a policy with mode handover scores
+  its waypoint commands against 1500 ms and sends nothing in safe hold. The
+  score is therefore **not comparable** between policies with and without
+  mode handover; compare `teleop_availability_pct` (section 10) instead.
 * The weights are a **product judgement**, stated here so they can be argued
   with. They are not derived from anything.
 

@@ -81,11 +81,12 @@ Disjoint by construction (`experiments/runner.py`):
 | `tune` | 40 000 | Choosing its decision threshold, measuring calibration; Phase 4 hysteresis constants |
 | `test` | 70 000 | **The Phase 2 comparison. Nothing is fitted on this block** |
 | `test2` | 100 000 | **The Phase 4 comparison.** The `test` block was reported in Phase 2 and so is no longer unseen; `test2` was used exactly once |
+| `test3` | 130 000 | Phase 4 supplement: a defect in the `P2-reactiveMode` ablation was found after `test2` had been used, so the corrected ablation was compared with P2 on this fresh block rather than by re-using `test2` (`docs/PHASE_4_RESULTS.md` section 5) |
 
 Additionally, two whole scenario **families** (`outage`, `motion`) are held out
 of training entirely, so the model is evaluated on scenario shapes it never saw.
 
-A test asserts the four blocks do not intersect.
+A test asserts the five blocks do not intersect.
 
 ---
 
