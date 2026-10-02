@@ -461,6 +461,6 @@ Headline, `wifi-degradation`, means over 20 trials:
 | `npm run lint` | clean, zero warnings |
 | `npm run typecheck` | clean |
 | `npm run build` | compiles, every route |
-| `npm run test:engine` | **141 passed** on the full suite before the reactive-ablation fix (36 Phase 2, 25 regression guard, 80 Phase 4); after the fix the 16 affected tests (reactive mode, seed blocks, mode accounting, plus the new total-outage test) passed. A full re-run of all 142 on the final commit is still owed |
+| `npm run test:engine` | **142 passed** on the final code (36 Phase 2, 25 regression guard, 81 Phase 4), 6.6 min |
 | `npm run test:phase2` | **11 passed**, against the production build and a live engine |
 | `npm run test:smoke` | **11 passed**, 10 skipped by project design (capture and rig tests run on the 1920 project only). Two runs made while the 1 760-run comparison occupied eight cores failed on frame count and a canvas screenshot timeout; both passed with the CPU free, and neither is a Phase 4 change |
