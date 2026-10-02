@@ -25,7 +25,12 @@ import { EngineStatus } from '@/components/ui/EngineStatus';
 import { IS_PUBLIC_PREVIEW } from '@/lib/deployment';
 import { demoIndex, findDemoRun, type DemoRunSummary } from '@/lib/staticDemo';
 import { MetricCard } from '@/components/ui/MetricCard';
-import type { EngineLinkId, PolicyIdString } from '@continua/contracts/engine';
+import {
+  CONTROL_MODE_LABEL,
+  controlModeOf,
+  type EngineLinkId,
+  type PolicyIdString,
+} from '@continua/contracts/engine';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AppShell, RunStatusBar } from '../AppShell';
 import { Chip } from '../ui/primitives';
@@ -192,6 +197,8 @@ export function MissionView() {
   const t = run.state?.t ?? 0;
   const observation = run.latest?.links[activeLink];
   const app = run.latest?.app;
+  // Phase 4: the control class's operating mode, as the engine reports it.
+  const controlMode = controlModeOf(run.latest);
 
   // --- metric-card trends --------------------------------------------------
   // Sampled from the received history only. A reconnect gap is a gap; it is
@@ -370,6 +377,14 @@ export function MissionView() {
                     ) : (
                       <Chip tone="muted">SCENE PREVIEW</Chip>
                     )}
+                    {runId && run.latest && (
+                      <Chip
+                        tone={controlMode === 'teleop' ? 'good' : controlMode === 'waypoint' ? 'warn' : 'bad'}
+                        title="Operating mode of the control class, chosen by the controller from receiver-side measurements. Policies without mode handover stay in teleop."
+                      >
+                        {CONTROL_MODE_LABEL[controlMode].toUpperCase()}
+                      </Chip>
+                    )}
                     <FullscreenButton target={stageRef} />
                   </div>
                 </div>
@@ -427,7 +442,7 @@ export function MissionView() {
                 {policies.map((entry) => (
                   <option key={entry.id} value={entry.id}>
                     {entry.id}
-                    {entry.id === 'P1' ? ' - CONTINUA' : ''}
+                    {entry.id === 'P1' ? ' - CONTINUA' : entry.id === 'P2' ? ' - CONTINUA P2' : ''}
                   </option>
                 ))}
               </select>

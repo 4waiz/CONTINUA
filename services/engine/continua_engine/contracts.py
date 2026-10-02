@@ -23,8 +23,8 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, NonNegativeFloat, NonNegativeInt
 
-SCHEMA_VERSION = "2.0.0"
-POLICY_VERSION = "continua-policy-1.2.0"
+SCHEMA_VERSION = "2.1.0"
+POLICY_VERSION = "continua-policy-1.3.0"
 
 
 # ---------------------------------------------------------------------------
@@ -67,6 +67,30 @@ ALL_CLASSES: tuple[TrafficClass, ...] = (
 )
 
 
+class ControlMode(str, Enum):
+    """Operating mode of the control class (Phase 4).
+
+    ``teleop`` is the Phase 2 behaviour: 20 Hz commands against a 150 ms
+    deadline. ``waypoint`` trades rate and immediacy for a deadline that a
+    long-RTT path can actually meet. ``safe_hold`` sends no commands at all.
+    The mode describes the command channel only: it never changes the modelled
+    vehicle motion or the exogenous trace (docs/ASSUMPTIONS.md section 5), which
+    is what keeps trials paired.
+    """
+
+    TELEOP = "teleop"
+    WAYPOINT = "waypoint"
+    SAFE_HOLD = "safe_hold"
+
+
+#: Higher is more capable. Used for "downshift" and "upshift" everywhere.
+MODE_RANK: dict[ControlMode, int] = {
+    ControlMode.SAFE_HOLD: 0,
+    ControlMode.WAYPOINT: 1,
+    ControlMode.TELEOP: 2,
+}
+
+
 class ControllerState(str, Enum):
     STABLE = "stable"
     AT_RISK = "at_risk"
@@ -104,6 +128,12 @@ class PolicyId(str, Enum):
     P1_CONTINUA = "P1"
     P1_NO_PREDICTION = "P1-noPred"
     P1_NO_APP_PRIORITY = "P1-noApp"
+    # Phase 4
+    B2_ALWAYS_REDUNDANT_DEFER = "B2-defer"
+    P2_CONTINUA = "P2"
+    P2_NO_STEER = "P2-noSteer"
+    P2_NO_MODE = "P2-noMode"
+    P2_REACTIVE_MODE = "P2-reactiveMode"
 
 
 # ---------------------------------------------------------------------------
@@ -245,6 +275,12 @@ class ActionKind(str, Enum):
     RELEASE_BACKUP = "release_backup"
     SAFE_STOP = "safe_stop"
     RESUME = "resume"
+    #: Phase 4: the control class changed operating mode (detail: from, to,
+    #: anticipated, trigger, reason).
+    MODE_CHANGE = "mode_change"
+    #: Phase 4: one traffic class was moved onto its own active path
+    #: (detail: from, reason). The session's primary path did not change.
+    STEER_CLASS = "steer_class"
 
 
 class Action(BaseModel):
@@ -279,8 +315,19 @@ class EngineEvent(BaseModel):
     app: ApplicationHealth | None = None
     prediction: Prediction | None = None
     action: Action | None = None
+    #: Every action taken at this decision, in the order they were taken. The
+    #: ``action`` field above remains the first of them for compatibility.
+    #: A MODE_CHANGE that precedes a SWITCH appears before it here.
+    actions: list[Action] = Field(default_factory=list)
     #: Recorded when the decision is made, not reconstructed afterwards.
     reason: str = ""
+    #: Phase 4: operating mode of the control class after this decision.
+    #: Policies without ``mode_handover`` report ``teleop`` for the whole run.
+    control_mode: ControlMode = ControlMode.TELEOP
+    #: Phase 4: which active path each traffic class rides after this decision.
+    #: Without ``per_class_steering`` every class rides ``carrying``. Empty when
+    #: there is no carrying path at all.
+    class_paths: dict[TrafficClass, LinkId] = Field(default_factory=dict)
     policy_version: str = POLICY_VERSION
     policy_id: PolicyId = PolicyId.P1_CONTINUA
     scenario_id: str = ""

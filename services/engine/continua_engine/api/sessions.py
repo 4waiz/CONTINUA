@@ -21,6 +21,7 @@ from datetime import datetime, timezone
 from typing import Any, Iterable
 
 from ..contracts import (
+    SCHEMA_VERSION,
     EngineEvent,
     ExecutionMode,
     PolicyId,
@@ -144,7 +145,7 @@ class RunSession:
             seed=control.seed,
             predictor=control.predictor,
             horizon_s=control.horizon_s,
-            engine_version="2.0.0",
+            engine_version=SCHEMA_VERSION,
         )
 
     # -- state ---------------------------------------------------------------

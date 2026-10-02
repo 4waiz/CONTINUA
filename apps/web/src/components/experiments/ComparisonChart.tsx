@@ -27,6 +27,11 @@ const POLICY_COLOR: Record<string, string> = {
   P1: '#176bff',
   'P1-noPred': '#a0a8bd',
   'P1-noApp': '#c0b2d8',
+  'B2-defer': '#8a90e0',
+  P2: '#7a3cff',
+  'P2-noSteer': '#b394f0',
+  'P2-noMode': '#c9b4f5',
+  'P2-reactiveMode': '#d7c6f7',
 };
 
 export function ComparisonChart({

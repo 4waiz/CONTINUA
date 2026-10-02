@@ -11,7 +11,7 @@
  * a measurement that does not exist is `null`, never `0`.
  */
 
-export const ENGINE_SCHEMA_VERSION = '2.0.0';
+export const ENGINE_SCHEMA_VERSION = '2.1.0';
 
 export const LINK_IDS = ['wired', 'wifi', 'cellular', 'satellite'] as const;
 export type EngineLinkId = (typeof LINK_IDS)[number];
@@ -41,7 +41,28 @@ export type ControllerStateId =
 
 export type PipelineStageId = 'observe' | 'predict' | 'prepare' | 'steer' | 'explain';
 
-export type PolicyIdString = 'B0' | 'B1' | 'B2' | 'P1' | 'P1-noPred' | 'P1-noApp';
+export type PolicyIdString =
+  | 'B0'
+  | 'B1'
+  | 'B2'
+  | 'P1'
+  | 'P1-noPred'
+  | 'P1-noApp'
+  // Phase 4
+  | 'B2-defer'
+  | 'P2'
+  | 'P2-noSteer'
+  | 'P2-noMode'
+  | 'P2-reactiveMode';
+
+/**
+ * Operating mode of the control class (Phase 4). `teleop` is the Phase 2
+ * behaviour; policies without mode handover report it for the whole run. The
+ * mode describes the command channel only: it never changes the modelled
+ * vehicle motion.
+ */
+export const CONTROL_MODES = ['teleop', 'waypoint', 'safe_hold'] as const;
+export type ControlModeId = (typeof CONTROL_MODES)[number];
 
 export type ActionKindId =
   | 'none'
@@ -54,7 +75,10 @@ export type ActionKindId =
   | 'restore_class'
   | 'release_backup'
   | 'safe_stop'
-  | 'resume';
+  | 'resume'
+  // Phase 4
+  | 'mode_change'
+  | 'steer_class';
 
 export interface EngineLinkObservation {
   link: EngineLinkId;
@@ -147,10 +171,24 @@ export interface EngineEvent {
   app: EngineApplicationHealth | null;
   prediction: EnginePrediction | null;
   action: EngineAction | null;
+  /**
+   * Every action taken at this decision, in order; `action` is the first of
+   * them. A `mode_change` that accompanies a `switch` precedes it here.
+   * Absent on events recorded before schema 2.1.
+   */
+  actions?: EngineAction[];
   reason: string;
   policy_version: string;
   policy_id: PolicyIdString;
   scenario_id: string;
+  /** Phase 4. Absent on events recorded before schema 2.1: read as `teleop`. */
+  control_mode?: ControlModeId;
+  /**
+   * Phase 4: which active path each traffic class rides. Absent on events
+   * recorded before schema 2.1, and empty when there is no carrying path; in
+   * both cases every class rides `carrying`.
+   */
+  class_paths?: Partial<Record<TrafficClassId, EngineLinkId>>;
 }
 
 export interface EngineRunState {
@@ -201,14 +239,60 @@ export function parseEngineEvent(raw: unknown): EngineEvent | null {
       return null;
     }
   }
-  if (typeof raw.schema_version === 'string' && raw.schema_version !== ENGINE_SCHEMA_VERSION) {
+  if (
+    typeof raw.schema_version === 'string' &&
+    raw.schema_version.split('.')[0] !== ENGINE_SCHEMA_VERSION.split('.')[0]
+  ) {
     console.warn(
       `[CONTINUA] engine schema ${raw.schema_version} != expected ${ENGINE_SCHEMA_VERSION}`,
     );
   }
   if (num(raw.t) === null || num(raw.seq) === null) return null;
   if (!isRecord(raw.links)) return null;
+  // Phase 4 fields are optional (older recordings lack them) but, when
+  // present, must be well formed: a mode or a path the UI does not know is
+  // rejected rather than rendered as something it is not.
+  if (raw.control_mode !== undefined && raw.control_mode !== null) {
+    if (!(CONTROL_MODES as readonly string[]).includes(String(raw.control_mode))) {
+      console.warn(`[CONTINUA] unknown control_mode "${String(raw.control_mode)}"; ignoring event`);
+      return null;
+    }
+  }
+  if (raw.class_paths !== undefined && raw.class_paths !== null) {
+    if (!isRecord(raw.class_paths)) return null;
+    for (const [cls, link] of Object.entries(raw.class_paths)) {
+      if (
+        !(TRAFFIC_CLASSES as readonly string[]).includes(cls) ||
+        !(LINK_IDS as readonly string[]).includes(String(link))
+      ) {
+        console.warn(`[CONTINUA] malformed class_paths entry ${cls}=${String(link)}; ignoring event`);
+        return null;
+      }
+    }
+  }
+  if (raw.actions !== undefined && raw.actions !== null && !Array.isArray(raw.actions)) return null;
   return raw as unknown as EngineEvent;
+}
+
+/** The control mode an event reports, reading pre-2.1 recordings as teleop. */
+export function controlModeOf(event: EngineEvent | null | undefined): ControlModeId {
+  return event?.control_mode ?? 'teleop';
+}
+
+/** The path a class rides in an event: its class path, else the carrying path. */
+export function classPathOf(
+  event: EngineEvent | null | undefined,
+  cls: TrafficClassId,
+): EngineLinkId | null {
+  if (!event) return null;
+  return event.class_paths?.[cls] ?? event.carrying ?? null;
+}
+
+/** Every action an event carries, including the first one. */
+export function actionsOf(event: EngineEvent | null | undefined): EngineAction[] {
+  if (!event) return [];
+  if (event.actions && event.actions.length > 0) return event.actions;
+  return event.action && event.action.kind !== 'none' ? [event.action] : [];
 }
 
 export function parseSocketMessage(raw: unknown): EngineSocketMessage | null {
@@ -261,7 +345,7 @@ export const LINK_LABEL: Record<EngineLinkId, { label: string; sublabel: string 
   wired: { label: 'Wired', sublabel: 'Ethernet' },
   wifi: { label: 'Wi-Fi', sublabel: '2.4 / 5 GHz' },
   cellular: { label: 'Cellular', sublabel: 'Macro site profile' },
-  satellite: { label: 'Satellite', sublabel: 'Link' },
+  satellite: { label: 'Satellite', sublabel: 'GEO-like profile' },
 };
 
 export const CONTROLLER_STATE_LABEL: Record<ControllerStateId, string> = {
@@ -295,4 +379,26 @@ export const ACTION_LABEL: Record<ActionKindId, string> = {
   release_backup: 'Release backup',
   safe_stop: 'Safe stop',
   resume: 'Resume',
+  mode_change: 'Control mode',
+  steer_class: 'Steer class',
+};
+
+export const CONTROL_MODE_LABEL: Record<ControlModeId, string> = {
+  teleop: 'Teleop',
+  waypoint: 'Waypoint',
+  safe_hold: 'Safe hold',
+};
+
+export const POLICY_NAME: Record<PolicyIdString, string> = {
+  B0: 'Single path',
+  B1: 'Reactive multipath',
+  B2: 'Always-on redundancy',
+  P1: 'CONTINUA',
+  'P1-noPred': 'CONTINUA, no predictor',
+  'P1-noApp': 'CONTINUA, no app-awareness',
+  'B2-defer': 'Always-on redundancy, bulk deferred',
+  P2: 'CONTINUA P2',
+  'P2-noSteer': 'P2, no per-class steering',
+  'P2-noMode': 'P2, no mode handover',
+  'P2-reactiveMode': 'P2, reactive mode only',
 };

@@ -12,10 +12,16 @@
 import { api, EngineApiError, type RunRow } from '@/lib/api';
 import {
   ACTION_LABEL,
+  CONTROL_MODE_LABEL,
   CONTROLLER_STATE_LABEL,
   LINK_LABEL,
   STAGE_LABEL,
+  TRAFFIC_CLASSES,
+  actionsOf,
+  classPathOf,
+  controlModeOf,
   parseEngineEvent,
+  type EngineAction,
   type EngineEvent,
 } from '@continua/contracts/engine';
 import { NETWORK_COLOR } from '@continua/scene';
@@ -163,7 +169,18 @@ export function DecisionLogView() {
                         t+{event.t.toFixed(1)}s
                       </span>
                       <Chip tone="blue">{STAGE_LABEL[event.stage]}</Chip>
-                      <Chip tone="muted">{ACTION_LABEL[event.action?.kind ?? 'none']}</Chip>
+                      {actionsOf(event).length === 0 ? (
+                        <Chip tone="muted">{ACTION_LABEL.none}</Chip>
+                      ) : (
+                        actionsOf(event).map((action, index) => (
+                          <Chip
+                            key={`${action.kind}-${index}`}
+                            tone={action.kind === 'mode_change' ? 'warn' : action.kind === 'steer_class' ? 'violet' : 'muted'}
+                          >
+                            {actionLabel(action)}
+                          </Chip>
+                        ))
+                      )}
                       {event.carrying && (
                         <span
                           className="text-[11px] font-semibold"
@@ -201,6 +218,67 @@ export function DecisionLogView() {
                 <div>
                   <div className="panel-label">Reason recorded at decision time</div>
                   <p className="leading-snug">{selected.reason}</p>
+                </div>
+
+                {actionsOf(selected).length > 0 && (
+                  <div>
+                    <div className="panel-label mb-1">Actions, in the order they were taken</div>
+                    <ol className="space-y-1">
+                      {actionsOf(selected).map((action, index) => (
+                        <li
+                          key={`${action.kind}-${index}`}
+                          className="rounded-[8px] border border-[color:var(--color-line)] px-2 py-1.5"
+                        >
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <span className="metric text-[11px] text-[color:var(--color-muted)]">{index + 1}.</span>
+                            <Chip
+                              tone={action.kind === 'mode_change' ? 'warn' : action.kind === 'steer_class' ? 'violet' : 'muted'}
+                            >
+                              {actionLabel(action)}
+                            </Chip>
+                            {action.kind === 'mode_change' && (
+                              <span className="text-[11px] text-[color:var(--color-muted)]">
+                                {String(action.detail.trigger ?? '')}
+                                {action.detail.anticipated === true ? ' · anticipated' : ''}
+                              </span>
+                            )}
+                          </div>
+                          {typeof action.detail.reason === 'string' && action.detail.reason !== selected.reason && (
+                            <p className="mt-1 text-[11px] leading-snug">{action.detail.reason}</p>
+                          )}
+                        </li>
+                      ))}
+                    </ol>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <div className="panel-label">Command mode</div>
+                    <div className="font-semibold">{CONTROL_MODE_LABEL[controlModeOf(selected)]}</div>
+                  </div>
+                  <div>
+                    <div className="panel-label">Class paths</div>
+                    <div className="text-[11px] leading-snug">
+                      {selected.carrying
+                        ? TRAFFIC_CLASSES.map((cls) => {
+                            const path = classPathOf(selected, cls);
+                            return (
+                              <span key={cls} className="mr-1.5 inline-block">
+                                {cls}
+                                <span
+                                  className="font-semibold"
+                                  style={{ color: path ? NETWORK_COLOR[path] : undefined }}
+                                >
+                                  {' '}
+                                  {path ? LINK_LABEL[path].label : ' - '}
+                                </span>
+                              </span>
+                            );
+                          })
+                        : 'no carrying path'}
+                    </div>
+                  </div>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
@@ -299,4 +377,17 @@ export function DecisionLogView() {
       </div>
     </AppShell>
   );
+}
+
+/** A chip label that names what a mode change or steer actually did. */
+function actionLabel(action: EngineAction): string {
+  if (action.kind === 'mode_change') {
+    const from = String(action.detail.from ?? '');
+    const to = String(action.detail.to ?? '');
+    return `Mode ${from} → ${to}`;
+  }
+  if (action.kind === 'steer_class') {
+    return `Steer ${action.traffic_class ?? ''} → ${action.link ? LINK_LABEL[action.link].label : ''}`;
+  }
+  return ACTION_LABEL[action.kind];
 }

@@ -13,7 +13,8 @@ import math
 import statistics
 from typing import TYPE_CHECKING
 
-from ..contracts import ALL_CLASSES, ALL_LINKS, TrafficClass
+from ..contracts import ALL_CLASSES, ALL_LINKS, ControlMode, TrafficClass
+from ..controller.modes import SUPPORT_DEFINITION
 from ..controller.predictors import LOSS_VIOLATION_PCT, RTT_VIOLATION_MS
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -85,6 +86,7 @@ def compute_metrics(sim: "Simulation") -> dict:
 
     # --- link usage and cost -------------------------------------------------
     link_bytes = {link.value: sim.paths[link].link_bytes for link in ALL_LINKS}
+    bulk_bytes = {link.value: sim.paths[link].bulk_link_bytes for link in ALL_LINKS}
     activations = {link.value: sim.paths[link].activations for link in ALL_LINKS}
     cost_units = round(sum(sim.paths[link].cost_units() for link in ALL_LINKS), 4)
     total_link_bytes = sum(link_bytes.values())
@@ -98,11 +100,39 @@ def compute_metrics(sim: "Simulation") -> dict:
     # --- prediction quality, scored against what actually happened ----------
     prediction = _score_predictions(sim)
 
+    # --- Phase 4: control operating mode, from receiver facts ----------------
+    control_receiver = receivers.get(TrafficClass.CONTROL)
+    accounted_s = sum(sim.mode_time_s.values())
+    control_mode = {
+        "mode_time_s": {mode.value: round(sim.mode_time_s[mode], 3) for mode in ControlMode},
+        "mode_changes": sim.mode_changes,
+        "anticipated_mode_changes": sim.anticipated_mode_changes,
+        "late_mode_changes": sim.late_mode_changes,
+        "unsupported_mode_s": round(sim.unsupported_mode_s, 3),
+        "mode_unknown_s": round(sim.mode_unknown_s, 3),
+        "conservative_mode_s": round(sim.conservative_mode_s, 3),
+        "teleop_supported_s": round(sim.teleop_supported_s, 3),
+        "teleop_availability_pct": (
+            round(100.0 * sim.teleop_supported_s / accounted_s, 3) if accounted_s > 0 else None
+        ),
+        "control_by_mode": (
+            {mode: dict(entry) for mode, entry in control_receiver.by_mode.items()}
+            if control_receiver is not None
+            else {}
+        ),
+        "support_definition": SUPPORT_DEFINITION,
+    }
+    steering = {
+        "class_steers": sim.controller.class_steers,
+        "control_off_primary_s": round(sim.control_off_primary_s, 3),
+    }
+
     return {
         "run_id": sim.run_id,
         "scenario_id": sim.scenario["id"],
         "policy_id": sim.config.policy_id.value,
         "seed": sim.seed,
+        "policy_overrides": dict(getattr(sim, "policy_overrides", {})),
         "duration_s": round(sim.trace.duration_s, 3),
         "continuity": {
             "session_reconnects": sim.session_reconnects,
@@ -117,7 +147,11 @@ def compute_metrics(sim: "Simulation") -> dict:
         "links": {
             "bytes": link_bytes,
             "activations": activations,
+            "bulk_bytes": bulk_bytes,
             "satellite_bytes": link_bytes.get("satellite", 0),
+            # Satellite bytes that were not bulk transfer: what a policy spent
+            # on the expensive link after the easy saving of pausing bulk.
+            "satellite_bytes_excl_bulk": link_bytes.get("satellite", 0) - bulk_bytes.get("satellite", 0),
             "total_bytes": total_link_bytes,
             "goodput_bytes": goodput_bytes,
             "overhead_pct": overhead_pct,
@@ -132,6 +166,8 @@ def compute_metrics(sim: "Simulation") -> dict:
             "control_retransmits": plant.control_retransmits,
         },
         "prediction": prediction,
+        "control_mode": control_mode,
+        "steering": steering,
     }
 
 
@@ -261,6 +297,7 @@ def aggregate(runs: list[dict]) -> dict:
         "bulk_bytes_completed": ["application", "bulk", "bytes_completed"],
         "app_health_score": ["app_health_score"],
         "satellite_bytes": ["links", "satellite_bytes"],
+        "satellite_bytes_excl_bulk": ["links", "satellite_bytes_excl_bulk"],
         "total_link_bytes": ["links", "total_bytes"],
         "overhead_pct": ["links", "overhead_pct"],
         "cost_units": ["links", "cost_units"],
@@ -271,6 +308,20 @@ def aggregate(runs: list[dict]) -> dict:
         "prediction_recall": ["prediction", "recall"],
         "prediction_false_positives": ["prediction", "false_positives"],
         "prediction_false_negatives": ["prediction", "false_negatives"],
+        # Phase 4
+        "bulk_completion_pct": ["application", "bulk", "completion_pct"],
+        "teleop_availability_pct": ["control_mode", "teleop_availability_pct"],
+        "unsupported_mode_s": ["control_mode", "unsupported_mode_s"],
+        "conservative_mode_s": ["control_mode", "conservative_mode_s"],
+        "mode_unknown_s": ["control_mode", "mode_unknown_s"],
+        "teleop_time_s": ["control_mode", "mode_time_s", "teleop"],
+        "waypoint_time_s": ["control_mode", "mode_time_s", "waypoint"],
+        "safe_hold_time_s": ["control_mode", "mode_time_s", "safe_hold"],
+        "mode_changes": ["control_mode", "mode_changes"],
+        "anticipated_mode_changes": ["control_mode", "anticipated_mode_changes"],
+        "late_mode_changes": ["control_mode", "late_mode_changes"],
+        "class_steers": ["steering", "class_steers"],
+        "control_off_primary_s": ["steering", "control_off_primary_s"],
     }
 
     out: dict[str, dict] = {}

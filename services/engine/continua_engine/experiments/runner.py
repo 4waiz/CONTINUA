@@ -20,7 +20,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Callable, Sequence
 
-from ..contracts import ExecutionMode, PolicyId, RunStatus
+from ..contracts import SCHEMA_VERSION, ExecutionMode, PolicyId, RunStatus
 from ..sim.exogenous import apply_overrides, get_scenario
 from ..sim.simulator import Simulation
 from ..store.store import RunStore, code_commit, default_store
@@ -32,15 +32,28 @@ SEED_BLOCKS = {
     "train": 10_000,
     "tune": 40_000,
     "test": 70_000,
+    #: Phase 4. The original `test` block was reported in Phase 2 and so is no
+    #: longer unseen; the Phase 4 comparison runs exactly once on this block.
+    "test2": 100_000,
 }
 
-DEFAULT_POLICIES: tuple[PolicyId, ...] = (
+#: The Phase 2 comparison set, kept so earlier results stay reproducible.
+PHASE2_POLICIES: tuple[PolicyId, ...] = (
     PolicyId.B0_SINGLE_REACTIVE,
     PolicyId.B1_REACTIVE_MULTIPATH,
     PolicyId.B2_ALWAYS_REDUNDANT,
     PolicyId.P1_CONTINUA,
     PolicyId.P1_NO_PREDICTION,
     PolicyId.P1_NO_APP_PRIORITY,
+)
+
+#: Every policy, old and new. Same `ContinuaController`, flags only.
+DEFAULT_POLICIES: tuple[PolicyId, ...] = PHASE2_POLICIES + (
+    PolicyId.B2_ALWAYS_REDUNDANT_DEFER,
+    PolicyId.P2_CONTINUA,
+    PolicyId.P2_NO_STEER,
+    PolicyId.P2_NO_MODE,
+    PolicyId.P2_REACTIVE_MODE,
 )
 
 
@@ -59,6 +72,7 @@ def run_single(
     overrides: dict | None = None,
     store: RunStore | None = None,
     persist: bool = True,
+    policy_overrides: dict | None = None,
 ) -> dict:
     """Run one simulation and, optionally, persist everything about it."""
     scenario = apply_overrides(get_scenario(scenario_id), overrides)
@@ -69,6 +83,7 @@ def run_single(
         predictor_kind=predictor,
         horizon_s=horizon_s,
         mode=ExecutionMode.SIMULATION,
+        policy_overrides=policy_overrides,
     )
     if persist:
         store = store or default_store()
@@ -80,7 +95,7 @@ def run_single(
             seed=seed,
             predictor=predictor,
             horizon_s=horizon_s,
-            engine_version=sim.events[0].schema_version if sim.events else "2.0.0",
+            engine_version=sim.events[0].schema_version if sim.events else SCHEMA_VERSION,
         )
     started = time.time()
     result = sim.run()
@@ -111,8 +126,13 @@ def run_comparison(
     persist_runs: bool = False,
     progress: Callable[[int, int, str], None] | None = None,
     experiment_id: str | None = None,
+    policy_overrides: dict | None = None,
 ) -> dict:
-    """Run `trials` paired trials of every policy on one scenario."""
+    """Run `trials` paired trials of every policy on one scenario.
+
+    `policy_overrides` applies tuning knobs to every policy in the run and is
+    recorded in the summary. It exists for the tune block only.
+    """
     store = store or default_store()
     experiment_id = experiment_id or f"exp-{uuid.uuid4().hex[:10]}"
     started = datetime.now(timezone.utc).isoformat()
@@ -134,6 +154,7 @@ def run_comparison(
                     horizon_s=horizon_s,
                     store=store,
                     persist=persist_runs,
+                    policy_overrides=policy_overrides,
                 )
                 metrics["trial"] = trial
                 per_policy[policy.value].append(metrics)
@@ -153,12 +174,15 @@ def run_comparison(
         "policies": [policy.value for policy in policies],
         "predictor": predictor,
         "horizon_s": horizon_s,
+        "policy_overrides": dict(policy_overrides or {}),
         "started_at": started,
         "finished_at": datetime.now(timezone.utc).isoformat(),
         "code_commit": code_commit(),
         "failures": failures,
         "aggregate": {name: aggregate(runs) for name, runs in per_policy.items()},
-        "paired_deltas": _paired_deltas(per_policy),
+        "paired_deltas": _paired_deltas(per_policy, PolicyId.P1_CONTINUA),
+        #: Phase 4: the same pairing with P2 as the treatment.
+        "paired_deltas_p2": _paired_deltas(per_policy, PolicyId.P2_CONTINUA),
         "raw": per_policy,
     }
 
@@ -178,26 +202,39 @@ def run_comparison(
     return summary
 
 
-def _paired_deltas(per_policy: dict[str, list[dict]]) -> dict:
+PAIRED_METRICS: list[tuple[list[str], str]] = [
+    (["continuity", "total_interruption_s"], "total_interruption_s"),
+    (["continuity", "session_reconnects"], "session_reconnects"),
+    (["application", "control", "deadline_miss_pct"], "control_deadline_miss_pct"),
+    (["application", "video", "stall_ms"], "video_stall_ms"),
+    (["links", "satellite_bytes"], "satellite_bytes"),
+    (["links", "cost_units"], "cost_units"),
+    (["app_health_score"], "app_health_score"),
+    (["control_plane", "handovers"], "handovers"),
+    # Phase 4
+    (["links", "satellite_bytes_excl_bulk"], "satellite_bytes_excl_bulk"),
+    (["links", "total_bytes"], "total_link_bytes"),
+    (["control_mode", "teleop_availability_pct"], "teleop_availability_pct"),
+    (["control_mode", "unsupported_mode_s"], "unsupported_mode_s"),
+    (["control_mode", "conservative_mode_s"], "conservative_mode_s"),
+    (["control_mode", "mode_changes"], "mode_changes"),
+    (["application", "voice", "deadline_miss_pct"], "voice_deadline_miss_pct"),
+    (["application", "telemetry", "deadline_miss_pct"], "telemetry_deadline_miss_pct"),
+    (["application", "bulk", "completion_pct"], "bulk_completion_pct"),
+]
+
+
+def _paired_deltas(per_policy: dict[str, list[dict]], treatment_id: PolicyId = PolicyId.P1_CONTINUA) -> dict:
     """Per-trial differences against each baseline, which is the point of pairing.
 
     Comparing means across policies throws away the pairing. Comparing the
     *same trial* run under two policies is far more sensitive, because the
     exogenous conditions are identical.
     """
-    if PolicyId.P1_CONTINUA.value not in per_policy:
+    if treatment_id.value not in per_policy:
         return {}
-    treatment = {run["trial"]: run for run in per_policy[PolicyId.P1_CONTINUA.value]}
-    metrics_of_interest = [
-        (["continuity", "total_interruption_s"], "total_interruption_s"),
-        (["continuity", "session_reconnects"], "session_reconnects"),
-        (["application", "control", "deadline_miss_pct"], "control_deadline_miss_pct"),
-        (["application", "video", "stall_ms"], "video_stall_ms"),
-        (["links", "satellite_bytes"], "satellite_bytes"),
-        (["links", "cost_units"], "cost_units"),
-        (["app_health_score"], "app_health_score"),
-        (["control_plane", "handovers"], "handovers"),
-    ]
+    treatment = {run["trial"]: run for run in per_policy[treatment_id.value]}
+    metrics_of_interest = PAIRED_METRICS
 
     def dig(run: dict, path: list[str]):
         node = run
@@ -209,7 +246,7 @@ def _paired_deltas(per_policy: dict[str, list[dict]]) -> dict:
 
     out: dict[str, dict] = {}
     for name, runs in per_policy.items():
-        if name == PolicyId.P1_CONTINUA.value:
+        if name == treatment_id.value:
             continue
         deltas: dict[str, dict] = {}
         for path, label in metrics_of_interest:
@@ -226,11 +263,18 @@ def _paired_deltas(per_policy: dict[str, list[dict]]) -> dict:
             if paired:
                 mean = sum(paired) / len(paired)
                 wins = sum(1 for d in paired if d < 0)
+                sd = (sum((d - mean) ** 2 for d in paired) / (len(paired) - 1)) ** 0.5 if len(paired) > 1 else 0.0
+                half = 1.96 * sd / (len(paired) ** 0.5) if len(paired) > 1 else 0.0
                 deltas[label] = {
                     "n_pairs": len(paired),
                     "mean_delta_p1_minus_baseline": round(mean, 4),
+                    "mean_delta_treatment_minus_baseline": round(mean, 4),
+                    "ci95_low": round(mean - half, 4),
+                    "ci95_high": round(mean + half, 4),
                     "p1_lower_in_pairs": wins,
-                    "note": "negative means CONTINUA (P1) scored lower on this metric",
+                    "treatment_lower_in_pairs": wins,
+                    "treatment": treatment_id.value,
+                    "note": f"negative means {treatment_id.value} scored lower on this metric than {name}",
                 }
         out[name] = deltas
     return out

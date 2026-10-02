@@ -23,7 +23,7 @@ and the capture frame.
 | **TCP congestion control** | There is no slow start, no congestion window, no fast retransmit, no ECN. Senders offer traffic at their configured rate into a finite queue that tail-drops. This reproduces queueing delay, buffer bloat and overload loss; it does **not** reproduce a real TCP stack. Any claim about how TCP would behave here is out of scope. |
 | **Real MPTCP** | The multipath behaviour is a *model*: a session that survives a subflow change. It is inspired by MPTCP and is not MPTCP. Path management, `MP_JOIN`, `ADD_ADDR`, the packet scheduler and retransmission across subflows are all absent. |
 | **Radio access networks** | Cellular is a shaped access-network profile: a capacity, a delay, a jitter and a loss process. There is no RAN scheduler, no HARQ, no beamforming, no handover signalling, no core network, no slicing. Calling it "5G" in the UI is shorthand for "the cellular access profile". |
-| **Satellite constellations** | Likewise a shaped profile with a long base RTT. There is no orbital mechanics, no beam handover, no ground-station scheduling and no weather. |
+| **Satellite constellations** | Likewise a shaped profile with a long base RTT. Its 620 ms base RTT is a geostationary-class figure, so the profile is labelled **GEO-like**; it was mislabelled "LEO-like" before Phase 4, and a LEO service would sit nearer 40–80 ms. There is no orbital mechanics, no beam handover, no ground-station scheduling and no weather. |
 | **Wi-Fi PHY/MAC** | No CSMA/CA, no rate adaptation, no contention with other stations beyond the aggregate `background` load, no channel model. RSSI is a *linear mapping from modelled coverage*, not a propagation calculation. |
 | **Cross-traffic beyond the aggregate** | Competing demand is a scalar fraction of link capacity, not simulated flows. |
 | **Application internals** | Video is a synthetic frame stream, not a codec. Voice-like traffic is a constant-bitrate stream with voice-like packet size and cadence - there is no codec, no jitter buffer, no PLC and no call setup. It is deliberately named "voice-like". |
@@ -65,7 +65,7 @@ that no one has to read implementation code to find out what was assumed.
 | Wired | 940 Mbps | 1.6 ms | 0.25 ms | 0.002 % | 0.15 s | 0.0 |
 | Wi-Fi | 90 Mbps | 9 ms | 3.5 ms | 0.18 % | 0.85 s | 0.0 |
 | Cellular | 55 Mbps | 32 ms | 9 ms | 0.35 % | 1.8 s | 0.004 |
-| Satellite | 18 Mbps | 620 ms | 45 ms | 0.7 % | 4.5 s | 0.06 |
+| Satellite (GEO-like) | 18 Mbps | 620 ms | 45 ms | 0.7 % | 4.5 s | 0.06 |
 
 Activation delay and per-megabyte cost are included **specifically so prediction
 is not given a free advantage**: pre-warming a backup costs real time and real
@@ -94,6 +94,42 @@ satellite path, at 620 ms base RTT, cannot meet the control deadline at all -
 that is a real consequence of the assumptions, and it is reported rather than
 hidden.
 
+### Control operating modes (Phase 4)
+
+| Mode | Rate | Packet | Deadline | Loss limit | What it means |
+| --- | --- | --- | --- | --- | --- |
+| teleop | 20 Hz | 220 B | 150 ms | 3 %, or 15 % where one retransmit still fits the deadline | The Phase 2 control stream, unchanged |
+| waypoint | 2 Hz | 600 B | 1500 ms | 20 % | Acknowledged waypoint commands on a path that cannot carry teleop |
+| safe_hold | none | none | none | none | No commands are sent |
+
+**Every waypoint and safe-hold value is an assumption** chosen for this
+demonstration (`link_profiles.json → workload.control.modes`). The recovered
+loss limit follows from the model's own retransmission mechanism: control is
+acknowledged with a 120 ms retransmit floor, so on a path whose RTT plus
+120 ms fits inside 150 ms a lost packet is resent and still arrives in time,
+and loss up to 15 % costs roughly loss-squared in misses.
+
+**The mode never changes the vehicle's motion.** Motion is part of the
+exogenous trace, generated from `(scenario, seed)` before any policy runs;
+that is what keeps trials paired. "Safe hold" therefore describes the
+command channel - no commands are generated and the operator's station shows
+the vehicle as holding - while the modelled vehicle continues along the
+recorded profile. A real vehicle would stop; this one cannot be allowed to,
+or the policy would be changing the world it is measured against. The
+limitation is deliberate and is asserted by a test.
+
+### Per-class steering (Phase 4)
+
+A class may ride an active path other than the session's primary path when
+that path's measured RTT and loss meet the class's deadline (control: the
+mode-support rule above; voice 120 ms, telemetry 400 ms, video 350 ms, each
+with the 3 % loss limit) and its trend does not project past that deadline
+within the prediction horizon. When several qualify the cheapest by
+`cost_per_mb` wins, ties broken by link preference. Bulk has no deadline and
+always rides the primary path. The dwell (2.0 s) and the measurement
+debounces (0.3 s) are hysteresis constants chosen on the tune seed block
+(`scripts/phase4_tune.py`, `docs/PHASE_4_RESULTS.md`).
+
 ## 6. The coverage model
 
 Geometric, from `packages/contracts/world.json`:
@@ -115,6 +151,9 @@ to treat it as a measurement.
   "unavailable" - never `0`.
 * RSSI is reported **only** for Wi-Fi. Every other link returns `None`, and a
   test asserts it.
+* The control mode is chosen from receiver-side RTT and loss alone, and the
+  time it spends unsupported, unknown or over-conservative is accounted from
+  the same facts (`docs/METRICS.md` section 10).
 * `modelled_coverage` is always labelled as modelled.
 * The predictor's score is only called a probability when the model has passed a
   calibration check. It currently has not, so it is labelled "uncalibrated".

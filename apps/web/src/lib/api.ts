@@ -89,6 +89,13 @@ export interface PolicySpec {
   app_aware: boolean;
   min_dwell_s: number;
   predictor: string;
+  // Phase 4 flags. Optional so the recorded public catalogue still validates.
+  defer_bulk?: boolean;
+  per_class_steering?: boolean;
+  mode_handover?: boolean;
+  anticipate_mode?: boolean;
+  mode_up_hold_s?: number;
+  class_dwell_s?: number;
 }
 
 export interface CapabilityCheck {
@@ -181,7 +188,7 @@ const live = {
     scenario_id: string;
     trials?: number;
     policies?: PolicyIdString[];
-    block?: 'train' | 'tune' | 'test';
+    block?: 'train' | 'tune' | 'test' | 'test2';
     predictor?: 'heuristic' | 'learned' | 'none';
     horizon_s?: number;
   }) =>

@@ -23,11 +23,13 @@ from datetime import datetime, timezone
 from ..contracts import (
     ALL_CLASSES,
     ALL_LINKS,
+    MODE_RANK,
     Action,
     ActionKind,
     ApplicationHealth,
     ClassHealth,
     ControllerState,
+    ControlMode,
     EngineEvent,
     ExecutionMode,
     LinkId,
@@ -39,6 +41,7 @@ from ..contracts import (
     VehicleObservation,
 )
 from ..controller.controller import POLICY_LIBRARY, ContinuaController
+from ..controller.modes import DEADLINE_MODES, highest_supported, mode_supported
 from .exogenous import ExogenousTrace, build_trace, link_profiles
 from .network import ClassReceiver, LinkPath, OutstandingAck, Packet, TrafficPlant, VideoReceiver
 
@@ -120,6 +123,7 @@ class Simulation:
         run_id: str | None = None,
         dt: float = 0.02,
         mode: ExecutionMode = ExecutionMode.SIMULATION,
+        policy_overrides: dict | None = None,
     ) -> None:
         self.scenario = scenario
         self.seed = seed
@@ -140,6 +144,13 @@ class Simulation:
         if predictor_kind is not None and self.config.predictor_kind != "none":
             self.config.predictor_kind = predictor_kind
         self.config.horizon_s = horizon_s
+        # Tuning knobs (Phase 4), applied on top of the policy library entry and
+        # recorded with the run. Used only on the tune seed block.
+        self.policy_overrides = dict(policy_overrides or {})
+        for name, value in self.policy_overrides.items():
+            if not hasattr(self.config, name):
+                raise ValueError(f"unknown PolicyConfig field '{name}'")
+            setattr(self.config, name, value)
         self.controller = ContinuaController(self.config)
 
         self.paths: dict[LinkId, LinkPath] = {link: LinkPath(link, self.trace) for link in ALL_LINKS}
@@ -168,6 +179,20 @@ class Simulation:
         self._last_bulk_paused = False
         self._video_stall_last_check = 0.0
         self.finished = False
+
+        # -- Phase 4 accounting, all from receiver-side facts (docs/METRICS.md
+        # -- section 10). The mode in force during a step is the one the
+        # -- previous decision set; support is judged on this step's windowed
+        # -- observations of the path control is actually on.
+        self.mode_time_s: dict[ControlMode, float] = {mode: 0.0 for mode in ControlMode}
+        self.teleop_supported_s = 0.0
+        self.unsupported_mode_s = 0.0
+        self.mode_unknown_s = 0.0
+        self.conservative_mode_s = 0.0
+        self.control_off_primary_s = 0.0
+        self.mode_changes = 0
+        self.anticipated_mode_changes = 0
+        self.late_mode_changes = 0
 
     # -- observation building ------------------------------------------------
 
@@ -315,6 +340,74 @@ class Simulation:
             safe_stop=self.safe_stop,
         )
 
+    # -- Phase 4: class routing and mode accounting ---------------------------
+
+    def _class_path(self, cls: TrafficClass) -> LinkId | None:
+        """The path a class rides right now.
+
+        A class path is subordinate to the session: it is used only while the
+        session's primary path exists and only if it is itself ready to carry;
+        otherwise the class falls back to the primary path. Without
+        per-class steering every class path *is* the primary path.
+        """
+        decision = self.last_decision
+        if decision is None or decision.carrying is None:
+            return None
+        path = decision.class_paths.get(cls, decision.carrying)
+        if path is not decision.carrying and not self.paths[path].carrying_ready:
+            return decision.carrying
+        return path
+
+    def _account_mode(self, observations: dict[LinkId, LinkObservation]) -> None:
+        """Receiver-side accounting of the control mode in force this step."""
+        dt = self.dt
+        mode = self.plant.control_mode
+        path = self._class_path(TrafficClass.CONTROL)
+        obs = observations.get(path) if path is not None else None
+        self.mode_time_s[mode] += dt
+        if path is not None and self.last_decision is not None and path is not self.last_decision.carrying:
+            self.control_off_primary_s += dt
+        support = {candidate: mode_supported(obs, candidate) for candidate in DEADLINE_MODES}
+        if mode is ControlMode.TELEOP and support[ControlMode.TELEOP] is True:
+            self.teleop_supported_s += dt
+        if mode is not ControlMode.SAFE_HOLD:
+            verdict = support[mode]
+            if verdict is False:
+                self.unsupported_mode_s += dt
+            elif verdict is None:
+                self.mode_unknown_s += dt
+        if MODE_RANK[highest_supported(support)] > MODE_RANK[mode]:
+            # A more capable mode was measurably supported while a lower one
+            # was in force: the cost of hysteresis and of anticipating wrongly.
+            self.conservative_mode_s += dt
+
+    def _account_mode_changes(
+        self,
+        decision,
+        observations: dict[LinkId, LinkObservation],
+        previous_control_path: LinkId | None,
+    ) -> None:
+        """Classify each downshift as anticipated or late from receiver facts.
+
+        Late means the path control was on had already stopped supporting the
+        old mode when the change was made; anticipated means it still did, so
+        the change came ahead of the unsupported period (a prediction, or a
+        change made before moving control onto a path that cannot support it).
+        """
+        for action in decision.actions:
+            if action.kind is not ActionKind.MODE_CHANGE:
+                continue
+            self.mode_changes += 1
+            old_mode = ControlMode(str(action.detail["from"]))
+            new_mode = ControlMode(str(action.detail["to"]))
+            if MODE_RANK[new_mode] >= MODE_RANK[old_mode]:
+                continue
+            old_obs = observations.get(previous_control_path) if previous_control_path is not None else None
+            if mode_supported(old_obs, old_mode) is False:
+                self.late_mode_changes += 1
+            else:
+                self.anticipated_mode_changes += 1
+
     # -- data plane ----------------------------------------------------------
 
     def _send(self, packet: Packet, link: LinkId, attempts: int = 1) -> None:
@@ -385,7 +478,8 @@ class Simulation:
             conf = self.plant.spec.get(entry.packet.traffic_class.value, {})
             max_retx = int(conf.get("max_retransmits", 0))
             past_deadline = entry.packet.deadline_t is not None and self.t > entry.packet.deadline_t
-            if entry.attempts <= max_retx and not past_deadline and self.controller.carrying is not None:
+            retry_path = self._class_path(entry.packet.traffic_class)
+            if entry.attempts <= max_retx and not past_deadline and retry_path is not None:
                 self.plant.control_retransmits += 1
                 retry = Packet(
                     uid=self.plant._next_uid(),
@@ -396,8 +490,9 @@ class Simulation:
                     deadline_t=entry.packet.deadline_t,
                     band=entry.packet.band,
                     is_retransmit=True,
+                    mode=entry.packet.mode,
                 )
-                self._send(retry, self.controller.carrying, attempts=entry.attempts + 1)
+                self._send(retry, retry_path, attempts=entry.attempts + 1)
 
     def _emit_probes(self) -> None:
         period = 1.0 / float(self.probing["probe_hz"])
@@ -464,24 +559,37 @@ class Simulation:
 
         # --- generate and place traffic --------------------------------------
         if carrying is not None and self.paths[carrying].activated:
-            backup = next(
-                (link for link in decision.want_active if link != carrying and self.paths[link].carrying_ready),
-                None,
-            )
+            # Iterate in link-preference order, never over the set itself: a
+            # `set[LinkId]` iterates in hash order, which Python randomises per
+            # process, and B2 (three or more active paths) picked a different
+            # duplication target on every launch. Found by the Phase 4
+            # regression guard; see docs/PROGRESS.md.
+            ready = [
+                link
+                for link in ALL_LINKS
+                if link in decision.want_active and self.paths[link].carrying_ready
+            ]
             for packet in self.plant.generate(self.t):
-                self._send(packet, carrying)
-                if packet.traffic_class in self._duplicate_classes and backup is not None:
-                    twin = Packet(
-                        uid=self.plant._next_uid(),
-                        traffic_class=packet.traffic_class,
-                        seq=packet.seq,
-                        size=packet.size,
-                        created_t=packet.created_t,
-                        deadline_t=packet.deadline_t,
-                        band=packet.band,
-                        is_duplicate=True,
-                    )
-                    self._send(twin, backup)
+                path = self._class_path(packet.traffic_class) or carrying
+                self._send(packet, path)
+                if packet.traffic_class in self._duplicate_classes:
+                    # The twin goes on the first ready path other than the one
+                    # the original took; with every class on the primary path
+                    # that is the backup, exactly as before Phase 4.
+                    twin_path = next((link for link in ready if link is not path), None)
+                    if twin_path is not None:
+                        twin = Packet(
+                            uid=self.plant._next_uid(),
+                            traffic_class=packet.traffic_class,
+                            seq=packet.seq,
+                            size=packet.size,
+                            created_t=packet.created_t,
+                            deadline_t=packet.deadline_t,
+                            band=packet.band,
+                            is_duplicate=True,
+                            mode=packet.mode,
+                        )
+                        self._send(twin, twin_path)
             offered = self.plant.bulk_offer_bytes()
             if offered > 0:
                 accepted = self.paths[carrying].offer_bulk(offered)
@@ -494,6 +602,10 @@ class Simulation:
                 if receiver is not None and packet.deadline_t is not None:
                     receiver.deadline_eligible += 1
                     receiver.deadline_misses += 1
+                    if packet.traffic_class is TrafficClass.CONTROL:
+                        entry = receiver.mode_entry(packet.mode)
+                        entry["deadline_eligible"] += 1
+                        entry["deadline_misses"] += 1
 
         self._emit_probes()
 
@@ -523,11 +635,17 @@ class Simulation:
             heading_rad=round(float(self.trace.heading[idx]), 4),
             zone=self.trace.zone[idx],
         )
+        # Mode accounting for the step just simulated, before the controller
+        # may change the mode for the next one.
+        self._account_mode(observations)
+        previous_control_path = self._class_path(TrafficClass.CONTROL)
         decision = self.controller.decide(self.t, observations, None, sample)
+        self._account_mode_changes(decision, observations, previous_control_path)
         self.last_decision = decision
         self._duplicate_classes = decision.duplicate_classes
         self.plant.video_rung = decision.video_rung
         self.plant.bulk_paused = decision.bulk_paused
+        self.plant.control_mode = decision.control_mode
 
         # --- apply session intent ---------------------------------------------
         for link, path in self.paths.items():
@@ -577,9 +695,12 @@ class Simulation:
                 app=app,
                 prediction=decision.prediction,
                 action=action,
+                actions=list(decision.actions),
                 reason=decision.reason,
                 policy_id=self.config.policy_id,
                 scenario_id=self.scenario["id"],
+                control_mode=decision.control_mode,
+                class_paths=dict(decision.class_paths),
             )
             self.events.append(event)
 

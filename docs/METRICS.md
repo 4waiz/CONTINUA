@@ -111,6 +111,21 @@ are separate claims: a session can survive while missing every deadline.
 | `session_reconnects` | count | Interruptions lasting ≥ `SESSION_TIMEOUT_S` (3.0 s). For B0, **every** path change also breaks the session, because single-path transport does not survive an address change |
 | `safe_stop_entered` | bool | Whether the vehicle entered simulated safe-stop |
 
+### "No carrying path" when classes ride their own paths (Phase 4)
+
+With per-class steering a traffic class may ride a different *active* path
+from the session's primary path (`carrying`). Continuity is still measured on
+the primary path alone, exactly as above: **"no carrying path" means the
+session's primary path is not activated.** A class path is a subflow of the
+session. It is used only while the primary path exists and only while it is
+itself ready to carry; a class whose own path is not ready falls back to the
+primary path, and when the primary path is lost every class is lost with it
+until the controller establishes a new one. A class path therefore never
+keeps the session alive on its own, and never shortens or lengthens an
+interruption. This is the Phase 2 definition unchanged, which is what keeps
+the Phase 4 continuity figures comparable with the Phase 2 ones; a test
+asserts that P2's outage on `total-loss` equals P1's.
+
 ---
 
 ## 5. Link usage and cost
@@ -119,6 +134,8 @@ are separate claims: a session can survive while missing every deadline.
 | --- | --- | --- |
 | `link_bytes[link]` | B | Every byte placed on that link: application payload, duplicates, retransmissions and probes |
 | `satellite_bytes` | B | The expensive one, broken out because it is the interesting cost |
+| `bulk_bytes[link]` | B | The part of `link_bytes[link]` that was bulk transfer |
+| `satellite_bytes_excl_bulk` | B | `satellite_bytes − bulk_bytes[satellite]`. Pausing bulk is the easy way to save satellite bytes; this is what a policy spent on the satellite path *after* that saving, so the B2-defer baseline can be read against it |
 | `goodput_bytes` | B | Useful application bytes delivered |
 | `overhead_pct` | % | `100 × (total_link_bytes − goodput_bytes) ÷ total_link_bytes` |
 | `cost_units` | arbitrary | `Σ(link_MB × cost_per_mb) + Σ(activations × activation_cost)`. Relative units only - see `docs/ASSUMPTIONS.md` §4 |
@@ -138,6 +155,8 @@ load is a capacity reduction applied by the exogenous trace and never appears in
 | `backup_activations` | Times a non-carrying path was activated |
 | `duplication_windows` | Distinct periods of control duplication |
 | `control_timeouts` / `control_retransmits` | Acknowledgement timeouts and resulting retransmissions |
+| `class_steers` | Phase 4. Times a class was moved onto a path other than the one it was on (`STEER_CLASS` actions). Counted for every class, so churn is visible |
+| `control_off_primary_s` | Phase 4. Simulated seconds during which control rode a path other than the session's primary path |
 
 ---
 
@@ -183,6 +202,7 @@ rows is reported as `skipped_already_violating`.
 | `app_health_v1` | trailing 2.0 s |
 | Continuity, cost, link bytes | whole run |
 | Prediction precision/recall | whole run, transitions only |
+| Control-mode time accounting (section 10) | every 20 ms simulation step, judged on the trailing 2.0 s observations |
 | Aggregate across trials | 20 paired trials; mean, sd and a 95 % CI on the mean |
 
 ---
@@ -198,3 +218,73 @@ mean in each row, and says in the caption that **marking is not a significance
 test**. Paired per-trial deltas are reported alongside, because with an
 identical exogenous trace the paired difference is far more sensitive than a
 difference of means.
+
+---
+
+## 10. Control operating mode (Phase 4)
+
+The control class has an operating mode: **teleop** (20 Hz, 150 ms deadline,
+the Phase 2 behaviour), **waypoint** (2 Hz, 600 B, 1500 ms deadline, acked) or
+**safe_hold** (no commands). Policies without `mode_handover` stay in teleop
+for the whole run and still report every metric here, so the strict teleop
+picture is available for every policy. The mode never changes the modelled
+vehicle motion or the exogenous trace (`docs/ASSUMPTIONS.md` section 5); a
+test asserts it.
+
+### Support, the one definition
+
+> A path supports a control mode when it is ready to carry traffic (active or
+> carrying), its windowed RTT from acknowledgements is at or below the mode's
+> deadline, and its windowed loss is at or below the mode's loss limit. Control
+> is acknowledged and retransmitted, so where the path's RTT plus the
+> retransmit floor (120 ms) still fits inside the deadline the mode's
+> *recovered* loss limit applies instead: one lost packet is resent and still
+> arrives in time. A ready path with too few samples supports nothing *yet*
+> (unknown). A path that is unavailable, idle, activating or validating
+> supports nothing: packets placed on it would not arrive. safe_hold has no
+> deadline and is always supported.
+
+| Mode | Deadline | Loss limit | Recovered loss limit |
+| --- | --- | --- | --- |
+| teleop | 150 ms | 3.0 % (the Phase 2 violation definition) | 15 % where RTT + 120 ms ≤ 150 ms |
+| waypoint | 1500 ms | 20 % | none |
+| safe_hold | none | none | none |
+
+The same function (`controller/modes.py: mode_supported`) is used by the
+controller when it decides and by the simulator when it measures. If the two
+differed, the metrics below would measure the difference rather than the
+network.
+
+### Metrics, all from receiver-side facts
+
+Accounted every simulation step for the mode in force during that step (the
+one the previous decision set), judged on that step's trailing-window
+observations of the path control is actually on.
+
+| Metric | Unit | Definition |
+| --- | --- | --- |
+| `mode_time_s[mode]` | s | Simulated time spent in each mode. Sums to the run duration plus one step |
+| `mode_changes` | count | `MODE_CHANGE` actions emitted |
+| `anticipated_mode_changes` | count | Downshifts made while the path control was on **still supported** the old mode: a change made ahead of the unsupported period, on a prediction or before moving control onto a path that cannot support the mode |
+| `late_mode_changes` | count | Downshifts made after the path control was on had **already stopped** supporting the old mode. A change made in the same step the period began counts as late |
+| `unsupported_mode_s` | s | Time in a mode with a deadline (teleop or waypoint) while the control path measurably did **not** support it. The core cost of being in too high a mode |
+| `mode_unknown_s` | s | Time in a mode with a deadline while the control path was ready but had too few samples to say either way. Reported rather than folded into either side |
+| `conservative_mode_s` | s | Time in a mode **below** the highest mode the control path measurably supported: the cost of hysteresis and of anticipating wrongly. The counterpart of `unsupported_mode_s`; a policy that minimises one by inflating the other has not won |
+| `teleop_supported_s` | s | Time in teleop while teleop was measurably supported |
+| `teleop_availability_pct` | % | `100 × teleop_supported_s ÷ Σ mode_time_s`. **The strict picture:** the share of the run during which 20 Hz commands against the 150 ms deadline were both offered and supported. A policy that relaxes its deadline cannot raise this number; it can only lower it |
+| `control_by_mode[mode]` | counts | `sent`, `delivered`, `deadline_eligible`, `deadline_misses` of control packets generated under each mode, from the receiver log |
+
+### Reading them honestly
+
+* **A relaxed deadline is not a win.** Under mode handover the control
+  class's overall `deadline_miss_pct` falls because waypoint commands have a
+  1500 ms deadline and safe hold sends nothing. That number is still reported,
+  but it is not comparable with a teleop-only policy's. `teleop_availability_pct`
+  is the figure to compare, and it is reported for every policy.
+* `unsupported_mode_s` for a teleop-only policy is simply the time its
+  control path failed the teleop criterion. It is large on the satellite
+  segment for every policy, because 620 ms cannot meet 150 ms.
+* `conservative_mode_s` is where mode handover pays: every second in waypoint
+  while teleop would have worked is a second of operator capability given up
+  to hysteresis or to a wrong forecast. The P2-reactiveMode ablation isolates
+  the forecasting part.

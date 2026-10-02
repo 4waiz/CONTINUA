@@ -608,8 +608,10 @@ export function PipelineTimeline({
               <span className="metric mt-[1px] w-[52px] shrink-0 font-[family-name:var(--font-mono)] text-[11px] text-[color:var(--color-muted)]">
                 t+{event.t.toFixed(1)}s
               </span>
-              <Chip tone={STAGE_TONE[event.stage] ?? 'muted'}>
-                {ACTION_LABEL[event.action?.kind ?? 'none']}
+              <Chip tone={event.action?.kind === 'mode_change' ? 'warn' : (STAGE_TONE[event.stage] ?? 'muted')}>
+                {event.action?.kind === 'mode_change'
+                  ? `Mode ${String(event.action.detail.from ?? '')} → ${String(event.action.detail.to ?? '')}`
+                  : ACTION_LABEL[event.action?.kind ?? 'none']}
               </Chip>
               <span className="min-w-0 flex-1 text-[11.5px] leading-snug">{event.reason}</span>
               {event.prediction?.violation_expected && (

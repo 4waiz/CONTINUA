@@ -16,14 +16,29 @@ CONTINUA.
 | P1-noPred | Ablation: no prediction | yes | yes | **no** | yes |
 | P1-noApp | Ablation: no application priorities | yes | yes | yes | **no** |
 
-All six are the *same class*, `ContinuaController`, differing only in the flags
-on `PolicyConfig`. There is no separate "baseline" code path that could be
-quietly worse than it needs to be - a test asserts the policies differ only by
-configuration.
+Phase 4 adds five more, again flags only:
+
+| Id | Policy | Per-class steering | Mode handover | Anticipates mode | Bulk deferral |
+| --- | --- | --- | --- | --- | --- |
+| **B2-defer** | B2 plus the app-aware bulk pause rule, nothing else app-aware | no | no | - | **yes** |
+| **P2** | **P1 plus both new mechanisms** | **yes** | **yes** | yes | yes (via app-awareness) |
+| P2-noSteer | Ablation: mode handover only | **no** | yes | yes | yes |
+| P2-noMode | Ablation: steering only | yes | **no** | - | yes |
+| P2-reactiveMode | Ablation: mode changes only after a measured violation | yes | yes | **no** | yes |
+
+All eleven are the *same class*, `ContinuaController`, differing only in the
+flags on `PolicyConfig`. There is no separate "baseline" code path that could
+be quietly worse than it needs to be - a test asserts the policies differ only
+by configuration, and a regression guard asserts that the six Phase 2 policies
+produce byte-identical metrics and decision streams with the Phase 4 code in
+place (`tests/engine/test_regression_guard.py`).
 
 **B2 exists specifically so that the cost claim can be tested.** Without it,
 "CONTINUA gets resilience cheaply" would be an assertion. With it, the cost
-difference is measured.
+difference is measured. **B2-defer exists because most of P1's satellite
+saving came from pausing bulk**, which is the easy part; it isolates that part
+so the rest of the application-aware saving can be read on its own, alongside
+`satellite_bytes_excl_bulk`.
 
 ### On what "multipath" means here
 
@@ -63,13 +78,14 @@ Disjoint by construction (`experiments/runner.py`):
 | Block | Base | Used for |
 | --- | --- | --- |
 | `train` | 10 000 | Fitting the learned predictor |
-| `tune` | 40 000 | Choosing its decision threshold, measuring calibration |
-| `test` | 70 000 | **The reported comparison. Nothing is fitted on this block** |
+| `tune` | 40 000 | Choosing its decision threshold, measuring calibration; Phase 4 hysteresis constants |
+| `test` | 70 000 | **The Phase 2 comparison. Nothing is fitted on this block** |
+| `test2` | 100 000 | **The Phase 4 comparison.** The `test` block was reported in Phase 2 and so is no longer unseen; `test2` was used exactly once |
 
 Additionally, two whole scenario **families** (`outage`, `motion`) are held out
 of training entirely, so the model is evaluated on scenario shapes it never saw.
 
-A test asserts the three blocks do not intersect.
+A test asserts the four blocks do not intersect.
 
 ---
 
@@ -84,7 +100,15 @@ python -m continua_engine.experiments --trials 20 --block test
 
 # 3. Optional: everything in the catalogue.
 python -m continua_engine.experiments --all --trials 20
+
+# 4. Phase 4. Tune on the tune block, with the selection rule declared in the
+#    script before any cell runs; then the comparison on test2, once.
+python scripts/phase4_tune.py --trials 5
+python scripts/phase4_experiment.py --trials 20 --block test2
 ```
+
+The Phase 4 driver refuses to run a second time while its index exists, and
+the tuning script records every grid cell, not just the chosen one.
 
 Each experiment writes `data/experiments/<experiment_id>.json` containing:
 
@@ -109,7 +133,10 @@ Each experiment writes `data/experiments/<experiment_id>.json` containing:
 | `total-loss` | Every path removed for 9 s | **No policy can win.** Checks that an outage is reported as an outage |
 
 `dock-disconnect`, `fast-run`, `reverse-run` and `baseline-journey` are also in
-the catalogue and run in `--all`.
+the catalogue and run in `--all`. The Phase 4 comparison adds `fast-run` and
+`reverse-run` to the six core scenarios: speed shortens every hysteresis
+window, and the reversed route starts on satellite, which is where a mode
+machine that had quietly learned the forward order would show it.
 
 ---
 
@@ -133,7 +160,18 @@ the catalogue and run in `--all`.
   fitted on `train`, its threshold chosen on `tune`.
 * **The trace was not re-rolled until CONTINUA won.** Scenario specifications
   were written before the comparison was run and have not been edited to change
-  an outcome.
+  an outcome. Phase 4 edited no scenario.
+* **The mode cannot touch the world.** A test runs P1 and P2 on the same seed
+  and asserts the trace arrays and every vehicle sample are identical, and
+  that the vehicle keeps moving while the command channel is in safe hold.
+* **Phase 4 was developed and tuned on the tune block only.** The two
+  hysteresis constants came from a declared grid and a selection rule written
+  down before the grid ran; `test2` was then used once, and the driver refuses
+  to run again.
+* **Costs of the new mechanisms are in the same tables as the wins:** class
+  steers, mode changes, time held below a supported mode, bytes and cost on
+  the second path, and `teleop_availability_pct` as the strict picture a
+  relaxed deadline cannot flatter.
 
 ---
 

@@ -32,7 +32,9 @@ npm run build && npm start  # app on localhost:3000
 | <http://localhost:3000/scene-lab> | Phase 1 scene inspector |
 
 Node 20.11+ and Python 3.11+ required. Engine dependencies:
-`pip install -r services/engine/requirements.txt`.
+`pip install -r services/engine/requirements.txt`. If port 8000 is taken,
+start the engine on another port and set `NEXT_PUBLIC_ENGINE_URL` in
+`apps/web/.env.local` before building.
 
 ## What this is
 
@@ -60,11 +62,14 @@ this machine** - the reasons were probed, not assumed, and are recorded in
 | `npm run engine` | Start the Python engine |
 | `npm run dev` / `npm run build` / `npm start` | Frontend |
 | `npm run lint` · `npm run typecheck` | Static checks, both clean |
-| `npm run test:engine` | 36 engine tests |
-| `npm run test:phase2` | 11 browser tests (engine must be running) |
+| `npm run test:engine` | engine tests, including the Phase 4 regression guard |
+| `npm run test:phase2` | 11 browser tests (engine must be running; `CONTINUA_ENGINE` overrides its URL) |
 | `npm run test:smoke` | Phase 1 scene tests, 3 viewports |
-| `npm run experiment:smoke` | 2 trials × every scenario, ~3 min |
-| `npm run experiment` | 20 paired trials × 6 core scenarios, ~25 min |
+| `npm run experiment:smoke` | 2 trials × every scenario |
+| `npm run experiment` | 20 paired trials × 6 core scenarios × every policy |
+| `python scripts/phase4_tune.py` | Phase 4 hysteresis grid on the tune block, selection rule declared in the script |
+| `python scripts/phase4_experiment.py` | The Phase 4 comparison on `test2`, run once; refuses to run twice |
+| `python scripts/phase4_results.py` | Renders `docs/PHASE_4_RESULTS.md` from the recorded experiments |
 | `npm run train:predictor` | Retrain the learned predictor |
 | `npm run emulation:status` | Honest capability report for this host |
 | `npm run blender:all` | Regenerate every 3D asset |
@@ -138,6 +143,7 @@ tests/               Engine (pytest) and browser (Playwright) suites
 | [`docs/ASSUMPTIONS.md`](docs/ASSUMPTIONS.md) | Everything modelled rather than measured |
 | [`docs/METRICS.md`](docs/METRICS.md) | Every metric, unit and measurement window |
 | [`docs/EXPERIMENT_METHOD.md`](docs/EXPERIMENT_METHOD.md) | Pairing, seed blocks, and how not to fool yourself |
+| [`docs/PHASE_4_RESULTS.md`](docs/PHASE_4_RESULTS.md) | Phase 4: steering and mode handover, every scenario, with the losses |
 | [`docs/MODEL_CARD.md`](docs/MODEL_CARD.md) | The learned predictor, including its calibration failure |
 | [`docs/SECURITY.md`](docs/SECURITY.md) | Threat model and known weaknesses |
 | [`docs/AI_USE.md`](docs/AI_USE.md) | Where ML is used, and why no LLM is in the routing loop |
@@ -170,3 +176,5 @@ integrated graphics; 131 draw calls; 2.28 MB of runtime assets.
 | 1 | Vehicle, world, route animation, scene components, design system, `/scene-lab` | **complete** |
 | 2 | Network engine, controller, dashboard, experiments | **complete** |
 | 3 | Demo video: claim ledger, deterministic capture, narration, edit | **complete** |
+| 4 | Per-class steering, control mode handover, honesty fixes, test2 comparison | **complete** |
+| 4 | Per-class steering, control mode handover, B2-defer baseline, test2 comparison | **complete** (see `docs/PHASE_4_RESULTS.md`) |

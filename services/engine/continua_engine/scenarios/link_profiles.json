@@ -1,6 +1,6 @@
 {
   "$comment": "SYNTHETIC ASSUMPTIONS, NOT MEASURED OPERATOR DATA. These are plausible starting profiles chosen to make the four access classes behave distinguishably; they are not derived from any real network trace. See docs/ASSUMPTIONS.md. Every value here is a knob, deliberately kept out of implementation code.",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "profiles": {
     "wired": {
       "label": "Wired Ethernet (dock)",
@@ -47,7 +47,7 @@
       "rssi_available": false
     },
     "satellite": {
-      "label": "Satellite link (LEO-like access profile)",
+      "label": "Satellite link (GEO-like access profile: 620 ms base RTT)",
       "capacity_mbps": 18.0,
       "base_rtt_ms": 620.0,
       "jitter_ms": 45.0,
@@ -79,7 +79,13 @@
       "acked": true,
       "retransmit_timeout_ms": 120.0,
       "max_retransmits": 2,
-      "band": 0
+      "band": 0,
+      "modes": {
+        "$comment": "Phase 4 operating modes for the control class. teleop repeats the base values above, and the generator uses the base values while in teleop, so pre-Phase-4 behaviour is unchanged. waypoint and safe_hold are ASSUMPTIONS chosen for this demonstration (docs/ASSUMPTIONS.md section 5). max_loss_pct is the windowed loss above which a mode is judged unsupported on a path; max_loss_pct_recovered replaces it when the path's RTT plus the retransmit floor fits inside the deadline, because control is acknowledged and one retransmission then still meets the deadline.",
+        "teleop": { "hz": 20.0, "packet_bytes": 220, "deadline_ms": 150.0, "max_loss_pct": 3.0, "max_loss_pct_recovered": 15.0 },
+        "waypoint": { "hz": 2.0, "packet_bytes": 600, "deadline_ms": 1500.0, "max_loss_pct": 20.0 },
+        "safe_hold": { "hz": 0.0, "packet_bytes": 0, "deadline_ms": null, "max_loss_pct": null }
+      }
     },
     "voice": {
       "label": "Voice-like operator audio",

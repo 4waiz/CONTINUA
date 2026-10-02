@@ -31,6 +31,10 @@ CORE_SCENARIOS = (
     "total-loss",
 )
 
+#: Phase 4 comparison set: the six core scenarios plus the two motion
+#: scenarios, whose speed and direction stress steering and mode timing.
+PHASE4_SCENARIOS = CORE_SCENARIOS + ("fast-run", "reverse-run")
+
 
 def _progress(done: int, total: int, label: str) -> None:
     width = 28
@@ -48,8 +52,13 @@ def headline(summary: dict) -> None:
         ("video_stall_ms", "video stall ms", 0),
         ("app_health_score", "app health", 1),
         ("satellite_bytes", "sat MB", 1),
+        ("satellite_bytes_excl_bulk", "sat MB ex-bulk", 1),
         ("cost_units", "cost", 2),
         ("handovers", "handovers", 1),
+        ("teleop_availability_pct", "teleop avail %", 1),
+        ("unsupported_mode_s", "unsupported s", 2),
+        ("conservative_mode_s", "conservative s", 2),
+        ("mode_changes", "mode changes", 1),
     ]
     policies = list(aggregate)
     print(f"\n  {'metric':<16}" + "".join(f"{p:>13}" for p in policies))
@@ -62,7 +71,7 @@ def headline(summary: dict) -> None:
             if mean is None:
                 cells.append(f"{' - ':>13}")
             else:
-                value = mean / 1e6 if key == "satellite_bytes" else mean
+                value = mean / 1e6 if key.startswith("satellite_bytes") else mean
                 cells.append(f"{value:>13.{digits}f}")
         print(f"  {label:<16}" + "".join(cells))
 
@@ -72,8 +81,9 @@ def main() -> None:
     parser.add_argument("--scenario", action="append", default=None)
     parser.add_argument("--all", action="store_true", help="every scenario in the catalogue")
     parser.add_argument("--smoke", action="store_true", help="2 trials on every scenario")
+    parser.add_argument("--phase4", action="store_true", help="the six core scenarios plus fast-run and reverse-run")
     parser.add_argument("--trials", type=int, default=20)
-    parser.add_argument("--block", default="test", choices=["train", "tune", "test"])
+    parser.add_argument("--block", default="test", choices=["train", "tune", "test", "test2"])
     parser.add_argument("--predictor", default="heuristic", choices=["heuristic", "learned", "none"])
     parser.add_argument("--policies", default=None, help="comma-separated policy ids")
     args = parser.parse_args()
@@ -83,6 +93,9 @@ def main() -> None:
         trials = 2
     elif args.all:
         scenarios = list(scenario_catalogue())
+        trials = args.trials
+    elif args.phase4:
+        scenarios = list(PHASE4_SCENARIOS)
         trials = args.trials
     elif args.scenario:
         scenarios = args.scenario

@@ -28,7 +28,7 @@ import math
 from collections import deque
 from dataclasses import dataclass, field
 
-from ..contracts import ALL_CLASSES, LinkId, TrafficClass
+from ..contracts import ALL_CLASSES, ControlMode, LinkId, TrafficClass
 from .exogenous import ExogenousTrace, link_profiles
 
 
@@ -48,6 +48,9 @@ class Packet:
     is_retransmit: bool = False
     sent_t: float = 0.0
     link: LinkId | None = None
+    #: Control only: the operating mode the command was generated under, so the
+    #: receiver can account deadline outcomes per mode (Phase 4).
+    mode: str = "teleop"
 
 
 @dataclass(slots=True)
@@ -80,6 +83,9 @@ class LinkPath:
 
         # Accounting.
         self.link_bytes = 0
+        #: The part of `link_bytes` that was bulk transfer, so a policy that
+        #: merely pauses bulk cannot present the saving as something cleverer.
+        self.bulk_link_bytes = 0
         self.activations = 0
         self.dropped_queue = 0
         self.dropped_loss = 0
@@ -179,6 +185,7 @@ class LinkPath:
         accepted = max(0.0, min(byte_count, room))
         self.bulk_bytes += accepted
         self.link_bytes += int(accepted)
+        self.bulk_link_bytes += int(accepted)
         return accepted
 
     def drain(self, t: float, dt: float, idx: int, heap: list) -> float:
@@ -245,10 +252,18 @@ class ClassReceiver:
     bytes_completed: float = 0.0
     #: recent arrivals for windowed statistics: (t, latency_ms, ok)
     window: deque = field(default_factory=lambda: deque(maxlen=4000))
+    #: control only: sent / delivered / deadline outcomes per operating mode
+    #: (Phase 4), keyed by `ControlMode.value`.
+    by_mode: dict[str, dict[str, int]] = field(default_factory=dict)
 
     #: Video accounts goodput per completed frame instead, so it must not also
     #: count each arriving packet or the totals double.
     counts_packet_goodput: bool = True
+
+    def mode_entry(self, mode: str) -> dict[str, int]:
+        return self.by_mode.setdefault(
+            mode, {"sent": 0, "delivered": 0, "deadline_eligible": 0, "deadline_misses": 0}
+        )
 
     def accept(self, packet: Packet, t: float) -> bool:
         """Deliver a packet to the application. Returns False if deduplicated.
@@ -267,10 +282,18 @@ class ClassReceiver:
         if self.counts_packet_goodput:
             self.goodput_bytes += packet.size
         self.last_arrival_t = t
+        missed = packet.deadline_t is not None and t > packet.deadline_t
         if packet.deadline_t is not None:
             self.deadline_eligible += 1
-            if t > packet.deadline_t:
+            if missed:
                 self.deadline_misses += 1
+        if self.traffic_class is TrafficClass.CONTROL:
+            entry = self.mode_entry(packet.mode)
+            entry["delivered"] += 1
+            if packet.deadline_t is not None:
+                entry["deadline_eligible"] += 1
+                if missed:
+                    entry["deadline_misses"] += 1
         return True
 
 
@@ -347,6 +370,9 @@ class TrafficPlant:
         #: Bulk can be paused by the policy when capacity is scarce.
         self.bulk_paused = False
         self.bulk_remaining = float(spec["bulk"]["total_bytes"])
+        #: Phase 4: operating mode of the control class, set by the policy.
+        #: `teleop` reproduces the base control parameters exactly.
+        self.control_mode = ControlMode.TELEOP
 
     def _next_uid(self) -> int:
         self.uid += 1
@@ -367,6 +393,15 @@ class TrafficPlant:
             if cls not in self.enabled:
                 continue
             conf = spec[cls.value]
+            mode = ControlMode.TELEOP.value
+            if cls is TrafficClass.CONTROL and self.control_mode is not ControlMode.TELEOP:
+                if self.control_mode is ControlMode.SAFE_HOLD:
+                    # No commands are generated in safe hold. The receiver's
+                    # per-mode table makes the gap visible rather than silent.
+                    self.receivers[cls].mode_entry(self.control_mode.value)
+                    continue
+                mode = self.control_mode.value
+                conf = {**conf, **spec["control"]["modes"][mode]}
             for _ in range(self._due(cls, conf["hz"], t)):
                 self.seq[cls] += 1
                 packet = Packet(
@@ -377,8 +412,11 @@ class TrafficPlant:
                     created_t=t,
                     deadline_t=t + conf["deadline_ms"] / 1000.0,
                     band=int(conf["band"]),
+                    mode=mode,
                 )
                 self.receivers[cls].sent += 1
+                if cls is TrafficClass.CONTROL:
+                    self.receivers[cls].mode_entry(mode)["sent"] += 1
                 out.append(packet)
 
         if TrafficClass.VIDEO in self.enabled:

@@ -14,7 +14,15 @@
  * drawing a full green bar.
  */
 
-import type { EngineEvent, TrafficClassId } from '@continua/contracts/engine';
+import {
+  CONTROL_MODE_LABEL,
+  LINK_LABEL,
+  classPathOf,
+  controlModeOf,
+  type EngineEvent,
+  type TrafficClassId,
+} from '@continua/contracts/engine';
+import { NETWORK_COLOR } from '@continua/scene';
 
 const CLASS_ORDER: TrafficClassId[] = ['control', 'telemetry', 'video', 'voice', 'bulk'];
 
@@ -73,6 +81,10 @@ export function HealthPanel({ event }: { event: EngineEvent | null }) {
           : 'var(--color-bad)';
 
   const present = CLASS_ORDER.filter((cls) => app?.classes[cls]);
+  const mode = controlModeOf(event);
+  const modeTone = mode === 'teleop' ? 'var(--color-good)' : mode === 'waypoint' ? 'var(--color-warn)' : 'var(--color-bad)';
+  // Only worth a label per class when at least one class is off the primary path.
+  const steered = Boolean(event?.carrying) && CLASS_ORDER.some((cls) => classPathOf(event, cls) !== event?.carrying);
 
   return (
     <section className="panel px-4 py-3.5">
@@ -107,6 +119,20 @@ export function HealthPanel({ event }: { event: EngineEvent | null }) {
         </div>
       </div>
 
+      {event && (
+        <div className="mb-2.5 flex items-center justify-between gap-2 text-[11px]">
+          <span
+            className="cursor-help text-[color:var(--color-muted)]"
+            title="Operating mode of the control class, chosen from receiver-side RTT and loss on the path control is on. Teleop: 20 Hz against 150 ms. Waypoint: 2 Hz against 1500 ms. Safe hold: no commands. Policies without mode handover stay in teleop."
+          >
+            Command mode
+          </span>
+          <span className="font-semibold uppercase tracking-[0.06em]" style={{ color: modeTone }}>
+            {CONTROL_MODE_LABEL[mode]}
+          </span>
+        </div>
+      )}
+
       {present.length === 0 ? null : (
         <ul className="flex flex-col gap-2.5">
           {present.map((cls) => {
@@ -116,10 +142,26 @@ export function HealthPanel({ event }: { event: EngineEvent | null }) {
             // Attainment, not miss rate: a full bar is good news, which is how
             // a bar is read at a glance.
             const attainment = miss === null ? null : Math.max(0, 100 - miss);
+            const path = classPathOf(event, cls);
             return (
               <li key={cls}>
                 <div className="flex items-baseline justify-between gap-2">
-                  <span className="text-[12.5px] font-semibold">{CLASS_LABEL[cls]}</span>
+                  <span className="text-[12.5px] font-semibold">
+                    {CLASS_LABEL[cls]}
+                    {steered && path && (
+                      <span
+                        className="ml-1.5 text-[10.5px] font-semibold uppercase tracking-[0.05em]"
+                        style={{ color: NETWORK_COLOR[path] }}
+                        title={
+                          path === event?.carrying
+                            ? 'Riding the session\'s primary path.'
+                            : 'Steered onto its own active path by the controller; the session\'s primary path is unchanged.'
+                        }
+                      >
+                        via {LINK_LABEL[path].label}
+                      </span>
+                    )}
+                  </span>
                   <span className="text-[11px] font-semibold" style={{ color: tone.color }}>
                     {tone.label}
                   </span>

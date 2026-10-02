@@ -35,6 +35,7 @@ from ..contracts import (
     ScenarioOverrides,
 )
 from ..controller.controller import POLICY_LIBRARY
+from ..controller.modes import SUPPORT_DEFINITION, mode_table
 from ..controller.predictors import VIOLATION_DEFINITION, LearnedPredictor
 from ..emulation.capability import probe as capability_probe
 from ..experiments.runner import DEFAULT_POLICIES, run_comparison, seed_for
@@ -137,10 +138,19 @@ def policies() -> dict:
                 "app_aware": config.app_aware,
                 "min_dwell_s": config.min_dwell_s,
                 "predictor": config.predictor_kind,
+                # Phase 4 flags
+                "defer_bulk": config.defer_bulk,
+                "per_class_steering": config.per_class_steering,
+                "mode_handover": config.mode_handover,
+                "anticipate_mode": config.anticipate_mode,
+                "mode_up_hold_s": config.mode_up_hold_s,
+                "class_dwell_s": config.class_dwell_s,
             }
             for policy, config in POLICY_LIBRARY.items()
         ],
         "violation_definition": VIOLATION_DEFINITION,
+        "mode_support_definition": SUPPORT_DEFINITION,
+        "control_modes": {mode.value: spec for mode, spec in mode_table().items()},
     }
 
 
@@ -306,7 +316,7 @@ class ExperimentRequest(BaseModel):
     scenario_id: str
     trials: int = Field(default=20, ge=1, le=200)
     policies: list[PolicyId] | None = None
-    block: str = Field(default="test", pattern="^(train|tune|test)$")
+    block: str = Field(default="test", pattern="^(train|tune|test|test2)$")
     predictor: str = Field(default="heuristic", pattern="^(heuristic|learned|none)$")
     horizon_s: float = Field(default=3.0, ge=0.5, le=15.0)
 

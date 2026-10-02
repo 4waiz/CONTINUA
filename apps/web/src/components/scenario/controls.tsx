@@ -71,6 +71,11 @@ export const POLICY_LABEL: Record<string, { name: string; blurb: string }> = {
   P1: { name: 'CONTINUA', blurb: 'Predict, prepare, steer - and account for the cost' },
   'P1-noPred': { name: 'CONTINUA · no predictor', blurb: 'Ablation: preparation without forecasting' },
   'P1-noApp': { name: 'CONTINUA · no app-awareness', blurb: 'Ablation: no per-class throttling' },
+  'B2-defer': { name: 'Always-on redundancy · bulk deferred', blurb: 'B2 plus the bulk pause rule, nothing else app-aware' },
+  P2: { name: 'CONTINUA P2', blurb: 'P1 plus per-class steering and control mode handover' },
+  'P2-noSteer': { name: 'P2 · no steering', blurb: 'Ablation: mode handover without per-class steering' },
+  'P2-noMode': { name: 'P2 · no mode handover', blurb: 'Ablation: per-class steering, control always teleop' },
+  'P2-reactiveMode': { name: 'P2 · reactive mode', blurb: 'Ablation: mode changes only after a measured violation' },
 };
 
 export function PolicySelector({

@@ -7,13 +7,14 @@
  * every control does something, and that a lost backend is reported rather than
  * papered over.
  *
- * Requires the engine on 127.0.0.1:8000 (`npm run engine`).
+ * Requires the engine on 127.0.0.1:8000 (`npm run engine`), or wherever
+ * `CONTINUA_ENGINE` points when that port is taken.
  */
 
 import { expect, test, type ConsoleMessage, type Page } from '@playwright/test';
 
 const EVIDENCE = 'tests/output/evidence';
-const ENGINE = 'http://127.0.0.1:8000';
+const ENGINE = process.env.CONTINUA_ENGINE ?? 'http://127.0.0.1:8000';
 
 const IGNORED_CONSOLE = [
   /Download the React DevTools/i,

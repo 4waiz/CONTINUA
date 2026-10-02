@@ -22,6 +22,11 @@ const POLICY_NOTE: Record<string, string> = {
   P1: 'CONTINUA. Predictive, application-aware.',
   'P1-noPred': 'Ablation: CONTINUA without prediction.',
   'P1-noApp': 'Ablation: CONTINUA without application priorities.',
+  'B2-defer': 'Always-active redundancy plus bulk deferral only. Isolates how much of the satellite saving is just pausing bulk.',
+  P2: 'CONTINUA P2. P1 plus per-class steering and control mode handover.',
+  'P2-noSteer': 'Ablation: P2 without per-class steering.',
+  'P2-noMode': 'Ablation: P2 without mode handover; control stays in teleop.',
+  'P2-reactiveMode': 'Ablation: P2 whose mode changes only after a measured violation, never ahead of one.',
 };
 
 const HEADLINE_METRICS: { key: string; label: string; unit: string; lowerIsBetter: boolean }[] = [
@@ -33,9 +38,16 @@ const HEADLINE_METRICS: { key: string; label: string; unit: string; lowerIsBette
   { key: 'telemetry_deadline_miss_pct', label: 'Telemetry miss', unit: '%', lowerIsBetter: true },
   { key: 'app_health_score', label: 'App health', unit: '', lowerIsBetter: false },
   { key: 'satellite_bytes', label: 'Satellite bytes', unit: 'MB', lowerIsBetter: true },
+  { key: 'satellite_bytes_excl_bulk', label: 'Satellite bytes excl. bulk', unit: 'MB', lowerIsBetter: true },
   { key: 'cost_units', label: 'Link cost', unit: '', lowerIsBetter: true },
   { key: 'handovers', label: 'Handovers', unit: '', lowerIsBetter: true },
   { key: 'unnecessary_handovers', label: 'Unnecessary handovers', unit: '', lowerIsBetter: true },
+  // Phase 4: the strict picture first, then what the mode machine did.
+  { key: 'teleop_availability_pct', label: 'Teleop availability', unit: '%', lowerIsBetter: false },
+  { key: 'unsupported_mode_s', label: 'Time in an unsupported mode', unit: 's', lowerIsBetter: true },
+  { key: 'conservative_mode_s', label: 'Time held below a supported mode', unit: 's', lowerIsBetter: true },
+  { key: 'mode_changes', label: 'Mode changes', unit: '', lowerIsBetter: true },
+  { key: 'class_steers', label: 'Class steers', unit: '', lowerIsBetter: true },
 ];
 
 /**
@@ -158,7 +170,9 @@ export function ExperimentsView() {
 
 
   const aggregate = (results?.aggregate ?? null) as Record<string, Record<string, Stat>> | null;
-  const deltas = (results?.paired_deltas ?? null) as Record<string, Record<string, { mean_delta_p1_minus_baseline: number; n_pairs: number; p1_lower_in_pairs: number }>> | null;
+  type DeltaRow = Record<string, { mean_delta_p1_minus_baseline: number; n_pairs: number; p1_lower_in_pairs: number }>;
+  const deltas = (results?.paired_deltas ?? null) as Record<string, DeltaRow> | null;
+  const deltasP2 = (results?.paired_deltas_p2 ?? null) as Record<string, DeltaRow> | null;
   const completed = (results?.trials_completed ?? null) as Record<string, number> | null;
   const policyNames = aggregate ? Object.keys(aggregate) : [];
 
@@ -452,67 +466,86 @@ export function ExperimentsView() {
         </Panel>
       )}
 
-      {deltas && (
-        <Panel title="Paired deltas · CONTINUA (P1) minus baseline">
-          <p className="mb-2 text-[11px] leading-snug text-[color:var(--color-muted)]">
-            Computed per trial on identical conditions, which is far more sensitive than comparing
-            means. Negative means P1 scored lower on that metric - good for interruption, cost and
-            misses; bad for health score.
-          </p>
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[720px] border-collapse text-[11.5px]">
-              <thead>
-                <tr className="text-left text-[color:var(--color-muted)]">
-                  <th className="border-b border-[color:var(--color-line)] py-1.5 pr-3 font-medium">Baseline</th>
-                  <th className="border-b border-[color:var(--color-line)] py-1.5 pr-3 text-right font-medium">Interruption Δs</th>
-                  <th className="border-b border-[color:var(--color-line)] py-1.5 pr-3 text-right font-medium">Reconnects Δ</th>
-                  <th className="border-b border-[color:var(--color-line)] py-1.5 pr-3 text-right font-medium">Control miss Δ%</th>
-                  <th className="border-b border-[color:var(--color-line)] py-1.5 pr-3 text-right font-medium">Satellite ΔMB</th>
-                  <th className="border-b border-[color:var(--color-line)] py-1.5 pr-3 text-right font-medium">Cost Δ</th>
-                  <th className="border-b border-[color:var(--color-line)] py-1.5 pr-3 text-right font-medium">Health Δ</th>
-                </tr>
-              </thead>
-              <tbody>
-                {Object.entries(deltas).map(([name, row]) => (
-                  <tr key={name} className="border-b border-[color:var(--color-line)]">
-                    <th scope="row" className="py-1.5 pr-3 text-left font-medium" title={POLICY_NOTE[name]}>
-                      {name}
-                    </th>
-                    {[
-                      ['total_interruption_s', 1],
-                      ['session_reconnects', 1],
-                      ['control_deadline_miss_pct', 1],
-                      ['satellite_bytes', 1e6],
-                      ['cost_units', 1],
-                      ['app_health_score', 1],
-                    ].map(([key, scale]) => {
-                      const entry = row[key as string];
-                      if (!entry) return <td key={String(key)} className="py-1.5 pr-3 text-right"> - </td>;
-                      const value = entry.mean_delta_p1_minus_baseline / (scale as number);
-                      const good = key === 'app_health_score' ? value > 0 : value < 0;
-                      return (
-                        <td
-                          key={String(key)}
-                          className="metric py-1.5 pr-3 text-right"
-                          title={`${entry.p1_lower_in_pairs}/${entry.n_pairs} trials where P1 was lower`}
-                          style={{ color: good ? 'var(--color-good)' : value === 0 ? undefined : 'var(--color-bad)' }}
-                        >
-                          {value > 0 ? '+' : ''}
-                          {value.toFixed(Math.abs(value) >= 10 ? 1 : 2)}
-                        </td>
-                      );
-                    })}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </Panel>
+      {deltas && <PairedDeltas treatment="P1" deltas={deltas} />}
+      {deltasP2 && Object.keys(deltasP2).length > 0 && (
+        <PairedDeltas treatment="P2" deltas={deltasP2} />
       )}
 
           </div>
         </div>
       </div>
     </AppShell>
+  );
+}
+
+const DELTA_COLUMNS: { key: string; label: string; scale: number; higherIsGood?: boolean }[] = [
+  { key: 'total_interruption_s', label: 'Interruption Δs', scale: 1 },
+  { key: 'session_reconnects', label: 'Reconnects Δ', scale: 1 },
+  { key: 'control_deadline_miss_pct', label: 'Control miss Δ%', scale: 1 },
+  { key: 'teleop_availability_pct', label: 'Teleop avail. Δ%', scale: 1, higherIsGood: true },
+  { key: 'unsupported_mode_s', label: 'Unsupported Δs', scale: 1 },
+  { key: 'satellite_bytes', label: 'Satellite ΔMB', scale: 1e6 },
+  { key: 'cost_units', label: 'Cost Δ', scale: 1 },
+  { key: 'app_health_score', label: 'Health Δ', scale: 1, higherIsGood: true },
+];
+
+function PairedDeltas({
+  treatment,
+  deltas,
+}: {
+  treatment: 'P1' | 'P2';
+  deltas: Record<string, Record<string, { mean_delta_p1_minus_baseline: number; n_pairs: number; p1_lower_in_pairs: number }>>;
+}) {
+  return (
+    <Panel title={`Paired deltas · ${treatment === 'P1' ? 'CONTINUA (P1)' : 'CONTINUA P2'} minus baseline`}>
+      <p className="mb-2 text-[11px] leading-snug text-[color:var(--color-muted)]">
+        Computed per trial on identical conditions, which is far more sensitive than comparing
+        means. Negative means {treatment} scored lower on that metric - good for interruption, cost,
+        misses and unsupported time; bad for health score and teleop availability.
+      </p>
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[720px] border-collapse text-[11.5px]">
+          <thead>
+            <tr className="text-left text-[color:var(--color-muted)]">
+              <th className="border-b border-[color:var(--color-line)] py-1.5 pr-3 font-medium">Baseline</th>
+              {DELTA_COLUMNS.map((column) => (
+                <th
+                  key={column.key}
+                  className="border-b border-[color:var(--color-line)] py-1.5 pr-3 text-right font-medium"
+                >
+                  {column.label}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {Object.entries(deltas).map(([name, row]) => (
+              <tr key={name} className="border-b border-[color:var(--color-line)]">
+                <th scope="row" className="py-1.5 pr-3 text-left font-medium" title={POLICY_NOTE[name]}>
+                  {name}
+                </th>
+                {DELTA_COLUMNS.map((column) => {
+                  const entry = row[column.key];
+                  if (!entry) return <td key={column.key} className="py-1.5 pr-3 text-right"> - </td>;
+                  const value = entry.mean_delta_p1_minus_baseline / column.scale;
+                  const good = column.higherIsGood ? value > 0 : value < 0;
+                  return (
+                    <td
+                      key={column.key}
+                      className="metric py-1.5 pr-3 text-right"
+                      title={`${entry.p1_lower_in_pairs}/${entry.n_pairs} trials where ${treatment} was lower`}
+                      style={{ color: good ? 'var(--color-good)' : value === 0 ? undefined : 'var(--color-bad)' }}
+                    >
+                      {value > 0 ? '+' : ''}
+                      {value.toFixed(Math.abs(value) >= 10 ? 1 : 2)}
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </Panel>
   );
 }
