@@ -18,6 +18,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 EXPERIMENTS = ROOT / "data" / "experiments"
 INDEX = EXPERIMENTS / "phase4_index.json"
+SUPPLEMENT = EXPERIMENTS / "phase4_index_reactive-fix.json"
 TUNE = EXPERIMENTS / "phase4_tune.json"
 OUT = ROOT / "docs" / "PHASE_4_RESULTS.md"
 
@@ -150,24 +151,77 @@ def worse_rows(summaries: dict[str, dict]) -> list[str]:
     return out
 
 
+METRIC_PATHS = {
+    "teleop_availability_pct": ["control_mode", "teleop_availability_pct"],
+    "unsupported_mode_s": ["control_mode", "unsupported_mode_s"],
+    "conservative_mode_s": ["control_mode", "conservative_mode_s"],
+    "mode_changes": ["control_mode", "mode_changes"],
+    "control_deadline_miss_pct": ["application", "control", "deadline_miss_pct"],
+    "video_stall_ms": ["application", "video", "stall_ms"],
+    "total_interruption_s": ["continuity", "total_interruption_s"],
+    "satellite_bytes": ["links", "satellite_bytes"],
+    "satellite_bytes_excl_bulk": ["links", "satellite_bytes_excl_bulk"],
+    "cost_units": ["links", "cost_units"],
+    "app_health_score": ["app_health_score"],
+    "bulk_completion_pct": ["application", "bulk", "completion_pct"],
+    "class_steers": ["steering", "class_steers"],
+}
+
+
+def _dig(run: dict, path: list[str]):
+    node = run
+    for key in path:
+        if not isinstance(node, dict) or key not in node:
+            return None
+        node = node[key]
+    return node if isinstance(node, (int, float)) and not isinstance(node, bool) else None
+
+
+def paired(summary: dict, left: str, right: str, key: str) -> tuple[float, float, float, int] | None:
+    """Per-trial `left − right` for one metric: mean, 95 % CI low, high, n."""
+    raw = summary.get("raw") or {}
+    if left not in raw or right not in raw:
+        return None
+    rights = {run["trial"]: run for run in raw[right]}
+    path = METRIC_PATHS[key]
+    diffs = []
+    for run in raw[left]:
+        other = rights.get(run["trial"])
+        if other is None:
+            continue
+        a, b = _dig(run, path), _dig(other, path)
+        if a is None or b is None:
+            continue
+        diffs.append(a - b)
+    if not diffs:
+        return None
+    mean = sum(diffs) / len(diffs)
+    sd = (sum((d - mean) ** 2 for d in diffs) / (len(diffs) - 1)) ** 0.5 if len(diffs) > 1 else 0.0
+    half = 1.96 * sd / (len(diffs) ** 0.5) if len(diffs) > 1 else 0.0
+    return mean, mean - half, mean + half, len(diffs)
+
+
+def _delta_cell(value: tuple[float, float, float, int] | None, scale: float, lower: bool) -> str:
+    if value is None:
+        return "-"
+    mean, low, high, _n = (v / scale for v in value[:3]) if False else (value[0] / scale, value[1] / scale, value[2] / scale, value[3])
+    digits = 0 if abs(mean) >= 100 else 1 if abs(mean) >= 10 else 2
+    better = (mean < 0) if lower else (mean > 0)
+    conclusive = low > 0 or high < 0
+    mark = "" if not conclusive else (" ✓" if better else " ✗")
+    return f"{'+' if mean > 0 else ''}{mean:.{digits}f} [{low:.{digits}f}, {high:.{digits}f}]{mark}"
+
+
 def ablation_table(summaries: dict[str, dict], left: str, right: str, metrics: list[tuple[str, str, float, bool]]) -> str:
-    """Mean-of-means difference `left − right` per scenario, from aggregates."""
+    """Paired per-trial `left − right` per scenario, mean [95 % CI], from the raw runs."""
     lines = ["| Scenario | " + " | ".join(label for _k, label, _s, _l in metrics) + " |",
              "| --- |" + " ---: |" * len(metrics)]
     for scenario_id, summary in summaries.items():
-        agg = summary["aggregate"]
-        if left not in agg or right not in agg:
+        if left not in summary["aggregate"] or right not in summary["aggregate"]:
             continue
         row = [scenario_id]
-        for key, _label, scale, _lower in metrics:
-            a = (agg[left].get(key) or {}).get("mean")
-            b = (agg[right].get(key) or {}).get("mean")
-            if a is None or b is None:
-                row.append("-")
-                continue
-            d = (a - b) / scale
-            digits = 0 if abs(d) >= 100 else 1 if abs(d) >= 10 else 2
-            row.append(f"{'+' if d > 0 else ''}{d:.{digits}f}")
+        for key, _label, scale, lower in metrics:
+            row.append(_delta_cell(paired(summary, left, right, key), scale, lower))
         lines.append("| " + " | ".join(row) + " |")
     return "\n".join(lines)
 
@@ -289,9 +343,12 @@ list; if it is empty, no conclusive loss was recorded.
         ("mode_changes", "Mode changes", 1.0, True),
         ("class_steers", "Class steers", 1.0, True),
     ]
-    parts.append(f"""## 4. Ablations, differences of means per scenario
+    parts.append(f"""## 4. Ablations, paired per trial
 
-Does steering help? `P2 − P2-noSteer`:
+Each cell is the mean per-trial difference with its 95 % interval; ✓ and ✗
+mark intervals that exclude zero, in the first policy's favour or against it.
+
+Does steering help, with mode handover on? `P2 − P2-noSteer`:
 
 {ablation_table(summaries, "P2", "P2-noSteer", abl_metrics)}
 
@@ -303,11 +360,63 @@ Does mode handover help, with steering held fixed? `P2 − P2-noMode`:
 
 {ablation_table(summaries, "P2", "P2-noMode", abl_metrics)}
 
+Does steering help on its own, with control always in teleop? `P2-noMode − P1`:
+
+{ablation_table(summaries, "P2-noMode", "P1", abl_metrics)}
+
 How much of P1's satellite saving was bulk deferral? `B2-defer − B2` and `P1 − B2-defer`:
 
 {ablation_table(summaries, "B2-defer", "B2", [("satellite_bytes", "Satellite (MB)", 1e6, True), ("satellite_bytes_excl_bulk", "Sat. excl. bulk (MB)", 1e6, True), ("cost_units", "Cost", 1.0, True), ("bulk_completion_pct", "Bulk completed (pp)", 1.0, False), ("app_health_score", "Health", 1.0, False)])}
 
 {ablation_table(summaries, "P1", "B2-defer", [("satellite_bytes", "Satellite (MB)", 1e6, True), ("satellite_bytes_excl_bulk", "Sat. excl. bulk (MB)", 1e6, True), ("cost_units", "Cost", 1.0, True), ("control_deadline_miss_pct", "Control miss (pp)", 1.0, True), ("video_stall_ms", "Video stall (ms)", 1.0, True), ("app_health_score", "Health", 1.0, False)])}
+""")
+
+    if SUPPLEMENT.exists():
+        supplement = json.loads(SUPPLEMENT.read_text(encoding="utf-8"))
+        supp: dict[str, dict] = {}
+        for entry in supplement["experiments"]:
+            path = EXPERIMENTS / f"{entry['experiment_id']}.json"
+            supp[entry["scenario_id"]] = json.loads(path.read_text(encoding="utf-8"))
+        supp_first = next(iter(supp.values()))
+        supp_runs = sum(sum(s["trials_completed"].values()) for s in supp.values())
+        supp_failures = sum(len(s["failures"]) for s in supp.values())
+        supp_metrics = [
+            ("teleop_availability_pct", "Teleop avail. (pp)", 1.0, False),
+            ("unsupported_mode_s", "Unsupported (s)", 1.0, True),
+            ("conservative_mode_s", "Held below (s)", 1.0, True),
+            ("control_deadline_miss_pct", "Control miss (pp)", 1.0, True),
+            ("mode_changes", "Mode changes", 1.0, True),
+        ]
+        lines = ["| Scenario | P2 teleop avail. % | reactive teleop avail. % | P2 unsupported s | reactive unsupported s | P2 held below s | reactive held below s |",
+                 "| --- | ---: | ---: | ---: | ---: | ---: | ---: |"]
+        for scenario_id, summary in supp.items():
+            agg = summary["aggregate"]
+            lines.append(
+                f"| {scenario_id} | {cell(agg['P2'], 'teleop_availability_pct', '%', 1.0)} | "
+                f"{cell(agg['P2-reactiveMode'], 'teleop_availability_pct', '%', 1.0)} | "
+                f"{cell(agg['P2'], 'unsupported_mode_s', 's', 1.0)} | {cell(agg['P2-reactiveMode'], 'unsupported_mode_s', 's', 1.0)} | "
+                f"{cell(agg['P2'], 'conservative_mode_s', 's', 1.0)} | {cell(agg['P2-reactiveMode'], 'conservative_mode_s', 's', 1.0)} |"
+            )
+        parts.append(f"""## 5. Supplement: the corrected reactive ablation, on a fresh block
+
+After `test2` had been used, the P2-reactiveMode arm was found to have a
+defect: its "judge a path control has just moved onto next step" guard also
+fired when there was **no path at all**, so during a total outage it sat in
+waypoint instead of holding (visible above as `total-loss` unsupported time
+and control misses, and mildly in `reverse-run`). The fix is in the commit
+this document was generated from; the `test2` tables above are left exactly
+as run, and the block was not re-used. Instead P2 and the corrected
+P2-reactiveMode were compared on a fresh block, `{supplement['block']}`
+(seeds {supp_first['seeds'][0]}–{supp_first['seeds'][-1]}), {supplement['trials']} paired
+trials, {supp_runs} runs, {supp_failures} failures. P2's own code did not change
+between the two runs; its numbers here differ from section 2 only because the
+seeds do.
+
+{chr(10).join(lines)}
+
+Paired per trial, `P2 − P2-reactiveMode` (corrected):
+
+{ablation_table(supp, "P2", "P2-reactiveMode", supp_metrics)}
 """)
 
     reading = (ROOT / "docs" / "_phase4_reading.md")

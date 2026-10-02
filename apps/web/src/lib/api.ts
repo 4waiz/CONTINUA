@@ -188,7 +188,7 @@ const live = {
     scenario_id: string;
     trials?: number;
     policies?: PolicyIdString[];
-    block?: 'train' | 'tune' | 'test' | 'test2';
+    block?: 'train' | 'tune' | 'test' | 'test2' | 'test3';
     predictor?: 'heuristic' | 'learned' | 'none';
     horizon_s?: number;
   }) =>

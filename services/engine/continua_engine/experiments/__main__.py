@@ -83,7 +83,7 @@ def main() -> None:
     parser.add_argument("--smoke", action="store_true", help="2 trials on every scenario")
     parser.add_argument("--phase4", action="store_true", help="the six core scenarios plus fast-run and reverse-run")
     parser.add_argument("--trials", type=int, default=20)
-    parser.add_argument("--block", default="test", choices=["train", "tune", "test", "test2"])
+    parser.add_argument("--block", default="test", choices=["train", "tune", "test", "test2", "test3"])
     parser.add_argument("--predictor", default="heuristic", choices=["heuristic", "learned", "none"])
     parser.add_argument("--policies", default=None, help="comma-separated policy ids")
     args = parser.parse_args()

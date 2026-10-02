@@ -282,15 +282,14 @@ def test_seed_blocks_are_disjoint():
     train = {seed_for("train", i) for i in range(200)}
     tune = {seed_for("tune", i) for i in range(200)}
     test = {seed_for("test", i) for i in range(200)}
-    # Phase 4: the comparison moved to a fresh block, used once.
-    test2 = {seed_for("test2", i) for i in range(200)}
-    assert not (train & tune)
-    assert not (train & test)
-    assert not (tune & test)
-    assert not (test & test2)
-    assert not (train & test2)
-    assert not (tune & test2)
-    assert len(SEED_BLOCKS) == 4
+    # Phase 4: the comparison moved to a fresh block, used once; the
+    # supplementary ablation run used another.
+    blocks = {name: {seed_for(name, i) for i in range(200)} for name in SEED_BLOCKS}
+    names = list(blocks)
+    for index, left in enumerate(names):
+        for right in names[index + 1:]:
+            assert not (blocks[left] & blocks[right]), f"{left} and {right} overlap"
+    assert set(SEED_BLOCKS) == {"train", "tune", "test", "test2", "test3"}
 
 
 def test_aggregate_reports_uncertainty():

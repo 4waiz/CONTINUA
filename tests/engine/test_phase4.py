@@ -347,6 +347,21 @@ def test_reactive_mode_never_changes_mode_ahead_of_a_measurement():
         assert result.metrics["control_mode"]["anticipated_mode_changes"] == 0
 
 
+def test_reactive_mode_still_enters_safe_hold_when_every_path_is_gone():
+    """Losing the path is a measurement, not a path change the reactive arm defers."""
+    result = run("total-loss", PolicyId.P2_REACTIVE_MODE, seed=1)
+    disconnected = [event for event in result.events if event.carrying is None]
+    assert disconnected, "total-loss must produce a period with no path"
+    assert all(event.control_mode is ControlMode.SAFE_HOLD for event in disconnected[1:]), (
+        "with no path at all the reactive ablation must hold, not keep offering commands"
+    )
+    assert result.metrics["control_mode"]["mode_time_s"]["safe_hold"] > 5.0
+    assert all(
+        action.detail["trigger"] in ("measured", "hold met")
+        for _event, action in actions_of(result, ActionKind.MODE_CHANGE)
+    )
+
+
 def test_anticipated_and_late_downshifts_are_counted_from_receiver_facts():
     result = run("satellite-fallback", PolicyId.P2_CONTINUA, seed=4242)
     modes = result.metrics["control_mode"]
@@ -455,7 +470,8 @@ def test_prediction_features_stay_on_the_allow_list_with_mode_and_steering():
 
 def test_seed_blocks_include_test2_and_stay_disjoint():
     assert SEED_BLOCKS["test2"] == 100_000
-    assert len(SEED_BLOCKS) == 4
+    assert SEED_BLOCKS["test3"] == 130_000
+    assert len(SEED_BLOCKS) == 5
     blocks = {name: {seed_for(name, i) for i in range(200)} for name in SEED_BLOCKS}
     names = list(blocks)
     for i, left in enumerate(names):

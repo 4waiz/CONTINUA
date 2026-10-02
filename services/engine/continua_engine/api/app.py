@@ -316,7 +316,7 @@ class ExperimentRequest(BaseModel):
     scenario_id: str
     trials: int = Field(default=20, ge=1, le=200)
     policies: list[PolicyId] | None = None
-    block: str = Field(default="test", pattern="^(train|tune|test|test2)$")
+    block: str = Field(default="test", pattern="^(train|tune|test|test2|test3)$")
     predictor: str = Field(default="heuristic", pattern="^(heuristic|learned|none)$")
     horizon_s: float = Field(default=3.0, ge=0.5, le=15.0)
 

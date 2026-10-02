@@ -35,6 +35,10 @@ SEED_BLOCKS = {
     #: Phase 4. The original `test` block was reported in Phase 2 and so is no
     #: longer unseen; the Phase 4 comparison runs exactly once on this block.
     "test2": 100_000,
+    #: Phase 4 supplement. A defect in the P2-reactiveMode ablation was found
+    #: after test2 had been used, so the corrected ablation was compared on a
+    #: fresh block rather than by re-using test2.
+    "test3": 130_000,
 }
 
 #: The Phase 2 comparison set, kept so earlier results stay reproducible.

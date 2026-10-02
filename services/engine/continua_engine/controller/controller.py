@@ -991,10 +991,14 @@ class ContinuaController:
         if control_moved:
             self._mode_bad_since = None
 
-        if control_moved and not cfg.anticipate_mode:
+        if control_moved and control_path is not None and not cfg.anticipate_mode:
             # The reactive ablation never acts ahead of a measured violation on
             # the path control is actually using. A path control has just been
             # moved onto is judged on the next step, by what it then measures.
+            # Losing the path altogether is not a move: that is measured now.
+            # (Before commit 3638449 was fixed this guard also fired with no
+            # path, and the ablation sat in waypoint through a total outage;
+            # see docs/PHASE_4_RESULTS.md.)
             self._mode_risk_since = None
             return None, ""
 
