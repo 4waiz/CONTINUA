@@ -6,6 +6,7 @@
 | 2 | Working application, network engine, controller, experiments | **complete** |
 | 3 | Demo video: claim ledger, deterministic capture, narration, edit | **complete** |
 | 3.1 | UI/UX overhaul: fixed-viewport shell, 3D hero, redesigned pages | **complete** |
+| 4 | Per-class steering, control mode handover, B2-defer, honesty fixes, `test2` comparison | **complete** |
 
 ---
 
@@ -342,3 +343,124 @@ hook, emptied by `reset`. And `MissionScene` returned a different element tree
 for preview, putting `SceneStage` at a different child index, so arriving at a
 run unmounted and rebuilt the canvas; it now renders one tree and swaps only the
 `source` prop.
+
+---
+
+# Phase 4 - steering, mode handover, and a fairer comparison
+
+Phase 2's own results showed three weaknesses: control missed its 150 ms
+deadline about 31 % of the time under every policy, because one link carried
+every class and the satellite profile cannot meet 150 ms; most of the satellite
+saving came from pausing bulk, with no baseline isolating that; and the
+satellite profile was labelled LEO-like at 620 ms, which is a GEO figure.
+Phase 4 added two mechanisms behind flags, a fairer baseline, and ran the
+comparison once on a fresh seed block. Full tables: `docs/PHASE_4_RESULTS.md`.
+
+## What was built
+
+| Feature | Evidence |
+| --- | --- |
+| Regression guard: the six Phase 2 policies produce byte-identical metrics and decision streams with the Phase 4 code in place, against a snapshot taken before any of it existed | `tests/engine/test_regression_guard.py`, 25 cases |
+| Per-class steering (`per_class_steering`): `ControllerDecision.class_paths`, the simulator routes, retransmits and duplicates by it; rule, dwell and debounces in `controller.py`; "no carrying path" unchanged | `test_simulator_routes_each_class_on_its_named_path`, `test_class_paths_never_keep_the_session_alive` |
+| Control operating mode (`mode_handover`): teleop / waypoint / safe_hold from receiver-side RTT and loss, debounced downshift, 1.0 s upshift hold, MODE_CHANGE emitted before the SWITCH it accompanies, reason recorded at decision time | `test_mode_machine_downshifts_on_measurements_and_upshifts_after_the_hold`, `test_mode_change_precedes_the_switch_it_accompanies` |
+| One mode-support definition shared by controller and metrics, with a retransmit-aware loss limit | `controller/modes.py`, `test_mode_support_definition_is_shared_and_honest_about_unknowns` |
+| Mode never touches motion or the trace | `test_mode_handover_never_changes_motion_or_the_exogenous_trace` |
+| New metrics, all from receiver facts: mode time, mode changes, anticipated vs late, unsupported, unknown, conservative, teleop availability, per-mode control counts | `docs/METRICS.md` section 10, accounting identities tested |
+| Baseline B2-defer; `satellite_bytes_excl_bulk` and per-link bulk bytes | `test_b2_defer_adds_bulk_deferral_and_nothing_else` |
+| Policies P2, P2-noSteer, P2-noMode, P2-reactiveMode, flags only, same class | `test_new_policies_differ_from_p1_only_by_their_flags` |
+| Seed blocks `test2` and `test3`, disjoint from the others | `test_seed_blocks_include_test2_and_stay_disjoint` |
+| Satellite profile relabelled GEO-like in profiles, contracts, UI and docs | `link_profiles.json`, `docs/ASSUMPTIONS.md` |
+| TypeScript contracts with boundary validation of the new fields; Mission shows the command mode and per-class paths; Decision Log shows every action in order with its own reason; Experiments shows the new policies and P2 pairing | `packages/contracts/src/engine.ts`, browser suites |
+| Tuning on the tune block with a selection rule declared before the grid ran | `scripts/phase4_tune.py`, `data/experiments/phase4_tune.json` |
+| The comparison, 11 policies x 8 scenarios x 20 paired trials on `test2`, run once | `scripts/phase4_experiment.py`, `data/experiments/phase4-test2-*.json` |
+
+## Measured, `test2`, 20 paired trials, 1 760 runs, 0 failures
+
+The strict figure is teleop availability: the share of the run during which
+20 Hz commands against the 150 ms deadline were both offered and supported.
+A relaxed deadline cannot raise it.
+
+| Question | Answer, as paired per-trial deltas with 95 % intervals |
+| --- | --- |
+| Does mode handover keep control out of a mode the path cannot support? | Yes: unsupported time falls from 35–60 s to 2–8 s per run (`P2 − P2-noMode` −35 to −54 s). |
+| What does it cost? | Teleop availability −6.5 to −15.3 points against P2-noMode and −4.2 to −14.3 against P1, in every scenario; 8–18 s per run held below a supported mode; 6–12 mode changes; 300–700 ms more video stall than P1 in four scenarios. |
+| Is the control miss rate of about 1 % a win? | No. It is the relaxed deadline and the commands not sent in safe hold. `app_health_v1` is inflated the same way and is not comparable across mode policies. |
+| Does per-class steering help? | Modestly and consistently. Alone (`P2-noMode − P1`): +0.9 to +3.1 points of teleop availability and 1–3 s less unsupported time in all eight scenarios, at unchanged cost, bytes and misses, with 3–7 steers per run. With mode handover on: +2.0 to +6.8 points. |
+| Does anticipating a mode change help? | **No.** `P2 − P2-reactiveMode` is −2.5 to −6.8 points of teleop availability in every scenario on `test2`, and −1.8 to −5.5 points with the corrected ablation on `test3`, for 0.7–2.8 s less unsupported time; the same conclusion Phase 2 reached about prediction. |
+| How much of P1's satellite saving was bulk deferral? | Nearly all: `B2-defer − B2` removes 43–69 MB of which at most 0.42 MB is non-bulk. P1's remaining application-aware saving over B2-defer is 3.0–5.0 MB of non-bulk satellite traffic and 1.6–2.2 s less video stall, and P1 costs 0.07–0.82 units **more** than B2-defer. |
+
+Headline, `wifi-degradation`, means over 20 trials:
+
+| Metric | B2 | B2-defer | P1 | P2-noMode | P2 | P2-reactiveMode |
+| --- | --- | --- | --- | --- | --- | --- |
+| Teleop availability (%) | 51.8 | 52.3 | 50.3 | **53.4** | 42.2 | 46.2 |
+| Unsupported-mode time (s) | 50.6 | 50.1 | 52.2 | 48.9 | **3.9** | 5.8 |
+| Held below a supported mode (s) | 0 | 0 | 0 | 0 | 13.9 | 8.8 |
+| Mode changes | 0 | 0 | 0 | 0 | 11.2 | 6.9 |
+| Satellite (MB) | 61.4 | 8.4 | 4.8 | 4.7 | **4.6** | 4.6 |
+| Satellite excl. bulk (MB) | 8.4 | 8.4 | 4.8 | 4.7 | **4.6** | 4.6 |
+| Cost units | 4.32 | **1.05** | 1.19 | 1.19 | 1.18 | 1.18 |
+| Video stall (ms) | 18 820 | 14 016 | 12 152 | **12 161** | 12 520 | 12 273 |
+
+## Defects found and fixed in Phase 4
+
+1. **B2 was not reproducible across processes.** Its duplication target and
+   backup-activation order came from iterating a `set[LinkId]`, whose order
+   Python randomises per process. Three launches gave three different
+   satellite byte counts for the same seed. Found by the regression guard on
+   its first run; iteration is now in link-preference order, and a test runs
+   B2 and P2 under two hash seeds in subprocesses and compares. The guard's
+   B2 entries were re-snapshotted after the fix, which is recorded in the
+   fixture itself.
+2. **Steering flapped on links that had only just become ready.** A link
+   flickering at the usability floor is activated, validated and released
+   within a few hundred milliseconds; a class steered onto it bounced back
+   60 ms later. A readiness debounce and a leave debounce fixed it.
+3. **Satellite could never be a steering target** because "at risk" was the
+   predictor's teleop-centric rule (RTT projected past 150 ms), which satellite
+   always satisfies. Risk is now judged against the deadline of the level
+   being considered: 620 ms is not at risk for 1500 ms.
+4. **A downshift was followed by an upshift 20 ms later** because the hold
+   clock did not restart. Hold clocks are now per path, from each path's own
+   probes, and no change may follow another within one hold.
+5. **The windowed loss estimate over-reads after a traffic surge onto a
+   long-delay path** - for about 0.4 s after a switch to satellite every new
+   send is still in flight and counts as lost, reading 80–90 %. The mode
+   machine was dropping to safe hold on it. The measurement debounce was
+   added to the tuning grid for this reason; the estimator itself is a Phase 2
+   definition and was left alone.
+6. **A forecast could remove the command channel.** Anticipated downshifts
+   went all the way to safe hold on a projected loss burst that was already
+   over. Anticipation now stops at waypoint; safe hold is entered on measured
+   facts alone.
+7. **The reactive ablation ignored a total outage.** Its "judge a new path
+   next step" guard also fired with no path at all, so P2-reactiveMode sat in
+   waypoint through `total-loss`. Found in the `test2` data after the block
+   had been used; fixed, tested, and the corrected ablation compared on the
+   fresh `test3` block rather than by re-using `test2`. The `test2` tables are
+   left as run and say so.
+
+## Known limitations added in Phase 4
+
+* **Safe hold does not stop the modelled vehicle.** Motion is exogenous so
+  that trials stay paired; the mode describes the command channel. A real
+  vehicle would stop.
+* **"Supported" is a windowed RTT-and-loss rule**, not observed deadline
+  outcomes. On a bursty link it is conservative, which is part of why mode
+  handover gives up teleop time.
+* **Waypoint and safe-hold parameters are assumptions.**
+* **The public demo recordings were not regenerated**; the deployed site
+  still plays B0, B1, B2 and P1 only.
+* **20 trials** gives wide intervals on the smaller effects; the ablation
+  tables show which intervals exclude zero.
+
+## Verification
+
+| Suite | Result |
+| --- | --- |
+| `npm run lint` | clean, zero warnings |
+| `npm run typecheck` | clean |
+| `npm run build` | compiles, every route |
+| `npm run test:engine` | **141 passed** on the full suite before the reactive-ablation fix (36 Phase 2, 25 regression guard, 80 Phase 4); after the fix the 16 affected tests (reactive mode, seed blocks, mode accounting, plus the new total-outage test) passed. A full re-run of all 142 on the final commit is still owed |
+| `npm run test:phase2` | **11 passed**, against the production build and a live engine |
+| `npm run test:smoke` | **11 passed**, 10 skipped by project design (capture and rig tests run on the 1920 project only). Two runs made while the 1 760-run comparison occupied eight cores failed on frame count and a canvas screenshot timeout; both passed with the CPU free, and neither is a Phase 4 change |

@@ -1,0 +1,335 @@
+{
+  "generated_at": "2026-10-02T04:27:30.009757+00:00",
+  "tag": "reactive-fix",
+  "block": "test3",
+  "trials": 20,
+  "policies": [
+    "P2",
+    "P2-reactiveMode"
+  ],
+  "scenarios": [
+    "wifi-degradation",
+    "sudden-failure",
+    "cellular-congestion",
+    "satellite-fallback",
+    "flapping",
+    "total-loss",
+    "fast-run",
+    "reverse-run"
+  ],
+  "elapsed_s": 154.3,
+  "experiments": [
+    {
+      "scenario_id": "wifi-degradation",
+      "experiment_id": "phase4-reactive-fix-test3-wifi-degradation",
+      "seed_block": "test3",
+      "seeds": [
+        130000,
+        130001,
+        130002,
+        130003,
+        130004,
+        130005,
+        130006,
+        130007,
+        130008,
+        130009,
+        130010,
+        130011,
+        130012,
+        130013,
+        130014,
+        130015,
+        130016,
+        130017,
+        130018,
+        130019
+      ],
+      "trials_requested": 20,
+      "trials_completed": {
+        "P2": 20,
+        "P2-reactiveMode": 20
+      },
+      "policies": [
+        "P2",
+        "P2-reactiveMode"
+      ],
+      "failures": [],
+      "code_commit": "a4c8d8b4cc796be4aba840d26a513c706ee43f36",
+      "elapsed_s": 153.2
+    },
+    {
+      "scenario_id": "sudden-failure",
+      "experiment_id": "phase4-reactive-fix-test3-sudden-failure",
+      "seed_block": "test3",
+      "seeds": [
+        130000,
+        130001,
+        130002,
+        130003,
+        130004,
+        130005,
+        130006,
+        130007,
+        130008,
+        130009,
+        130010,
+        130011,
+        130012,
+        130013,
+        130014,
+        130015,
+        130016,
+        130017,
+        130018,
+        130019
+      ],
+      "trials_requested": 20,
+      "trials_completed": {
+        "P2": 20,
+        "P2-reactiveMode": 20
+      },
+      "policies": [
+        "P2",
+        "P2-reactiveMode"
+      ],
+      "failures": [],
+      "code_commit": "a4c8d8b4cc796be4aba840d26a513c706ee43f36",
+      "elapsed_s": 151.6
+    },
+    {
+      "scenario_id": "cellular-congestion",
+      "experiment_id": "phase4-reactive-fix-test3-cellular-congestion",
+      "seed_block": "test3",
+      "seeds": [
+        130000,
+        130001,
+        130002,
+        130003,
+        130004,
+        130005,
+        130006,
+        130007,
+        130008,
+        130009,
+        130010,
+        130011,
+        130012,
+        130013,
+        130014,
+        130015,
+        130016,
+        130017,
+        130018,
+        130019
+      ],
+      "trials_requested": 20,
+      "trials_completed": {
+        "P2": 20,
+        "P2-reactiveMode": 20
+      },
+      "policies": [
+        "P2",
+        "P2-reactiveMode"
+      ],
+      "failures": [],
+      "code_commit": "a4c8d8b4cc796be4aba840d26a513c706ee43f36",
+      "elapsed_s": 150.2
+    },
+    {
+      "scenario_id": "satellite-fallback",
+      "experiment_id": "phase4-reactive-fix-test3-satellite-fallback",
+      "seed_block": "test3",
+      "seeds": [
+        130000,
+        130001,
+        130002,
+        130003,
+        130004,
+        130005,
+        130006,
+        130007,
+        130008,
+        130009,
+        130010,
+        130011,
+        130012,
+        130013,
+        130014,
+        130015,
+        130016,
+        130017,
+        130018,
+        130019
+      ],
+      "trials_requested": 20,
+      "trials_completed": {
+        "P2": 20,
+        "P2-reactiveMode": 20
+      },
+      "policies": [
+        "P2",
+        "P2-reactiveMode"
+      ],
+      "failures": [],
+      "code_commit": "a4c8d8b4cc796be4aba840d26a513c706ee43f36",
+      "elapsed_s": 146.0
+    },
+    {
+      "scenario_id": "flapping",
+      "experiment_id": "phase4-reactive-fix-test3-flapping",
+      "seed_block": "test3",
+      "seeds": [
+        130000,
+        130001,
+        130002,
+        130003,
+        130004,
+        130005,
+        130006,
+        130007,
+        130008,
+        130009,
+        130010,
+        130011,
+        130012,
+        130013,
+        130014,
+        130015,
+        130016,
+        130017,
+        130018,
+        130019
+      ],
+      "trials_requested": 20,
+      "trials_completed": {
+        "P2": 20,
+        "P2-reactiveMode": 20
+      },
+      "policies": [
+        "P2",
+        "P2-reactiveMode"
+      ],
+      "failures": [],
+      "code_commit": "a4c8d8b4cc796be4aba840d26a513c706ee43f36",
+      "elapsed_s": 148.9
+    },
+    {
+      "scenario_id": "total-loss",
+      "experiment_id": "phase4-reactive-fix-test3-total-loss",
+      "seed_block": "test3",
+      "seeds": [
+        130000,
+        130001,
+        130002,
+        130003,
+        130004,
+        130005,
+        130006,
+        130007,
+        130008,
+        130009,
+        130010,
+        130011,
+        130012,
+        130013,
+        130014,
+        130015,
+        130016,
+        130017,
+        130018,
+        130019
+      ],
+      "trials_requested": 20,
+      "trials_completed": {
+        "P2": 20,
+        "P2-reactiveMode": 20
+      },
+      "policies": [
+        "P2",
+        "P2-reactiveMode"
+      ],
+      "failures": [],
+      "code_commit": "a4c8d8b4cc796be4aba840d26a513c706ee43f36",
+      "elapsed_s": 145.6
+    },
+    {
+      "scenario_id": "fast-run",
+      "experiment_id": "phase4-reactive-fix-test3-fast-run",
+      "seed_block": "test3",
+      "seeds": [
+        130000,
+        130001,
+        130002,
+        130003,
+        130004,
+        130005,
+        130006,
+        130007,
+        130008,
+        130009,
+        130010,
+        130011,
+        130012,
+        130013,
+        130014,
+        130015,
+        130016,
+        130017,
+        130018,
+        130019
+      ],
+      "trials_requested": 20,
+      "trials_completed": {
+        "P2": 20,
+        "P2-reactiveMode": 20
+      },
+      "policies": [
+        "P2",
+        "P2-reactiveMode"
+      ],
+      "failures": [],
+      "code_commit": "a4c8d8b4cc796be4aba840d26a513c706ee43f36",
+      "elapsed_s": 99.3
+    },
+    {
+      "scenario_id": "reverse-run",
+      "experiment_id": "phase4-reactive-fix-test3-reverse-run",
+      "seed_block": "test3",
+      "seeds": [
+        130000,
+        130001,
+        130002,
+        130003,
+        130004,
+        130005,
+        130006,
+        130007,
+        130008,
+        130009,
+        130010,
+        130011,
+        130012,
+        130013,
+        130014,
+        130015,
+        130016,
+        130017,
+        130018,
+        130019
+      ],
+      "trials_requested": 20,
+      "trials_completed": {
+        "P2": 20,
+        "P2-reactiveMode": 20
+      },
+      "policies": [
+        "P2",
+        "P2-reactiveMode"
+      ],
+      "failures": [],
+      "code_commit": "a4c8d8b4cc796be4aba840d26a513c706ee43f36",
+      "elapsed_s": 151.3
+    }
+  ]
+}
