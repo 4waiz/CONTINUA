@@ -113,8 +113,13 @@ interface Rig {
   lidar: Object3D | null;
   satMount: Object3D | null;
   satPanel: Object3D | null;
+  /** The tail and stop lamps: this rover's own copy of their material. */
+  brake: { material: MeshStandardMaterial; base: number } | null;
   missing: string[];
 }
+
+/** How much brighter the tail lamps burn under full braking. */
+const BRAKE_GAIN = 2.2;
 
 /** The LiDAR's spin, rad/s: two revolutions a second read as a scanner without strobing. */
 const LIDAR_SPIN = Math.PI * 4;
@@ -164,10 +169,19 @@ function buildRig(source: Object3D): Rig {
   for (const child of statics) body.add(child);
   vehicle.add(body);
 
+  // The lamps get a material of their own: the glTF's is shared through the
+  // loader's cache, and brightening it would brighten every copy.
+  // (Typed by assertion: assigned in the callback, it would otherwise be
+  // narrowed to its initial null.)
+  let brake = null as MeshStandardMaterial | null;
   cloned.traverse((node) => {
     if (!(node instanceof Mesh)) return;
     node.castShadow = true;
     node.receiveShadow = true;
+    if (node.material instanceof MeshStandardMaterial && node.material.name === 'CONTINUA_Light_Rear') {
+      brake ??= node.material.clone();
+      node.material = brake;
+    }
     const materials = Array.isArray(node.material) ? node.material : [node.material];
     for (const material of materials) {
       if (!(material instanceof MeshStandardMaterial)) continue;
@@ -191,6 +205,7 @@ function buildRig(source: Object3D): Rig {
     lidar: root.getObjectByName('CONTINUA_LidarHead') ?? null,
     satMount: root.getObjectByName('CONTINUA_SatMount') ?? null,
     satPanel: root.getObjectByName('CONTINUA_SatPanel') ?? null,
+    brake: brake ? { material: brake, base: brake.emissiveIntensity } : null,
     missing,
   };
 }
@@ -207,6 +222,8 @@ export function Rover({
   const { scene } = useGLTF(url);
 
   const rig = useMemo(() => buildRig(scene), [scene]);
+  // The lamps' material is this rig's own (the rest belong to the glTF cache).
+  useEffect(() => () => rig.brake?.material.dispose(), [rig]);
   const groupRef = useRef<Group>(null);
 
   useEffect(() => {
@@ -247,6 +264,13 @@ export function Rover({
 
     rig.body.position.y = bob;
     rig.body.rotation.set(rollTrim, 0, pitchTrim, 'YXZ');
+
+    // The tail lamps brighten as it brakes - read from the same speed profile
+    // as the body's dive, so a frame is still a pure function of time.
+    if (rig.brake) {
+      rig.brake.material.emissiveIntensity =
+        rig.brake.base * (1 + BRAKE_GAIN * smoothstep(0.35, 1.5, -acceleration));
+    }
 
     for (const wheel of rig.wheels) wheel.rotation.z = -pose.wheelAngle;
     for (const pivot of rig.steer) pivot.rotation.y = pose.steerAngle;

@@ -110,6 +110,19 @@ function DebugBridge() {
     publishRenderer({ scene, gl, camera, setFrameloop });
     return () => publishRenderer(null);
   }, [scene, gl, camera, setFrameloop]);
+  // A frame here is several render calls - the scene with its shadows, the
+  // ambient-occlusion passes, the output pass, the rover camera - and three
+  // counts each call from zero by default, so `info` held the last one alone:
+  // one draw call, one triangle, which the Scene Lab's readout then showed.
+  // Counted per frame instead, from the start of each, so between frames
+  // `info` holds one whole frame.
+  useLayoutEffect(() => {
+    gl.info.autoReset = false;
+    return () => {
+      gl.info.autoReset = true;
+    };
+  }, [gl]);
+  useFrame(() => gl.info.reset(), -1000);
   return null;
 }
 

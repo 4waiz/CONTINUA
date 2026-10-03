@@ -105,9 +105,14 @@ export function DecisionLogView() {
       );
   }, []);
 
-  // Default to the newest run that actually recorded events. Derived rather
-  // than assigned from an effect, so the first render already has a selection.
-  const runId = pickedRunId ?? runs.find((row) => row.events > 0)?.run_id ?? null;
+  // Default to the newest run that actually recorded events - a controller's
+  // run before a baseline's: Mission records the reactive baseline beside
+  // every run, usually a moment later, and a baseline's log is three handoffs
+  // and nothing it decided. Derived rather than assigned from an effect, so
+  // the first render already has a selection.
+  const recorded = runs.filter((row) => row.events > 0);
+  const runId =
+    pickedRunId ?? (recorded.find((row) => !row.policy_id.startsWith('B')) ?? recorded[0])?.run_id ?? null;
 
   useEffect(() => {
     if (!runId) return;

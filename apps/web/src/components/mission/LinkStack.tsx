@@ -224,118 +224,132 @@ export function LinkStack({
         })}
       </ul>
 
-      {/* The selected link, in full. */}
-      <div className="mx-3 mt-2 rounded-[14px] border border-[color:var(--color-line)] bg-white/70 px-3.5 py-3">
-        <div className="mb-2.5 flex items-center justify-between">
-          <span className="flex min-w-0 items-center gap-2 text-[12px] font-semibold" style={{ color: colour }}>
-            <NetworkIcon link={selected} size={14} className="shrink-0" />
-            <span className="shrink-0">{LINK_LABEL[selected].label}</span>
-            <span className="truncate font-medium text-[color:var(--color-faint)]">{LINK_LABEL[selected].sublabel}</span>
-          </span>
-          {observation && (
-            <span className="shrink-0 text-[11px] text-[color:var(--color-faint)]">{observation.window_s}s window</span>
-          )}
+      {!event ? (
+        // Before a run there is nothing to measure: one line saying what will
+        // be here, not three cards of "unavailable" and an empty chart.
+        <div className="mx-3 mt-2 mb-3 rounded-[14px] border border-dashed border-[color:var(--color-line-strong)] px-3.5 py-3">
+          <div className="section-label">Measurements</div>
+          <p className="mt-1 text-[12px] leading-snug text-[color:var(--color-muted)]">
+            Each link&apos;s round trip, loss, jitter and throughput, its telemetry and whether the session is alive -
+            as the receiver measures them, once a run starts.
+          </p>
         </div>
-        <div className="grid grid-cols-2 gap-x-3 gap-y-2.5">
-          <Stat label="Round trip" value={observation?.rtt_ms} unit="ms" why="Not enough acknowledged packets in the window." />
-          <Stat label="Loss" value={observation?.loss_pct} unit="%" why="Fewer than the minimum number of sends in the window." />
-          <Stat label="Jitter" value={observation?.jitter_ms} unit="ms" why="Not enough samples for a jitter estimate." />
-          <Stat label="Throughput" value={observation?.throughput_mbps} unit="Mb/s" why="No delivered bytes in the window." />
-        </div>
-        {selected === 'wifi' ? (
-          <div className="mt-2.5 flex items-center justify-between border-t border-[color:var(--color-line)] pt-2">
-            <span className="text-[11px] font-medium text-[color:var(--color-faint)]">Signal (RSSI)</span>
-            <span className="metric text-[13px] font-semibold">
-              {observation?.rssi_dbm != null ? `${observation.rssi_dbm.toFixed(0)} dBm` : <span className="text-[color:var(--color-faint)]">unavailable</span>}
-            </span>
-          </div>
-        ) : (
-          <div className="mt-2.5 border-t border-[color:var(--color-line)] pt-2">
-            <p className="text-[11px] leading-snug text-[color:var(--color-muted)]">
-              RSSI is a Wi-Fi measurement; {LINK_LABEL[selected].label.toLowerCase()} shows none in this model.
-            </p>
-            {selected !== 'wired' && (
-              <div className="mt-1.5 flex items-center gap-2" title="Geometric, from distance to infrastructure. Not a measured signal level.">
-                <span className="shrink-0 text-[11px] text-[color:var(--color-faint)]">Modelled coverage</span>
-                <Meter
-                  value={observation?.modelled_coverage != null ? observation.modelled_coverage * 100 : null}
-                  color={colour}
-                  label="modelled coverage"
-                />
+      ) : (
+        <>
+          {/* The selected link, in full. */}
+          <div className="mx-3 mt-2 rounded-[14px] border border-[color:var(--color-line)] bg-white/70 px-3.5 py-3">
+            <div className="mb-2.5 flex items-center justify-between">
+              <span className="flex min-w-0 items-center gap-2 text-[12px] font-semibold" style={{ color: colour }}>
+                <NetworkIcon link={selected} size={14} className="shrink-0" />
+                <span className="shrink-0">{LINK_LABEL[selected].label}</span>
+                <span className="truncate font-medium text-[color:var(--color-faint)]">{LINK_LABEL[selected].sublabel}</span>
+              </span>
+              {observation && (
+                <span className="shrink-0 text-[11px] text-[color:var(--color-faint)]">{observation.window_s}s window</span>
+              )}
+            </div>
+            <div className="grid grid-cols-2 gap-x-3 gap-y-2.5">
+              <Stat label="Round trip" value={observation?.rtt_ms} unit="ms" why="Not enough acknowledged packets in the window." />
+              <Stat label="Loss" value={observation?.loss_pct} unit="%" why="Fewer than the minimum number of sends in the window." />
+              <Stat label="Jitter" value={observation?.jitter_ms} unit="ms" why="Not enough samples for a jitter estimate." />
+              <Stat label="Throughput" value={observation?.throughput_mbps} unit="Mb/s" why="No delivered bytes in the window." />
+            </div>
+            {selected === 'wifi' ? (
+              <div className="mt-2.5 flex items-center justify-between border-t border-[color:var(--color-line)] pt-2">
+                <span className="text-[11px] font-medium text-[color:var(--color-faint)]">Signal (RSSI)</span>
+                <span className="metric text-[13px] font-semibold">
+                  {observation?.rssi_dbm != null ? `${observation.rssi_dbm.toFixed(0)} dBm` : <span className="text-[color:var(--color-faint)]">unavailable</span>}
+                </span>
+              </div>
+            ) : (
+              <div className="mt-2.5 border-t border-[color:var(--color-line)] pt-2">
+                <p className="text-[11px] leading-snug text-[color:var(--color-muted)]">
+                  RSSI is a Wi-Fi measurement; {LINK_LABEL[selected].label.toLowerCase()} shows none in this model.
+                </p>
+                {selected !== 'wired' && (
+                  <div className="mt-1.5 flex items-center gap-2" title="Geometric, from distance to infrastructure. Not a measured signal level.">
+                    <span className="shrink-0 text-[11px] text-[color:var(--color-faint)]">Modelled coverage</span>
+                    <Meter
+                      value={observation?.modelled_coverage != null ? observation.modelled_coverage * 100 : null}
+                      color={colour}
+                      label="modelled coverage"
+                    />
+                  </div>
+                )}
               </div>
             )}
           </div>
-        )}
-      </div>
 
-      {/* Live telemetry for the selected link. */}
-      <div className="mx-3 mt-2 rounded-[14px] border border-[color:var(--color-line)] bg-white/70 px-3 pt-2.5 pb-2">
-        <div className="mb-1.5 grid grid-cols-4 gap-1 rounded-[9px] bg-[color:var(--color-surface-muted)] p-[3px]" role="group" aria-label="Telemetry series">
-          {SERIES.map((entry) => (
-            <button
-              key={entry.id}
-              type="button"
-              onClick={() => setChart(entry.id)}
-              aria-pressed={chart === entry.id}
-              className="rounded-[7px] py-[3px] text-[11px] font-semibold transition"
+          {/* Live telemetry for the selected link. */}
+          <div className="mx-3 mt-2 rounded-[14px] border border-[color:var(--color-line)] bg-white/70 px-3 pt-2.5 pb-2">
+            <div className="mb-1.5 grid grid-cols-4 gap-1 rounded-[9px] bg-[color:var(--color-surface-muted)] p-[3px]" role="group" aria-label="Telemetry series">
+              {SERIES.map((entry) => (
+                <button
+                  key={entry.id}
+                  type="button"
+                  onClick={() => setChart(entry.id)}
+                  aria-pressed={chart === entry.id}
+                  className="rounded-[7px] py-[3px] text-[11px] font-semibold transition"
+                  style={{
+                    background: chart === entry.id ? 'var(--color-surface)' : 'transparent',
+                    color: chart === entry.id ? entry.color : 'var(--color-muted)',
+                    boxShadow: chart === entry.id ? '0 1px 2px rgb(17 29 58 / 0.1)' : undefined,
+                  }}
+                >
+                  {entry.label}
+                </button>
+              ))}
+            </div>
+            <TimeSeries
+              series={[
+                {
+                  label: `${LINK_LABEL[selected].label} ${spec.label}`,
+                  color: chart === 'throughput' ? colour : spec.color,
+                  values: chartValues,
+                  unit: spec.unit,
+                },
+              ]}
+              height={62}
+              xLabels={[`${first.toFixed(0)}s`, `${((first + last) / 2).toFixed(0)}s`, `${last.toFixed(0)}s`]}
+            />
+          </div>
+
+          {/* Session continuity: a different claim from application deadlines. */}
+          <div className="mx-3 mt-2 mb-3 flex items-center gap-3 rounded-[14px] border border-[color:var(--color-line)] bg-white/70 px-3.5 py-2.5">
+            <span
+              aria-hidden
+              className="h-2.5 w-2.5 shrink-0 rounded-full"
               style={{
-                background: chart === entry.id ? 'var(--color-surface)' : 'transparent',
-                color: chart === entry.id ? entry.color : 'var(--color-muted)',
-                boxShadow: chart === entry.id ? '0 1px 2px rgb(17 29 58 / 0.1)' : undefined,
+                background: !app ? 'var(--color-line-strong)' : app.in_outage ? 'var(--color-bad)' : 'var(--color-good)',
+                boxShadow: app && !app.in_outage ? '0 0 0 4px color-mix(in srgb, var(--color-good) 18%, transparent)' : undefined,
               }}
-            >
-              {entry.label}
-            </button>
-          ))}
-        </div>
-        <TimeSeries
-          series={[
-            {
-              label: `${LINK_LABEL[selected].label} ${spec.label}`,
-              color: chart === 'throughput' ? colour : spec.color,
-              values: chartValues,
-              unit: spec.unit,
-            },
-          ]}
-          height={62}
-          xLabels={[`${first.toFixed(0)}s`, `${((first + last) / 2).toFixed(0)}s`, `${last.toFixed(0)}s`]}
-        />
-      </div>
-
-      {/* Session continuity: a different claim from application deadlines. */}
-      <div className="mx-3 mt-2 mb-3 flex items-center gap-3 rounded-[14px] border border-[color:var(--color-line)] bg-white/70 px-3.5 py-2.5">
-        <span
-          aria-hidden
-          className="h-2.5 w-2.5 shrink-0 rounded-full"
-          style={{
-            background: !app ? 'var(--color-line-strong)' : app.in_outage ? 'var(--color-bad)' : 'var(--color-good)',
-            boxShadow: app && !app.in_outage ? '0 0 0 4px color-mix(in srgb, var(--color-good) 18%, transparent)' : undefined,
-          }}
-        />
-        <div className="min-w-0 flex-1">
-          <div className="section-label">Session</div>
-          <div className="text-[13px] font-semibold leading-tight">
-            {!app ? <Placeholder /> : app.in_outage ? (
-              <span className="text-[color:var(--color-bad)]">Interrupted{app.safe_stop ? ' · safe stop' : ''}</span>
-            ) : (
-              <span className="text-[color:var(--color-good)]">Continuous</span>
-            )}
+            />
+            <div className="min-w-0 flex-1">
+              <div className="section-label">Session</div>
+              <div className="text-[13px] font-semibold leading-tight">
+                {!app ? <Placeholder /> : app.in_outage ? (
+                  <span className="text-[color:var(--color-bad)]">Interrupted{app.safe_stop ? ' · safe stop' : ''}</span>
+                ) : (
+                  <span className="text-[color:var(--color-good)]">Continuous</span>
+                )}
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="text-[11px] text-[color:var(--color-faint)]">Outage</div>
+              <div className="metric text-[13px] font-semibold">{app ? `${app.outage_s.toFixed(2)} s` : <Placeholder />}</div>
+            </div>
+            <div className="text-right">
+              <div className="text-[11px] text-[color:var(--color-faint)]">Reconnects</div>
+              <div
+                className="metric text-[13px] font-semibold"
+                style={{ color: app && app.session_reconnects > 0 ? 'var(--color-bad)' : undefined }}
+              >
+                {app ? app.session_reconnects : <Placeholder />}
+              </div>
+            </div>
           </div>
-        </div>
-        <div className="text-right">
-          <div className="text-[11px] text-[color:var(--color-faint)]">Outage</div>
-          <div className="metric text-[13px] font-semibold">{app ? `${app.outage_s.toFixed(2)} s` : <Placeholder />}</div>
-        </div>
-        <div className="text-right">
-          <div className="text-[11px] text-[color:var(--color-faint)]">Reconnects</div>
-          <div
-            className="metric text-[13px] font-semibold"
-            style={{ color: app && app.session_reconnects > 0 ? 'var(--color-bad)' : undefined }}
-          >
-            {app ? app.session_reconnects : <Placeholder />}
-          </div>
-        </div>
-      </div>
+        </>
+      )}
     </section>
   );
 }

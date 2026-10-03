@@ -161,7 +161,9 @@ One screen, no page scroll, at 1920×1080, 1440×900, 1366×768 and 1280×720.
   sampled once), turquoise over the shelf to sapphire offshore, with surf that
   breathes at the waterline and waves that are a function of the scene clock.
   Mountain ranges across the water are solid, sunlit bands - woods and rock
-  near, haze-blue far - and the south is left open to the horizon.
+  near, haze-blue far - and the south is left open to the horizon. The road
+  ends in a turning circle on a concrete forecourt in front of the ground
+  station, its edge line carried round the circle.
 * **Glass you can see into.** Office glazing mirrors the sky, more toward a
   grazing angle, and behind it each pane shows a room found by interior
   mapping (`windows.ts`): floor, ceiling light, a back wall with desks and

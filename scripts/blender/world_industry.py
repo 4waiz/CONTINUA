@@ -361,12 +361,18 @@ def prop_dock_station(m: dict) -> bpy.types.Object:
     """
     k = Kit("PROP_DockStation", m)
     cx, cy = DOCK_BAY
-    # Bay pad with cyan lane markings; the rover's long axis runs along X.
-    slab(k["concrete"], (cx, cy, 0.05), (8.6, 5.4, 0.1), cell=2.0)
+    # Bay floor with cyan lane markings; the rover's long axis runs along X.
+    # The floor's top is the road deck's height (ROAD_SURFACE_OFFSET in
+    # packages/scene/src/world/road.ts), which is where the rover's tyres
+    # rest: 10 cm thick, it stood 4 cm deep in its own dock, the bottom of
+    # every tyre cut off flat. The carriageway starts where the bay ends
+    # (DOCK_BAY_HALF_LENGTH there), so the two never overlap. The markings
+    # are paint on the floor, clear of the wheels.
+    slab(k["concrete"], (cx, cy, BAY_FLOOR / 2), (8.6, 5.4, BAY_FLOOR), cell=2.0)
     for y in (cy - 2.2, cy + 2.2):
-        box(k["accent_cyan"], (cx, y, 0.105), (7.6, 0.12, 0.012))
+        box(k["accent_cyan"], (cx, y, BAY_FLOOR + 0.002), (7.6, 0.12, 0.004))
     for x in (cx - 3.9, cx + 3.9):
-        box(k["accent_cyan"], (x, cy, 0.105), (0.12, 4.5, 0.012))
+        box(k["accent_cyan"], (x, cy, BAY_FLOOR + 0.002), (0.12, 4.5, 0.004))
     # Portal gantry across the bay. Tall on purpose: the follow camera rides
     # 5.2 m above the road, and a beam at roof height filled the frame for the
     # first seconds of every run as the rover drove out from under it. At
@@ -410,6 +416,8 @@ def prop_dock_station(m: dict) -> bpy.types.Object:
 # tether head hangs - both in the prop's authored frame (Blender x, y, z).
 DOCK_BAY = (2.0, -7.0)
 DOCK_TETHER = (2.4, -7.0, 3.6)
+# The bay floor's top: the road deck's height above the ground.
+BAY_FLOOR = 0.06
 
 
 # ==========================================================================

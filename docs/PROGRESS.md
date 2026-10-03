@@ -1146,3 +1146,78 @@ beside the baseline: the session chips fit between the side panels at every
 width (the carrying-link chip steps aside below 1600 px), and the camera
 tile, the two timeline tracks and the end-of-run table read at each size.
 
+
+## After Phase 9: the ranges, the glass, the road's end
+
+Three things that still read as a model, found by rendering each from fixed
+cameras before and after (`video/work/diag/diag-world.mjs` with custom views).
+
+* **The ranges hung like a curtain.** Their triangles were wound facing away
+  from the island. The double-sided material drew them anyway, but the
+  ambient-occlusion pass draws front faces only, so it saw through the faces
+  to the undersides of the slopes behind and hung a pale, see-through band
+  over the lower half of every range. Rewound. The spur valleys had been cut
+  36 m apart and up to 70 m deep, and the erosion flutes 15 m apart and in
+  proportion to a 200 m face - slots, each a dark stripe from crest to foot.
+  Now the valleys are about 120 m apart and the flutes scaled to the range,
+  each reaching its own way down the face; great spurs reach out toward the
+  island (keeping 110 m of open water off every shore through a smooth
+  limit), and the sea mist is a thin layer on the water.
+* **The windows were never visible.** Every ribbon window in a solid wall was
+  built 10 cm inside the wall's volume, so only the mullions showed. The
+  glass now stands proud of the face, and behind it each pane shows a room
+  found by interior mapping (`windows.ts`): a back wall with desks and
+  screens, a ceiling light, blinds part-drawn, a quarter of the rooms dark,
+  and in the response station's bays a fire appliance with real parallax.
+  Three replaces a material's `envMapIntensity` with the scene's
+  `environmentIntensity` whenever the scene environment lights it, so the
+  glazing's 2.6 had never reached the screen; the glass raises its own
+  reflection in its shader.
+* **The road ran out.** The carriageway stopped in a straight cut across a
+  strip of concrete, with meadow beyond. It now opens into a turning circle
+  on a levelled concrete forecourt in front of the ground station
+  (`world/terminus.ts`), its edge line carried round the circle and meeting
+  the road's own lines end to end. The route, the rover's path and where it
+  stops are unchanged.
+
+Mission with a run beside its baseline (RTX 4070 Laptop, 1920×1080, high
+tier): 190.8 fps, frame time p50 / p95 / p99 4.9 / 7.8 / 10.7 ms - the same as
+before the interiors. The demo video's encode is two-pass to 40 MB (CRF 18
+had spent 80 MB on the new world's grass and leaves in motion; the repository
+refuses a file over 45 MB that LFS does not track).
+
+Smaller things found on the same pass:
+
+* **The tyres sank into the dock.** The rover's tyres rest on the road deck,
+  6 cm above the ground; the dock bay's concrete floor was a 10 cm slab, so
+  while docked - the start of every run, and Inspect mode - the rover stood
+  4 cm deep in it and every tyre's bottom was cut off flat, as if punctured.
+  Measured, not guessed: each tyre's lowest point against the surface under
+  it. Out on the road it was within 5 mm (the model's 6 mm of tyre squash,
+  by design); in the bay, 4 cm. The bay floor is now flush with the road deck
+  (`world_industry.py`, `BAY_FLOOR`), its lane markings paint on it, and the
+  carriageway starts where the bay ends (`DOCK_BAY_HALF_LENGTH`) so asphalt
+  and concrete never lie at one height over the same ground. The turning
+  circle at the other end was a centimetre below the deck, so the rover stood
+  just clear of it; it is at the deck's height now.
+
+* **The renderer readout was false.** Scene Lab's header said "1 draw call,
+  0k triangles". A frame is several render calls - the scene with its
+  shadows, the ambient-occlusion passes, the output pass, the rover camera -
+  and three counts each call from zero by default, so `renderer.info` held
+  the output pass alone. It is now reset once at the start of each frame
+  (three's documented pattern for multi-pass frames): 1,238 draw calls and
+  4.87 M triangles a frame at the high tier, which the readout shows.
+* **Brake lamps.** The rover's tail and stop lamps brighten as it brakes,
+  read from the same speed profile as the body's dive, so a frame is still a
+  pure function of the clock.
+* **Less on screen before a run.** Mission's access-links panel showed three
+  cards of "unavailable", an empty chart and a row of dashes before anything
+  had run; it now says in one line what will be there.
+* **The decision log opens on a decision-maker.** Mission records the
+  reactive baseline beside every run, a moment later, so the newest run -
+  the one the log opened on - was the baseline, with nothing decided in it.
+  It now opens on the newest controller run.
+* **Tried and reverted:** a higher-contrast forest canopy on the ranges. It
+  read better from the air but, on steep faces, turned the crowns' cross-slope
+  layout into wavy moiré from the follow camera - worse where it is seen most.

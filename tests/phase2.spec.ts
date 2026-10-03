@@ -326,9 +326,11 @@ test.describe('failure handling', () => {
     // sentence down a column of four cards.
     await expect(page.getByText('SCENE PREVIEW')).toBeVisible();
     await expect(page.getByLabel('Waiting for engine').first()).toBeVisible();
-    // Every measurement surface: the links panel and the application panel.
+    // Every measurement surface on screen. With no run only the links panel
+    // is: the application and camera cards enter with a run's first event.
     const surfaces = page.locator('section[aria-label="Access links"], section[aria-label="Application health"]');
-    await expect(surfaces).toHaveCount(2);
+    await expect(surfaces).toHaveCount(1);
+    await expect(page.locator('section[aria-label="Application health"]')).toHaveCount(0);
     const numericMetrics = await surfaces.locator('.metric').filter({ hasText: /\d/ }).count();
     expect(numericMetrics, 'no measurement panel may show a number with no engine').toBe(0);
 

@@ -11,6 +11,7 @@
  *   node scripts/scene-shots.mjs --out video/work/scene  # where to write
  *   node scripts/scene-shots.mjs --only inspect,follow-dock
  *   node scripts/scene-shots.mjs --set evidence           # the README evidence views
+ *   node scripts/scene-shots.mjs --set world --height 1020  # the README world views
  *
  * Uses the GPU when one is available (`--use-gl=angle`), which is what a
  * visitor sees; the Playwright test projects use SwiftShader instead.
@@ -70,7 +71,21 @@ const HANDOFF = [
   ['handoff-cell-closeup', 42.45, { mode: 'mission', camera: 'closeup' }],
 ];
 
-const SETS = { standard: SHOTS, evidence: EVIDENCE, handoff: HANDOFF };
+/**
+ * The README's views of the island, from fixed points rather than a rig:
+ * `view` pins the camera's eye, aim and field of view over whatever rig is
+ * active, so the frame still goes through the whole pipeline - ambient
+ * occlusion, tone mapping - as a visitor's does.
+ */
+const WORLD = [
+  ['world-island', 62, { camera: 'overview', showMarkers: false, view: { eye: [-235, 150, 95], target: [330, -10, -40], fov: 52 } }],
+  ['world-waterfront', 62, { camera: 'overview', showMarkers: false, view: { eye: [100, 8, -126], target: [38, 1, -186], fov: 50 } }],
+  ['world-headland', 62, { camera: 'overview', showMarkers: false, view: { eye: [868, 58, 42], target: [988, 2, -96], fov: 50 } }],
+  ['world-road-end', 99, { camera: 'overview', showMarkers: false, view: { eye: [803, 15, 22], target: [831, 5, 68], fov: 52 } }],
+  ['world-campus', 62, { camera: 'overview', showMarkers: false, view: { eye: [-10, 6, 10], target: [-46, 8, 40], fov: 55 } }],
+];
+
+const SETS = { standard: SHOTS, evidence: EVIDENCE, handoff: HANDOFF, world: WORLD };
 const SET = SETS[arg('--set', 'standard')] ?? SHOTS;
 
 async function main() {
@@ -88,17 +103,46 @@ async function main() {
   await page.goto(`${WEB}/scene-lab`, { waitUntil: 'domcontentloaded', timeout: 90_000 });
   await page.waitForFunction(() => Boolean(window.__CONTINUA__?.three), undefined, { timeout: 120_000 });
   await page.waitForTimeout(2500);
+  // The world views are of the world: the Scene Lab's panels sit over the
+  // canvas, and an element screenshot would carry them.
+  if (SET === WORLD) {
+    await page.addStyleTag({ content: 'body * { visibility: hidden !important; } canvas { visibility: visible !important; }' });
+  }
 
-  for (const [name, time, settings] of SET) {
+  for (const [name, time, { view, ...settings }] of SET) {
     if (only && !only.includes(name)) continue;
     await page.evaluate(
-      ({ t, patch }) => {
+      ({ t, patch, view }) => {
         const api = window.__CONTINUA__;
         api.clock.pause();
         api.settings.set({ quality: 'high', ...patch });
         api.clock.setTime(t);
+        const camera = api.three.camera;
+        // Undo the previous shot's pin, if any.
+        if (camera.userData.pinnedFov !== undefined) {
+          delete camera.position.copy;
+          delete camera.lookAt;
+          Object.defineProperty(camera, 'fov', {
+            configurable: true, enumerable: true, writable: true, value: camera.userData.pinnedFov,
+          });
+          delete camera.userData.pinnedFov;
+        }
+        if (!view) return;
+        camera.userData.pinnedFov = camera.fov;
+        // The rig writes the camera every frame through position.copy, lookAt
+        // and fov; pinned on the instance, those writes land on this view.
+        const lookAt = Object.getPrototypeOf(camera).lookAt;
+        const [ex, ey, ez] = view.eye;
+        const [tx, ty, tz] = view.target;
+        camera.position.copy = function pinned() {
+          return this.set(ex, ey, ez);
+        };
+        camera.lookAt = function pinned() {
+          return lookAt.call(this, tx, ty, tz);
+        };
+        Object.defineProperty(camera, 'fov', { configurable: true, get: () => view.fov, set: () => {} });
       },
-      { t: time, patch: settings },
+      { t: time, patch: settings, view: view ?? null },
     );
     await page.waitForTimeout(1600);
     const path = join(OUT, `${name}.png`);

@@ -5,7 +5,9 @@
  *
  * Frame rate comes from counting animation frames in a one-second window;
  * draw calls, triangles and geometry counts come from three.js's own
- * `renderer.info`, which the scene publishes on `window.__CONTINUA__.three`.
+ * `renderer.info`, which the scene publishes on `window.__CONTINUA__.three` and
+ * counts per frame - every pass of it: shadows, ambient occlusion, the main
+ * view, the output pass and the rover camera.
  * If the scene has not mounted yet there is nothing to report and this renders
  * nothing - a performance readout that invents numbers is worse than no
  * performance readout.
@@ -67,7 +69,14 @@ export function ScenePerformance() {
   const items: [string, string][] = [
     ['FPS', String(stats.fps)],
     ['Draw calls', stats.calls ? String(stats.calls) : ' - '],
-    ['Triangles', stats.triangles ? `${(stats.triangles / 1000).toFixed(0)}k` : ' - '],
+    [
+      'Triangles',
+      !stats.triangles
+        ? ' - '
+        : stats.triangles >= 1e6
+          ? `${(stats.triangles / 1e6).toFixed(2)}M`
+          : `${(stats.triangles / 1000).toFixed(0)}k`,
+    ],
     ['Geometries', stats.geometries ? String(stats.geometries) : ' - '],
   ];
 

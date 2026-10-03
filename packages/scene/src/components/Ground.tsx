@@ -23,7 +23,7 @@ import {
 } from 'three';
 import { useSceneRuntime } from '../runtime/SceneRuntime';
 import { SCENE_COLOR } from '../theme';
-import { buildRouteRibbon, ROAD_HALF_WIDTH, ROAD_SURFACE_OFFSET } from '../world/road';
+import { buildRouteRibbon, DOCK_BAY_HALF_LENGTH, ROAD_HALF_WIDTH, ROAD_SURFACE_OFFSET } from '../world/road';
 import { CAMPUS, PADS, SERVICE_ROADS, type ServiceRoad } from '../world/layout';
 import { SEA_LEVEL, TERRAIN, terrain } from '../world/terrain';
 import { route } from '../world/route';
@@ -217,18 +217,26 @@ export function Ground({ quality }: { quality: 'high' | 'balanced' | 'low' }) {
     [detail],
   );
 
-  // The carriageway runs into the turning circle and stops where its edge
-  // lines meet the circle's: the circle carries on from there.
-  const road = useMemo(() => buildRouteRibbon({ to: EDGE_LINES_END }), []);
+  // The carriageway starts where the dock bay's floor ends (the rover stands
+  // on that floor while docked) and runs into the turning circle, stopping
+  // where its edge lines meet the circle's: the circle carries on from there.
+  const road = useMemo(() => buildRouteRibbon({ from: DOCK_BAY_HALF_LENGTH, to: EDGE_LINES_END }), []);
   const shoulder = useMemo(
-    () => buildRouteRibbon({ halfWidth: ROAD_HALF_WIDTH + 1.6, yOffset: ROAD_SURFACE_OFFSET - 0.03 }),
+    () =>
+      buildRouteRibbon({
+        halfWidth: ROAD_HALF_WIDTH + 1.6,
+        yOffset: ROAD_SURFACE_OFFSET - 0.03,
+        from: DOCK_BAY_HALF_LENGTH,
+      }),
     [],
   );
   // Where the road ends (world/terminus.ts): it opens into a turning circle,
-  // set in a concrete forecourt that reaches back to the ground station.
+  // set in a concrete forecourt that reaches back to the ground station. The
+  // circle is at the road deck's height, where the rover's tyres rest - a
+  // centimetre lower, they stood clear of it.
   const forecourt = useMemo(() => buildDrapedCapsule(FORECOURT.a, FORECOURT.b, FORECOURT.radius, 0.035), []);
   const turningCircle = useMemo(
-    () => buildDrapedCapsule(TURNING_CIRCLE, TURNING_CIRCLE, TURNING_CIRCLE.radius, 0.05),
+    () => buildDrapedCapsule(TURNING_CIRCLE, TURNING_CIRCLE, TURNING_CIRCLE.radius, ROAD_SURFACE_OFFSET),
     [],
   );
   const serviceRoads = useMemo(() => SERVICE_ROADS.map((entry) => buildPathRibbon(entry, 0.045)), []);

@@ -562,10 +562,21 @@ export function MissionView() {
         </aside>
 
         {/* --- right: route, application health, camera ---------------------------------- */}
+        {/* Before a run only the route is shown - it says what is coming. The
+            health and camera cards had nothing to say yet but an empty gauge
+            and "no stream"; they enter with the run's first event. */}
         <aside className="mission-side mission-right scroll-y enter-late flex flex-col gap-3 *:shrink-0">
           <RouteMap event={run.latest} events={run.decisions} />
-          <ApplicationPanel event={run.latest} />
-          <CameraFeed event={run.latest} baseline={baselineId ? baselineEvent : undefined} />
+          {run.latest && (
+            <>
+              <div className="enter">
+                <ApplicationPanel event={run.latest} />
+              </div>
+              <div className="enter-late">
+                <CameraFeed event={run.latest} baseline={baselineId ? baselineEvent : undefined} />
+              </div>
+            </>
+          )}
         </aside>
 
         {/* --- bottom: the run ---------------------------------------------------------- */}

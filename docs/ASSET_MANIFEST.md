@@ -36,7 +36,7 @@ frond card (§2a).
 | --- | --- | --- | --- |
 | `continua_rover.glb` | 791,724 (773 KB) | 72,278 | Hero rover: 15 meshes (three of them moving sensors), 2 steering pivots, 24 materials |
 | `continua_rover_lod1.glb` | 264,936 (259 KB) | 23,450 | Low-detail rover for the `low` quality tier |
-| `continua_props.glb` | 1,502,208 (1467 KB) | 107,529 | 60 world props, instanced at runtime; the foliage atlas |
+| `continua_props.glb` | 1,501,996 (1467 KB) | 107,529 | 60 world props, instanced at runtime; the foliage atlas |
 
 The three files total **2.56 MB**; the decoder adds `draco_decoder.wasm`
 (192 KB) and `draco_wasm_wrapper.js` (58 KB).
@@ -100,7 +100,7 @@ tree against 3,346, 1,526 for a flame tree against 5,686.
 | File | Bytes | Regenerate with |
 | --- | --- | --- |
 | `assets/blender/continua_rover.blend` | 972,975 (950 KB) | `npm run blender:vehicle` |
-| `assets/blender/continua_props.blend` | 1,903,131 (1.81 MB) | `npm run blender:props` |
+| `assets/blender/continua_props.blend` | 1,901,936 (1.81 MB) | `npm run blender:props` |
 
 | Script | Role |
 | --- | --- |
@@ -284,7 +284,10 @@ fence mesh is transparent without depth write (`WorldProps.tsx`).
 by timestamp: the `view-*` set is `tests/evidence.spec.ts`'s inspection set
 (same times, cameras and settings) rendered on the GPU at the high tier by
 `node scripts/scene-shots.mjs --set evidence`, because the test project draws
-with SwiftShader and so starts on the low tier.
+with SwiftShader and so starts on the low tier. The `world-*` views are fixed
+points over the island (`--set world --height 1020`), and `dashboard-*` is
+Mission during a run beside its baseline (`node scripts/ui-screenshots.mjs
+--only mission --run --run-for 77`).
 
 `scripts/scene-shots.mjs` captures a fixed set of `/scene-lab` views at given
 clock times through `window.__CONTINUA__`, for before/after comparison.
