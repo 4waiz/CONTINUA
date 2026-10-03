@@ -94,7 +94,10 @@ export function CaptureView({ runId, fullBleed = false }: { runId: string | null
             Sized in vw so it scales with the frame: at 1920 wide the smallest
             line here is still legible when the finished video is watched at
             half size. */}
-        <div className="pointer-events-none absolute left-[1.6%] top-[2.4%] flex items-center gap-[0.8vw]">
+        {/* Identity sits on the sky and the mountains now, so both blocks get
+            the same frosted backing as the chips below: it must read in every
+            frame. */}
+        <div className="pointer-events-none absolute left-[1.6%] top-[2.4%] flex items-center gap-[0.8vw] rounded-[0.7vw] bg-white/75 px-[0.8vw] py-[0.45vw] shadow-[0_1px_2px_rgb(20_33_61/0.06)] backdrop-blur-md">
           <span
             className="text-[1.75vw] font-semibold leading-none tracking-[-0.03em]"
             style={{
@@ -112,7 +115,7 @@ export function CaptureView({ runId, fullBleed = false }: { runId: string | null
           <ModeBadge state={run.state} />
         </div>
 
-        <div className="pointer-events-none absolute right-[1.6%] top-[2.4%] text-right text-[0.76vw] leading-[1.5] text-[color:var(--color-muted)]">
+        <div className="pointer-events-none absolute right-[1.6%] top-[2.4%] rounded-[0.7vw] bg-white/75 px-[0.8vw] py-[0.45vw] text-right text-[0.76vw] leading-[1.5] text-[color:var(--color-ink)] shadow-[0_1px_2px_rgb(20_33_61/0.06)] backdrop-blur-md">
           {/* In replay, cite the run the evidence actually came from - the
               replay session's own id means nothing to anyone reading
               docs/VIDEO_CLAIMS.md. */}
@@ -135,12 +138,14 @@ export function CaptureView({ runId, fullBleed = false }: { runId: string | null
                 <div
                   key={link}
                   className="rounded-[0.6vw] border bg-white/90 px-[0.75vw] py-[0.45vw] backdrop-blur"
-                  style={{
-                    borderColor: carrying ? NETWORK_COLOR[link] : 'var(--color-line)',
-                    opacity: obs?.phase === 'unavailable' ? 0.45 : 1,
-                  }}
+                  style={{ borderColor: carrying ? NETWORK_COLOR[link] : 'var(--color-line)' }}
                 >
-                  <div className="text-[0.82vw] font-semibold" style={{ color: NETWORK_COLOR[link] }}>
+                  {/* An unavailable link is dimmed in its label, not its backing,
+                      so the chip still reads over a busy landscape. */}
+                  <div
+                    className="text-[0.82vw] font-semibold"
+                    style={{ color: NETWORK_COLOR[link], opacity: obs?.phase === 'unavailable' ? 0.5 : 1 }}
+                  >
                     {LINK_LABEL[link].label}
                   </div>
                   <div className="metric text-[0.72vw] text-[color:var(--color-muted)]">
@@ -156,7 +161,7 @@ export function CaptureView({ runId, fullBleed = false }: { runId: string | null
               {app?.health_score != null ? app.health_score.toFixed(0) : ' - '}
             </div>
             <div className="text-[0.72vw] text-[color:var(--color-muted)]">
-              reconnects {app?.session_reconnects ?? ' - '} · outage {(app?.outage_s ?? 0).toFixed(1)}s
+              reconnects {app?.session_reconnects ?? ' - '} · outage {app ? `${app.outage_s.toFixed(1)}s` : ' - '}
             </div>
           </div>
         </div>

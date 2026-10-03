@@ -779,10 +779,16 @@ the engine's own count.
 2. **A dark square under every palm.** The ground-contact footprint, meant for
    buildings, drew a dark rectangle under plants and boulders - invisible on
    sand, a stain on a lawn. Plants and boulders no longer get one.
-3. **A camera could have gone under the sea.** The camera clamp kept cameras
+3. **The capture frame's identity was hard to read over the new sky**, and
+   unavailable link chips were faded as a whole, backing included, so they
+   all but vanished over grass. Both identity blocks now sit on a frosted
+   backing and an unavailable chip dims only its label. Its health chip also
+   printed "outage 0.0s" before the first event while every other field said
+   " - "; it now says " - " too.
+4. **A camera could have gone under the sea.** The camera clamp kept cameras
    above the ground, which offshore is the seabed. Cameras and coverage
    footprints now stay above the water's surface.
-4. **The first island was too heavy for a software rasteriser.** Under
+5. **The first island was too heavy for a software rasteriser.** Under
    SwiftShader it drew 1.9 fps, below the smoke suite's floor of 2: the new
    trees nearly tripled the low tier's triangles (239k to 642k), and the
    clouds, the meadow and the sea added per-pixel noise. The low tier now
@@ -790,7 +796,7 @@ the engine's own count.
    its detail layers, a one-octave sea, half-resolution mountains and two in
    five of the meadow trees: 3.3 fps, inside the 2.4-3.8 fps the desert world
    measured on the same machine. The high and balanced tiers are unchanged.
-5. **The capture view hung on a software rasteriser.** Its own canvas started
+6. **The capture view hung on a software rasteriser.** Its own canvas started
    on the high tier and switched to low a moment later, and the switch freed
    a material that was still drawing: the mountains' cleanup disposed their
    material together with the geometry it replaced. three's `compileAsync`,
