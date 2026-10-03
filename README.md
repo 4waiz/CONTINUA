@@ -57,6 +57,19 @@ distribution at all, and nothing was executed).
 
 ![Rover close-up](assets/previews/browser/view-02-vehicle-closeup.png)
 
+### The world
+
+A green coastal island: the operations campus and its lawns, the industrial
+corridor, a wind farm standing out to sea, and the ground station on a
+headland under a lighthouse. Everything in it is scenery - nothing in the
+network model knows about the sea or the mountains.
+
+![The island from above the campus](assets/previews/browser/world-island.png)
+
+| | |
+| --- | --- |
+| ![The jetty and the rescue boat](assets/previews/browser/world-waterfront.png) | ![The headland and the lighthouse](assets/previews/browser/world-headland.png) |
+
 ## Commands
 
 | Command | What it does |
@@ -171,7 +184,7 @@ numbers, including where CONTINUA loses, are in `docs/PROGRESS.md`.
 Rendering (kept separate from network metrics): 238 fps uncapped at
 1920×1080 during a run, high tier with ambient occlusion on, on an RTX 4070
 Laptop GPU (`node scripts/perf-probe.mjs`); one shared canvas for every scene
-page, so switching pages builds nothing; 2.23 MB of Draco-compressed models.
+page, so switching pages builds nothing; 2.30 MB of Draco-compressed models.
 On a slower GPU the scene steps its own quality tier down, and a software
 rasteriser starts on the low tier.
 

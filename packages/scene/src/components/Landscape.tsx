@@ -246,7 +246,7 @@ function seaMaterial(shore: DataTexture, time: { value: number }, lite: boolean)
   material.envMapIntensity = 1.1;
   const { minX, maxX, minZ, maxZ } = TERRAIN;
   return patchStandard(material, {
-    key: 'continua-sea-v1',
+    key: 'continua-sea-v2',
     lite,
     uniforms: {
       uShore: { value: shore },
@@ -258,14 +258,17 @@ function seaMaterial(shore: DataTexture, time: { value: number }, lite: boolean)
       uTime: time,
     },
     header: /* glsl */ `
-      // Water depth under a point: the island's sampled height, deep water
-      // beyond the modelled ground.
+      // Water depth under a point: the island's sampled height, and beyond
+      // the modelled ground the depth at its edge, shelving away - so the
+      // colour carries on across the boundary without a seam.
       float ctDepth(vec2 p) {
         vec4 r = uShoreRect;
         vec2 t = (p - r.xz) / vec2(r.y - r.x, r.w - r.z);
-        if (t.x < 0.0 || t.x > 1.0 || t.y < 0.0 || t.y > 1.0) return 14.0;
-        vec2 uv = (t * (uShoreTexels - 1.0) + 0.5) / uShoreTexels;
-        return -texture2D(uShore, uv).r;
+        vec2 inside = clamp(t, 0.0, 1.0);
+        vec2 uv = (inside * (uShoreTexels - 1.0) + 0.5) / uShoreTexels;
+        float depth = -texture2D(uShore, uv).r;
+        float beyond = length((t - inside) * vec2(r.y - r.x, r.w - r.z));
+        return depth + 0.02 * beyond;
       }
       float ctWaves(vec2 p, float t) {
         #ifdef CT_LITE

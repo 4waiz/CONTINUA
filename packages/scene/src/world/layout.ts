@@ -282,11 +282,11 @@ function buildLayout(): Record<string, Placement[]> {
     add('PROP_PipeRack', besideRoute(d, -19));
   }
 
-  // A transmission line well south of the corridor - tall, so it reads at
-  // distance - ending before the coast swings in toward the road.
+  // A transmission line south of the corridor - tall, so it reads at distance -
+  // kept inland of the beach, and ending before the coast swings in toward the road.
   for (let i = 0; i < 6; i += 1) {
     const x = 120 + i * 78;
-    add('PROP_Pylon', { x, z: -176 - 10 * Math.sin(i * 0.9), yaw: 0.06 });
+    add('PROP_Pylon', { x, z: -142 - 6 * Math.sin(i * 0.9), yaw: 0.06 });
   }
 
   // Jersey barriers: one continuous line between the carriageway and the pipe
@@ -298,6 +298,13 @@ function buildLayout(): Record<string, Placement[]> {
     if (crossings.some((road) => Math.abs(at.x - road.x) < road.clear)) continue;
     add('PROP_Barrier', at);
   }
+
+  // --- the waterfront: jetty below the campus, lifeguard towers, lighthouse --------------
+  // The jetty starts at the waterline and runs out to sea (its +X turned south).
+  add('PROP_Jetty', { x: 60, z: -176, yaw: HALF_PI });
+  add('PROP_LifeguardTower', { x: 150, z: -174, yaw: HALF_PI }, { x: -40, z: -152, yaw: HALF_PI });
+  // On the headland's high ground, looking out to the south-east.
+  add('PROP_Lighthouse', { x: 985, z: -95, yaw: Math.PI / 4 });
 
   // --- the remote sector: pipeline, valve station, turbines, solar ----------------
   const valveDistance = distanceAtX(700);

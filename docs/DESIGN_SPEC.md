@@ -170,9 +170,12 @@ One screen, no page scroll, at 1920×1080, 1440×900, 1366×768 and 1280×720.
   hall, hangar, response station, gatehouse, carports), an industrial corridor
   (halls, tank farm, pipe rack, stack, substation, pylons), and a remote sector
   (ground station, pipeline and valve station, solar, an offshore wind farm),
-  dressed with palms, broadleaf woods, scarlet flame trees, violet jacarandas,
-  bougainvillea in four colours and bedding along the campus road. The full
-  list is in `ASSET_MANIFEST.md`.
+  a waterfront (a lighthouse on the headland, a jetty with a moored rescue
+  boat, lifeguard towers, yachts and a rescue boat on slow fixed courses that
+  ride the swell as a function of the scene clock), dressed with palms,
+  broadleaf woods, scarlet flame trees, violet jacarandas, bougainvillea in
+  four colours and bedding along the campus road. The full list is in
+  `ASSET_MANIFEST.md`.
 * **Restraint.** No bloom, no god rays, no particles, no floating labels over
   the vehicle. Infrastructure is marked with a thin ground ring that only grows
   a vertical stem when selected.

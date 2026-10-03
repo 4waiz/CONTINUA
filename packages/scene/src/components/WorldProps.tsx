@@ -167,7 +167,7 @@ const NO_FOOTPRINT = new Set([
   // Plants and boulders: a dark square under a palm on a lawn reads as a stain.
   'PROP_Palm', 'PROP_Ghaf', 'PROP_Shrub_A', 'PROP_Shrub_B', 'PROP_Rock_A', 'PROP_Rock_B', 'PROP_Rock_C',
   'PROP_FlameTree', 'PROP_Jacaranda', 'PROP_FlowerBed', 'PROP_FlowerBush_Magenta', 'PROP_FlowerBush_Coral',
-  'PROP_FlowerBush_Yellow', 'PROP_FlowerBush_White',
+  'PROP_FlowerBush_Yellow', 'PROP_FlowerBush_White', 'PROP_Jetty', 'PROP_LifeguardTower',
 ]);
 
 const FOOTPRINT_VERTEX = /* glsl */ `
@@ -346,6 +346,116 @@ function TurbineRotors({ library, placements }: { library: Map<string, Object3D>
           dispose={null}
         />
       ))}
+    </group>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Boats: yachts and the rescue boat at sea, the rescue boat's twin at the jetty
+// ---------------------------------------------------------------------------
+
+/**
+ * Boats on slow elliptical courses well offshore, and a rescue boat moored at
+ * the jetty, all riding a gentle swell. Every pose is a pure function of the
+ * scene clock, so a scrubbed or captured frame puts each boat where it was.
+ * Decoration only: nothing here is part of any measurement.
+ */
+interface Course {
+  prop: string;
+  cx: number;
+  cz: number;
+  rx: number;
+  rz: number;
+  /** Seconds per lap; negative sails the other way round. */
+  period: number;
+  phase: number;
+  /** Steady heel under sail, radians. */
+  heel: number;
+}
+
+const COURSES: readonly Course[] = [
+  { prop: 'PROP_Boat_Sail', cx: 380, cz: -405, rx: 230, rz: 60, period: 640, phase: 0.1, heel: 0.12 },
+  { prop: 'PROP_Boat_Sail', cx: 830, cz: -340, rx: 150, rz: 55, period: -520, phase: 0.55, heel: -0.1 },
+  { prop: 'PROP_Boat_Rescue', cx: 300, cz: -292, rx: 250, rz: 40, period: 300, phase: 0.3, heel: 0 },
+];
+
+/** Moored alongside the jetty below the campus, bow out to sea. */
+const MOORED: readonly { prop: string; x: number; z: number; yaw: number }[] = [
+  { prop: 'PROP_Boat_Rescue', x: 64.6, z: -201, yaw: Math.PI / 2 },
+];
+
+const _boatEuler = new Euler();
+const _boatQuaternion = new Quaternion();
+const _boatPosition = new Vector3();
+const _boatScale = new Vector3(1, 1, 1);
+
+function boatMatrix(x: number, z: number, yaw: number, heel: number, time: number, seed: number, target: Matrix4): Matrix4 {
+  // A long, low swell: a few centimetres of heave and a degree or two of pitch and roll.
+  const heave = 0.06 * Math.sin(time * 1.15 + seed) + 0.025 * Math.sin(time * 2.3 + seed * 1.7);
+  const pitch = 0.022 * Math.sin(time * 0.9 + seed * 0.6);
+  const roll = heel + 0.035 * Math.sin(time * 0.7 + seed * 1.3);
+  _boatPosition.set(x, SEA_LEVEL + heave, z);
+  _boatQuaternion.setFromEuler(_boatEuler.set(roll, yaw, pitch, 'YXZ'));
+  return target.compose(_boatPosition, _boatQuaternion, _boatScale);
+}
+
+function Boats({ library }: { library: Map<string, Object3D> }) {
+  const { clock } = useSceneRuntime();
+  const boats = useMemo(() => {
+    const out: { primitives: Primitive[]; course?: Course; moored?: (typeof MOORED)[number]; seed: number }[] = [];
+    COURSES.forEach((course, index) => {
+      const node = library.get(course.prop);
+      if (node) out.push({ primitives: collectPrimitives(node), course, seed: index * 2.1 + 0.4 });
+    });
+    MOORED.forEach((moored, index) => {
+      const node = library.get(moored.prop);
+      if (node) out.push({ primitives: collectPrimitives(node), moored, seed: 7.3 + index });
+    });
+    return out;
+  }, [library]);
+  const refs = useRef<(Mesh | null)[][]>([]);
+  const base = useMemo(() => new Matrix4(), []);
+
+  useFrame(() => {
+    const time = clock.time;
+    boats.forEach(({ primitives, course, moored, seed }, b) => {
+      if (course) {
+        const angle = course.phase * Math.PI * 2 + (time / course.period) * Math.PI * 2;
+        const direction = Math.sign(course.period);
+        const x = course.cx + course.rx * Math.cos(angle);
+        const z = course.cz + course.rz * Math.sin(angle);
+        const tx = -course.rx * Math.sin(angle) * direction;
+        const tz = course.rz * Math.cos(angle) * direction;
+        boatMatrix(x, z, Math.atan2(-tz, tx), course.heel, time, seed, base);
+      } else if (moored) {
+        boatMatrix(moored.x, moored.z, moored.yaw, 0, time * 0.8, seed, base);
+      }
+      primitives.forEach((primitive, index) => {
+        const mesh = refs.current[b]?.[index];
+        if (mesh) mesh.matrix.copy(base).multiply(primitive.relative);
+      });
+    });
+  });
+
+  return (
+    <group name="CONTINUA_Boats">
+      {boats.map(({ primitives }, b) =>
+        primitives.map((primitive, index) => (
+          <mesh
+            key={`${b}-${index}`}
+            ref={(mesh) => {
+              (refs.current[b] ??= [])[index] = mesh;
+            }}
+            geometry={primitive.geometry}
+            material={primitive.material}
+            matrixAutoUpdate={false}
+            castShadow
+            receiveShadow
+            frustumCulled={false}
+            dispose={null}
+          />
+        )),
+      )}
     </group>
   );
 }
@@ -559,8 +669,9 @@ function allPlacements(): Map<string, Placement[]> {
   }
   for (const [prop, placements] of Object.entries(WORLD_LAYOUT)) {
     const list = byProp.get(prop) ?? [];
-    // Seeded scatter can land past the shore; only the wind farm stands at sea.
-    const afloat = prop === TURBINE.tower || prop === TURBINE.rotor;
+    // Seeded scatter can land past the shore; only the wind farm and the
+    // jetty stand at sea.
+    const afloat = prop === TURBINE.tower || prop === TURBINE.rotor || prop === 'PROP_Jetty';
     const kept = afloat ? [...placements] : placements.filter((item) => terrain.height(item.x, item.z) > SEA_LEVEL + 0.25);
     list.push(...(THINNED_ON_LOW.has(prop) ? keepersFirst(kept).ordered : kept));
     byProp.set(prop, list);
@@ -634,6 +745,7 @@ export function WorldProps({
 
       <GroundContact entries={instanced} />
       <AmbientTraffic library={library} />
+      <Boats library={library} />
       <TurbineRotors library={library} placements={placements.get(TURBINE.tower) ?? []} />
       <PowerLines pylons={placements.get('PROP_Pylon') ?? []} />
 

@@ -816,6 +816,23 @@ the engine's own count.
   never transported video; only its motion is tied to the engine's video
   figures.
 
+## The waterfront
+
+* **A lighthouse** on the headland's high ground past the ground station: a
+  21 m tower in red and white bands, a railed gallery, a glazed lantern and
+  the keeper's house.
+* **A jetty** below the campus, 44 m out from the waterline on piles, with
+  bollards, fenders and lamps, and the rescue boat moored alongside - the boat
+  that answers to the same operations centre as the rover.
+* **Lifeguard towers** on the south beach.
+* **Boats on fixed courses**: two yachts and a patrolling rescue boat sail
+  slow ellipses offshore and ride a gentle swell (heave, pitch, roll), all as
+  a pure function of the scene clock - scrub to a time and every boat is where
+  it was. Decoration only.
+* The sea's depth now carries on past the modelled ground, shelving away,
+  instead of jumping to deep water at its edge (a visible seam); the power line
+  south of the corridor moved inland off the beach.
+
 ## Measured
 
 On this machine (RTX 4070 Laptop GPU, Chromium on ANGLE / D3D11), 1920×1080,

@@ -32,9 +32,9 @@ AO below.
 | --- | --- | --- | --- |
 | `continua_rover.glb` | 783,100 (765 KB) | 71,998 | Hero rover: 12 meshes, 2 steering pivots, 24 materials |
 | `continua_rover_lod1.glb` | 257,556 (252 KB) | 23,266 | Low-detail rover for the `low` quality tier |
-| `continua_props.glb` | 1,185,792 (1158 KB) | 113,222 | 55 world props, instanced at runtime |
+| `continua_props.glb` | 1,256,348 (1227 KB) | 118,717 | 60 world props, instanced at runtime |
 
-The three files total **2.23 MB**; the decoder adds `draco_decoder.wasm`
+The three files total **2.30 MB**; the decoder adds `draco_decoder.wasm`
 (192 KB) and `draco_wasm_wrapper.js` (58 KB).
 
 **Cache busting.** `/models/*` is served `immutable` for a year
@@ -78,6 +78,7 @@ reading as dirt.
 | `world_campus.py` | Operations centre, gateway hall, hangar, response station, gatehouse, carports, cars, water tower, street furniture |
 | `world_industry.py` | Warehouses, tank farm and its bund, pipe rack, stack, substation, pylons, cell tower, Wi-Fi mast, dock, containers, skyline |
 | `world_remote.py` | Ground station, pipeline and valve station, wind turbines, granite boulders, palms, broadleaf trees, flame trees, jacarandas, flowering bushes, flower beds, shrubs, solar field |
+| `world_coast.py` | Lighthouse, jetty, lifeguard tower, rescue boat, sailing yacht |
 | `build_props.py` | Builds every prop, bakes AO, exports the props GLB |
 
 `npm run blender:all` runs vehicle, props and preview renders in sequence.
@@ -218,6 +219,11 @@ site.
 | `PROP_Jacaranda` | 4,368 | Vase of four limbs under a violet dome | Jacarandas, campus and meadows |
 | `PROP_FlowerBush_Magenta` / `_Coral` / `_Yellow` / `_White` | 600 each | Dark leaf mound under sprays of bloom | Bougainvillea: campus fence, gate, plaza, meadows |
 | `PROP_FlowerBed` | 860 | 6 × 1.6 m kerbed bed, two rows of bedding in four colours | Along the campus road |
+| `PROP_Lighthouse` | 2,010 | 21 m tower in red and white bands, railed gallery, glazed lantern, keeper's house | The headland past the ground station |
+| `PROP_Jetty` | 2,378 | 44 m concrete deck on piles along +X from the waterline, bollards, fenders, lamps, ladder | Below the campus |
+| `PROP_LifeguardTower` | 315 | Raised hut on four legs, ramp, flag | The south beach |
+| `PROP_Boat_Rescue` | 582 | 12 m, waterline on z = 0, bow +X | Moored at the jetty, and on patrol offshore |
+| `PROP_Boat_Sail` | 210 | 9 m sloop, waterline on z = 0, bow +X | Two yachts offshore |
 | `PROP_WindTurbine_Rotor` | 738 | Hub at (2.6, 0, 62) | Rotor, spun from the scene clock |
 | `PROP_SolarField` | 712 | 20 m along X, tilted to +Y | Solar field |
 | `PROP_Shrub_A` / `_B` | 320 / 480 | - | Green shrubs |

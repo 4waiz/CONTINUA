@@ -39,6 +39,7 @@ import continua_arch as arch  # noqa: E402
 import continua_geo as geo  # noqa: E402
 import continua_lib as lib  # noqa: E402
 import world_campus  # noqa: E402
+import world_coast  # noqa: E402
 import world_industry  # noqa: E402
 import world_remote  # noqa: E402
 
@@ -61,6 +62,8 @@ AO_DISTANCE = {
     "PROP_FlameTree": 1.8, "PROP_Jacaranda": 1.6, "PROP_FlowerBed": 0.4,
     "PROP_FlowerBush_Magenta": 0.6, "PROP_FlowerBush_Coral": 0.6, "PROP_FlowerBush_Yellow": 0.6,
     "PROP_FlowerBush_White": 0.6,
+    "PROP_Lighthouse": 2.4, "PROP_Jetty": 1.2, "PROP_LifeguardTower": 0.8,
+    "PROP_Boat_Rescue": 0.8, "PROP_Boat_Sail": 0.6,
     "PROP_Skyline_A": 6.0, "PROP_Skyline_B": 6.0, "PROP_Skyline_C": 6.0,
     "PROP_WindTurbine_Rotor": 2.0, "PROP_Pylon": 1.2, "PROP_CellTower": 1.2,
 }
@@ -72,6 +75,7 @@ def build_library() -> list[bpy.types.Object]:
     props += world_campus.build_all(materials)
     props += world_industry.build_all(materials)
     props += world_remote.build_all(materials)
+    props += world_coast.build_all(materials)
     for prop in props:
         if prop.name in RENAME:
             new = RENAME[prop.name]

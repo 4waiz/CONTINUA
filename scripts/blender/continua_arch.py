@@ -76,6 +76,11 @@ def world_materials() -> dict[str, bpy.types.Material]:
         "blossom_white": pbr("W_Blossom_White", "#F5F2EA", roughness=0.7),
         "blossom_flame": pbr("W_Blossom_Flame", "#E5482C", roughness=0.7),
         "blossom_lilac": pbr("W_Blossom_Lilac", "#9B7ADB", roughness=0.7),
+        # The waterfront.
+        "roof_tile": pbr("W_Roof_Tile", "#C0573C", roughness=0.78),
+        "hull_orange": pbr("W_Hull_Orange", "#F26B21", roughness=0.45, coat=0.4),
+        "teak": pbr("W_Teak", "#A47148", roughness=0.75),
+        "sail": pbr("W_Sail", "#F7F5EF", roughness=0.85),
         "fabric": pbr("W_Fabric", "#F4F6F9", roughness=0.8),
         "lamp": pbr("W_Lamp", "#FFF7E6", roughness=0.2, emission="#FFF2D6",
                     emission_strength=0.6),
