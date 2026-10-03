@@ -15,10 +15,11 @@
 
 import { useGLTF } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
-import { useLayoutEffect, useMemo, useRef } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import {
   Box3,
   BufferGeometry,
+  Color,
   Euler,
   Float32BufferAttribute,
   InstancedBufferAttribute,
@@ -255,6 +256,8 @@ const ROOMS: Record<string, Record<string, RoomSpec>> = {
   // The workshop lean-to's ribbon windows (the crown skylight is horizontal
   // and keeps the plain glass).
   PROP_Facility_Hangar: { W_Glass: { width: 3.2, storey: 4.0, depth: 5.0, floor: 0 } },
+  // The rover garage's control room beside its door: one tall room.
+  PROP_RoverGarage: { W_Glass: { width: 3.6, storey: 4.4, depth: 4.5, floor: 0 } },
   // The gate's security booth, and the warehouse's two-storey office annex
   // (its roof glazing is the dark glass and stays plain).
   PROP_Gatehouse: { W_Glass: { width: 2.6, storey: 3.2, depth: 3.0, floor: 0 } },
@@ -270,6 +273,41 @@ function withRooms(prop: string, primitive: Primitive): Primitive {
   const room = ROOMS[prop]?.[material.name];
   if (!room) return primitive;
   return { ...primitive, material: windowMaterial(material, room, `${prop}/${material.name}`) };
+}
+
+// ---------------------------------------------------------------------------
+// The dock's status line
+// ---------------------------------------------------------------------------
+
+/**
+ * The line under the dock's number on both faces of its gantry
+ * (world_industry.py, `dock_status`): red while the rover stands in the bay,
+ * green from the moment it pulls out. Read from the rover's distance along
+ * the route, so a frame is still a pure function of the clock. Decoration: it
+ * shows where the rover is, never anything measured.
+ */
+const DOCK_STATUS = 'W_Dock_Status';
+const STATUS_DOCKED = new Color('#FF3B30');
+const STATUS_CLEAR = new Color('#2FD35C');
+
+function withStatus(primitive: Primitive, status: MeshStandardMaterial | null): Primitive {
+  const material = primitive.material;
+  if (!status || Array.isArray(material) || material.name !== DOCK_STATUS) return primitive;
+  return { ...primitive, material: status };
+}
+
+function DockStatus({ material }: { material: MeshStandardMaterial }) {
+  const { frame } = useSceneRuntime();
+  useFrame(() => {
+    const clear = smoothstep(0.15, 0.45, frame.current.vehicle.distance);
+    material.emissive.copy(STATUS_DOCKED).lerp(STATUS_CLEAR, clear);
+  });
+  return null;
+}
+
+function smoothstep(edge0: number, edge1: number, x: number): number {
+  const t = Math.min(1, Math.max(0, (x - edge0) / (edge1 - edge0)));
+  return t * t * (3 - 2 * t);
 }
 
 // ---------------------------------------------------------------------------
@@ -850,6 +888,19 @@ export function WorldProps({
 
   const placements = useMemo(() => allPlacements(), []);
 
+  // This scene's own copy of the dock's status material: the glTF's is shared
+  // through the cache with every other canvas, each on its own clock.
+  const status = useMemo(() => {
+    let found: MeshStandardMaterial | null = null;
+    scene.traverse((node) => {
+      if (found || !(node instanceof Mesh)) return;
+      const material = node.material;
+      if (material instanceof MeshStandardMaterial && material.name === DOCK_STATUS) found = material;
+    });
+    return found ? (found as MeshStandardMaterial).clone() : null;
+  }, [scene]);
+  useEffect(() => () => status?.dispose(), [status]);
+
   const instanced = useMemo(() => {
     const out: { name: string; placements: Placement[]; primitives: Primitive[] }[] = [];
     for (const [name, list] of placements) {
@@ -859,10 +910,14 @@ export function WorldProps({
         console.warn(`[CONTINUA] prop "${name}" not found in ${PROPS_MODEL_URL}`);
         continue;
       }
-      out.push({ name, placements: list, primitives: collectPrimitives(node).map((primitive) => withRooms(name, primitive)) });
+      out.push({
+        name,
+        placements: list,
+        primitives: collectPrimitives(node).map((primitive) => withStatus(withRooms(name, primitive), status)),
+      });
     }
     return out;
-  }, [placements, library]);
+  }, [placements, library, status]);
 
   return (
     <group name="CONTINUA_World">
@@ -880,6 +935,7 @@ export function WorldProps({
       )}
 
       <GroundContact entries={instanced} />
+      {status && <DockStatus material={status} />}
       <AmbientTraffic library={library} />
       <Boats library={library} />
       <TurbineRotors library={library} placements={placements.get(TURBINE.tower) ?? []} />

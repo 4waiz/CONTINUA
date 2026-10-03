@@ -9,17 +9,9 @@
 import { BufferAttribute, BufferGeometry } from 'three';
 import { terrain } from './terrain';
 import { route, type Route } from './route';
+import { ROAD_HALF_WIDTH, ROAD_SURFACE_OFFSET } from './carriageway';
 
-/** The road deck sits this far above the flattened terrain. Shared with the rover. */
-export const ROAD_SURFACE_OFFSET = 0.06;
-/**
- * The dock bay's concrete floor (scripts/blender/world_industry.py,
- * prop_dock_station) is centred on the start of the route, 8.6 m long and
- * flush with the road deck. The carriageway starts where it ends, so asphalt
- * and concrete never lie at one height over the same ground.
- */
-export const DOCK_BAY_HALF_LENGTH = 4.3;
-export const ROAD_HALF_WIDTH = 3.9;
+export { DOCK_BAY_HALF_LENGTH, ROAD_HALF_WIDTH, ROAD_SURFACE_OFFSET, SHOULDER_HALF_WIDTH } from './carriageway';
 /** Metres between ribbon cross-sections. */
 const RIBBON_STEP = 2;
 

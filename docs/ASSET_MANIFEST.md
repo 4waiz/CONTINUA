@@ -36,9 +36,9 @@ frond card (§2a).
 | --- | --- | --- | --- |
 | `continua_rover.glb` | 791,724 (773 KB) | 72,278 | Hero rover: 15 meshes (three of them moving sensors), 2 steering pivots, 24 materials |
 | `continua_rover_lod1.glb` | 264,936 (259 KB) | 23,450 | Low-detail rover for the `low` quality tier |
-| `continua_props.glb` | 1,501,996 (1467 KB) | 107,529 | 60 world props, instanced at runtime; the foliage atlas |
+| `continua_props.glb` | 1,602,892 (1565 KB) | 114,318 | 61 world props, instanced at runtime; the foliage atlas |
 
-The three files total **2.56 MB**; the decoder adds `draco_decoder.wasm`
+The three files total **2.66 MB**; the decoder adds `draco_decoder.wasm`
 (192 KB) and `draco_wasm_wrapper.js` (58 KB).
 
 **Cache busting.** `/models/*` is served `immutable` for a year
@@ -100,7 +100,7 @@ tree against 3,346, 1,526 for a flame tree against 5,686.
 | File | Bytes | Regenerate with |
 | --- | --- | --- |
 | `assets/blender/continua_rover.blend` | 972,975 (950 KB) | `npm run blender:vehicle` |
-| `assets/blender/continua_props.blend` | 1,901,936 (1.81 MB) | `npm run blender:props` |
+| `assets/blender/continua_props.blend` | 2,020,756 (1.93 MB) | `npm run blender:props` |
 
 | Script | Role |
 | --- | --- |
@@ -231,13 +231,14 @@ site.
 | `PROP_Substation` | 7,604 | 32 × 22 m yard | Substation |
 | `PROP_Stack` | 7,164 | 48 m, aviation bands | Landmark |
 | `PROP_Warehouse` | 5,728 | 48 × 32 m, doors on +X | Industrial halls |
+| `PROP_RoverGarage` | 4,516 | 12 × 16 m, door open on +X, lit workshop inside, control room glazed | The rover's garage, behind the dock on the line of the route |
 | `PROP_Tank_Large` / `_Small` | 5,532 / 5,304 | Radially symmetric | Tank farm |
 | `PROP_CellTower` | 3,428 | 26 m lattice, three sectors | Cellular macro site (beam at 25.5 m) |
 | `PROP_Pylon` | 3,288 | 34 m, arms along Y | Transmission line |
+| `PROP_DockStation` | 3,161 | Charcoal bay (centre (2.0, -7.0)) with its number painted on it; portal gantry 6.4 m clear with the number, a status line and dome cameras on the beam; equipment behind bollards; two floodlight masts | Wired dock, tether at (2.4, -7.0, 3.6) |
 | `PROP_Tank_Sphere` | 2,816 | Radially symmetric | Tank farm |
 | `PROP_Bund` | 1,752 | 54 × 50 m wall, 1.3 m; step-over on -Y | Tank-farm containment |
 | `PROP_Skyline_A/B/C` | 872 / 656 / 464 | Banded towers | Distant city |
-| `PROP_DockStation` | 888 | Portal gantry, 6.4 m clear; bay centre at (2.0, -7.0) | Wired dock, tether at (2.4, -7.0, 3.6) |
 | `PROP_Container` | 552 | 6.06 m along X | Yards |
 | `PROP_PipeRack` | 300 | One 12 m bay along X | Pipe rack, instanced |
 | `PROP_WifiMast` | 288 | 6.6 m | Wi-Fi access points (beam at 6.6 m) |
@@ -285,7 +286,8 @@ by timestamp: the `view-*` set is `tests/evidence.spec.ts`'s inspection set
 (same times, cameras and settings) rendered on the GPU at the high tier by
 `node scripts/scene-shots.mjs --set evidence`, because the test project draws
 with SwiftShader and so starts on the low tier. The `world-*` views are fixed
-points over the island (`--set world --height 1020`), and `dashboard-*` is
+points over the island and the dock yard where every run starts
+(`--set world --height 1020`), and `dashboard-*` is
 Mission during a run beside its baseline (`node scripts/ui-screenshots.mjs
 --only mission --run --run-for 77`).
 

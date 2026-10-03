@@ -56,6 +56,10 @@ export const SCENE_COLOR = {
   roadLine: '#F4F2EC',
   roadCentre: '#F2C14E',
   apron: '#C6CBD1',
+  /** Precast kerbs where paving meets grass. */
+  kerb: '#D7DBE0',
+  /** Keep-clear hatching on the dock yard. */
+  hatch: '#E9B832',
   grid: '#7C93B6',
   /**
    * Horizon ranges: lush island mountains - forest, darker in the gullies,

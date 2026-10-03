@@ -16,6 +16,7 @@
  */
 
 import { makeRandom } from '../math/noise';
+import { onDockYard, PARKING, ROVER_GARAGE } from './dock';
 import { route } from './route';
 import { onForecourt } from './terminus';
 
@@ -179,9 +180,26 @@ function buildLayout(): Record<string, Placement[]> {
   add('PROP_Van', { x: 30, z: 18, yaw: 0.1 }, { x: 118, z: 40, yaw: Math.PI - 0.05 });
   add('PROP_Car_B', { x: 76, z: 40, yaw: Math.PI / 2 + 0.04 });
 
-  // Planters and bollards around the dock and the plaza.
+  // The rover's garage, behind the dock on the line of the route (dock.ts),
+  // and its staff parking: three of the four painted bays taken, nose in.
+  add('PROP_RoverGarage', { x: ROVER_GARAGE.x, z: ROVER_GARAGE.z, yaw: 0 });
+  const bayCentre = (bay: number) => PARKING.minX + PARKING.bay * (bay + 0.5);
+  const parkedZ = (PARKING.minZ + PARKING.maxZ) / 2;
+  add('PROP_Car_B', { x: bayCentre(0), z: parkedZ, yaw: HALF_PI + 0.03 });
+  add('PROP_Van', { x: bayCentre(2), z: parkedZ + 0.2, yaw: HALF_PI - 0.02 });
+  add('PROP_Car_A', { x: bayCentre(3), z: parkedZ - 0.1, yaw: HALF_PI + 0.05 });
+
+  // Planters on the plaza. The dock's bollards are the dock's own
+  // (world_industry.py), round its gantry and equipment, not out on a lawn.
   add('PROP_Planter', { x: -58, z: 22, yaw: 0 }, { x: -34, z: 22, yaw: 0 }, { x: -46, z: 13, yaw: 0 });
-  for (const x of [-32, -29, -20, -17]) add('PROP_Bollard', { x, z: -4.6, yaw: 0 });
+  // Raised flower beds along the dock yard's kerbs (dock.ts), where the yard
+  // meets the lawn either side.
+  add(
+    'PROP_FlowerBed',
+    { x: -25.0, z: -14.4, yaw: 0 },
+    { x: -18.4, z: -14.4, yaw: 0 },
+    { x: -17.6, z: 14.4, yaw: 0 },
+  );
 
   // Container yards: some stacked two high (scale 1, lifted in the runtime by `stack`).
   for (const [cx, cz, count] of [
@@ -422,12 +440,12 @@ function buildLayout(): Record<string, Placement[]> {
     add(prop, { x, z, yaw: random() * 6.28, scale: 0.8 + random() * 0.5 });
   }
 
-  // Nothing grows on the forecourt where the road ends (terminus.ts). Taken
-  // out after the fact, so every other placement - and the seeded sequence
-  // that made them - is as it was.
+  // Nothing grows on the forecourt where the road ends (terminus.ts), nor on
+  // the dock yard (dock.ts). Taken out after the fact, so every other
+  // placement - and the seeded sequence that made them - is as it was.
   for (const [prop, list] of Object.entries(out)) {
     if (!/^PROP_(Rock|Shrub|Ghaf|FlameTree|Jacaranda|Palm|FlowerBush|FlowerBed)/.test(prop)) continue;
-    out[prop] = list.filter((item) => !onForecourt(item.x, item.z, 2.5));
+    out[prop] = list.filter((item) => !onForecourt(item.x, item.z, 2.5) && !onDockYard(item.x, item.z));
   }
 
   return out;

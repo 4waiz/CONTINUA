@@ -1221,3 +1221,87 @@ Smaller things found on the same pass:
 * **Tried and reverted:** a higher-contrast forest canopy on the ranges. It
   read better from the air but, on steep faces, turned the crowns' cross-slope
   layout into wavy moiré from the follow camera - worse where it is seen most.
+
+
+## The start: a dock yard, not a bay in a field
+
+The owner's verdict on the start: the bay sat in grass, and the road appeared
+out of nowhere. Rendered from seven fixed points round the dock
+(`video/work/diag/diag-views.mjs`), it was an 8.6 x 5.4 m concrete bay in a
+six-metre strip of lawn between two empty concrete pads - the operations
+centre's forecourt and the gateway yard - with the carriageway, and its gravel
+verges, starting at the bay's front edge, and four bollards in the grass.
+
+* **A yard.** The bay now stands in a concrete yard (`world/dock.ts`) that
+  runs from the garage's door to where the road begins and joins the two pads
+  it lay between. It is at the road deck's height, as the bay is, so the
+  rover's tyres rest on all three at one height, and its concrete is the
+  pads' own function of position - each 4 m bay poured a shade lighter or
+  darker than its neighbours - so where they overlap there is no seam. On it:
+  the road's edge lines carried in from the yard's mouth to the bay's front
+  corners, a yellow keep-clear box hatched round the equipment, the tyre paths
+  and the odd drip where the rover stands, and four parking bays by the
+  garage, three of them taken.
+* **The road leaves through a bell-mouth.** The yard's front edge curves into
+  the carriageway's edges on either side (5 m radius); the carriageway starts
+  at the mouth, with a give-way line a metre in, and the gravel verges start
+  where the curves end. The route, and where the rover parks, are unchanged.
+* **Kerbs.** Every paved surface that meets grass - the pads, the yard, the
+  forecourt where the road ends - has a precast kerb along that edge and
+  nowhere else (`world/kerbs.ts`): each outline is walked every half metre and
+  the ground just outside it tested, so a kerb stops where one surface runs
+  into another and at every road that enters it. 915 mm units, each its own
+  tone.
+* **The dock** (`world_industry.py`, rebuilt, 3,161 triangles): a charcoal
+  epoxy bay with DOCK 01 painted behind the rover, the right way up from the
+  follow camera; a gantry with the number on both faces of its beam, dome
+  cameras, an amber beacon, cyan light lines down its legs and a status line
+  under the number - red while the rover stands in the bay, green from the
+  moment it pulls out, read from the rover's distance along the route
+  (`WorldProps.tsx`, `DockStatus`), so a frame is still a pure function of the
+  clock; the data pillar's screen lit; bollards in front of the legs and the
+  equipment; two floodlight masts, clear of the inspection turntable's and the
+  close-up's orbits.
+* **The rover's garage** (`prop_rover_garage`, 4,516 triangles): behind the
+  dock on the line of the route, its roller door up and its frame lit, a
+  canopy with downlights, and through the door a lit workshop - a second bay,
+  a workbench and tool wall, a charging cabinet and its screen, spare wheels -
+  with the control room's glazing beside it (rooms behind it, `windows.ts`).
+  The follow camera starts 11 m in front of its door, so the opening frame
+  looks the other way; the inspection turntable, the overview and the aerial
+  see it.
+* **A hole in the sky.** Checking the cinematic cut at fixed times found a
+  black wedge above the western ranges at 47 s. The sky dome, 2300 m in
+  radius, was centred on the world's origin and the camera's far plane is at
+  2600 m: from 300 m along the route, looking back, the dome's far side lay
+  past the far plane and the clear colour showed through. The dome now
+  travels with whichever camera draws it - its shading reads only the view
+  direction. Near-black pixels in that region of that frame: 7,726 before, 0
+  after.
+
+Props: 61, 114,318 triangles, 1.60 MB with Draco (from 1.50 MB); the three
+model files 2.66 MB. Two README views of the start (`--set world`:
+`world-dock`, `world-gantry`); the evidence set and Scene Lab re-shot.
+
+Measured (`perf-probe.mjs`, RTX 4070 Laptop GPU, 1920x1080, high tier, GPU
+otherwise idle): Mission with a run beside its baseline, four runs back to
+back, 187.5, 176.1, 175.1 and 163.5 fps - frame time p50 5.0-5.9 ms, p99
+10.0-11.0 ms - against 190.8 fps and p99 10.7 ms before; the fall across the
+four runs is the laptop warming, the first run is the like-for-like one.
+Scene Lab with the preview playing: 164.6 fps, p99 7.8 ms, worst frame
+10.5 ms, no long tasks. Each Mission run has one long main-thread task of
+51-76 ms inside the measured window, at a handoff (sim 9.8 s, the first one,
+and 16.5 s): the interface's work, which this change did not touch - but the
+build before it was not measured for this, so whether it is new is not known.
+
+lint, typecheck, build, test:engine 145, test:phase2 11/11 (CONTINUA_ENGINE
+on this machine's port), test:smoke 11 passed / 10 skipped.
+
+Known limitations:
+
+* The demo video was cut before this: the opening seconds of its runs show
+  the old bay.
+* Light concrete seen from under about 3 m, looking toward the sun, glares
+  close to white. No camera in the app looks from there - the follow
+  camera rides 5.2 m up, the low cinematic shot looks back down the
+  asphalt - but a camera placed there would see it.

@@ -84,6 +84,15 @@ def world_materials() -> dict[str, bpy.types.Material]:
         "fabric": pbr("W_Fabric", "#F4F6F9", roughness=0.8),
         "lamp": pbr("W_Lamp", "#FFF7E6", roughness=0.2, emission="#FFF2D6",
                     emission_strength=0.6),
+        # The dock: a satin charcoal epoxy bay, the gantry's light lines, the
+        # pillar's screen, and the status line the scene lights red or green.
+        "dock_floor": pbr("W_Dock_Floor", "#3B4553", roughness=0.4),
+        "light_cyan": pbr("W_Light_Cyan", "#A6ECFF", roughness=0.3, emission="#3CCBF4",
+                          emission_strength=1.1),
+        "screen": pbr("W_Screen", "#0B1E2E", roughness=0.12, emission="#3FB7E8",
+                      emission_strength=0.45),
+        "dock_status": pbr("W_Dock_Status", "#1E2228", roughness=0.35, emission="#FF3B30",
+                           emission_strength=1.6),
         "mesh": pbr("W_Fence_Mesh", "#5A6575", metallic=0.4, roughness=0.6, alpha=0.32),
         "car_white": pbr("W_Car_White", "#E8ECF1", metallic=0.1, roughness=0.35, coat=0.6),
         "car_grey": pbr("W_Car_Grey", "#8D97A6", metallic=0.4, roughness=0.35, coat=0.6),

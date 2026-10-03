@@ -300,11 +300,15 @@ export function terrainMaterial(palette: {
  * carriageway, v is distance along it divided by 12 m. `linesEnd` (metres
  * along) is where the painted lines stop - where the road opens into the
  * turning circle at its end; the centre line stops a little before the edges.
+ * `linesStart` is where they begin - at the dock yard's mouth, where the
+ * yard's own lead lines meet them - with a give-way line across the road
+ * just inside it.
  */
 export function roadMaterial(palette: { road: string; line: string; centre: string }, options: {
   centreLine: boolean;
   key: string;
   linesEnd?: number;
+  linesStart?: number;
 }): MeshStandardMaterial {
   const material = new MeshStandardMaterial({ color: '#ffffff', roughness: 0.9, metalness: 0 });
   // The ribbon carries UVs, but a material with no texture maps does not ask
@@ -318,6 +322,7 @@ export function roadMaterial(palette: { road: string; line: string; centre: stri
       uCentre: { value: new Color(palette.centre) },
       uCentreLine: { value: options.centreLine ? 1 : 0 },
       uLinesEnd: { value: (options.linesEnd ?? 1e6) / 12 },
+      uLinesStart: { value: (options.linesStart ?? -1e6) / 12 },
     },
     colour: /* glsl */ `
       #ifdef USE_UV
@@ -337,9 +342,17 @@ export function roadMaterial(palette: { road: string; line: string; centre: stri
                  + smoothstep(0.942 - aa, 0.942, ruv.x) * (1.0 - smoothstep(0.965, 0.965 + aa, ruv.x));
       float dash = step(fract(ruv.y), 0.34);
       float centre = (1.0 - smoothstep(0.011, 0.011 + aa, abs(ruv.x - 0.5))) * dash * uCentreLine;
-      edge *= step(ruv.y, uLinesEnd);
-      centre *= step(ruv.y, uLinesEnd - 0.75);
-      vec3 colour = mix(asphalt, uLine, clamp(edge, 0.0, 1.0) * 0.92);
+      edge *= step(ruv.y, uLinesEnd) * step(uLinesStart, ruv.y);
+      centre *= step(ruv.y, uLinesEnd - 0.75) * step(uLinesStart + 0.25, ruv.y);
+      // Give way: a row of short dashes across the road, a metre in from
+      // where it begins, between the edge lines.
+      float metres = (ruv.y - uLinesStart) * 12.0;
+      float across = ruv.x * 7.8;
+      float aaV = fwidth(metres) * 1.2;
+      float giveWay = (smoothstep(0.9 - aaV, 0.9 + aaV, metres) - smoothstep(1.2 - aaV, 1.2 + aaV, metres))
+                    * step(0.058, ruv.x) * step(ruv.x, 0.942)
+                    * step(fract(across / 0.9), 0.6);
+      vec3 colour = mix(asphalt, uLine, clamp(edge + giveWay, 0.0, 1.0) * 0.92);
       colour = mix(colour, uCentre, clamp(centre, 0.0, 1.0) * 0.9);
       diffuseColor.rgb *= colour;
     `,
@@ -391,21 +404,138 @@ export function turningCircleMaterial(
   });
 }
 
-/** Concrete hardstanding with saw-cut joints every 4 m. */
-export function concreteMaterial(colour: string, key = 'continua-concrete-v1'): MeshStandardMaterial {
+/**
+ * The dock yard (world/dock.ts): the pads' concrete, joint for joint, so the
+ * yard runs into the forecourt and the gateway yard without a seam - and the
+ * yard's own paint. White lead lines carry the road's edge lines in from the
+ * yard's mouth to the bay's front corners; a yellow keep-clear box with
+ * diagonal hatching lies round the equipment beside the bay; and the tyre
+ * paths the rover leaves by every run are a shade darker.
+ */
+export function dockYardMaterial(
+  palette: { concrete: string; line: string; hatch: string },
+  yard: {
+    centreZ: number;
+    lead: { fromX: number; fromOffset: number; toX: number; toOffset: number; half: number };
+    keepClear: { minX: number; maxX: number; minZ: number; maxZ: number };
+    parking: { minX: number; maxX: number; minZ: number; maxZ: number; bay: number };
+  },
+): MeshStandardMaterial {
+  const material = new MeshStandardMaterial({ color: '#ffffff', roughness: 0.9, metalness: 0 });
+  const { lead, keepClear, parking } = yard;
+  return patchStandard(material, {
+    key: 'continua-dock-yard-v3',
+    uniforms: {
+      uConcrete: { value: new Color(palette.concrete) },
+      uLine: { value: new Color(palette.line) },
+      uHatch: { value: new Color(palette.hatch) },
+      uLead: { value: [lead.fromX, lead.toX, lead.fromOffset, lead.toOffset] },
+      uLeadHalf: { value: lead.half },
+      uCentreZ: { value: yard.centreZ },
+      uKeep: { value: [keepClear.minX, keepClear.maxX, keepClear.minZ, keepClear.maxZ] },
+      uPark: { value: [parking.minX, parking.maxX, parking.minZ, parking.maxZ] },
+      uParkBay: { value: parking.bay },
+    },
+    header: GLSL_CONCRETE,
+    colour: /* glsl */ `
+      vec2 p = vCtWorld.xz;
+      vec3 c = ctConcrete(uConcrete, p, vCtDist);
+
+      float side = abs(p.y - uCentreZ);
+      float span = smoothstep(uLead.x - 0.4, uLead.x + 0.6, p.x) * (1.0 - smoothstep(uLead.y - 0.6, uLead.y + 0.2, p.x));
+      // Tyre paths, the wheels 0.95 m either side of the rover's centre line,
+      // and the odd drip where it stands before the road.
+      float tyre = exp(-pow((side - 0.95) / 0.24, 2.0)) * span;
+      c *= 1.0 - 0.075 * tyre * (0.75 + 0.25 * ctNoise(p * vec2(0.6, 4.0)));
+      float drip = smoothstep(0.66, 0.8, ctFbm(p * 1.3 + 7.0)) * exp(-pow(side / 1.6, 2.0)) * span;
+      c *= 1.0 - 0.1 * drip;
+
+      // Lead lines: straight from the bay's front corners to the road's edge lines.
+      float t = clamp((p.x - uLead.x) / (uLead.y - uLead.x), 0.0, 1.0);
+      float d = abs(side - mix(uLead.z, uLead.w, t));
+      float aa = fwidth(d) * 1.2;
+      float lead = (1.0 - smoothstep(uLeadHalf - aa, uLeadHalf + aa, d)) * step(uLead.x, p.x) * step(p.x, uLead.y);
+      c = mix(c, uLine, lead * 0.92);
+
+      // Keep clear: a border and diagonal hatching round the equipment.
+      vec4 k = uKeep;
+      float edge = min(min(p.x - k.x, k.y - p.x), min(p.y - k.z, k.w - p.y));
+      float aaE = fwidth(edge) * 1.2;
+      float inside = smoothstep(-aaE, aaE, edge);
+      float border = inside * (1.0 - smoothstep(0.1 - aaE, 0.1 + aaE, edge));
+      float stripe = fract((p.x + p.y) / 0.85);
+      float aaS = fwidth(stripe) * 1.5;
+      float hatch = inside * smoothstep(0.62 - aaS, 0.62 + aaS, stripe) * (1.0 - smoothstep(0.98 - aaS, 0.98, stripe));
+      c = mix(c, uHatch, clamp(border + hatch, 0.0, 1.0) * 0.88);
+
+      // Parking bays: a line between each pair, and the back line.
+      vec4 pk = uPark;
+      float inPark = step(pk.x - 0.06, p.x) * step(p.x, pk.y + 0.06) * step(pk.z - 0.06, p.y) * step(p.y, pk.w);
+      float bayD = abs(fract((p.x - pk.x) / uParkBay + 0.5) - 0.5) * uParkBay;
+      float aaB = fwidth(p.x) * 1.2;
+      float bayLine = 1.0 - smoothstep(0.05 - aaB, 0.05 + aaB, bayD);
+      float backLine = 1.0 - smoothstep(0.05 - aaB, 0.05 + aaB, abs(p.y - pk.z));
+      c = mix(c, uLine, clamp(max(bayLine, backLine) * inPark, 0.0, 1.0) * 0.9);
+      diffuseColor.rgb *= c;
+    `,
+  });
+}
+
+/**
+ * Precast kerb units, 915 mm long: `uv.x` is metres along the run. Each unit
+ * a slightly different tone, a fine joint between them.
+ */
+export function kerbMaterial(colour: string): MeshStandardMaterial {
+  const material = new MeshStandardMaterial({ color: '#ffffff', roughness: 0.82, metalness: 0 });
+  material.defines = { ...(material.defines ?? {}), USE_UV: '' };
+  return patchStandard(material, {
+    key: 'continua-kerb-v1',
+    uniforms: { uKerb: { value: new Color(colour) } },
+    colour: /* glsl */ `
+      #ifdef USE_UV
+        float along = vUv.x;
+      #else
+        float along = 0.0;
+      #endif
+      float unit = floor(along / 0.915);
+      vec3 c = uKerb * (0.93 + 0.08 * ctHash(vec2(unit, 3.7))) * (0.96 + 0.06 * ctNoise(vCtWorld.xz * 3.0));
+      float g = abs(fract(along / 0.915) - 0.5);
+      float aa = fwidth(along / 0.915) * 1.2;
+      float joint = 1.0 - smoothstep(0.0, 0.006 + aa, 0.5 - g);
+      c *= 1.0 - 0.35 * joint * (1.0 - smoothstep(30.0, 90.0, vCtDist));
+      diffuseColor.rgb *= c;
+    `,
+  });
+}
+
+/**
+ * Concrete laid in 4 m bays: each bay poured on its own day, a shade lighter
+ * or darker than its neighbours, with a saw-cut joint between them. Shared by
+ * the pads and the dock yard, which overlap: the same function of position on
+ * both, so the overlap has no seam.
+ */
+const GLSL_CONCRETE = /* glsl */ `
+  vec3 ctConcrete(vec3 base, vec2 p, float dist) {
+    vec3 c = base * (0.95 + 0.07 * ctFbm(p * 0.18));
+    vec2 bay = floor(p / 4.0);
+    c *= 0.965 + 0.06 * ctHash(bay + 0.37);
+    vec2 cell = abs(fract(p / 4.0) - 0.5);
+    float w = fwidth(p.x / 4.0) * 1.5;
+    float joint = 1.0 - smoothstep(0.0, w + 0.004, 0.5 - max(cell.x, cell.y));
+    float fade = 1.0 - smoothstep(60.0, 200.0, dist);
+    return c * (1.0 - joint * 0.18 * fade);
+  }
+`;
+
+/** Concrete hardstanding (GLSL_CONCRETE). */
+export function concreteMaterial(colour: string, key = 'continua-concrete-v2'): MeshStandardMaterial {
   const material = new MeshStandardMaterial({ color: '#ffffff', roughness: 0.9, metalness: 0 });
   return patchStandard(material, {
     key,
     uniforms: { uConcrete: { value: new Color(colour) } },
+    header: GLSL_CONCRETE,
     colour: /* glsl */ `
-      vec2 p = vCtWorld.xz;
-      vec3 c = uConcrete * (0.95 + 0.07 * ctFbm(p * 0.18));
-      vec2 cell = abs(fract(p / 4.0) - 0.5);
-      float w = fwidth(p.x / 4.0) * 1.5;
-      float joint = 1.0 - smoothstep(0.0, w + 0.004, 0.5 - max(cell.x, cell.y));
-      float fade = 1.0 - smoothstep(60.0, 200.0, vCtDist);
-      c *= 1.0 - joint * 0.16 * fade;
-      diffuseColor.rgb *= c;
+      diffuseColor.rgb *= ctConcrete(uConcrete, vCtWorld.xz, vCtDist);
     `,
   });
 }

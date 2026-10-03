@@ -83,6 +83,9 @@ const WORLD = [
   ['world-headland', 62, { camera: 'overview', showMarkers: false, view: { eye: [868, 58, 42], target: [988, 2, -96], fov: 50 } }],
   ['world-road-end', 99, { camera: 'overview', showMarkers: false, view: { eye: [803, 15, 22], target: [831, 5, 68], fov: 52 } }],
   ['world-campus', 62, { camera: 'overview', showMarkers: false, view: { eye: [-10, 6, 10], target: [-46, 8, 40], fov: 55 } }],
+  // Where every run starts: the dock yard, the gantry and the garage behind it.
+  ['world-dock', 0, { camera: 'overview', showMarkers: false, view: { eye: [4, 12, -22], target: [-33, 0.5, 1], fov: 40 } }],
+  ['world-gantry', 0, { camera: 'overview', showMarkers: false, view: { eye: [-12, 3.4, 6.0], target: [-34, 4.2, -1.2], fov: 46 } }],
 ];
 
 const SETS = { standard: SHOTS, evidence: EVIDENCE, handoff: HANDOFF, world: WORLD };

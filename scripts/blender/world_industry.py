@@ -350,14 +350,23 @@ def prop_wifi_mast(m: dict) -> bpy.types.Object:
 
 
 def prop_dock_station(m: dict) -> bpy.types.Object:
-    """The wired dock: a portal gantry over the docking bay with the tether
-    head hanging from its beam, a data/power pillar with a screen, and a
-    utility cabinet at the site origin.
+    """The wired dock: the rover's bay and its launch gantry.
+
+    A charcoal epoxy bay with the dock's number painted behind the rover; a
+    portal gantry over it with the tether head hanging from its beam, the
+    number on both faces and a status line under it (the scene lights it red
+    while the rover stands in the bay and green once it has pulled out); a
+    data/power pillar with its screen toward the bay and a utility cabinet,
+    behind bollards; and two floodlight masts aimed at the bay. The concrete
+    yard round all of it, its kerbs and its paint are the scene's
+    (packages/scene/src/world/dock.ts), drawn from the same coordinates.
 
     The rover parks 7 m from the site origin (world.json puts the dock at
     (-24, 7) and the route starts at (-26, 0)), so the bay is authored at
     DOCK_BAY = (2.0, -7.0): with the site's yaw of pi that lands on the
-    parking spot. The scene attaches the wired tether at DOCK_TETHER.
+    parking spot. The scene attaches the wired tether at DOCK_TETHER. With
+    that yaw, authored +X is world -X (the gantry's +X face looks back at the
+    follow camera) and authored +Y is world +Z.
     """
     k = Kit("PROP_DockStation", m)
     cx, cy = DOCK_BAY
@@ -365,10 +374,9 @@ def prop_dock_station(m: dict) -> bpy.types.Object:
     # The floor's top is the road deck's height (ROAD_SURFACE_OFFSET in
     # packages/scene/src/world/road.ts), which is where the rover's tyres
     # rest: 10 cm thick, it stood 4 cm deep in its own dock, the bottom of
-    # every tyre cut off flat. The carriageway starts where the bay ends
-    # (DOCK_BAY_HALF_LENGTH there), so the two never overlap. The markings
-    # are paint on the floor, clear of the wheels.
-    slab(k["concrete"], (cx, cy, BAY_FLOOR / 2), (8.6, 5.4, BAY_FLOOR), cell=2.0)
+    # every tyre cut off flat. The yard round it is at the same height. The
+    # markings are paint on the floor, clear of the wheels.
+    slab(k["dock_floor"], (cx, cy, BAY_FLOOR / 2), (8.6, 5.4, BAY_FLOOR), cell=2.0)
     for y in (cy - 2.2, cy + 2.2):
         box(k["accent_cyan"], (cx, y, BAY_FLOOR + 0.002), (7.6, 0.12, 0.004))
     for x in (cx - 3.9, cx + 3.9):
@@ -377,39 +385,214 @@ def prop_dock_station(m: dict) -> bpy.types.Object:
     # 5.2 m above the road, and a beam at roof height filled the frame for the
     # first seconds of every run as the rover drove out from under it. At
     # 6.4 m clear the camera passes underneath, like driving through a wash
-    # gantry, and the beam only crosses the top of the frame.
-    gx = cx + 0.4
-    beam_z = 6.6
-    for y in (cy - 2.7, cy + 2.7):
-        slab(k["panel"], (gx, y, beam_z / 2), (0.45, 0.45, beam_z), cell=1.5)
-        box(k["accent_cyan"], (gx + 0.23, y, 2.6), (0.02, 0.2, 1.2))
-        cylinder(k["concrete"], (gx, y, 0.12), 0.42, 0.24, 16)                 # leg footing
-    slab(k["panel"], (gx, cy, beam_z), (0.6, 6.0, 0.4), cell=1.5)
+    # gantry, and the beam only crosses the top of the frame. The legs stand
+    # on plinths just outside the bay, a light line down each inner face.
+    gx = DOCK_TETHER[0]
+    clear, depth, height, span = 6.4, 0.8, 0.8, 3.05
+    top = clear + height
+    for s in (-1, 1):
+        y = cy + s * span
+        slab(k["concrete"], (gx, y, 0.14), (1.0, 0.9, 0.28), cell=1.0)
+        slab(k["panel"], (gx, y, 0.28 + (top - 0.28) / 2), (0.6, 0.5, top - 0.28), cell=1.5)
+        box(k["light_cyan"], (gx, y - s * 0.256, 3.3), (0.1, 0.012, 5.2))
+        box(k["graphite"], (gx, y, 0.34), (0.64, 0.54, 0.12))
+    slab(k["panel"], (gx, cy, clear + height / 2), (depth, 2 * span + 0.6, height), cell=1.5)
+    # Each face of the beam carries the dock's number on a graphite band and,
+    # under it, the status line. Lit by the scene (WorldProps.tsx, DockStatus).
+    for side in (1, -1):
+        x = gx + side * (depth / 2 + 0.02)
+        box(k["graphite"], (x, cy, clear + 0.5), (0.04, 2.6, 0.46))
+        box(k["graphite"], (x, cy, clear + 0.11), (0.04, 2 * span + 0.44, 0.16))
+        box(k["dock_status"], (x + side * 0.012, cy, clear + 0.11), (0.03, 2 * span + 0.36, 0.1))
     # Light strip under the beam. No canopy: the rover stands in daylight
     # while docked, which is when it is inspected.
-    box(k["lamp"], (gx, cy, beam_z - 0.21), (0.3, 5.0, 0.02))
-    box(k["accent_cyan"], (gx + 0.31, cy, beam_z), (0.02, 5.2, 0.1))
+    box(k["lamp"], (gx, cy, clear - 0.01), (0.3, 2 * span - 0.7, 0.02))
+    # Under each end of the beam a dome camera looks down into the bay; on top,
+    # an amber beacon.
+    for s in (-1, 1):
+        y = cy + s * (span - 0.65)
+        box(k["graphite"], (gx, y, clear - 0.06), (0.16, 0.16, 0.12))
+        geo.revolve_profile(k["glass_dark"], [(0.0, -0.11), (0.07, -0.1), (0.1, -0.05), (0.1, 0.0)], 12, axis="Z",
+                            closed_section=False, center=(gx, y, clear - 0.12))
+    cylinder(k["graphite"], (gx, cy, top + 0.05), 0.13, 0.1, 14)
+    cylinder(k["amber"], (gx, cy, top + 0.17), 0.1, 0.16, 14)
+    # Conduit up the outside of the equipment-side leg to the beam.
+    geo.tube(k["galv"], [(gx, cy + span + 0.29, 0.3), (gx, cy + span + 0.29, clear + 0.3)], 0.045, 8)
     # Tether: a carriage under the beam, a drop tube with a strain relief, and
     # the head over the rover's roof port.
     tx, ty, tz = DOCK_TETHER
-    slab(k["panel_grey"], (tx, ty, beam_z - 0.32), (0.5, 0.42, 0.22), cell=0.5)
-    geo.tube(k["galv"], [(tx, ty, beam_z - 0.43), (tx, ty, tz + 0.25)], 0.05, 8)
+    slab(k["panel_grey"], (tx, ty, clear - 0.12), (0.5, 0.42, 0.22), cell=0.5)
+    geo.tube(k["galv"], [(tx, ty, clear - 0.23), (tx, ty, tz + 0.25)], 0.05, 8)
     cylinder(k["graphite"], (tx, ty, tz + 0.42), 0.075, 0.3, 10)
     slab(k["panel_grey"], (tx, ty, tz + 0.12), (0.36, 0.36, 0.26), cell=0.5)
     cylinder(k["accent_cyan"], (tx, ty, tz - 0.03), 0.07, 0.06, 12)
-    # Data/power pillar beside the bay, screen facing the bay.
+    # Data/power pillar beside the bay, its screen facing the bay.
     px, py = cx - 2.6, cy + 3.3
     slab(k["panel_grey"], (px, py, 1.25), (0.8, 0.7, 2.5), cell=1.0)
-    box(k["glass_dark"], (px, py - 0.36, 1.6), (0.55, 0.03, 0.42))
+    box(k["graphite"], (px, py - 0.355, 1.6), (0.64, 0.02, 0.5))
+    box(k["screen"], (px, py - 0.37, 1.6), (0.55, 0.02, 0.4))
     box(k["accent_cyan"], (px, py, 2.54), (0.85, 0.75, 0.08))
-    # Utility cabinet at the site origin, with a cable trench to the bay.
+    # Utility cabinet at the site origin; a cover plate over the cable trench
+    # to the pillar, on the yard's surface.
     slab(k["panel"], (0.0, 0.0, 0.9), (1.4, 0.8, 1.8), cell=1.0)
     box(k["graphite"], (0.0, 0.0, 1.83), (1.5, 0.9, 0.06))
-    box(k["steel_dark"], ((0.0 + px) / 2, (0.0 + py) / 2, 0.02), (0.5, abs(py) + 0.5, 0.04))
-    for x, y in ((cx + 4.6, cy - 3.0), (cx + 4.6, cy + 3.0), (cx - 4.6, cy - 3.0)):
-        cylinder(k["graphite"], (x, y, 0.5), 0.1, 1.0, 10)
-        cylinder(k["amber"], (x, y, 0.95), 0.102, 0.08, 10)
-    return k.finish(smooth_angle=45.0)
+    for x in (-0.35, 0.35):
+        box(k["steel_dark"], (x, -0.405, 1.0), (0.5, 0.02, 1.3))
+    box(k["steel_dark"], (px / 2, py / 2, BAY_FLOOR + 0.006), (0.5, abs(py) - 0.2, 0.012))
+    # Bollards: in front of each gantry leg, toward the yard, and along the
+    # front of the equipment.
+    for wx, wz in ((-25.25, -3.05), (-25.25, 3.05), (-22.0, 3.6), (-22.0, 5.7), (-22.0, 7.8)):
+        bx, by = _dock_local(wx, wz)
+        cylinder(k["graphite"], (bx, by, 0.55), 0.11, 1.1, 12)
+        for z in (0.78, 0.98):
+            cylinder(k["amber"], (bx, by, z), 0.112, 0.08, 12)
+    # Floodlight masts either side of the yard, two lamps each aimed down at
+    # the bay. Clear of every camera's path round the docked rover: the
+    # inspection turntable orbits at 10.6 m, the close-up at 7.4 m.
+    for wz in (11.0, -11.0):
+        mx, my = _dock_local(-17.0, wz)
+        cylinder(k["concrete"], (mx, my, 0.3), 0.42, 0.6, 14)
+        geo.sweep(k["galv"], geo.circle(0.16, 12), [(mx, my, 0.55), (mx, my, 11.2)], cap=True,
+                  scale=lambda t: 1.0 - 0.4 * t)
+        aim = math.atan2(cy - my, cx - mx)
+        ax, ay = math.cos(aim), math.sin(aim)
+        px_, py_ = -ay, ax
+        box(k["galv"], (mx + ax * 0.12, my + ay * 0.12, 11.05), (0.12, 1.9, 0.12),
+            rotation=Matrix.Rotation(aim, 4, "Z"))
+        turn = Matrix.Rotation(aim, 4, "Z") @ Matrix.Rotation(0.75, 4, "Y")
+        normal = turn @ Vector((1.0, 0.0, 0.0))
+        for s in (-1, 1):
+            c = Vector((mx + ax * 0.32 + px_ * s * 0.58, my + ay * 0.32 + py_ * s * 0.58, 10.82))
+            box(k["graphite"], c, (0.14, 0.78, 0.5), rotation=turn)
+            box(k["lamp"], c + normal * 0.075, (0.02, 0.7, 0.42), rotation=turn)
+    dock = k.finish(smooth_angle=45.0)
+    # Lettering: on both faces of the beam, and painted on the bay's floor
+    # behind the rover, reading the right way up from the follow camera.
+    signs = [
+        arch.sign_text(f"PROP_Dock_sign_{facing}", "DOCK 01", (gx + side * (depth / 2 + 0.045), cy, clear + 0.5),
+                       arch.FACING[facing], 0.3, m["paint_line"], extrude=0.012)
+        for facing, side in (("+x", 1), ("-x", -1))
+    ]
+    at = Vector((cx + 3.2, cy, BAY_FLOOR + 0.003))
+    floor = arch.sign_text("PROP_Dock_floor_number", "DOCK 01", at, (0.0, 0.0, math.pi / 2), 0.78,
+                           m["paint_line"], extrude=0.0)
+    # Between the bay's long lines, with a margin either side.
+    ys = [v.co.y for v in floor.data.vertices]
+    width = max(ys) - min(ys)
+    if width > 3.8:
+        f = 3.8 / width
+        floor.data.transform(Matrix.Translation(at) @ Matrix.Diagonal((f, f, 1.0, 1.0)) @ Matrix.Translation(-at))
+    print(f"  · dock floor lettering {min(width, 3.8):.2f} m across")
+    return arch.attach(dock, signs + [floor])
+
+
+def prop_rover_garage(m: dict) -> bpy.types.Object:
+    """The rover's garage, behind the dock on the line of the route: the run
+    starts at its door. 12 m deep along X, 16 m across, front (+X) open.
+
+    A roller door stands up in its housing over a 6 m opening, a cyan light
+    line round the frame and a canopy with downlights over it; through it, a
+    lit workshop - a second charcoal bay, a workbench and tool wall, a
+    charging cabinet with its screen, a rack of spare wheels - and, beside the
+    door, the glazed control room (the scene draws rooms behind its glass).
+    """
+    k = Kit("PROP_RoverGarage", m)
+    d, w, h, t = 12.0, 16.0, 7.0, 0.3
+    door_w, door_h = 6.0, 5.4
+    fx = d / 2
+    # Floor, flush with the yard in front of it (the road deck's height).
+    slab(k["concrete"], (0.0, 0.0, 0.03), (d + 0.2, w + 0.2, 0.06), cell=3.0)
+    slab(k["dock_floor"], (0.0, 0.0, 0.065), (d - 2 * t, w - 2 * t, 0.01), cell=3.0)
+    # Walls: back, sides, and the front round the door.
+    slab(k["panel"], (-fx + t / 2, 0.0, h / 2), (t, w, h), cell=3.0)
+    for s in (-1, 1):
+        slab(k["panel"], (0.0, s * (w / 2 - t / 2), h / 2), (d, t, h), cell=3.0)
+    side = (w / 2 - door_w / 2)
+    for s in (-1, 1):
+        slab(k["panel"], (fx - t / 2, s * (door_w / 2 + side / 2), h / 2), (t, side, h), cell=3.0)
+    slab(k["panel"], (fx - t / 2, 0.0, door_h + (h - door_h) / 2), (t, door_w, h - door_h), cell=3.0)
+    # A plinth band and a graphite cornice round the outside.
+    for axis, offset, length in (("x", fx, w), ("x", -fx, w), ("y", w / 2, d), ("y", -w / 2, d)):
+        for z, height, mat in ((0.2, 0.4, "concrete"), (h - 0.2, 0.4, "graphite")):
+            if axis == "x":
+                box(k[mat], (offset + math.copysign(0.02, offset), 0.0, z), (0.06, length + 0.1, height))
+            else:
+                box(k[mat], (0.0, offset + math.copysign(0.02, offset), z), (length + 0.1, 0.06, height))
+    # Roof and parapet; inside, the ceiling and three lines of light.
+    slab(k["panel_grey"], (0.0, 0.0, h + 0.15), (d, w, 0.3), cell=3.0)
+    arch.parapet(k, 0.0, 0.0, d, w, h + 0.3, height=0.7)
+    for y in (-4.0, 0.0, 4.0):
+        box(k["lamp"], (0.0, y, h - 0.02), (d - 1.6, 0.22, 0.04))
+    # The door: rolled up into its housing, a light line round the frame, a
+    # canopy over it with downlights.
+    box(k["graphite"], (fx + 0.25, 0.0, door_h + 0.35), (0.5, door_w + 0.6, 0.7))
+    for s in (-1, 1):
+        box(k["light_cyan"], (fx + 0.012, s * (door_w / 2 + 0.06), door_h / 2), (0.02, 0.1, door_h))
+        box(k["graphite"], (fx + 0.06, s * (door_w / 2 + 0.2), door_h / 2), (0.12, 0.2, door_h + 0.2))
+    box(k["light_cyan"], (fx + 0.012, 0.0, door_h + 0.06), (0.02, door_w + 0.22, 0.1))
+    # Graphite: a pale soffit over open ground picks up the lawn's green.
+    slab(k["graphite"], (fx + 1.6, 0.0, door_h + 0.95), (3.2, door_w + 3.0, 0.22), cell=1.5)
+    box(k["accent"], (fx + 3.21, 0.0, door_h + 0.95), (0.02, door_w + 3.0, 0.08))
+    for y in (-3.0, -1.0, 1.0, 3.0):
+        cylinder(k["lamp"], (fx + 1.8, y, door_h + 0.83), 0.14, 0.02, 12)
+    # Cladding: vertical reveals every 1.6 m on the front and the sides, and a
+    # blue line under the cornice.
+    for y in [-w / 2 + 0.8 + 1.6 * i for i in range(10)]:
+        # Not across the door, the glazing, or the personnel door.
+        if abs(y) < door_w / 2 + 0.5 or door_w / 2 + 0.6 < y < w / 2 - 0.4 or abs(y + door_w / 2 + 1.6) < 0.8:
+            continue
+        box(k["graphite"], (fx + 0.015, y, h / 2), (0.03, 0.05, h - 0.8))
+    for s in (-1, 1):
+        for x in [-d / 2 + 1.2 + 1.6 * i for i in range(7)]:
+            box(k["graphite"], (x, s * (w / 2 + 0.015), 2.7), (0.05, 0.03, 4.6))
+    for axis, offset, length in (("x", fx, w), ("y", w / 2, d), ("y", -w / 2, d)):
+        if axis == "x":
+            box(k["accent"], (offset + 0.05, 0.0, h - 0.48), (0.02, length + 0.1, 0.1))
+        else:
+            box(k["accent"], (0.0, offset + math.copysign(0.05, offset), h - 0.48), (length + 0.1, 0.02, 0.1))
+    # The control room beside the door: glazing (the scene puts rooms behind
+    # it) over a spandrel, a personnel door at its end.
+    arch.ribbon_windows(k, "+x", fx, door_w / 2 + 0.8, w / 2 - 0.6, 1.1, 4.2, pane=1.5)
+    arch.door(k, "+x", fx, -(door_w / 2 + 1.6), 1.1, 2.3, material="graphite")
+    # Louvres high on the sides; plant and solar on the roof.
+    for s in (-1, 1):
+        for x in (-3.0, 0.0, 3.0):
+            box(k["graphite"], (x, s * (w / 2 + 0.03), h - 1.4), (1.6, 0.04, 0.8))
+            for z in (h - 1.7, h - 1.5, h - 1.3, h - 1.1):
+                box(k["steel_dark"], (x, s * (w / 2 + 0.06), z), (1.5, 0.03, 0.05))
+    for x, y in ((-2.5, -4.5), (-2.5, 4.5)):
+        slab(k["panel_grey"], (x, y, h + 0.95), (2.2, 1.6, 1.3), cell=1.0)
+        cylinder(k["graphite"], (x, y, h + 1.62), 0.55, 0.05, 16)
+    for y in (-5.5, -2.0, 1.5, 5.0):
+        box(k["solar"], (2.6, y, h + 0.8), (3.2, 3.0, 0.06), rotation=Matrix.Rotation(0.3, 4, "Y"))
+    # Inside: a second bay, the workbench and tool wall on the back wall, the
+    # charging cabinet with its screen, and a rack of spare wheels.
+    for y in (-1.6, 1.6):
+        box(k["accent_cyan"], (0.5, y, 0.073), (7.0, 0.1, 0.004))
+    box(k["accent_cyan"], (-3.0, 0.0, 0.073), (0.1, 3.3, 0.004))
+    bx = -fx + t
+    slab(k["graphite"], (bx + 0.4, -4.5, 0.45), (0.8, 4.6, 0.9), cell=1.0)
+    box(k["steel"], (bx + 0.42, -4.5, 0.93), (0.86, 4.7, 0.06))
+    box(k["panel_grey"], (bx + 0.02, -4.5, 2.1), (0.04, 4.6, 1.6))
+    for i in range(9):
+        y = -6.5 + i * 0.5
+        box(k["steel_dark"], (bx + 0.06, y, 2.0 + 0.25 * math.sin(i * 1.7)), (0.04, 0.08, 0.5))
+    slab(k["panel_grey"], (bx + 0.4, 2.2, 1.1), (0.8, 1.2, 2.2), cell=1.0)
+    box(k["screen"], (bx + 0.81, 2.2, 1.5), (0.02, 0.8, 0.5))
+    box(k["light_cyan"], (bx + 0.81, 2.2, 2.05), (0.02, 1.0, 0.06))
+    for y in (4.4, 4.8, 5.2, 5.6):
+        cylinder(k["rubber"], (bx + 0.6, y, 0.48), 0.43, 0.3, 18, axis="Y")
+        cylinder(k["steel_dark"], (bx + 0.6, y, 0.48), 0.22, 0.31, 12, axis="Y")
+    garage = k.finish(smooth_angle=35.0)
+    # The name on the door housing, under the canopy; the brand over the
+    # control room's glazing.
+    signs = [
+        arch.sign_text("PROP_RoverGarage_sign", "ROVER DOCK", (fx + 0.52, 0.0, door_h + 0.35),
+                       arch.FACING["+x"], 0.4, m["paint_line"], extrude=0.012),
+        arch.sign_text("PROP_RoverGarage_brand", "CONTINUA", (fx + 0.05, door_w / 2 + 2.6, 5.15),
+                       arch.FACING["+x"], 0.32, m["accent"], extrude=0.02),
+    ]
+    return arch.attach(garage, signs)
 
 
 # Where the rover parks relative to the dock site origin, and where the
@@ -418,6 +601,14 @@ DOCK_BAY = (2.0, -7.0)
 DOCK_TETHER = (2.4, -7.0, 3.6)
 # The bay floor's top: the road deck's height above the ground.
 BAY_FLOOR = 0.06
+# Where world.json puts the dock (x, z); the site's yaw is pi.
+DOCK_SITE = (-24.0, 7.0)
+
+
+def _dock_local(wx: float, wz: float) -> tuple[float, float]:
+    """A world X/Z point in the dock prop's authored frame (yaw pi: authored
+    +X is world -X, authored +Y is world +Z)."""
+    return DOCK_SITE[0] - wx, wz - DOCK_SITE[1]
 
 
 # ==========================================================================
@@ -499,7 +690,8 @@ def prop_skyline(m: dict) -> list[bpy.types.Object]:
 def build_all(m: dict) -> list[bpy.types.Object]:
     out = [prop_warehouse(m), prop_bund(m), prop_sphere_tank(m), prop_pipe_rack(m), prop_stack(m),
            prop_substation(m), prop_pylon(m), prop_cell_tower(m), prop_wifi_mast(m),
-           prop_dock_station(m), prop_container(m), prop_barrier(m), prop_road_sign(m)]
+           prop_dock_station(m), prop_rover_garage(m), prop_container(m), prop_barrier(m),
+           prop_road_sign(m)]
     out += prop_tanks(m)
     out += prop_skyline(m)
     return out

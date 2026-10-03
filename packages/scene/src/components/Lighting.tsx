@@ -123,11 +123,28 @@ function skyMaterial(lite: boolean): ShaderMaterial {
   });
 }
 
+/**
+ * The dome travels with whichever camera draws it. Centred on the world's
+ * origin, its far side lay 2300 m plus the camera's distance from the origin
+ * away - past the 2600 m far plane once a camera was 300 m out along the
+ * route looking back, which cut a black hole in the sky above the western
+ * ranges. Its shading reads only the view direction, so moving it changes
+ * nothing else.
+ */
 function GradientSky({ lite }: { lite: boolean }) {
   const material = useMemo(() => skyMaterial(lite), [lite]);
   useEffect(() => () => material.dispose(), [material]);
+  const ref = useRef<Mesh>(null);
+  useLayoutEffect(() => {
+    const mesh = ref.current;
+    if (!mesh) return;
+    mesh.onBeforeRender = (_renderer, _scene, camera) => {
+      mesh.position.setFromMatrixPosition(camera.matrixWorld);
+      mesh.updateMatrixWorld();
+    };
+  }, []);
   return (
-    <mesh material={material} renderOrder={-100} frustumCulled={false}>
+    <mesh ref={ref} material={material} renderOrder={-100} frustumCulled={false}>
       <sphereGeometry args={[2300, 48, 24]} />
     </mesh>
   );

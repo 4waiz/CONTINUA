@@ -54,7 +54,7 @@ RENAME = {
 # small dressing wants a tight one or it greys out entirely.
 AO_DISTANCE = {
     "default": 2.4,
-    "PROP_Facility_Main": 3.5, "PROP_Gateway": 3.0, "PROP_Facility_Hangar": 3.5,
+    "PROP_Facility_Main": 3.5, "PROP_Gateway": 3.0, "PROP_Facility_Hangar": 3.5, "PROP_RoverGarage": 2.6,
     "PROP_ResponseStation": 3.0, "PROP_Warehouse": 3.5, "PROP_Substation": 2.0,
     "PROP_Fence": 0.6, "PROP_Bollard": 0.4, "PROP_Barrier": 0.6, "PROP_RoadSign": 0.6,
     "PROP_Car_A": 1.0, "PROP_Car_B": 1.0, "PROP_Car_C": 1.0, "PROP_Van": 1.0,

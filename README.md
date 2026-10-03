@@ -62,14 +62,18 @@ distribution at all, and nothing was executed).
 A green coastal island: the operations campus and its lawns, the industrial
 corridor, a wind farm standing out to sea, forested ranges across the water,
 and the ground station on a headland under a lighthouse, where the road ends
-in a turning circle. Office glazing mirrors the sky with lit rooms behind it.
-Everything in it is scenery - nothing in the network model knows about the
-sea or the mountains.
+in a turning circle. Every run starts at the rover's dock: a charcoal bay
+under a launch gantry whose status line is red while the rover is docked and
+turns green as it pulls out, in a kerbed yard between the operations centre
+and the rover's garage, with the campus road leaving it through a bell-mouth.
+Office glazing mirrors the sky with lit rooms behind it. Everything in it is
+scenery - nothing in the network model knows about the sea or the mountains.
 
 ![The island from above the campus](assets/previews/browser/world-island.png)
 
 | | |
 | --- | --- |
+| ![The dock yard, the gantry and the rover's garage](assets/previews/browser/world-dock.png) | ![The launch gantry over the docked rover](assets/previews/browser/world-gantry.png) |
 | ![The jetty and the rescue boat](assets/previews/browser/world-waterfront.png) | ![The headland and the lighthouse](assets/previews/browser/world-headland.png) |
 | ![The operations centre](assets/previews/browser/world-campus.png) | ![The road's end at the ground station](assets/previews/browser/world-road-end.png) |
 

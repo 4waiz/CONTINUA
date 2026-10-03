@@ -1,9 +1,10 @@
 'use client';
 
 /**
- * Ground: terrain, the route's carriageway, service roads and building
- * hardstanding. The horizon ranges and the roadside scatter are in
- * `Landscape.tsx`.
+ * Ground: terrain, the route's carriageway, service roads, building
+ * hardstanding, the dock yard where every run starts (world/dock.ts) and the
+ * kerbs where paving meets grass (world/kerbs.ts). The horizon ranges and the
+ * roadside scatter are in `Landscape.tsx`.
  *
  * All of it is generated once from `terrain.height`, which is also what the
  * rover and the cameras read - so the road cannot float, the wheels cannot sink
@@ -20,15 +21,38 @@ import {
   Color,
   Float32BufferAttribute,
   MeshStandardMaterial,
+  Path,
+  Shape,
+  ShapeGeometry,
+  Vector2,
 } from 'three';
 import { useSceneRuntime } from '../runtime/SceneRuntime';
 import { SCENE_COLOR } from '../theme';
-import { buildRouteRibbon, DOCK_BAY_HALF_LENGTH, ROAD_HALF_WIDTH, ROAD_SURFACE_OFFSET } from '../world/road';
+import { buildRouteRibbon, ROAD_SURFACE_OFFSET, SHOULDER_HALF_WIDTH } from '../world/road';
 import { CAMPUS, PADS, SERVICE_ROADS, type ServiceRoad } from '../world/layout';
 import { SEA_LEVEL, TERRAIN, terrain } from '../world/terrain';
 import { route } from '../world/route';
 import { EDGE_LINES_END, FORECOURT, RING, ROAD_LINE, TURNING_CIRCLE } from '../world/terminus';
-import { concreteMaterial, patchStandard, roadMaterial, terrainMaterial, turningCircleMaterial } from './shaders';
+import {
+  DOCK_BAY,
+  DOCK_YARD,
+  KEEP_CLEAR,
+  LEAD_LINES,
+  PARKING,
+  ROAD_START,
+  dockBayOutline,
+  dockYardOutline,
+} from '../world/dock';
+import { buildKerbRuns, KERB, type KerbRun } from '../world/kerbs';
+import {
+  concreteMaterial,
+  dockYardMaterial,
+  kerbMaterial,
+  patchStandard,
+  roadMaterial,
+  terrainMaterial,
+  turningCircleMaterial,
+} from './shaders';
 
 function buildTerrainGeometry(segmentsX: number, segmentsZ: number): BufferGeometry {
   const { minX, maxX, minZ, maxZ } = TERRAIN;
@@ -194,6 +218,110 @@ function buildDrapedCapsule(
   return geometry;
 }
 
+/**
+ * The dock yard (world/dock.ts): one flat surface at the road deck's height,
+ * the bay's floor - a slab in the dock prop - left out of it, so the two
+ * never lie at one height over the same ground.
+ */
+function buildYardGeometry(): BufferGeometry {
+  // Shape space is (x, -z): turned down onto the ground, its faces look up.
+  const shape = new Shape(dockYardOutline().map(([x, z]) => new Vector2(x, -z)));
+  shape.holes.push(new Path(dockBayOutline(0.01).map(([x, z]) => new Vector2(x, -z))));
+  const geometry = new ShapeGeometry(shape, 1);
+  geometry.rotateX(-Math.PI / 2);
+  const position = geometry.getAttribute('position');
+  for (let i = 0; i < position.count; i += 1) {
+    position.setY(i, terrain.height(position.getX(i), position.getZ(i)) + ROAD_SURFACE_OFFSET);
+  }
+  geometry.deleteAttribute('uv');
+  geometry.computeVertexNormals();
+  geometry.computeBoundingSphere();
+  return geometry;
+}
+
+/**
+ * Kerbs along every run (world/kerbs.ts): a profile swept along the paving's
+ * edge on the grass side - an upstand with a chamfered top, its outer face
+ * down into the turf - with a square end where a run stops. `uv.x` is metres
+ * along the run, for the precast units' joints.
+ */
+function buildKerbGeometry(runs: readonly KerbRun[]): BufferGeometry {
+  const { width, height } = KERB;
+  const chamfer = 0.025;
+  const s = Math.SQRT1_2;
+  const positions: number[] = [];
+  const normals: number[] = [];
+  const uvs: number[] = [];
+  const indices: number[] = [];
+  const push = (x: number, y: number, z: number, nx: number, ny: number, nz: number, u: number) => {
+    positions.push(x, y, z);
+    normals.push(nx, ny, nz);
+    uvs.push(u, 0);
+  };
+  for (const run of runs) {
+    const points = run.closed ? [...run.points, run.points[0]!] : [...run.points];
+    const base = positions.length / 3;
+    const profiles: [number, number, number][][] = [];
+    let along = 0;
+    points.forEach((p, i) => {
+      if (i > 0) along += Math.hypot(p.x - points[i - 1]!.x, p.z - points[i - 1]!.z);
+      const ground = terrain.height(p.x, p.z) + run.level;
+      const top = ground + height;
+      const cx = p.x + p.nx * chamfer * p.mitre;
+      const cz = p.z + p.nz * chamfer * p.mitre;
+      const ox = p.x + p.nx * width * p.mitre;
+      const oz = p.z + p.nz * width * p.mitre;
+      const low = terrain.height(ox, oz) - 0.05;
+      // Inner face, chamfer, top, outer face: each its own pair, flat across.
+      push(p.x, ground - 0.01, p.z, -p.nx, 0, -p.nz, along);
+      push(p.x, top - chamfer, p.z, -p.nx, 0, -p.nz, along);
+      push(p.x, top - chamfer, p.z, -p.nx * s, s, -p.nz * s, along);
+      push(cx, top, cz, -p.nx * s, s, -p.nz * s, along);
+      push(cx, top, cz, 0, 1, 0, along);
+      push(ox, top, oz, 0, 1, 0, along);
+      push(ox, top, oz, p.nx, 0, p.nz, along);
+      push(ox, low, oz, p.nx, 0, p.nz, along);
+      profiles.push([
+        [p.x, ground - 0.01, p.z],
+        [p.x, top - chamfer, p.z],
+        [cx, top, cz],
+        [ox, top, oz],
+        [ox, low, oz],
+      ]);
+    });
+    for (let i = 0; i < points.length - 1; i += 1) {
+      const a = base + i * 8;
+      const b = a + 8;
+      for (let f = 0; f < 4; f += 1) {
+        const a0 = a + f * 2;
+        const b0 = b + f * 2;
+        indices.push(a0, b0, a0 + 1, a0 + 1, b0, b0 + 1);
+      }
+    }
+    if (run.closed) continue;
+    // Square ends, facing back along the run at its start and on at its end.
+    if (points.length < 2) continue;
+    for (const [index, neighbour, last] of [[0, 1, false], [points.length - 1, points.length - 2, true]] as const) {
+      const here = points[index]!;
+      const from = points[neighbour]!;
+      const length = Math.hypot(here.x - from.x, here.z - from.z) || 1;
+      const nx = (here.x - from.x) / length;
+      const nz = (here.z - from.z) / length;
+      const cap = positions.length / 3;
+      for (const [x, y, z] of profiles[index]!) push(x, y, z, nx, 0, nz, index === 0 ? 0 : along);
+      const order = last ? [0, 2, 1, 0, 3, 2, 0, 4, 3] : [0, 1, 2, 0, 2, 3, 0, 3, 4];
+      for (const k of order) indices.push(cap + k);
+    }
+  }
+  const geometry = new BufferGeometry();
+  geometry.setAttribute('position', new Float32BufferAttribute(positions, 3));
+  geometry.setAttribute('normal', new Float32BufferAttribute(normals, 3));
+  geometry.setAttribute('uv', new Float32BufferAttribute(uvs, 2));
+  geometry.setIndex(indices);
+  geometry.computeBoundingSphere();
+  return geometry;
+}
+
 function gravelMaterial(colour: string): MeshStandardMaterial {
   const material = new MeshStandardMaterial({ color: '#ffffff', roughness: 0.97, metalness: 0 });
   return patchStandard(material, {
@@ -217,19 +345,22 @@ export function Ground({ quality }: { quality: 'high' | 'balanced' | 'low' }) {
     [detail],
   );
 
-  // The carriageway starts where the dock bay's floor ends (the rover stands
-  // on that floor while docked) and runs into the turning circle, stopping
-  // where its edge lines meet the circle's: the circle carries on from there.
-  const road = useMemo(() => buildRouteRibbon({ from: DOCK_BAY_HALF_LENGTH, to: EDGE_LINES_END }), []);
+  // The carriageway starts at the dock yard's mouth (world/dock.ts) and runs
+  // into the turning circle, stopping where its edge lines meet the circle's:
+  // the circle carries on from there. Its gravel verges start where the
+  // yard's kerb has curved in to meet it.
+  const road = useMemo(() => buildRouteRibbon({ from: ROAD_START, to: EDGE_LINES_END }), []);
   const shoulder = useMemo(
     () =>
       buildRouteRibbon({
-        halfWidth: ROAD_HALF_WIDTH + 1.6,
+        halfWidth: SHOULDER_HALF_WIDTH,
         yOffset: ROAD_SURFACE_OFFSET - 0.03,
-        from: DOCK_BAY_HALF_LENGTH,
+        from: ROAD_START + DOCK_YARD.flare,
       }),
     [],
   );
+  const yard = useMemo(() => buildYardGeometry(), []);
+  const kerbs = useMemo(() => buildKerbGeometry(buildKerbRuns()), []);
   // Where the road ends (world/terminus.ts): it opens into a turning circle,
   // set in a concrete forecourt that reaches back to the ground station. The
   // circle is at the road deck's height, where the rover's tyres rest - a
@@ -247,7 +378,7 @@ export function Ground({ quality }: { quality: 'high' | 'balanced' | 'low' }) {
     const set = {
       road: roadMaterial(
         { road: SCENE_COLOR.road, line: SCENE_COLOR.roadLine, centre: SCENE_COLOR.roadLine },
-        { centreLine: true, key: 'continua-road-main-v2', linesEnd: EDGE_LINES_END },
+        { centreLine: true, key: 'continua-road-main-v3', linesEnd: EDGE_LINES_END, linesStart: ROAD_START },
       ),
       turning: turningCircleMaterial(
         { road: SCENE_COLOR.road, line: SCENE_COLOR.roadLine },
@@ -262,11 +393,16 @@ export function Ground({ quality }: { quality: 'high' | 'balanced' | 'low' }) {
       ),
       serviceRoad: roadMaterial(
         { road: SCENE_COLOR.road, line: SCENE_COLOR.roadLine, centre: SCENE_COLOR.roadLine },
-        { centreLine: false, key: 'continua-road-service-v1' },
+        { centreLine: false, key: 'continua-road-service-v2' },
       ),
       shoulder: gravelMaterial(SCENE_COLOR.roadEdge),
       concrete: concreteMaterial(SCENE_COLOR.concrete),
-      apron: concreteMaterial(SCENE_COLOR.apron, 'continua-apron-v1'),
+      apron: concreteMaterial(SCENE_COLOR.apron, 'continua-apron-v2'),
+      yard: dockYardMaterial(
+        { concrete: SCENE_COLOR.concrete, line: SCENE_COLOR.roadLine, hatch: SCENE_COLOR.hatch },
+        { centreZ: DOCK_BAY.z, lead: LEAD_LINES, keepClear: KEEP_CLEAR, parking: PARKING },
+      ),
+      kerb: kerbMaterial(SCENE_COLOR.kerb),
     };
     // Layering on near-coplanar ribbons: shoulder under service roads and
     // pads, the carriageway on top of everything.
@@ -278,6 +414,8 @@ export function Ground({ quality }: { quality: 'high' | 'balanced' | 'low' }) {
     offset(set.shoulder, -1);
     offset(set.concrete, -2);
     offset(set.apron, -2);
+    // The yard lies 2.5 cm above the pads it overlaps, and must win at range.
+    offset(set.yard, -3);
     offset(set.serviceRoad, -3);
     offset(set.turning, -3);
     offset(set.road, -4);
@@ -317,6 +455,8 @@ export function Ground({ quality }: { quality: 'high' | 'balanced' | 'low' }) {
 
       <mesh geometry={concretePads} material={materials.concrete} receiveShadow />
       <mesh geometry={asphaltPads} material={materials.serviceRoad} receiveShadow />
+      <mesh geometry={yard} material={materials.yard} receiveShadow />
+      <mesh geometry={kerbs} material={materials.kerb} receiveShadow />
       <mesh geometry={forecourt} material={materials.apron} receiveShadow />
       <mesh geometry={turningCircle} material={materials.turning} receiveShadow />
       <mesh geometry={shoulder} material={materials.shoulder} receiveShadow />

@@ -164,6 +164,15 @@ One screen, no page scroll, at 1920×1080, 1440×900, 1366×768 and 1280×720.
   near, haze-blue far - and the south is left open to the horizon. The road
   ends in a turning circle on a concrete forecourt in front of the ground
   station, its edge line carried round the circle.
+* **A start, not a parking space.** Every run starts at the rover's dock: a
+  charcoal bay with its number painted on it, under a launch gantry whose
+  status line is red while the rover stands in the bay and green once it has
+  pulled out (a function of the rover's distance, so still of the clock), in
+  a kerbed concrete yard between the operations centre's forecourt, the
+  gateway yard and the rover's garage, whose door opens onto it. The campus
+  road leaves the yard through a bell-mouth, its edge lines carried in across
+  the yard to the bay's front corners. Every paved surface that meets grass
+  has a kerb (`world/kerbs.ts`).
 * **Glass you can see into.** Office glazing mirrors the sky, more toward a
   grazing angle, and behind it each pane shows a room found by interior
   mapping (`windows.ts`): floor, ceiling light, a back wall with desks and
