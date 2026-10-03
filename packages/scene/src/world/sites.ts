@@ -30,6 +30,12 @@ export interface SiteMarker {
   readonly network?: AccessNetworkId;
   /** Height above the marker base where a link beam should attach. */
   readonly linkHeight?: number;
+  /**
+   * World XZ offset from the site position to the beam attachment, when the
+   * attachment is not above the site origin - the dock's tether head hangs
+   * over the parking bay, 7 m from where `world.json` puts the dock.
+   */
+  readonly linkOffset?: readonly [number, number];
   readonly selectable?: boolean;
 }
 
@@ -44,7 +50,9 @@ export const SITES: readonly SiteMarker[] = [
     z: 7.0,
     yaw: Math.PI,
     network: 'wired',
-    linkHeight: 4.0,
+    // The gantry's tether head (authored at (2.4, -7.0, 3.6), turned by yaw).
+    linkHeight: 3.6,
+    linkOffset: [-2.4, -7.0],
     selectable: true,
   },
   {
@@ -54,7 +62,8 @@ export const SITES: readonly SiteMarker[] = [
     prop: 'PROP_Facility_Main',
     x: -46,
     z: 44,
-    yaw: -Math.PI / 2,
+    // Entrance (+X authored) turned to face the route.
+    yaw: Math.PI / 2,
     selectable: true,
   },
   {

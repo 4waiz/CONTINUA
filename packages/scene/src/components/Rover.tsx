@@ -14,14 +14,90 @@
 import { useFrame } from '@react-three/fiber';
 import { useGLTF } from '@react-three/drei';
 import { useEffect, useMemo, useRef } from 'react';
-import { Group, Mesh, MeshStandardMaterial, type Object3D } from 'three';
-import { clamp } from '../math/noise';
+import {
+  DataTexture,
+  Group,
+  LinearFilter,
+  Mesh,
+  MeshStandardMaterial,
+  RGBAFormat,
+  type Object3D,
+} from 'three';
+import { clamp, smoothstep } from '../math/noise';
 import { useSceneRuntime } from '../runtime/SceneRuntime';
 import { ROAD_SURFACE_OFFSET } from '../world/road';
 import { VEHICLE } from '../preview/previewSource';
+import { ROVER_MODEL_LOD1_URL, ROVER_MODEL_URL } from './assets';
 
-export const ROVER_MODEL_URL = '/models/continua_rover.glb';
-export const ROVER_MODEL_LOD1_URL = '/models/continua_rover_lod1.glb';
+export { ROVER_MODEL_LOD1_URL, ROVER_MODEL_URL };
+
+/**
+ * A soft contact shadow under the rover, computed once into a small texture.
+ *
+ * The sun's shadow map gives the rover a cast shadow, but under a canopy or in
+ * a building's shade it has none, and a vehicle with no contact darkness reads
+ * as floating. This footprint - a rounded-rectangle falloff plus a darker patch
+ * under each tyre - is always there. It is a pure function of its size, so
+ * every frame is identical.
+ */
+function contactShadowTexture(width = 256, height = 128): DataTexture {
+  const data = new Uint8Array(width * height * 4);
+  const halfL = 2.55;
+  const halfW = 1.18;
+  const sizeX = 6.4;
+  const sizeY = 3.2;
+  for (let j = 0; j < height; j += 1) {
+    for (let i = 0; i < width; i += 1) {
+      const x = ((i + 0.5) / width - 0.5) * sizeX;
+      const y = ((j + 0.5) / height - 0.5) * sizeY;
+      // Signed distance to a rounded rectangle the size of the body.
+      const qx = Math.abs(x) - (halfL - 0.5);
+      const qy = Math.abs(y) - (halfW - 0.5);
+      const outside = Math.hypot(Math.max(qx, 0), Math.max(qy, 0)) + Math.min(Math.max(qx, qy), 0) - 0.5;
+      let alpha = (1 - smoothstep(-0.35, 0.55, outside)) * 0.55;
+      for (const [wx, wy] of [
+        [1.425, 0.845],
+        [1.425, -0.845],
+        [-1.425, 0.845],
+        [-1.425, -0.845],
+      ] as const) {
+        const d = Math.hypot((x - wx) / 0.42, (y - wy) / 0.24);
+        alpha = Math.max(alpha, (1 - smoothstep(0.35, 1.1, d)) * 0.85);
+      }
+      const index = (j * width + i) * 4;
+      data[index] = 18;
+      data[index + 1] = 22;
+      data[index + 2] = 30;
+      data[index + 3] = Math.round(clamp(alpha, 0, 1) * 255);
+    }
+  }
+  const texture = new DataTexture(data, width, height, RGBAFormat);
+  texture.magFilter = LinearFilter;
+  texture.minFilter = LinearFilter;
+  texture.needsUpdate = true;
+  return texture;
+}
+
+function ContactShadow() {
+  const texture = useMemo(() => contactShadowTexture(), []);
+  useEffect(() => () => texture.dispose(), [texture]);
+  return (
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.03, 0]} renderOrder={1} name="CONTINUA_ContactShadow">
+      <planeGeometry args={[6.4, 3.2]} />
+      <meshBasicMaterial
+        map={texture}
+        transparent
+        depthWrite={false}
+        polygonOffset
+        polygonOffsetFactor={-6}
+        polygonOffsetUnits={-6}
+        toneMapped={false}
+        fog
+      />
+    </mesh>
+  );
+}
+
 
 const WHEEL_TAGS = ['FL', 'FR', 'RL', 'RR'] as const;
 const STEER_TAGS = ['FL', 'FR'] as const;
@@ -137,6 +213,7 @@ export function Rover({
 
   return (
     <group ref={groupRef} name="CONTINUA_Rover">
+      <ContactShadow />
       <primitive object={rig.root} />
     </group>
   );

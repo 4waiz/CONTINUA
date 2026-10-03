@@ -11,7 +11,7 @@
 import { AdaptiveDpr, AdaptiveEvents, BakeShadows, Preload } from '@react-three/drei';
 import { Canvas } from '@react-three/fiber';
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { ACESFilmicToneMapping, PCFShadowMap, SRGBColorSpace } from 'three';
+import { NeutralToneMapping, PCFShadowMap, SRGBColorSpace } from 'three';
 import type { QualityTier } from '@continua/contracts';
 import { useFrame, useThree } from '@react-three/fiber';
 import { SCENE_COLOR } from '../theme';
@@ -166,8 +166,10 @@ export function ContinuaScene({ className, fallback, onReady, onFirstFrame }: Co
       }}
       camera={{ position: [18, 7, 18], fov: 40, near: 0.3, far: 2600 }}
       onCreated={({ gl, scene }) => {
-        gl.toneMapping = ACESFilmicToneMapping;
-        gl.toneMappingExposure = 0.88;
+        // Khronos PBR Neutral: whites stay white and hues stay where the
+        // palette put them - ACES pushed the pale sand toward grey-orange.
+        gl.toneMapping = NeutralToneMapping;
+        gl.toneMappingExposure = 0.92;
         gl.outputColorSpace = SRGBColorSpace;
         scene.background = null;
         onReady?.();

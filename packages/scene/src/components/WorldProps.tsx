@@ -3,15 +3,23 @@
 /**
  * World dressing: the authored Blender props, placed on the terrain.
  *
- * Unique structures are cloned once. Everything repeated - barriers, poles,
- * containers, signs, boulders - goes through one `InstancedMesh` per glTF
- * primitive, so a hundred barriers still cost one draw call each.
+ * Every prop - a single operations centre or four hundred fence panels - goes
+ * through one `InstancedMesh` per glTF primitive, so the cost is one draw call
+ * per material of each prop type, not per copy. Placements come from two
+ * tables: `SITES` (the access-network structures, whose positions the engine
+ * shares) and `WORLD_LAYOUT` (set dressing, which no measurement depends on).
+ *
+ * The only motion is the wind-turbine rotors, and it is a pure function of the
+ * scene clock - scrub to a time and the blades are where they were.
  */
 
 import { useGLTF } from '@react-three/drei';
+import { useFrame } from '@react-three/fiber';
 import { useLayoutEffect, useMemo, useRef } from 'react';
 import {
+  BufferGeometry,
   Euler,
+  Float32BufferAttribute,
   InstancedMesh,
   Matrix4,
   Mesh,
@@ -19,128 +27,18 @@ import {
   Quaternion,
   Vector3,
   type Material,
-  type BufferGeometry,
   type Object3D,
 } from 'three';
-import { makeRandom } from '../math/noise';
 import { NETWORK_COLOR } from '../theme';
-import { route } from '../world/route';
+import { useSceneRuntime } from '../runtime/SceneRuntime';
+import { PYLON_CONDUCTORS, TURBINE, WORLD_LAYOUT, type Placement } from '../world/layout';
 import { SITES, type SiteMarker } from '../world/sites';
 import { terrain } from '../world/terrain';
+import { PROPS_MODEL_URL } from './assets';
 
-export const PROPS_MODEL_URL = '/models/continua_props.glb';
+export { PROPS_MODEL_URL };
 
-export interface Placement {
-  x: number;
-  z: number;
-  yaw: number;
-  scale?: number;
-}
-
-// ---------------------------------------------------------------------------
-// Deterministic scatter
-// ---------------------------------------------------------------------------
-
-function farEnoughFromRoad(x: number, z: number, minimum: number): boolean {
-  return Math.sqrt(route.distanceToRouteSq(x, z).distSq) > minimum;
-}
-
-function scatterAlongRoute(
-  from: number,
-  to: number,
-  spacing: number,
-  offset: number,
-  alternate: boolean,
-): Placement[] {
-  const out: Placement[] = [];
-  let side = 1;
-  for (let distance = from; distance <= to; distance += spacing) {
-    const sample = route.at(distance);
-    const nx = -sample.tz;
-    const nz = sample.tx;
-    const lateral = alternate ? side * offset : offset;
-    out.push({
-      x: sample.x + nx * lateral,
-      z: sample.z + nz * lateral,
-      yaw: sample.heading,
-    });
-    side *= -1;
-  }
-  return out;
-}
-
-function buildScatter(): Record<string, Placement[]> {
-  const random = makeRandom(20260908);
-
-  // Barriers line the service road through the yard and the corridor.
-  const barriers = [
-    ...scatterAlongRoute(52, 330, 12, 6.6, false),
-    ...scatterAlongRoute(58, 324, 12, -6.6, false),
-  ];
-
-  // Poles line the serviced corridor; the remote sector gets route markers.
-  const lightPoles = scatterAlongRoute(18, 430, 52, 9.4, true);
-  const routeMarkers = scatterAlongRoute(470, 880, 46, 8.8, true);
-
-  const containers: Placement[] = [];
-  for (const [cx, cz, count] of [
-    [64, 72, 5],
-    [126, -58, 4],
-    [206, 52, 3],
-  ] as const) {
-    for (let i = 0; i < count; i += 1) {
-      containers.push({
-        x: cx + (i % 2) * 7.4 + random() * 1.2,
-        z: cz + Math.floor(i / 2) * 3.2,
-        yaw: Math.PI / 2 + (random() - 0.5) * 0.06,
-      });
-    }
-  }
-
-  const signs = [
-    { distance: 96, offset: 8.6 },
-    { distance: 238, offset: -8.6 },
-    { distance: 452, offset: 8.6 },
-  ].map(({ distance, offset }) => {
-    const sample = route.at(distance);
-    return {
-      x: sample.x + -sample.tz * offset,
-      z: sample.z + sample.tx * offset,
-      yaw: sample.heading + (offset > 0 ? -Math.PI / 2 : Math.PI / 2),
-    };
-  });
-
-  // Boulders in the remote sector, kept clear of the carriageway.
-  const rocksA: Placement[] = [];
-  const rocksB: Placement[] = [];
-  const rocksC: Placement[] = [];
-  for (let i = 0; i < 420; i += 1) {
-    const x = 240 + random() * 900;
-    const z = -400 + random() * 830;
-    if (!farEnoughFromRoad(x, z, 13)) continue;
-    const placement: Placement = {
-      x,
-      z,
-      yaw: random() * Math.PI * 2,
-      scale: 0.65 + random() * 0.9,
-    };
-    const bucket = random();
-    if (bucket < 0.45) rocksA.push(placement);
-    else if (bucket < 0.82) rocksB.push(placement);
-    else if (rocksC.length < 26) rocksC.push(placement);
-  }
-
-  return {
-    PROP_Barrier: barriers,
-    PROP_LightPole: lightPoles,
-    PROP_RoadSign_Marker: routeMarkers,
-    PROP_Container: containers,
-    PROP_RoadSign: signs,
-    PROP_Rock_A: rocksA,
-    PROP_Rock_B: rocksB,
-    PROP_Rock_C: rocksC,
-  };
-}
+export type { Placement };
 
 // ---------------------------------------------------------------------------
 // Instancing
@@ -168,12 +66,28 @@ function collectPrimitives(node: Object3D): Primitive[] {
   return out;
 }
 
+const _position = new Vector3();
+const _quaternion = new Quaternion();
+const _scale = new Vector3();
+const _euler = new Euler();
+const _placement = new Matrix4();
+
+function placementMatrix(item: Placement, target: Matrix4): Matrix4 {
+  _position.set(item.x, terrain.height(item.x, item.z), item.z);
+  _quaternion.setFromEuler(_euler.set(0, item.yaw, 0));
+  const s = item.scale ?? 1;
+  _scale.set(s, s, s);
+  return target.compose(_position, _quaternion, _scale);
+}
+
 function InstancedPrimitive({
   primitive,
   placements,
+  castShadow = true,
 }: {
   primitive: Primitive;
-  placements: Placement[];
+  placements: readonly Placement[];
+  castShadow?: boolean;
 }) {
   const ref = useRef<InstancedMesh>(null);
 
@@ -181,17 +95,9 @@ function InstancedPrimitive({
     const mesh = ref.current;
     if (!mesh) return;
     const matrix = new Matrix4();
-    const placement = new Matrix4();
-    const position = new Vector3();
-    const quaternion = new Quaternion();
-    const scale = new Vector3();
     placements.forEach((item, index) => {
-      position.set(item.x, terrain.height(item.x, item.z), item.z);
-      quaternion.setFromEuler(new Euler(0, item.yaw, 0));
-      const s = item.scale ?? 1;
-      scale.set(s, s, s);
-      placement.compose(position, quaternion, scale);
-      matrix.copy(placement).multiply(primitive.relative);
+      placementMatrix(item, _placement);
+      matrix.copy(_placement).multiply(primitive.relative);
       mesh.setMatrixAt(index, matrix);
     });
     mesh.instanceMatrix.needsUpdate = true;
@@ -203,10 +109,129 @@ function InstancedPrimitive({
     <instancedMesh
       ref={ref}
       args={[primitive.geometry, primitive.material as Material, placements.length]}
-      castShadow
+      castShadow={castShadow}
       receiveShadow
       frustumCulled
     />
+  );
+}
+
+/** Material adjustments the exporter cannot express. Applied once per material. */
+function tuneMaterial(material: Material): void {
+  if (!(material instanceof MeshStandardMaterial)) return;
+  if (material.userData.continuaTuned) return;
+  material.userData.continuaTuned = true;
+  const name = material.name;
+  if (name.includes('Glass')) {
+    // Glazing should mirror the sky; it is what makes a facade read as glass.
+    material.envMapIntensity = 2.6;
+  } else if (name.includes('Fence_Mesh')) {
+    material.transparent = true;
+    material.depthWrite = false;
+  } else if (name.includes('Solar')) {
+    material.envMapIntensity = 1.3;
+  } else {
+    material.envMapIntensity = 0.75;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Wind turbines: rotors turn with the clock
+// ---------------------------------------------------------------------------
+
+function TurbineRotors({ library, placements }: { library: Map<string, Object3D>; placements: readonly Placement[] }) {
+  const { clock } = useSceneRuntime();
+  const primitives = useMemo(() => {
+    const node = library.get(TURBINE.rotor);
+    return node ? collectPrimitives(node) : [];
+  }, [library]);
+  const refs = useRef<(InstancedMesh | null)[]>([]);
+  const hub = useMemo(() => new Matrix4().makeTranslation(TURBINE.hub[0], TURBINE.hub[1], TURBINE.hub[2]), []);
+  const spin = useMemo(() => new Matrix4(), []);
+  const matrix = useMemo(() => new Matrix4(), []);
+
+  useFrame(() => {
+    // Each turbine starts at its own phase so the farm does not turn in lockstep.
+    placements.forEach((item, index) => {
+      const angle = clock.time * TURBINE.speed + index * 1.7;
+      placementMatrix(item, _placement);
+      spin.makeRotationX(angle);
+      for (let p = 0; p < primitives.length; p += 1) {
+        const mesh = refs.current[p];
+        if (!mesh) continue;
+        matrix.copy(_placement).multiply(hub).multiply(spin).multiply(primitives[p]!.relative);
+        mesh.setMatrixAt(index, matrix);
+        mesh.instanceMatrix.needsUpdate = true;
+      }
+    });
+  });
+
+  if (placements.length === 0) return null;
+  return (
+    <group name="CONTINUA_TurbineRotors">
+      {primitives.map((primitive, index) => (
+        <instancedMesh
+          key={index}
+          ref={(mesh) => {
+            refs.current[index] = mesh;
+          }}
+          args={[primitive.geometry, primitive.material as Material, placements.length]}
+          castShadow
+          frustumCulled={false}
+        />
+      ))}
+    </group>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Power lines between pylons
+// ---------------------------------------------------------------------------
+
+function buildConductors(pylons: readonly Placement[]): BufferGeometry {
+  const sorted = [...pylons].sort((a, b) => a.x - b.x);
+  const points: number[] = [];
+  const attach = (pylon: Placement, across: number, height: number): Vector3 => {
+    const cos = Math.cos(pylon.yaw);
+    const sin = Math.sin(pylon.yaw);
+    // Local (0, height, -across) rotated by yaw about +Y.
+    const lx = 0;
+    const lz = -across;
+    return new Vector3(
+      pylon.x + lx * cos + lz * sin,
+      terrain.height(pylon.x, pylon.z) + height,
+      pylon.z - lx * sin + lz * cos,
+    );
+  };
+  const segments = 18;
+  for (let i = 0; i < sorted.length - 1; i += 1) {
+    for (const [across, height] of PYLON_CONDUCTORS) {
+      const a = attach(sorted[i]!, across, height);
+      const b = attach(sorted[i + 1]!, across, height);
+      const sag = a.distanceTo(b) * 0.035;
+      let previous = a.clone();
+      for (let s = 1; s <= segments; s += 1) {
+        const t = s / segments;
+        const p = new Vector3().lerpVectors(a, b, t);
+        p.y -= sag * 4 * t * (1 - t);
+        points.push(previous.x, previous.y, previous.z, p.x, p.y, p.z);
+        previous = p;
+      }
+    }
+  }
+  const geometry = new BufferGeometry();
+  geometry.setAttribute('position', new Float32BufferAttribute(points, 3));
+  geometry.computeBoundingSphere();
+  return geometry;
+}
+
+function PowerLines({ pylons }: { pylons: readonly Placement[] }) {
+  const geometry = useMemo(() => buildConductors(pylons), [pylons]);
+  if (pylons.length < 2) return null;
+  return (
+    <lineSegments geometry={geometry} name="CONTINUA_PowerLines">
+      <lineBasicMaterial color="#4A5361" transparent opacity={0.55} depthWrite={false} />
+    </lineSegments>
   );
 }
 
@@ -231,7 +256,7 @@ function SiteMarkerRing({
     <group position={[site.x, y, site.z]}>
       <mesh
         rotation={[-Math.PI / 2, 0, 0]}
-        position={[0, 0.08, 0]}
+        position={[0, 0.12, 0]}
         onClick={(event) => {
           event.stopPropagation();
           onSelect(site.id);
@@ -259,6 +284,25 @@ function SiteMarkerRing({
 
 // ---------------------------------------------------------------------------
 
+/** Placement lists by prop node name: network sites first, then dressing. */
+function allPlacements(): Map<string, Placement[]> {
+  const byProp = new Map<string, Placement[]>();
+  for (const site of SITES) {
+    const list = byProp.get(site.prop) ?? [];
+    list.push({ x: site.x, z: site.z, yaw: site.yaw, scale: site.scale });
+    byProp.set(site.prop, list);
+  }
+  for (const [prop, placements] of Object.entries(WORLD_LAYOUT)) {
+    const list = byProp.get(prop) ?? [];
+    list.push(...placements);
+    byProp.set(prop, list);
+  }
+  return byProp;
+}
+
+/** Small, numerous dressing that is not worth a shadow-map pass. */
+const NO_SHADOW = new Set(['PROP_Fence', 'PROP_Shrub_A', 'PROP_Shrub_B', 'PROP_Bollard', 'PROP_Skyline_A', 'PROP_Skyline_B', 'PROP_Skyline_C']);
+
 export function WorldProps({
   showMarkers,
   selectedSiteId,
@@ -269,7 +313,6 @@ export function WorldProps({
   onSelectSite: (id: string) => void;
 }) {
   const { scene } = useGLTF(PROPS_MODEL_URL);
-  const scatter = useMemo(() => buildScatter(), []);
 
   const library = useMemo(() => {
     const map = new Map<string, Object3D>();
@@ -277,66 +320,45 @@ export function WorldProps({
     scene.traverse((node) => {
       if (node.name.startsWith('PROP_') && !map.has(node.name)) map.set(node.name, node);
     });
+    scene.traverse((node) => {
+      if (!(node instanceof Mesh)) return;
+      const materials = Array.isArray(node.material) ? node.material : [node.material];
+      materials.forEach(tuneMaterial);
+    });
     return map;
   }, [scene]);
 
+  const placements = useMemo(() => allPlacements(), []);
+
   const instanced = useMemo(() => {
-    return Object.entries(scatter).map(([name, placements]) => {
-      const node = library.get(name.replace(/_Marker$/, ''));
+    const out: { name: string; placements: Placement[]; primitives: Primitive[] }[] = [];
+    for (const [name, list] of placements) {
+      if (name === TURBINE.rotor) continue;
+      const node = library.get(name);
       if (!node) {
         console.warn(`[CONTINUA] prop "${name}" not found in ${PROPS_MODEL_URL}`);
-        return null;
+        continue;
       }
-      return { name, placements, primitives: collectPrimitives(node) };
-    });
-  }, [scatter, library]);
-
-  const structures = useMemo(() => {
-    return SITES.map((site) => {
-      const node = library.get(site.prop);
-      if (!node) {
-        console.warn(`[CONTINUA] site prop "${site.prop}" not found`);
-        return null;
-      }
-      const object = node.clone(true);
-      object.traverse((child) => {
-        if (child instanceof Mesh) {
-          child.castShadow = true;
-          child.receiveShadow = true;
-          const materials = Array.isArray(child.material) ? child.material : [child.material];
-          for (const material of materials) {
-            if (material instanceof MeshStandardMaterial) material.envMapIntensity = 0.8;
-          }
-        }
-      });
-      return { site, object };
-    }).filter((entry): entry is { site: SiteMarker; object: Object3D } => entry !== null);
-  }, [library]);
+      out.push({ name, placements: list, primitives: collectPrimitives(node) });
+    }
+    return out;
+  }, [placements, library]);
 
   return (
     <group name="CONTINUA_World">
-      {structures.map(({ site, object }) => (
-        <group
-          key={site.id}
-          position={[site.x, terrain.height(site.x, site.z), site.z]}
-          rotation={[0, site.yaw, 0]}
-          scale={site.scale ?? 1}
-        >
-          <primitive object={object} />
-        </group>
-      ))}
-
       {instanced.map((entry) =>
-        entry === null
-          ? null
-          : entry.primitives.map((primitive, index) => (
-              <InstancedPrimitive
-                key={`${entry.name}-${index}`}
-                primitive={primitive}
-                placements={entry.placements}
-              />
-            )),
+        entry.primitives.map((primitive, index) => (
+          <InstancedPrimitive
+            key={`${entry.name}-${index}`}
+            primitive={primitive}
+            placements={entry.placements}
+            castShadow={!NO_SHADOW.has(entry.name)}
+          />
+        )),
       )}
+
+      <TurbineRotors library={library} placements={placements.get(TURBINE.tower) ?? []} />
+      <PowerLines pylons={placements.get('PROP_Pylon') ?? []} />
 
       {showMarkers &&
         SITES.filter((site) => site.selectable).map((site) => (

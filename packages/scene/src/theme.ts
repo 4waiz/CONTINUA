@@ -21,21 +21,35 @@ export const COLOR = {
   red: '#E5484D',
 } as const;
 
-/** Scene-only colours. Deliberately desaturated so the vehicle stays the hero. */
+/**
+ * Scene-only colours: a pale desert at midday. Warm, light and low in
+ * saturation, so the white rover stays the cleanest object in frame and the
+ * interface's cyan / blue / violet stay the only strong colours on screen.
+ */
 export const SCENE_COLOR = {
-  sky: '#EDF3FD',
-  skyHorizon: '#FBFCFE',
-  fog: '#EEF3FB',
-  groundNear: '#BAC7DC',
-  groundFar: '#CFC0A4',
-  groundHigh: '#E3D9C6',
-  road: '#7F8CA3',
-  roadEdge: '#B4BFD1',
-  roadCentre: '#DFE6F1',
-  apron: '#AEBBCE',
+  sky: '#BFD6F0',
+  skyHorizon: '#EEF2F6',
+  fog: '#E9EDF1',
+  sun: '#FFF3DE',
+  /** Graded campus ground: compacted, cooler, lighter than the open desert. */
+  campus: '#CFCAC0',
+  sandLight: '#ECE1CC',
+  sand: '#DDCDAF',
+  sandDark: '#C7B391',
+  rockTint: '#B9A280',
+  concrete: '#C9CDD2',
+  road: '#4F5664',
+  roadEdge: '#C9C1B1',
+  roadLine: '#F4F2EC',
+  roadCentre: '#F2C14E',
+  apron: '#C6CBD1',
   grid: '#7C93B6',
-  ridge: '#BAC8DE',
-  ridgeFar: '#D3DDEC',
+  ridge: '#CBD3DE',
+  ridgeFar: '#DCE2EA',
+  /** Kept for callers that still read the Phase 1 names. */
+  groundNear: '#DCD8CE',
+  groundFar: '#DDCDAF',
+  groundHigh: '#ECE1CC',
 } as const;
 
 export const NETWORK_COLOR = {

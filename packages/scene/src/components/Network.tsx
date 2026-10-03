@@ -189,7 +189,9 @@ function Beam({
       state.vehicle.position.y + ROVER_ANTENNA.y,
       state.vehicle.position.z - ROVER_ANTENNA.x * sin - ROVER_ANTENNA.z * cos,
     );
-    to.set(site.x, terrain.height(site.x, site.z) + (site.linkHeight ?? 3), site.z);
+    const ax = site.x + (site.linkOffset?.[0] ?? 0);
+    const az = site.z + (site.linkOffset?.[1] ?? 0);
+    to.set(ax, terrain.height(ax, az) + (site.linkHeight ?? 3), az);
 
     const span = from.distanceTo(to);
     const sag = network === 'wired' ? -Math.min(0.6, span * 0.12) : Math.min(14, span * 0.11);

@@ -11,26 +11,27 @@
  */
 
 import { clamp, fbm2, lerp, smoothstep } from '../math/noise';
+import { PADS, type Pad } from './layout';
 import { route, type Route } from './route';
 
 export const TERRAIN = {
-  /** World bounds of the playable ground plane, metres. */
-  minX: -260,
+  /** World bounds of the ground plane, metres. West reaches the city skyline. */
+  minX: -640,
   maxX: 1340,
   minZ: -470,
   maxZ: 490,
-  /** Grid resolution of the generated mesh. */
-  segmentsX: 264,
+  /** Grid resolution of the generated mesh (about 6 m per cell). */
+  segmentsX: 330,
   segmentsZ: 158,
   /** Corridor half-widths for flattening the route. */
   flatInner: 7.5,
   flatOuter: 20,
 } as const;
 
-/** Raw landscape before the route is carved into it. */
-export function baseHeight(x: number, z: number): number {
-  // Flat, engineered apron around the facility; land opens up further out.
-  const openness = smoothstep(70, 150, x);
+/** The natural landscape, before building pads and the route are cut in. */
+function naturalHeight(x: number, z: number): number {
+  // The campus is graded flat; the land opens up past the gate (x ~ 228).
+  const openness = smoothstep(220, 300, x);
   const remote = smoothstep(400, 580, x);
 
   let height = 0;
@@ -39,8 +40,26 @@ export function baseHeight(x: number, z: number): number {
   height += remote * fbm2(x * 0.011, z * 0.011, 3, 47) * 2.4;
   // Ground rises away from the corridor in the remote zone: a shallow valley.
   height += remote * Math.min(Math.abs(z), 260) * 0.022;
-  // A low berm along the facility boundary, so the site reads as enclosed.
-  height += smoothstep(0.0, 1.0, 1 - Math.abs(x - 96) / 26) * 1.15;
+  return height;
+}
+
+/** Each pad is levelled to the natural height at its centre. */
+const PAD_LEVELS: readonly (Pad & { y: number })[] = PADS.map((pad) => ({
+  ...pad,
+  y: naturalHeight(pad.x, pad.z),
+}));
+
+/** Raw landscape before the route is carved into it: natural ground with
+ *  flat pads under every building, eased back to grade over each margin. */
+export function baseHeight(x: number, z: number): number {
+  let height = naturalHeight(x, z);
+  for (const pad of PAD_LEVELS) {
+    const dx = Math.max(Math.abs(x - pad.x) - pad.hx, 0);
+    const dz = Math.max(Math.abs(z - pad.z) - pad.hz, 0);
+    if (dx > pad.margin || dz > pad.margin) continue;
+    const weight = 1 - smoothstep(0, pad.margin, Math.hypot(dx, dz));
+    height = lerp(height, pad.y, weight);
+  }
   return height;
 }
 
