@@ -21,7 +21,9 @@
  *    invites a frame-count mismatch at every join - the shots are laid into a
  *    single `%06d.png` sequence and encoded once. Hard links cost no disk, and
  *    a card still is simply linked once per frame it is held for.
- * 4. **One encode.** H.264, yuv420p, 30 fps, faststart, AAC narration.
+ * 4. **One encode, to a size.** H.264 in two passes to 40 MB (the repository
+ *    refuses a file over 45 MB that LFS does not track), yuv420p, 30 fps,
+ *    faststart, AAC narration.
  *
  *   node scripts/build-demo.mjs
  *   node scripts/build-demo.mjs --no-audio      # picture only
@@ -320,6 +322,16 @@ function buildSubtitles() {
 // 5. encode
 // ---------------------------------------------------------------------------
 
+/**
+ * The MP4 is committed to the repository, which refuses a file over 45 MB that
+ * Git LFS does not track. The island's grass and leaves are fine detail in
+ * motion, on which a constant-quality encode (CRF 18) spent 80 MB, so the
+ * picture is encoded in two passes to a size: the first pass measures where
+ * the detail is, the second spends the budget there.
+ */
+const TARGET_MB = 40;
+const AUDIO_KBPS = 160;
+
 function encode(sequence, frames) {
   const target = join(OUT, `${BASENAME}.mp4`);
   const seconds = frames / fps;
@@ -331,32 +343,45 @@ function encode(sequence, frames) {
     die('video/audio/narration.wav is missing. Run: node scripts/build-narration.mjs');
   }
 
-  const args = [
+  // 2% of the budget is left for the container.
+  const budget = TARGET_MB * 8e6 * 0.98 - (withAudio ? AUDIO_KBPS * 1000 * seconds : 0);
+  const videoKbps = Math.floor(budget / seconds / 1000);
+  const passlog = join(WORK, 'x264-pass');
+
+  const picture = [
     '-framerate', String(fps),
     '-i', join(sequence, '%06d.png'),
     ...(withAudio ? ['-i', narration] : []),
     '-vf', `fade=t=in:st=0:d=0.5,fade=t=out:st=${fadeOutAt.toFixed(2)}:d=0.9,format=yuv420p`,
     '-c:v', 'libx264',
     '-preset', 'slow',
-    '-crf', '18',
+    '-b:v', `${videoKbps}k`,
+    '-passlogfile', passlog,
     '-profile:v', 'high',
     '-level', '4.1',
     '-r', String(fps),
     '-g', String(fps * 2),
-    '-movflags', '+faststart',
   ];
 
+  console.log(
+    `· encoding ${frames} frames (${seconds.toFixed(2)}s)${withAudio ? ' with narration' : ' silent'}, ` +
+      `two passes at ${videoKbps} kb/s for ${TARGET_MB} MB`,
+  );
+  ffmpeg([...picture, '-pass', '1', '-an', '-f', 'null', '-']);
+
+  const args = [...picture, '-pass', '2', '-movflags', '+faststart'];
   if (withAudio) {
     args.push(
       '-af', `afade=t=in:st=0:d=0.4,afade=t=out:st=${fadeOutAt.toFixed(2)}:d=0.9`,
-      '-c:a', 'aac', '-b:a', '160k', '-ar', '48000', '-ac', '2',
+      '-c:a', 'aac', '-b:a', `${AUDIO_KBPS}k`, '-ar', '48000', '-ac', '2',
       '-shortest',
     );
   }
   args.push(target);
-
-  console.log(`· encoding ${frames} frames (${seconds.toFixed(2)}s)${withAudio ? ' with narration' : ' silent'}`);
   ffmpeg(args);
+  for (const name of readdirSync(WORK)) {
+    if (name.startsWith('x264-pass')) rmSync(join(WORK, name), { force: true });
+  }
   return target;
 }
 

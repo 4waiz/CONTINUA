@@ -52,7 +52,7 @@ import { SCENE_COLOR } from '../theme';
 import { PADS, SERVICE_ROADS } from '../world/layout';
 import { ROAD_HALF_WIDTH, ROAD_SURFACE_OFFSET } from '../world/road';
 import { route } from '../world/route';
-import { SEA_LEVEL, TERRAIN, terrain } from '../world/terrain';
+import { inlandDistance, SEA_LEVEL, TERRAIN, terrain } from '../world/terrain';
 import { patchStandard } from './shaders';
 
 // ---------------------------------------------------------------------------
@@ -77,10 +77,12 @@ interface RangeSpec {
   seed: number;
   segments: number;
   rows: number;
-  /** Spacing of the erosion flutes down the faces, metres along the foot. */
+  /** Period of the erosion flutes along the foot, metres (two ribs to a period). */
   flute: number;
   /** Spur ridges running down from the crest, per radian of arc. */
   spurs: number;
+  /** How far the great spurs reach out from the foot toward the island, metres. */
+  spurReach: number;
   /** Forest, forest in shade, sunlit crests, bare rock. */
   lush: string;
   shade: string;
@@ -102,8 +104,9 @@ const NEAR_RANGE: RangeSpec = {
   seed: 4242,
   segments: 1500,
   rows: 64,
-  flute: 15,
-  spurs: 10,
+  flute: 60,
+  spurs: 3.2,
+  spurReach: 130,
   lush: SCENE_COLOR.mountainLush,
   shade: SCENE_COLOR.mountainShade,
   crest: SCENE_COLOR.mountainCrest,
@@ -124,8 +127,9 @@ const FAR_RANGE: RangeSpec = {
   seed: 9191,
   segments: 1000,
   rows: 30,
-  flute: 28,
-  spurs: 7,
+  flute: 90,
+  spurs: 2.4,
+  spurReach: 190,
   lush: SCENE_COLOR.mountainFar,
   shade: SCENE_COLOR.mountainFarShade,
   crest: SCENE_COLOR.mountainFarCrest,
@@ -137,13 +141,29 @@ function ridged(x: number, y: number, seed: number): number {
   return 1 - Math.abs(2 * valueNoise2(x, y, seed) - 1);
 }
 
+/** Open water kept between a range's foot and the island's shore, metres. */
+const STRAIT_CLEARANCE = 110;
+
+/**
+ * How far the spur at this point of the arc may reach out toward the island:
+ * up to `wanted`, and no further than the open water at its foot allows (a
+ * metre of reach closes about a metre of it). A smooth minimum, so the reach
+ * never steps from one column of the mesh to the next - stepped back in 5 m
+ * notches it creased the faces from foot to crest at every notch.
+ */
+function spurClearance(spec: RangeSpec, cos: number, sin: number, wanted: number): number {
+  const room = Math.max(0, -inlandDistance(spec.cx + spec.a * cos, spec.cz + spec.b * sin) - STRAIT_CLEARANCE);
+  const k = 12;
+  return Math.max(0, -k * Math.log(Math.exp(-wanted / k) + Math.exp(-room / k)));
+}
+
 /**
  * A range as a band of ground around the island: lush, steep island
- * mountains - broad massifs with sharp summits, spurs running down to the
- * shore with valleys between them, and the faces fluted by erosion into
- * narrow gullies straight down the fall line. Forest everywhere it can hold,
- * darker in the gullies, catching the light on the ribs between them, bare
- * rock where the faces are too steep.
+ * mountains - broad massifs with sharp summits, great spurs reaching out
+ * toward the island with valleys cut back between them, and the faces fluted
+ * by erosion into gullies down the fall line that wander, branch and fade.
+ * Forest everywhere it can hold, darker in the gullies, catching the light on
+ * the ribs between them, bare rock where the faces are too steep.
  */
 function buildRange(spec: RangeSpec, detail: number): BufferGeometry {
   const segments = Math.round(spec.segments * detail);
@@ -175,14 +195,27 @@ function buildRange(spec: RangeSpec, detail: number): BufferGeometry {
     const peak = lerp(spec.peakElse, spec.peakEast, east);
     const crest = peak * taper * clamp(0.24 + 0.7 * massif + 0.22 * summit * summit, 0.05, 1.2);
     // Some faces are fluted cliffs, others smooth forested slopes.
-    const fluteAmount = smoothstep(-0.35, 0.45, fbm2(u * 11 + 4, 2.3, 3, spec.seed + 27));
+    const fluteAmount = smoothstep(-0.15, 0.55, fbm2(u * 11 + 4, 2.3, 3, spec.seed + 27));
     // Where the crest stands across the band wanders, so the front is never a wall.
     const crestAt = 0.27 + 0.13 * (0.5 + 0.5 * fbm2(u * 8 + 2, 1.7, 2, spec.seed + 21));
+    // The great spurs, every second or third of them: their feet reach out toward
+    // the island, so from the shore they stand in front of one another and of
+    // the valleys cut back between them - the range is never one face.
+    const spurLine = ridged(
+      u * span * spec.spurs * 0.42 + 0.35 * fbm2(u * 7, 4.4, 2, spec.seed + 33),
+      1.5,
+      spec.seed + 43,
+    );
+    const reachOut = spurClearance(spec, cos, sin, spec.spurReach * smoothstep(0.3, 0.95, spurLine) * taper);
+    // The flutes' spacing drifts along the range, never a regular pleat.
+    const fluteDrift = 2.6 * fbm2(u * span * 3.1, 7.7, 2, spec.seed + 57);
 
     for (let j = 0; j <= rows; j += 1) {
       // Rows crowd toward the front, where the faces are.
       const t = Math.pow(j / rows, 1.45);
-      const reach = t * spec.depth;
+      // The spur's foot is pulled out toward the island and its ridge eases
+      // back up to the crest; behind the crest the band is as it was.
+      const reach = t * spec.depth - reachOut * (1 - smoothstep(0, crestAt * 1.1, t));
       const x = spec.cx + (spec.a + reach) * cos;
       const z = spec.cz + (spec.b + reach) * sin;
 
@@ -204,15 +237,22 @@ function buildRange(spec: RangeSpec, detail: number): BufferGeometry {
       const spur = ridged(u * span * spec.spurs + meander, 0.5, spec.seed + 41);
       const valley = Math.pow(1 - spur, 1.5);
       const low = 1 - 0.55 * front;
-      h *= 1 - 0.46 * valley * low * smoothstep(0, 0.12, t);
+      h *= 1 - 0.4 * valley * low * smoothstep(0, 0.12, t);
 
-      // Erosion flutes on the faces: narrow ribs and gullies down the fall line.
-      const face = smoothstep(0.08, 0.45, front) * (1 - smoothstep(crestAt * 0.85, crestAt * 1.5, t));
+      // Erosion flutes on the faces: ribs and gullies down the fall line,
+      // which wander, branch and end on the way down rather than hanging from
+      // the crest like the folds of a curtain. Each reaches its own way down:
+      // some only notch the crest, some run nearly to the foot.
+      const reachDown = 0.3 + 0.65 * valueNoise2(u * fluteCount * 0.5 + fluteDrift, 3.3, spec.seed + 63);
+      const face =
+        smoothstep(0.88 - reachDown, 1.12 - reachDown, front) * (1 - smoothstep(crestAt * 0.85, crestAt * 1.5, t));
       const wander = 0.9 * fbm2(u * 70, t * 5, 2, spec.seed + 51);
-      const rib = Math.pow(ridged(u * fluteCount + wander, t * 0.9, spec.seed + 61), 1.4);
-      const fine = ridged(u * fluteCount * 1.7 + 5 + wander, t * 1.6, spec.seed + 71);
-      const fluted = 0.84 * rib + 0.16 * fine;
-      h *= 1 - 0.19 * (1 - fluted) * face * fluteAmount;
+      const rib = Math.pow(ridged(u * fluteCount + fluteDrift + wander, t * 2.2, spec.seed + 61), 1.4);
+      const fine = ridged(u * fluteCount * 1.9 + 5 + fluteDrift + wander, t * 3.4, spec.seed + 71);
+      const fluted = 0.8 * rib + 0.2 * fine;
+      // Cut to a depth set by their spacing, not the mountain's height: cut
+      // in proportion to a 200 m face they were slots, each a dark stripe.
+      h = Math.max(0, h - spec.flute * 0.2 * (1 - fluted) * face * fluteAmount);
 
       const index = i * stride + j;
       positions[index * 3] = x;
@@ -224,12 +264,17 @@ function buildRange(spec: RangeSpec, detail: number): BufferGeometry {
     }
   }
 
+  // Wound so the side facing the island is the front, with normals pointing
+  // up out of the ground. Wound the other way the ranges still drew - the
+  // material is double-sided - but the ambient-occlusion pass draws front
+  // faces only, so it saw through the faces to the undersides of the slopes
+  // behind them and hung a pale veil over the lower half of every range.
   const indices: number[] = [];
   for (let i = 0; i < segments; i += 1) {
     for (let j = 0; j < rows; j += 1) {
       const a = i * stride + j;
       const b = a + stride;
-      indices.push(a, a + 1, b, b, a + 1, b + 1);
+      indices.push(a, b, a + 1, b, b + 1, a + 1);
     }
   }
   const geometry = new BufferGeometry();
@@ -252,8 +297,8 @@ function buildRange(spec: RangeSpec, detail: number): BufferGeometry {
     const slope = 1 - Math.abs(normals.getY(index));
     const patch = valueNoise2(x * 0.018, z * 0.018, spec.seed + 81);
     colour.copy(lush).multiplyScalar(0.88 + 0.24 * patch);
-    colour.lerp(shade, clamp((1 - fluting[index]!) * 0.75 * faces[index]! + valleys[index]! * 0.4, 0, 0.88));
-    colour.lerp(crestTone, fluting[index]! * fluting[index]! * 0.42 * faces[index]!);
+    colour.lerp(shade, clamp((1 - fluting[index]!) * 0.5 * faces[index]! + valleys[index]! * 0.4, 0, 0.88));
+    colour.lerp(crestTone, fluting[index]! * fluting[index]! * 0.28 * faces[index]!);
     const scar = valueNoise2(x * 0.03, z * 0.03, spec.seed + 91);
     colour.lerp(rock, smoothstep(0.5, 0.72, slope + 0.22 * (scar - 0.5)));
     colours[index * 3] = colour.r;
@@ -276,7 +321,7 @@ function buildRange(spec: RangeSpec, detail: number): BufferGeometry {
 function mountainMaterial(time: { value: number }): MeshStandardMaterial {
   const material = new MeshStandardMaterial({ vertexColors: true, roughness: 0.95, metalness: 0, side: DoubleSide });
   return patchStandard(material, {
-    key: 'continua-mountains-v3',
+    key: 'continua-mountains-v4',
     uniforms: { uTime: time },
     header: /* glsl */ `
       // Crowns about nine metres across.
@@ -318,7 +363,7 @@ function mountainMaterial(time: { value: number }): MeshStandardMaterial {
     colour: /* glsl */ `
       #ifndef CT_LITE
         vec3 ctN = normalize(inverseTransformDirection(vNormal, viewMatrix));
-        float ctNear = smoothstep(2.5, 7.0, ctCrownPixels());
+        float ctNear = smoothstep(4.0, 10.0, ctCrownPixels());
         vec2 ctTree = ctCanopy(vCtWorld, ctN);
         float ctClumps = ctNoise(vCtWorld.xz * 0.035 + 3.0);
         // Lit crowns, dark gaps, and tree-to-tree variety: yellower, bluer.
@@ -335,7 +380,7 @@ function mountainMaterial(time: { value: number }): MeshStandardMaterial {
       #ifndef CT_LITE
         {
           vec3 ctN = normalize(inverseTransformDirection(vNormal, viewMatrix));
-          float ctNear = smoothstep(5.0, 14.0, ctCrownPixels());
+          float ctNear = smoothstep(7.0, 18.0, ctCrownPixels());
           vec2 ctTree = ctCanopy(vCtWorld, ctN);
           normal = ctBump(-vViewPosition, normal, ctTree.x * ctNear, 1.4);
         }
@@ -345,9 +390,10 @@ function mountainMaterial(time: { value: number }): MeshStandardMaterial {
 }
 
 /**
- * Sea mist at the mountains' foot: the haze thickens toward the water, so the
- * ranges rise out of it instead of meeting the sea at a hard line. Applied
- * after lighting, on top of the scene's own fog.
+ * Sea mist at the mountains' foot: a thin layer on the water, so the ranges
+ * rise out of it instead of meeting the sea at a hard line. Thin, because a
+ * deep one hung a pale veil over the lower faces and the ranges read as a
+ * curtain. Applied after lighting, on top of the scene's own fog.
  */
 function withMist(material: MeshStandardMaterial): MeshStandardMaterial {
   const patch = material.onBeforeCompile;
@@ -356,8 +402,8 @@ function withMist(material: MeshStandardMaterial): MeshStandardMaterial {
     shader.fragmentShader = shader.fragmentShader.replace(
       '#include <fog_fragment>',
       `#if defined( USE_FOG ) && !defined( CT_LITE )
-         float ctMist = (1.0 - smoothstep(-8.0, 75.0, vCtWorld.y)) * smoothstep(250.0, 800.0, vCtDist);
-         gl_FragColor.rgb = mix(gl_FragColor.rgb, fogColor, ctMist * 0.48);
+         float ctMist = pow(1.0 - smoothstep(-8.0, 55.0, vCtWorld.y), 1.5) * smoothstep(300.0, 900.0, vCtDist);
+         gl_FragColor.rgb = mix(gl_FragColor.rgb, fogColor, ctMist * 0.42);
        #endif
        #include <fog_fragment>`,
     );

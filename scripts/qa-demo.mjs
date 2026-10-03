@@ -78,7 +78,7 @@ check('frame rate is exactly 30', video?.r_frame_rate === '30/1', video?.r_frame
 check('video codec is H.264', video?.codec_name === 'h264', video?.codec_name);
 check('pixel format is yuv420p', video?.pix_fmt === 'yuv420p', video?.pix_fmt);
 check('audio track present and AAC', audio?.codec_name === 'aac', `${audio?.codec_name} ${audio?.sample_rate} Hz ${audio?.channels} ch`);
-check('file size is reasonable for upload', size < 200e6, `${(size / 1e6).toFixed(1)} MB`);
+check('file size fits the repository without LFS (45 MB)', size < 45e6, `${(size / 1e6).toFixed(1)} MB`);
 
 // `faststart` moves the moov atom to the front. ffprobe does not report it
 // directly, so read the box order out of the first kilobyte.
