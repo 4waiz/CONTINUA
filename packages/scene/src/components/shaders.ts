@@ -297,11 +297,14 @@ export function terrainMaterial(palette: {
 
 /**
  * Asphalt with markings drawn from the ribbon's UVs: u runs 0..1 across the
- * carriageway, v is distance along it divided by 12 m.
+ * carriageway, v is distance along it divided by 12 m. `linesEnd` (metres
+ * along) is where the painted lines stop - where the road opens into the
+ * turning circle at its end; the centre line stops a little before the edges.
  */
 export function roadMaterial(palette: { road: string; line: string; centre: string }, options: {
   centreLine: boolean;
   key: string;
+  linesEnd?: number;
 }): MeshStandardMaterial {
   const material = new MeshStandardMaterial({ color: '#ffffff', roughness: 0.9, metalness: 0 });
   // The ribbon carries UVs, but a material with no texture maps does not ask
@@ -314,6 +317,7 @@ export function roadMaterial(palette: { road: string; line: string; centre: stri
       uLine: { value: new Color(palette.line) },
       uCentre: { value: new Color(palette.centre) },
       uCentreLine: { value: options.centreLine ? 1 : 0 },
+      uLinesEnd: { value: (options.linesEnd ?? 1e6) / 12 },
     },
     colour: /* glsl */ `
       #ifdef USE_UV
@@ -333,9 +337,56 @@ export function roadMaterial(palette: { road: string; line: string; centre: stri
                  + smoothstep(0.942 - aa, 0.942, ruv.x) * (1.0 - smoothstep(0.965, 0.965 + aa, ruv.x));
       float dash = step(fract(ruv.y), 0.34);
       float centre = (1.0 - smoothstep(0.011, 0.011 + aa, abs(ruv.x - 0.5))) * dash * uCentreLine;
+      edge *= step(ruv.y, uLinesEnd);
+      centre *= step(ruv.y, uLinesEnd - 0.75);
       vec3 colour = mix(asphalt, uLine, clamp(edge, 0.0, 1.0) * 0.92);
       colour = mix(colour, uCentre, clamp(centre, 0.0, 1.0) * 0.9);
       diffuseColor.rgb *= colour;
+    `,
+  });
+}
+
+/**
+ * The turning circle where the road ends: the same asphalt, and the road's
+ * edge line carried round it - drawn per pixel from world position, so the
+ * line is exactly as wide as the road's and stops exactly where it meets the
+ * road's own two lines, open across the way in.
+ */
+export function turningCircleMaterial(
+  palette: { road: string; line: string },
+  circle: {
+    x: number;
+    z: number;
+    ring: number;
+    back: { x: number; z: number };
+    lineOffset: number;
+    lineHalf: number;
+  },
+): MeshStandardMaterial {
+  const material = new MeshStandardMaterial({ color: '#ffffff', roughness: 0.9, metalness: 0 });
+  return patchStandard(material, {
+    key: 'continua-turning-circle-v1',
+    uniforms: {
+      uRoad: { value: new Color(palette.road) },
+      uLine: { value: new Color(palette.line) },
+      uCircle: { value: [circle.x, circle.z, circle.ring, circle.lineHalf] },
+      uBack: { value: [circle.back.x, circle.back.z] },
+      uLineOffset: { value: circle.lineOffset },
+    },
+    colour: /* glsl */ `
+      vec2 p = vCtWorld.xz;
+      float fade = 1.0 - smoothstep(80.0, 260.0, vCtDist);
+      vec3 asphalt = uRoad * (0.92 + 0.12 * ctFbm(p * 0.25));
+      asphalt *= 0.96 + 0.08 * ctNoise(p * 3.1) * fade;
+      vec2 d = p - uCircle.xy;
+      float r = length(d);
+      float aa = fwidth(r) * 1.2;
+      float ring = 1.0 - smoothstep(uCircle.w - aa, uCircle.w + aa, abs(r - uCircle.z));
+      // Open across the way in, between the road's two lines.
+      float along = dot(d, uBack);
+      float across = abs(dot(d, vec2(-uBack.y, uBack.x)));
+      float inside = step(0.0, along) * (1.0 - smoothstep(uLineOffset - uCircle.w - aa, uLineOffset - uCircle.w + aa, across));
+      diffuseColor.rgb *= mix(asphalt, uLine, ring * (1.0 - inside) * 0.92);
     `,
   });
 }

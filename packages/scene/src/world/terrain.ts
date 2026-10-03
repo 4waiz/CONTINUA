@@ -13,12 +13,15 @@
  *
  * The route corridor is flattened toward the route's own smoothed elevation.
  * That is what makes the road sit *on* the terrain instead of being a decal
- * hovering over it.
+ * hovering over it. The forecourt where the road ends (terminus.ts) is
+ * levelled to the road's end the same way - out past its edge by more than a
+ * cell of the ground mesh, so no triangle of a hillside pokes through it.
  */
 
 import { clamp, fbm2, lerp, smoothstep } from '../math/noise';
 import { PADS, type Pad } from './layout';
 import { route, type Route } from './route';
+import { forecourtDistance } from './terminus';
 
 export const TERRAIN = {
   /** World bounds of the ground plane, metres. West reaches the city skyline. */
@@ -32,6 +35,9 @@ export const TERRAIN = {
   /** Corridor half-widths for flattening the route. */
   flatInner: 7.5,
   flatOuter: 20,
+  /** Levelling round the forecourt where the road ends: flat, then eased out. */
+  forecourtFlat: 9,
+  forecourtBlend: 24,
 } as const;
 
 /** The water's surface, metres. */
@@ -131,6 +137,8 @@ export class Terrain {
   private readonly routeRef: Route;
   /** Smoothed elevation of the route itself, indexed by sample. */
   private readonly routeElevation: Float32Array;
+  /** The road's elevation where it ends: the forecourt's level. */
+  private readonly endElevation: number;
 
   constructor(routeRef: Route = route) {
     this.routeRef = routeRef;
@@ -152,6 +160,7 @@ export class Terrain {
       smoothed[i] = sum / count;
     }
     this.routeElevation = smoothed;
+    this.endElevation = this.elevationAtDistance(routeRef.length);
   }
 
   /** Elevation of the route surface at an arc-length distance. */
@@ -177,14 +186,21 @@ export class Terrain {
 
   /** Ground height at any world XZ. This is the authority. */
   height(x: number, z: number): number {
-    const base = baseHeight(x, z);
+    let height = baseHeight(x, z);
     const { distSq, along } = this.routeRef.projectOnRoute(x, z);
     const distance = Math.sqrt(distSq);
-    if (distance > TERRAIN.flatOuter) return base;
-    const roadY = this.elevationAtDistance(along);
-    // 1 on the road, easing out to the natural surface at flatOuter.
-    const blend = 1 - smoothstep(TERRAIN.flatInner, TERRAIN.flatOuter, distance);
-    return lerp(base, roadY, blend);
+    if (distance < TERRAIN.flatOuter) {
+      const roadY = this.elevationAtDistance(along);
+      // 1 on the road, easing out to the natural surface at flatOuter.
+      const blend = 1 - smoothstep(TERRAIN.flatInner, TERRAIN.flatOuter, distance);
+      height = lerp(height, roadY, blend);
+    }
+    const fromForecourt = forecourtDistance(x, z);
+    if (fromForecourt < TERRAIN.forecourtBlend) {
+      const level = 1 - smoothstep(TERRAIN.forecourtFlat, TERRAIN.forecourtBlend, fromForecourt);
+      height = lerp(height, this.endElevation, level);
+    }
+    return height;
   }
 
   /** The surface a camera must stay above: the ground, or the sea over it. */

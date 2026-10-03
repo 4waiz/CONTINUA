@@ -27,7 +27,8 @@ import { buildRouteRibbon, ROAD_HALF_WIDTH, ROAD_SURFACE_OFFSET } from '../world
 import { CAMPUS, PADS, SERVICE_ROADS, type ServiceRoad } from '../world/layout';
 import { SEA_LEVEL, TERRAIN, terrain } from '../world/terrain';
 import { route } from '../world/route';
-import { concreteMaterial, patchStandard, roadMaterial, terrainMaterial } from './shaders';
+import { EDGE_LINES_END, FORECOURT, RING, ROAD_LINE, TURNING_CIRCLE } from '../world/terminus';
+import { concreteMaterial, patchStandard, roadMaterial, terrainMaterial, turningCircleMaterial } from './shaders';
 
 function buildTerrainGeometry(segmentsX: number, segmentsZ: number): BufferGeometry {
   const { minX, maxX, minZ, maxZ } = TERRAIN;
@@ -136,6 +137,63 @@ function buildPadGeometry(pads: typeof PADS): BufferGeometry {
   return geometry;
 }
 
+/**
+ * A flat shape laid on the terrain: a capsule - every point within `radius`
+ * of the segment a-b, a disc when a = b - meshed as rings from its middle to
+ * its edge so it follows the ground.
+ */
+function buildDrapedCapsule(
+  a: { x: number; z: number },
+  b: { x: number; z: number },
+  radius: number,
+  yOffset: number,
+): BufferGeometry {
+  const heading = Math.atan2(b.z - a.z, b.x - a.x);
+  const outline: [number, number][] = [];
+  const arc = 28;
+  for (const [centre, from] of [[b, heading - Math.PI / 2], [a, heading + Math.PI / 2]] as const) {
+    for (let i = 0; i <= arc; i += 1) {
+      const angle = from + (Math.PI * i) / arc;
+      outline.push([centre.x + radius * Math.cos(angle), centre.z + radius * Math.sin(angle)]);
+    }
+  }
+  const middle = { x: (a.x + b.x) / 2, z: (a.z + b.z) / 2 };
+  const rings = 14;
+  const positions: number[] = [];
+  const uvs: number[] = [];
+  const vertex = (x: number, z: number) => {
+    positions.push(x, terrain.height(x, z) + yOffset, z);
+    uvs.push(0.5, 0.5);
+  };
+  vertex(middle.x, middle.z);
+  for (let k = 1; k <= rings; k += 1) {
+    const f = k / rings;
+    for (const [x, z] of outline) vertex(middle.x + (x - middle.x) * f, middle.z + (z - middle.z) * f);
+  }
+  const count = outline.length;
+  const at = (k: number, j: number) => 1 + (k - 1) * count + (j % count);
+  const indices: number[] = [];
+  for (let j = 0; j < count; j += 1) {
+    indices.push(0, at(1, j + 1), at(1, j));
+    for (let k = 1; k < rings; k += 1) {
+      indices.push(at(k, j), at(k, j + 1), at(k + 1, j), at(k + 1, j), at(k, j + 1), at(k + 1, j + 1));
+    }
+  }
+  const geometry = new BufferGeometry();
+  geometry.setAttribute('position', new Float32BufferAttribute(positions, 3));
+  geometry.setAttribute('uv', new Float32BufferAttribute(uvs, 2));
+  geometry.setIndex(indices);
+  geometry.computeVertexNormals();
+  // The faces must look up; turn them over if the outline ran the other way.
+  if ((geometry.getAttribute('normal').getY(0) ?? 1) < 0) {
+    for (let i = 0; i < indices.length; i += 3) [indices[i + 1], indices[i + 2]] = [indices[i + 2]!, indices[i + 1]!];
+    geometry.setIndex(indices);
+    geometry.computeVertexNormals();
+  }
+  geometry.computeBoundingSphere();
+  return geometry;
+}
+
 function gravelMaterial(colour: string): MeshStandardMaterial {
   const material = new MeshStandardMaterial({ color: '#ffffff', roughness: 0.97, metalness: 0 });
   return patchStandard(material, {
@@ -159,21 +217,18 @@ export function Ground({ quality }: { quality: 'high' | 'balanced' | 'low' }) {
     [detail],
   );
 
-  const road = useMemo(() => buildRouteRibbon(), []);
+  // The carriageway runs into the turning circle and stops where its edge
+  // lines meet the circle's: the circle carries on from there.
+  const road = useMemo(() => buildRouteRibbon({ to: EDGE_LINES_END }), []);
   const shoulder = useMemo(
     () => buildRouteRibbon({ halfWidth: ROAD_HALF_WIDTH + 1.6, yOffset: ROAD_SURFACE_OFFSET - 0.03 }),
     [],
   );
-  // A turnaround pad at the ground station, so the carriageway ends at a
-  // destination instead of stopping dead in open ground.
-  const terminus = useMemo(
-    () =>
-      buildRouteRibbon({
-        halfWidth: 13,
-        yOffset: ROAD_SURFACE_OFFSET - 0.02,
-        from: Math.max(0, route.length - 46),
-        to: route.length,
-      }),
+  // Where the road ends (world/terminus.ts): it opens into a turning circle,
+  // set in a concrete forecourt that reaches back to the ground station.
+  const forecourt = useMemo(() => buildDrapedCapsule(FORECOURT.a, FORECOURT.b, FORECOURT.radius, 0.035), []);
+  const turningCircle = useMemo(
+    () => buildDrapedCapsule(TURNING_CIRCLE, TURNING_CIRCLE, TURNING_CIRCLE.radius, 0.05),
     [],
   );
   const serviceRoads = useMemo(() => SERVICE_ROADS.map((entry) => buildPathRibbon(entry, 0.045)), []);
@@ -184,7 +239,18 @@ export function Ground({ quality }: { quality: 'high' | 'balanced' | 'low' }) {
     const set = {
       road: roadMaterial(
         { road: SCENE_COLOR.road, line: SCENE_COLOR.roadLine, centre: SCENE_COLOR.roadLine },
-        { centreLine: true, key: 'continua-road-main-v1' },
+        { centreLine: true, key: 'continua-road-main-v2', linesEnd: EDGE_LINES_END },
+      ),
+      turning: turningCircleMaterial(
+        { road: SCENE_COLOR.road, line: SCENE_COLOR.roadLine },
+        {
+          x: TURNING_CIRCLE.x,
+          z: TURNING_CIRCLE.z,
+          ring: RING,
+          back: TURNING_CIRCLE.back,
+          lineOffset: ROAD_LINE.offset,
+          lineHalf: ROAD_LINE.half,
+        },
       ),
       serviceRoad: roadMaterial(
         { road: SCENE_COLOR.road, line: SCENE_COLOR.roadLine, centre: SCENE_COLOR.roadLine },
@@ -205,6 +271,7 @@ export function Ground({ quality }: { quality: 'high' | 'balanced' | 'low' }) {
     offset(set.concrete, -2);
     offset(set.apron, -2);
     offset(set.serviceRoad, -3);
+    offset(set.turning, -3);
     offset(set.road, -4);
     return set;
   }, []);
@@ -242,7 +309,8 @@ export function Ground({ quality }: { quality: 'high' | 'balanced' | 'low' }) {
 
       <mesh geometry={concretePads} material={materials.concrete} receiveShadow />
       <mesh geometry={asphaltPads} material={materials.serviceRoad} receiveShadow />
-      <mesh geometry={terminus} material={materials.apron} receiveShadow />
+      <mesh geometry={forecourt} material={materials.apron} receiveShadow />
+      <mesh geometry={turningCircle} material={materials.turning} receiveShadow />
       <mesh geometry={shoulder} material={materials.shoulder} receiveShadow />
       {serviceRoads.map((geometry, index) => (
         <mesh key={index} geometry={geometry} material={materials.serviceRoad} receiveShadow />

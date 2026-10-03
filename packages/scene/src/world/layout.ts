@@ -17,6 +17,7 @@
 
 import { makeRandom } from '../math/noise';
 import { route } from './route';
+import { onForecourt } from './terminus';
 
 export interface Placement {
   readonly x: number;
@@ -419,6 +420,14 @@ function buildLayout(): Record<string, Placement[]> {
     const kind = random();
     const prop = kind < 0.72 ? 'PROP_Ghaf' : kind < 0.88 ? 'PROP_FlameTree' : 'PROP_Jacaranda';
     add(prop, { x, z, yaw: random() * 6.28, scale: 0.8 + random() * 0.5 });
+  }
+
+  // Nothing grows on the forecourt where the road ends (terminus.ts). Taken
+  // out after the fact, so every other placement - and the seeded sequence
+  // that made them - is as it was.
+  for (const [prop, list] of Object.entries(out)) {
+    if (!/^PROP_(Rock|Shrub|Ghaf|FlameTree|Jacaranda|Palm|FlowerBush|FlowerBed)/.test(prop)) continue;
+    out[prop] = list.filter((item) => !onForecourt(item.x, item.z, 2.5));
   }
 
   return out;
