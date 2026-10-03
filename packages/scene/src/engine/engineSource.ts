@@ -181,6 +181,21 @@ export class EngineSceneStateSource implements SceneStateSource {
     return low;
   }
 
+  /**
+   * The engine event in force at `t`: the last one at or before it, verbatim.
+   * Pure, like `sampleAt` - a second run shown beside the first is read at
+   * the scene's own time, never at "whatever arrived last".
+   */
+  eventAt(t: Seconds): EngineEvent | null {
+    const index = this.indexAt(t);
+    return index < 0 ? null : this.events[index]!;
+  }
+
+  /** Every buffered event, oldest first (a read-only view, not a copy). */
+  get timeline(): readonly EngineEvent[] {
+    return this.events;
+  }
+
   sampleAt(simTime: Seconds): SceneState {
     const t = clamp(simTime, 0, this.duration);
     const index = this.indexAt(t);

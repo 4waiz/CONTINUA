@@ -140,6 +140,16 @@ export const SITES: readonly SiteMarker[] = [
   },
 ];
 
+/**
+ * Where the satellite is: due south (world -Z), 45 degrees up - the side of
+ * the sky a geostationary satellite holds, the same side as the noon sun. The
+ * ground station's dish is built pointing here (`world_remote.py`,
+ * `DISH_AZIMUTH`), and a link the satellite carries is drawn rising along it
+ * from the rover and from the dish alike. A direction only: the satellite
+ * itself is 36,000 km away.
+ */
+export const SATELLITE_SKY = { x: 0, y: Math.SQRT1_2, z: -Math.SQRT1_2 } as const;
+
 /** Wi-Fi and cellular emitters, derived from the sites above. */
 const WIFI_SITES = SITES.filter((site) => site.network === 'wifi');
 const CELL_SITES = SITES.filter((site) => site.network === 'cellular');

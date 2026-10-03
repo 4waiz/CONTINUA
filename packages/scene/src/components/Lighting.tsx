@@ -77,20 +77,30 @@ const SKY_FRAGMENT = /* glsl */ `
     sky += uSun * (pow(sunDot, 6.0) * 0.14 + pow(sunDot, 64.0) * 0.22 + pow(sunDot, 900.0) * 1.2);
     // Fair-weather cumulus on a high deck: white where the sun reaches them,
     // softly blue-grey underneath, thinning out toward the horizon haze.
+    // The low tier draws the sky without clouds: every pixel of it is shaded
+    // on a software rasteriser, and the cloud noise was a third of a frame.
+    #ifndef CT_LITE
     if (dir.y > 0.0) {
       vec2 q = dir.xz / (dir.y + 0.06) * 2.2;
       vec2 drift = vec2(3.0, 1.0);
-      float d = fbm(q * 0.9 + drift);
-      float cover = smoothstep(0.44, 0.64, d) * smoothstep(0.02, 0.16, dir.y);
-      #ifdef CT_LITE
-        float shade = 0.45;
-      #else
-        float toward = fbm(q * 0.9 + drift + uSunDir.xz * 0.08);
-        float shade = clamp((d - toward) * 5.0 + 0.45, 0.0, 1.0);
-      #endif
-      vec3 cloud = mix(vec3(1.0, 0.995, 0.985), vec3(0.74, 0.80, 0.89), shade * 0.75);
-      sky = mix(sky, cloud, cover * 0.94);
+      // Heaped, not smeared: the shape is domain-warped, and a billow layer
+      // gives the thin edges their rounded, cauliflower outline.
+      vec2 warp = vec2(n2(q * 0.32 + 5.1), n2(q * 0.32 + 9.7)) - 0.5;
+      vec2 p = q * 0.9 + drift + warp * 0.85;
+      float d = fbm(p);
+      float billow = 1.0 - abs(2.0 * n2(q * 3.4 + drift * 1.7) - 1.0);
+      d += (billow - 0.5) * 0.085;
+      float cover = smoothstep(0.47, 0.59, d) * smoothstep(0.02, 0.16, dir.y);
+      // Lit on the sun's side, shadowed on the far side and under thick cores.
+      float toward = fbm(p + uSunDir.xz * 0.08);
+      float shade = clamp((d - toward) * 5.0 + 0.42, 0.0, 1.0);
+      float core = smoothstep(0.58, 0.78, d);
+      vec3 cloud = mix(vec3(1.0, 0.995, 0.985), vec3(0.72, 0.78, 0.88), clamp(shade * 0.7 + core * 0.38, 0.0, 1.0));
+      // A silver lining where a thin edge stands near the sun.
+      cloud += uSun * pow(sunDot, 10.0) * (1.0 - core) * 0.35;
+      sky = mix(sky, cloud, cover * 0.95);
     }
+    #endif
     gl_FragColor = vec4(sky, 1.0);
     #include <colorspace_fragment>
   }

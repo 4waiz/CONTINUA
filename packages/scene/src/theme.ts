@@ -34,15 +34,15 @@ export const SCENE_COLOR = {
   fog: '#D3E5F5',
   sun: '#FFF2DC',
   /** Campus lawn: mown, brighter and more even than the open meadow. */
-  campus: '#76A74B',
-  grass: '#79A24C',
-  grassLush: '#557F39',
+  campus: '#7A9C55',
+  grass: '#7C9A50',
+  grassLush: '#54763C',
   grassDry: '#B9B76C',
   heath: '#8C8D5E',
   beach: '#EEE3C6',
   rockTint: '#8D958C',
   /** Ground colour for bounce light and the environment's lower half. */
-  groundBounce: '#86A862',
+  groundBounce: '#8AA468',
   flowerA: '#F2C230',
   flowerB: '#F4F1EA',
   flowerC: '#C46BD8',
@@ -57,11 +57,19 @@ export const SCENE_COLOR = {
   roadCentre: '#F2C14E',
   apron: '#C6CBD1',
   grid: '#7C93B6',
-  /** Horizon ranges: green, rocky crests near; blue-grey far; the haze does the rest. */
-  mountainFoot: '#4E8A44',
-  mountainRock: '#8C9690',
-  mountainFar: '#6F9C8C',
-  mountainFarRock: '#9FB0BB',
+  /**
+   * Horizon ranges: lush island mountains - forest, darker in the gullies,
+   * lit on the ribs, rock on the cliffs - near; blue-green far; the haze does
+   * the rest.
+   */
+  mountainLush: '#3D7340',
+  mountainShade: '#1F4630',
+  mountainCrest: '#7DA35A',
+  mountainRock: '#7E776B',
+  mountainFar: '#5E8C74',
+  mountainFarShade: '#46705F',
+  mountainFarCrest: '#83A985',
+  mountainFarRock: '#93A0A4',
 } as const;
 
 export const NETWORK_COLOR = {

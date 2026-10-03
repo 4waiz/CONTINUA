@@ -40,6 +40,7 @@ import continua_geo as geo  # noqa: E402
 import continua_lib as lib  # noqa: E402
 import world_campus  # noqa: E402
 import world_coast  # noqa: E402
+import world_foliage  # noqa: E402
 import world_industry  # noqa: E402
 import world_remote  # noqa: E402
 
@@ -70,7 +71,7 @@ AO_DISTANCE = {
 
 
 def build_library() -> list[bpy.types.Object]:
-    materials = arch.world_materials()
+    materials = world_foliage.add_materials(arch.world_materials())
     props: list[bpy.types.Object] = []
     props += world_campus.build_all(materials)
     props += world_industry.build_all(materials)
@@ -117,7 +118,8 @@ def export(props: list[bpy.types.Object], path: str) -> None:
     kwargs = {
         "filepath": path, "export_format": "GLB", "use_selection": True, "export_apply": True,
         "export_yup": True, "export_materials": "EXPORT", "export_normals": True,
-        "export_texcoords": False, "export_tangents": False, "export_cameras": False,
+        # Texture coordinates: only the foliage cards carry a UV map.
+        "export_texcoords": True, "export_tangents": False, "export_cameras": False,
         "export_lights": False, "export_extras": True, "export_animations": False,
         "export_vertex_color": "ACTIVE", "export_all_vertex_colors": False,
         # Draco: about a quarter of the size. Quantisation is far below what
@@ -145,6 +147,7 @@ def main() -> None:
     props = build_library()
     if "--no-bake" not in argv:
         bake(props, samples)
+    world_foliage.vary_cards(props)
     report(props)
 
     # Export while every prop is still at the origin: the runtime instances the

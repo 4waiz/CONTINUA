@@ -357,7 +357,7 @@ export function ContinuaScene({
 
   const dpr = useMemo<number | [number, number]>(() => {
     // A software rasteriser pays for every pixel on the CPU.
-    if (software) return 0.6;
+    if (software) return 0.5;
     if (settings.quality === 'low') return 0.75;
     if (settings.quality === 'balanced') return [0.9, Math.min(1.5, pixelRatioCap)];
     return [1, pixelRatioCap];

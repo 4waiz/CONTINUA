@@ -202,7 +202,7 @@ Each is pre-warmed 55 m ahead, which is what the dashed beam and the
 * **Software rasterisers start low.** A throwaway context is asked for its
   renderer before the scene's canvas is created. SwiftShader, llvmpipe,
   softpipe and the Microsoft Basic Render Driver get a canvas without MSAA (it
-  can only be chosen at creation) at a 0.6 pixel ratio, and the `low` tier.
+  can only be chosen at creation) at a 0.5 pixel ratio (0.6 before Phase 9), and the `low` tier.
 * **One canvas, kept.** Page switches move the shared canvas between pages
   (§2b): no new WebGL context, no model re-upload, no environment re-capture,
   no loader after the first visit.
@@ -212,8 +212,13 @@ Each is pre-warmed 55 m ahead, which is what the dashed beam and the
   render and would release a hold set any other way.
 * **The rover camera is cheap.** The Mission camera tile is the scene rendered
   from the sensor crown into a 480×270 target, at most 15 times a second (3 on
-  the low tier), reusing the main view's shadow map, read back asynchronously
-  (`readRenderTargetPixelsAsync`), and only while the tile is open on a run.
+  the low tier), reusing the main view's shadow map, and only while the tile is
+  open on a run. The picture never comes back to the CPU: it is tone-mapped
+  into a corner of the canvas's own drawing buffer (which the main view
+  overwrites later that frame), snapshotted with `createImageBitmap`, and
+  handed to the tile's `bitmaprenderer` canvas. Reading it back with
+  `readRenderTargetPixelsAsync` stalled Chromium's main thread on D3D11 until
+  the GPU drained - 13-38 ms frames, fifteen times a second.
 * **No per-frame React.** See §2c.
 
 ## 7. Testing

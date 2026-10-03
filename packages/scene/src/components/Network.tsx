@@ -9,6 +9,13 @@
  *   ACTIVE LINK - one bright beam from the rover's roof to the serving site.
  *   WARMING LINK - the same beam, faint, for a link being pre-established.
  *
+ * A satellite link serves from the sky, not from a site on the ground: its
+ * beam rises from the rover's roof toward the satellite (`SATELLITE_SKY`, due
+ * south and 45 degrees up), and a second rises from the ground station's dish
+ * - the gateway end of the same link - toward the same point. Both fade into
+ * the sky, and while the satellite carries or warms, a small mark sits where
+ * they point.
+ *
  * There is never a chain from wired to Wi-Fi to cellular to satellite: they are
  * alternative links to one gateway, and at most one carries the session.
  * Wired is drawn only while the rover is actually tethered at the dock.
@@ -32,12 +39,19 @@ import {
 import type { AccessNetworkId } from '@continua/contracts';
 import { NETWORK_COLOR } from '../theme';
 import { useSceneRuntime } from '../runtime/SceneRuntime';
-import { coverageAt, SITES } from '../world/sites';
+import { coverageAt, SATELLITE_SKY, SITES } from '../world/sites';
 import { terrain } from '../world/terrain';
 
 const BEAM_SEGMENTS = 32;
 /** Where the beam attaches on the rover: the roof sensor mast. */
 const ROVER_ANTENNA = new Vector3(-0.6, 2.25, 0);
+/** Toward the satellite, and how far a beam is drawn along it before it fades. */
+const SKY = new Vector3(SATELLITE_SKY.x, SATELLITE_SKY.y, SATELLITE_SKY.z).normalize();
+const SKY_BEAM_M = 520;
+/** The ground station whose dish is the satellite link's gateway end. */
+const GATEWAY = SITES.find((site) => site.network === 'satellite') ?? null;
+/** The dish's feed horn sits this far out along its axis, which is SKY. */
+const GATEWAY_FEED_M = 2.5;
 
 // ---------------------------------------------------------------------------
 // Coverage footprints
@@ -236,9 +250,12 @@ function placePing(
 function Beam({
   network,
   role,
+  anchor = 'rover',
 }: {
   network: AccessNetworkId;
   role: 'active' | 'warming';
+  /** Which end the beam is drawn from: the rover, or (satellite only) the ground station's dish. */
+  anchor?: 'rover' | 'gateway';
 }) {
   const { frame, clock } = useSceneRuntime();
   const camera = useThree((state) => state.camera);
@@ -297,30 +314,47 @@ function Beam({
     // Wired only exists while physically tethered - its ghost included.
     if (network === 'wired' && !status.tethered) return hide();
     if (!carrying && !ghost) return hide();
-    const site = siteForNetwork(network, state.vehicle.position.x, state.vehicle.position.z);
-    if (!site) return hide();
+    const sky = network === 'satellite';
+    const gateway = anchor === 'gateway';
+    if (gateway && !GATEWAY) return hide();
+    const site = sky ? null : siteForNetwork(network, state.vehicle.position.x, state.vehicle.position.z);
+    if (!sky && !site) return hide();
     line.visible = true;
 
-    const heading = state.vehicle.heading;
-    const cos = Math.cos(heading);
-    const sin = Math.sin(heading);
-    from.set(
-      state.vehicle.position.x + ROVER_ANTENNA.x * cos - ROVER_ANTENNA.z * sin,
-      state.vehicle.position.y + ROVER_ANTENNA.y,
-      state.vehicle.position.z - ROVER_ANTENNA.x * sin - ROVER_ANTENNA.z * cos,
-    );
-    const ax = site.x + (site.linkOffset?.[0] ?? 0);
-    const az = site.z + (site.linkOffset?.[1] ?? 0);
-    to.set(ax, terrain.height(ax, az) + (site.linkHeight ?? 3), az);
+    if (gateway && GATEWAY) {
+      from
+        .set(GATEWAY.x, terrain.height(GATEWAY.x, GATEWAY.z) + (GATEWAY.linkHeight ?? 4.4), GATEWAY.z)
+        .addScaledVector(SKY, GATEWAY_FEED_M);
+    } else {
+      const heading = state.vehicle.heading;
+      const cos = Math.cos(heading);
+      const sin = Math.sin(heading);
+      from.set(
+        state.vehicle.position.x + ROVER_ANTENNA.x * cos - ROVER_ANTENNA.z * sin,
+        state.vehicle.position.y + ROVER_ANTENNA.y,
+        state.vehicle.position.z - ROVER_ANTENNA.x * sin - ROVER_ANTENNA.z * cos,
+      );
+    }
+    if (sky) {
+      // Straight up toward the satellite, fading into the sky.
+      to.copy(from).addScaledVector(SKY, SKY_BEAM_M);
+    } else if (site) {
+      const ax = site.x + (site.linkOffset?.[0] ?? 0);
+      const az = site.z + (site.linkOffset?.[1] ?? 0);
+      to.set(ax, terrain.height(ax, az) + (site.linkHeight ?? 3), az);
+    }
 
     const span = from.distanceTo(to);
-    const sag = network === 'wired' ? -Math.min(0.6, span * 0.12) : Math.min(14, span * 0.11);
+    const sag = sky ? 0 : network === 'wired' ? -Math.min(0.6, span * 0.12) : Math.min(14, span * 0.11);
 
     // How much of the carrying beam has reached the rover since it took over.
     const age = role === 'active' && carrying && handoff && handoff.to === network ? now - handoff.at : Infinity;
     const reach = role === 'active' && carrying ? easeOutCubic(age / DRAW_S) : 1;
-    const t0 = 1 - reach;
-    writeArcRange(points, from, to, sag, t0, 1, scratch);
+    // A link reaches the rover from its serving end; the gateway's beam
+    // reaches up from the dish.
+    const t0 = gateway ? 0 : 1 - reach;
+    const t1 = gateway ? reach : 1;
+    writeArcRange(points, from, to, sag, t0, t1, scratch);
     line.geometry.setPositions(points);
     line.computeLineDistances();
 
@@ -357,7 +391,7 @@ function Beam({
       const drawing = role === 'active' && carrying && reach < 1;
       head.visible = drawing;
       if (drawing) {
-        arcPoint(from, to, sag, t0, scratch);
+        arcPoint(from, to, sag, gateway ? t1 : t0, scratch);
         head.position.copy(scratch);
         head.scale.setScalar(HEAD_PX * perPixel * scratch.distanceTo(camera.position));
       }
@@ -365,8 +399,9 @@ function Beam({
 
     if (role === 'active') {
       // Site: a burst when it takes the session, then a slow ping while it carries.
+      // (A sky beam has no site at its far end; the satellite mark stands in.)
       const sinceTake = Number.isFinite(age) ? age : Infinity;
-      if (ghost) {
+      if (ghost || sky) {
         placePing(sitePingRef.current, to, camera, perPixel, 0, 0);
       } else if (sinceTake < BURST_S) {
         const p = sinceTake / BURST_S;
@@ -378,7 +413,7 @@ function Beam({
       }
       // Rover: one burst the moment the link arrives.
       const sinceArrival = sinceTake - DRAW_S;
-      if (!ghost && sinceArrival >= 0 && sinceArrival < BURST_S) {
+      if (!ghost && !gateway && sinceArrival >= 0 && sinceArrival < BURST_S) {
         const p = sinceArrival / BURST_S;
         placePing(roverPingRef.current, from, camera, perPixel, 8 + 40 * easeOutCubic(p), 0.9 * Math.pow(1 - p, 1.4));
       } else {
@@ -391,13 +426,17 @@ function Beam({
     if (packets && showPackets) {
       packets.visible = carrying && !ghost;
       if (packets.visible) {
-        const phase = (now * PACKET_SPEED) / Math.max(span, 1);
+        // A sky beam is long: its packets run faster, so the stream still reads.
+        const phase = (now * PACKET_SPEED * (sky ? 4 : 1)) / Math.max(span, 1);
         for (let k = 0; k < PACKETS; k += 1) {
-          const t = 1 - ((((phase + k / PACKETS) % 1) + 1) % 1);
-          // A little smaller toward the site, so the stream reads as arriving
-          // at the rover; otherwise a constant size on screen.
+          // Down to the rover; on the gateway's beam, up from the dish.
+          const cycle = (((phase + k / PACKETS) % 1) + 1) % 1;
+          const t = gateway ? cycle : 1 - cycle;
+          // A little smaller toward the far end, so the stream reads as
+          // arriving at the rover; otherwise a constant size on screen.
           arcPoint(from, to, sag, t, scratch);
-          const size = t < t0 ? 0 : PACKET_PX * (0.6 + 0.4 * (1 - t)) * perPixel * scratch.distanceTo(camera.position);
+          const near = gateway ? t : 1 - t;
+          const size = t < t0 || t > t1 ? 0 : PACKET_PX * (0.6 + 0.4 * near) * perPixel * scratch.distanceTo(camera.position);
           matrix.makeScale(size, size, size).setPosition(scratch);
           packets.setMatrixAt(k, matrix);
         }
@@ -466,6 +505,55 @@ function Beam({
   );
 }
 
+/**
+ * Where the satellite link's beams point: a small mark in the sky, drawn at a
+ * fixed direction from the camera so it sits at their vanishing point, shown
+ * only while the satellite carries the session or is being warmed.
+ */
+function SatelliteMark() {
+  const { frame } = useSceneRuntime();
+  const camera = useThree((state) => state.camera);
+  const viewport = useThree((state) => state.size);
+  const ref = useRef<Mesh>(null);
+  const ringRef = useRef<Mesh>(null);
+  useFrame(() => {
+    const mark = ref.current;
+    const ring = ringRef.current;
+    if (!mark || !ring) return;
+    const state = frame.current;
+    const live =
+      (state.active === 'satellite' || state.warming.includes('satellite')) &&
+      state.links.satellite.state !== 'unavailable';
+    mark.visible = live;
+    ring.visible = live;
+    if (!live) return;
+    const distance = 1800;
+    const fov = camera instanceof PerspectiveCamera ? camera.fov : 50;
+    const perPixel = (2 * Math.tan((fov * Math.PI) / 360)) / Math.max(1, viewport.height);
+    mark.position.copy(camera.position).addScaledVector(SKY, distance);
+    mark.scale.setScalar(3.4 * perPixel * distance);
+    ring.position.copy(mark.position);
+    ring.quaternion.copy(camera.quaternion);
+    ring.scale.setScalar(8 * perPixel * distance);
+    const material = mark.material as MeshBasicMaterial;
+    material.opacity = state.active === 'satellite' ? 1 : 0.55;
+    (ring.material as MeshBasicMaterial).opacity = state.active === 'satellite' ? 0.6 : 0.3;
+  });
+  const colour = NETWORK_COLOR.satellite;
+  return (
+    <>
+      <mesh ref={ref} visible={false} renderOrder={8} frustumCulled={false}>
+        <sphereGeometry args={[1, 12, 8]} />
+        <meshBasicMaterial color={colour} toneMapped={false} transparent fog={false} />
+      </mesh>
+      <mesh ref={ringRef} visible={false} renderOrder={8} frustumCulled={false}>
+        <ringGeometry args={[0.78, 1, 40]} />
+        <meshBasicMaterial color={colour} toneMapped={false} transparent depthWrite={false} fog={false} />
+      </mesh>
+    </>
+  );
+}
+
 export function LinkBeams() {
   return (
     <group name="CONTINUA_Links">
@@ -475,6 +563,10 @@ export function LinkBeams() {
       {(['wifi', 'cellular', 'satellite'] as const).map((network) => (
         <Beam key={`warm-${network}`} network={network} role="warming" />
       ))}
+      {/* The satellite link's gateway end: from the ground station's dish. */}
+      <Beam key="active-satellite-gateway" network="satellite" role="active" anchor="gateway" />
+      <Beam key="warm-satellite-gateway" network="satellite" role="warming" anchor="gateway" />
+      <SatelliteMark />
     </group>
   );
 }

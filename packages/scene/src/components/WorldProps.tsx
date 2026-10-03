@@ -25,9 +25,11 @@ import {
   InstancedMesh,
   Matrix4,
   Mesh,
+  MeshLambertMaterial,
   MeshStandardMaterial,
   PlaneGeometry,
   Quaternion,
+  ShaderChunk,
   ShaderMaterial,
   UniformsLib,
   UniformsUtils,
@@ -86,17 +88,46 @@ function placementMatrix(item: Placement, target: Matrix4): Matrix4 {
   return target.compose(_position, _quaternion, _scale);
 }
 
+/**
+ * The low tier's leaf cards: Lambert instead of physically based shading,
+ * same texture, clip and vertex colours. A software rasteriser shades every
+ * fragment of every card before the alpha test throws most of them away, and
+ * the PBR model was most of that cost. Shared per source material, never
+ * disposed with a mesh - like the glTF's own.
+ */
+const LOW_CARD_MATERIALS = new WeakMap<Material, Material>();
+
+function lowTierMaterial(material: Material): Material {
+  if (!(material instanceof MeshStandardMaterial) || !material.name.includes('Card')) return material;
+  let low = LOW_CARD_MATERIALS.get(material);
+  if (!low) {
+    low = new MeshLambertMaterial({
+      name: `${material.name}_Low`,
+      map: material.map,
+      color: material.color,
+      vertexColors: material.vertexColors,
+      alphaTest: material.alphaTest,
+      side: material.side,
+    });
+    LOW_CARD_MATERIALS.set(material, low);
+  }
+  return low;
+}
+
 function InstancedPrimitive({
   primitive,
   placements,
   castShadow = true,
   count,
+  lite = false,
 }: {
   primitive: Primitive;
   placements: readonly Placement[];
   castShadow?: boolean;
   /** How many of the placements to draw (all by default). */
   count?: number;
+  /** The low tier: cheaper shading for foliage cards. */
+  lite?: boolean;
 }) {
   const ref = useRef<InstancedMesh>(null);
 
@@ -120,6 +151,8 @@ function InstancedPrimitive({
     <instancedMesh
       ref={ref}
       args={[primitive.geometry, primitive.material as Material, placements.length]}
+      // A tier change swaps the material on the mesh, never rebuilds the mesh.
+      material={lite ? lowTierMaterial(primitive.material as Material) : (primitive.material as Material)}
       castShadow={castShadow}
       receiveShadow
       frustumCulled
@@ -144,6 +177,43 @@ function tuneMaterial(material: Material): void {
     material.depthWrite = false;
   } else if (name.includes('Solar')) {
     material.envMapIntensity = 1.3;
+  } else if (name.includes('Card')) {
+    // Foliage cards (scripts/blender/world_foliage.py): alpha-clipped sprays of
+    // leaf, blossom or palm frond, double-sided. Their normals point out of
+    // each crown, so a card seen from behind must keep the normal it was
+    // given - flipped, as double-sided shading does, half of every crown lit
+    // as if it faced inward. (Alpha to coverage was tried for softer edges:
+    // in the multisampled post-processing target it dithered a light net
+    // across every crown, so the cards are plainly clipped.)
+    material.envMapIntensity = 0.55;
+    material.onBeforeCompile = (shader) => {
+      shader.fragmentShader = shader.fragmentShader
+        .replace(
+          '#include <normal_fragment_begin>',
+          ShaderChunk.normal_fragment_begin.replace(
+            'float faceDirection = gl_FrontFacing ? 1.0 : - 1.0;',
+            'float faceDirection = 1.0;',
+          ),
+        )
+        // Mipmaps average the leaves' alpha toward the gaps between them, so
+        // a clipped crown thins out with distance. Scale alpha back up by how
+        // far the texture is minified - in its least-minified direction, so a
+        // card seen edge-on (squeezed one way only) is not turned into a
+        // solid bright line - and far crowns stay full.
+        .replace(
+          '#include <alphatest_fragment>',
+          `#ifdef USE_MAP
+             {
+               vec2 ctTexel = vMapUv * 1024.0;
+               float ctMip = max(0.0, 0.5 * log2(min(dot(dFdx(ctTexel), dFdx(ctTexel)), dot(dFdy(ctTexel), dFdy(ctTexel)))));
+               diffuseColor.a *= 1.0 + ctMip * 0.28;
+             }
+           #endif
+           #include <alphatest_fragment>`,
+        );
+    };
+    material.customProgramCacheKey = () => 'continua-foliage-card-v3';
+    material.needsUpdate = true;
   } else {
     material.envMapIntensity = 0.75;
   }
@@ -640,25 +710,36 @@ function SiteMarkerRing({
 
 // ---------------------------------------------------------------------------
 
-/** Placement lists by prop node name: network sites first, then dressing. */
 /**
- * The trees carry most of the world's triangles; the low tier draws two in
- * five. Their placements are ordered keepers-first so the tier only changes
- * how many instances are drawn - never the instanced mesh itself, whose
- * rebuild would release the glTF's shared materials mid-compile.
+ * The planting carries most of the world's triangles and, on a software
+ * rasteriser, most of its pixels - every leaf card is shaded before it is
+ * clipped. The low tier draws this many in five of each: one tree, two of the
+ * scrub and flowering bushes. Placements are ordered keepers-first so the
+ * tier only changes how many instances are drawn - never the instanced mesh
+ * itself, whose rebuild would release the glTF's shared materials mid-compile.
  */
-const THINNED_ON_LOW = new Set(['PROP_Ghaf', 'PROP_FlameTree', 'PROP_Jacaranda']);
+const THINNED_ON_LOW: ReadonlyMap<string, number> = new Map([
+  ['PROP_Ghaf', 1],
+  ['PROP_FlameTree', 1],
+  ['PROP_Jacaranda', 1],
+  ['PROP_Shrub_A', 2],
+  ['PROP_Shrub_B', 2],
+  ['PROP_FlowerBush_Magenta', 2],
+  ['PROP_FlowerBush_Coral', 2],
+  ['PROP_FlowerBush_Yellow', 2],
+  ['PROP_FlowerBush_White', 2],
+]);
 
-function keepersFirst(list: readonly Placement[]): { ordered: Placement[]; keep: number } {
-  const keep = list.filter((_, index) => index % 5 < 2);
-  const rest = list.filter((_, index) => index % 5 >= 2);
-  return { ordered: [...keep, ...rest], keep: keep.length };
+function keepersFirst(list: readonly Placement[], keep: number): Placement[] {
+  return [...list.filter((_, index) => index % 5 < keep), ...list.filter((_, index) => index % 5 >= keep)];
 }
 
-/** How many of `n` placements `keepersFirst` keeps: those with index % 5 < 2. */
-function keeperCount(n: number): number {
-  return Math.floor(n / 5) * 2 + Math.min(n % 5, 2);
+/** How many of `n` placements `keepersFirst` keeps: those with index % 5 < keep. */
+function keeperCount(n: number, keep: number): number {
+  return Math.floor(n / 5) * keep + Math.min(n % 5, keep);
 }
+
+/** Placement lists by prop node name: network sites first, then dressing. */
 
 function allPlacements(): Map<string, Placement[]> {
   const byProp = new Map<string, Placement[]>();
@@ -673,7 +754,8 @@ function allPlacements(): Map<string, Placement[]> {
     // jetty stand at sea.
     const afloat = prop === TURBINE.tower || prop === TURBINE.rotor || prop === 'PROP_Jetty';
     const kept = afloat ? [...placements] : placements.filter((item) => terrain.height(item.x, item.z) > SEA_LEVEL + 0.25);
-    list.push(...(THINNED_ON_LOW.has(prop) ? keepersFirst(kept).ordered : kept));
+    const keep = THINNED_ON_LOW.get(prop);
+    list.push(...(keep ? keepersFirst(kept, keep) : kept));
     byProp.set(prop, list);
   }
   return byProp;
@@ -738,7 +820,8 @@ export function WorldProps({
             primitive={primitive}
             placements={entry.placements}
             castShadow={!NO_SHADOW.has(entry.name)}
-            count={lite && THINNED_ON_LOW.has(entry.name) ? keeperCount(entry.placements.length) : undefined}
+            count={lite && THINNED_ON_LOW.has(entry.name) ? keeperCount(entry.placements.length, THINNED_ON_LOW.get(entry.name)!) : undefined}
+            lite={lite}
           />
         )),
       )}

@@ -5,9 +5,13 @@
  *
  * Renders the scene from the camera windows across the front of the sensor
  * crown into a small off-screen target, tone-maps it exactly as the main view
- * is (three's output pass: the same Neutral curve, exposure and sRGB encoding),
- * reads it back without stalling the GPU, and hands the pixels to whoever
- * registered a sink.
+ * is (three's output pass: the same Neutral curve, exposure and sRGB encoding)
+ * into a corner of the canvas's own drawing buffer - which the main view
+ * overwrites later in the same frame - and hands that corner to whoever
+ * registered a sink as an ImageBitmap. The picture never leaves the GPU: an
+ * earlier version read it back to the CPU, and on Chromium / D3D11 each
+ * readback stalled the main thread until the GPU drained - frames of 13 to
+ * 38 ms, fifteen times a second, once the island's woods were planted.
  *
  * It is a picture of the simulated world, never transported video - the tile
  * says so - and it moves only while the video stream it stands for does: each
@@ -24,7 +28,7 @@
 import type { QualityTier } from '@continua/contracts';
 import { useFrame, useThree } from '@react-three/fiber';
 import { useEffect, useMemo, useRef } from 'react';
-import { HalfFloatType, Object3D, PerspectiveCamera, Vector3, WebGLRenderTarget } from 'three';
+import { HalfFloatType, Object3D, PerspectiveCamera, Vector3, Vector4, WebGLRenderTarget } from 'three';
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 import { useSceneRuntime } from '../runtime/SceneRuntime';
 import { ROAD_SURFACE_OFFSET } from '../world/road';
@@ -34,7 +38,8 @@ export const ROVER_CAM_HEIGHT = 270;
 /** How long one report of a newly delivered frame keeps the picture moving. */
 const LEASE_MS = 400;
 
-type Sink = (pixels: Uint8Array, width: number, height: number) => void;
+/** Receives each new picture; it owns the bitmap (transfer or close it). */
+type Sink = (picture: ImageBitmap) => void;
 
 let sink: Sink | null = null;
 let stalled = false;
@@ -70,14 +75,14 @@ export function RoverCam({ quality }: { quality: QualityTier }) {
   const parts = useMemo(
     () => ({
       camera: new PerspectiveCamera(46, ROVER_CAM_WIDTH / ROVER_CAM_HEIGHT, 0.1, 2600),
-      // Linear and multisampled, like the main view's composer target...
+      // Linear and multisampled, like the main view's composer target, then
+      // tone-mapped and sRGB-encoded onto the canvas by the output pass.
       linear: new WebGLRenderTarget(ROVER_CAM_WIDTH, ROVER_CAM_HEIGHT, { type: HalfFloatType, samples: 4 }),
-      // ...then tone-mapped and sRGB-encoded into plain bytes to read back.
-      output: new WebGLRenderTarget(ROVER_CAM_WIDTH, ROVER_CAM_HEIGHT),
-      pass: new OutputPass(),
+      pass: Object.assign(new OutputPass(), { renderToScreen: true }),
       mount: new Object3D(),
       aim: new Vector3(),
-      pixels: new Uint8Array(ROVER_CAM_WIDTH * ROVER_CAM_HEIGHT * 4),
+      viewport: new Vector4(),
+      scissor: new Vector4(),
     }),
     [],
   );
@@ -89,7 +94,6 @@ export function RoverCam({ quality }: { quality: QualityTier }) {
   useEffect(
     () => () => {
       parts.linear.dispose();
-      parts.output.dispose();
       parts.pass.dispose();
     },
     [parts],
@@ -103,7 +107,7 @@ export function RoverCam({ quality }: { quality: QualityTier }) {
     last.current = now;
     firstPicture = false;
 
-    const { camera, linear, output, pass, mount, aim, pixels } = parts;
+    const { camera, linear, pass, mount, aim, viewport, scissor } = parts;
     const pose = frame.current.vehicle;
     mount.position.set(pose.position.x, pose.position.y + ROAD_SURFACE_OFFSET, pose.position.z);
     mount.rotation.set(pose.roll, pose.heading, pose.pitch, 'YXZ');
@@ -122,15 +126,36 @@ export function RoverCam({ quality }: { quality: QualityTier }) {
 
     gl.setRenderTarget(linear);
     gl.render(scene, camera);
-    pass.render(gl, output, linear, 0, false);
+
+    // Tone-map into the drawing buffer's bottom-left corner, exactly
+    // ROVER_CAM_WIDTH x ROVER_CAM_HEIGHT device pixels (the half pixel keeps
+    // three's floor() from losing a row at fractional pixel ratios).
+    const ratio = gl.getPixelRatio();
+    const scissorTest = gl.getScissorTest();
+    gl.getViewport(viewport);
+    gl.getScissor(scissor);
+    gl.setRenderTarget(null);
+    gl.setViewport(0, 0, (ROVER_CAM_WIDTH + 0.5) / ratio, (ROVER_CAM_HEIGHT + 0.5) / ratio);
+    gl.setScissor(0, 0, (ROVER_CAM_WIDTH + 0.5) / ratio, (ROVER_CAM_HEIGHT + 0.5) / ratio);
+    gl.setScissorTest(true);
+    // (renderToScreen: the write buffer argument is unused.)
+    pass.render(gl, linear, linear, 0, false);
+    gl.setScissorTest(scissorTest);
+    gl.setScissor(scissor);
+    gl.setViewport(viewport);
 
     gl.setRenderTarget(previous);
     gl.shadowMap.autoUpdate = autoShadows;
     if (beams) beams.visible = beamsVisible;
 
+    // A snapshot of that corner, taken now and kept on the GPU.
+    const canvas = gl.domElement;
     reading.current = true;
-    gl.readRenderTargetPixelsAsync(output, 0, 0, ROVER_CAM_WIDTH, ROVER_CAM_HEIGHT, pixels)
-      .then(() => sink?.(pixels, ROVER_CAM_WIDTH, ROVER_CAM_HEIGHT))
+    createImageBitmap(canvas, 0, canvas.height - ROVER_CAM_HEIGHT, ROVER_CAM_WIDTH, ROVER_CAM_HEIGHT)
+      .then((picture) => {
+        if (sink) sink(picture);
+        else picture.close();
+      })
       .catch(() => undefined)
       .finally(() => {
         reading.current = false;

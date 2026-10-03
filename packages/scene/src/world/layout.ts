@@ -217,6 +217,29 @@ function buildLayout(): Record<string, Placement[]> {
   }
   for (const x of [-64, -60, -32, -28]) add('PROP_Palm', { x, z: 25, yaw: random() * 6.28, scale: 1.05 });
 
+  // A screening belt of broadleaf trees inside the perimeter fence, the way a
+  // real facility is planted: it frames the campus from the air and gives the
+  // lawns an edge. Two staggered rows, gaps where the road and pads are.
+  const belt = (x0: number, z0: number, x1: number, z1: number, inward: [number, number]) => {
+    const length = Math.hypot(x1 - x0, z1 - z0);
+    for (let s = 6; s < length - 6; s += 8.5) {
+      for (const row of [0, 1]) {
+        const t = (s + row * 4.2) / length;
+        const depth = 7 + row * 6 + (random() - 0.5) * 2.5;
+        const x = x0 + (x1 - x0) * t + inward[0] * depth;
+        const z = z0 + (z1 - z0) * t + inward[1] * depth;
+        if (distanceToRoute(x, z) < 16 || insidePad(x, z, PADS, 8)) continue;
+        if (random() < 0.12) continue;
+        const kind = random();
+        const prop = kind < 0.8 ? 'PROP_Ghaf' : kind < 0.92 ? 'PROP_FlameTree' : 'PROP_Jacaranda';
+        add(prop, { x, z, yaw: random() * 6.28, scale: 0.8 + random() * 0.35 });
+      }
+    }
+  };
+  belt(minX, minZ, maxX, minZ, [0, 1]);
+  belt(minX, maxZ, maxX, maxZ, [0, -1]);
+  belt(minX, minZ, minX, maxZ, [1, 0]);
+
   // Ghaf trees: shade in the campus, scattered thinly outside it.
   const ghafSpots: [number, number][] = [
     [-100, 60], [-112, 18], [-96, -70], [-20, -60], [20, 84], [150, 20], [168, -40], [204, -86],
@@ -356,7 +379,39 @@ function buildLayout(): Record<string, Placement[]> {
     else if (bucket < 0.78) add('PROP_Shrub_B', placement);
     else add(bushes[Math.floor(random() * bushes.length)]!, placement);
   }
-  // Woods across the meadows, with flowering trees among them.
+  // Copses: trees in a landscape stand together, not one per field. Broadleaf
+  // woods with flowering trees at their edges and scrub around the margins,
+  // north of the corridor, south of it past the power line, and on the headland.
+  const WOODS: readonly (readonly [number, number, number])[] = [
+    [300, 190, 50], [420, 262, 60], [540, 172, 45], [640, 282, 55], [760, 240, 50], [880, 192, 45],
+    [980, 282, 40], [360, 330, 35], [600, -112, 40], [700, -150, 35], [820, -112, 42], [930, -62, 38],
+    [1000, 58, 35],
+  ];
+  for (const [cx, cz, radius] of WOODS) {
+    const count = Math.round((radius * radius) / 90);
+    const lobes = random() * 6.28;
+    for (let i = 0; i < count; i += 1) {
+      const angle = random() * Math.PI * 2;
+      // An irregular outline: three lobes, not a disc.
+      const reach = radius * Math.sqrt(random()) * (0.78 + 0.22 * Math.sin(angle * 3 + lobes));
+      const x = cx + Math.cos(angle) * reach;
+      const z = cz + Math.sin(angle) * reach;
+      if (distanceToRoute(x, z) < 24 || insidePad(x, z, pads, 10)) continue;
+      const kind = random();
+      const edge = reach / radius > 0.68;
+      const prop = edge && kind < 0.14 ? 'PROP_FlameTree' : edge && kind < 0.24 ? 'PROP_Jacaranda' : 'PROP_Ghaf';
+      add(prop, { x, z, yaw: random() * 6.28, scale: 0.85 + random() * 0.45 });
+    }
+    for (let i = 0; i < count * 0.45; i += 1) {
+      const angle = random() * Math.PI * 2;
+      const reach = radius * (1.0 + random() * 0.3);
+      const x = cx + Math.cos(angle) * reach;
+      const z = cz + Math.sin(angle) * reach;
+      if (distanceToRoute(x, z) < 16 || insidePad(x, z, pads, 6)) continue;
+      add(random() < 0.6 ? 'PROP_Shrub_B' : 'PROP_Shrub_A', { x, z, yaw: random() * 6.28, scale: 0.9 + random() * 0.6 });
+    }
+  }
+  // Single trees across the meadows, with flowering trees among them.
   for (let i = 0; i < 100; i += 1) {
     const x = 240 + random() * 840;
     const z = -330 + random() * 680;

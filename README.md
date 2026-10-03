@@ -24,7 +24,7 @@ npm run build && npm start  # app on localhost:3000
 
 | URL | Section |
 | --- | --- |
-| <http://localhost:3000> | **Mission** - a run over the full-screen 3D scene: links, route map, application health, a timeline of every handoff |
+| <http://localhost:3000> | **Mission** - a run over the full-screen 3D scene, beside a reactive baseline on the same route and seed: links, route map, application health, a split camera, a timeline of every handoff and every outage |
 | <http://localhost:3000/scenario-lab> | Inject failures and congestion, change speed and workload |
 | <http://localhost:3000/experiments> | Paired policy comparison and the execution-capability report |
 | <http://localhost:3000/decision-log> | A timeline of every controller action, with its observations, reason and the run's recorded outcome |
@@ -181,10 +181,11 @@ misses from 49 % to **31 %**.
 value is in *preparation* and *application-awareness*, not in prediction. Full
 numbers, including where CONTINUA loses, are in `docs/PROGRESS.md`.
 
-Rendering (kept separate from network metrics): 238 fps uncapped at
-1920×1080 during a run, high tier with ambient occlusion on, on an RTX 4070
-Laptop GPU (`node scripts/perf-probe.mjs`); one shared canvas for every scene
-page, so switching pages builds nothing; 2.30 MB of Draco-compressed models.
+Rendering (kept separate from network metrics): 191 fps uncapped at
+1920×1080 during a run beside its reactive baseline, frame time p95 7.9 ms,
+high tier with ambient occlusion on, on an RTX 4070 Laptop GPU
+(`node scripts/perf-probe.mjs`); one shared canvas for every scene page, so
+switching pages builds nothing; 2.56 MB of Draco-compressed models.
 On a slower GPU the scene steps its own quality tier down, and a software
 rasteriser starts on the low tier.
 
@@ -198,3 +199,4 @@ rasteriser starts on the low tier.
 | 4 | Per-class steering, control mode handover, B2-defer baseline, test2 comparison | **complete** (see `docs/PHASE_4_RESULTS.md`) |
 | 7 | Visual overhaul: Mk2 rover, 48-prop world kit, procedural ground and daylight, immersive interface | **complete** (see `docs/PROGRESS.md`) |
 | 8 | A green coastal island (sea, beaches, mountains, clouds, flowering trees), one shared canvas across pages, a live rover camera | **complete** (see `docs/PROGRESS.md`) |
+| 9 | Smooth motion; lush island ranges, leaf-card trees and woods; the satellite link in the sky; CONTINUA run beside a reactive baseline | **complete** (see `docs/PROGRESS.md`) |

@@ -75,6 +75,41 @@ function recentHandoff(decisions: EngineEvent[], latest: EngineEvent | null) {
 /** How far before a linked decision a replay starts. */
 const REPLAY_LEAD_S = 4;
 
+/**
+ * The policy a run is compared against: B0, a single link switched only after
+ * it fails - what a session does without CONTINUA. Same scenario, route and
+ * seed, so the exogenous trace is identical and the comparison is paired.
+ */
+const BASELINE_POLICY: PolicyIdString = 'B0';
+
+type AppState = NonNullable<EngineEvent['app']>;
+
+/** One run's session, as the receiver measures it: up or down, reconnects, time lost. */
+function SessionChip({ label, app, tone }: { label: string; app: AppState; tone: string }) {
+  return (
+    <span
+      className="hud-chip"
+      style={{ color: app.in_outage ? 'var(--color-bad)' : 'var(--color-good)' }}
+      title="Session state from the receiver: whether traffic is getting through now, how often the session has had to be re-established, and the time it has been down."
+    >
+      <span className="font-bold" style={{ color: tone }}>
+        {label}
+      </span>
+      <span
+        className={`h-2 w-2 rounded-full ${app.in_outage ? '' : 'breathe'}`}
+        style={{ background: app.in_outage ? 'var(--color-bad)' : 'var(--color-good)' }}
+      />
+      {app.in_outage ? 'SESSION DOWN' : 'SESSION UP'}
+      <span className="font-medium text-[color:var(--color-muted)]">
+        <span className="hidden min-[1700px]:inline">
+          · {app.session_reconnects} reconnect{app.session_reconnects === 1 ? '' : 's'}
+        </span>{' '}
+        · {app.outage_s.toFixed(1)} s down
+      </span>
+    </span>
+  );
+}
+
 export function MissionView() {
   const [scenarios, setScenarios] = useState<ScenarioSpec[]>([]);
   const [policies, setPolicies] = useState<PolicySpec[]>([]);
@@ -95,6 +130,11 @@ export function MissionView() {
   const [bootError, setBootError] = useState<string | null>(null);
   const [bootAttempt, setBootAttempt] = useState(0);
   const [demoRuns, setDemoRuns] = useState<DemoRunSummary[]>([]);
+  // Side by side with the reactive baseline, by default: the comparison is the
+  // point. (A B0 run has nothing to be compared with.)
+  const [compare, setCompare] = useState(true);
+  const [startedBaselineId, setStartedBaselineId] = useState<string | null>(null);
+  const [baselineSummary, setBaselineSummary] = useState<{ runId: string; metrics: Record<string, unknown> } | null>(null);
 
   /**
    * Which run is on screen. Locally that is whichever one the operator started.
@@ -105,6 +145,13 @@ export function MissionView() {
   const runId = IS_PUBLIC_PREVIEW ? (findDemoRun(demoRuns, scenarioId, policyId)?.run_id ?? null) : startedRunId;
 
   const run = useEngineRun(runId);
+  const comparing = compare && policyId !== BASELINE_POLICY;
+  const baselineId = !comparing
+    ? null
+    : IS_PUBLIC_PREVIEW
+      ? (findDemoRun(demoRuns, scenarioId, BASELINE_POLICY)?.run_id ?? null)
+      : startedBaselineId;
+  const baseline = useEngineRun(baselineId);
   const playing = run.state?.status === 'running';
   // The element that goes fullscreen: the scene and its overlay chrome.
   const stageRef = useRef<HTMLDivElement>(null);
@@ -190,6 +237,7 @@ export function MissionView() {
       .replay(source)
       .then(async (response) => {
         setStartedRunId(response.run_id);
+        setStartedBaselineId(null);
         setPinned(false);
         if (at > 0) await api.controlRun(response.run_id, { action: 'seek', t: at });
         setNotice(`Replaying ${source} from t+${at.toFixed(0)}s.`);
@@ -200,42 +248,57 @@ export function MissionView() {
   const start = useCallback(
     () =>
       act(async () => {
-        const response = await api.startRun({
-          control: { scenario_id: scenarioId, policy_id: policyId, seed, speed: 1, predictor, horizon_s: 3 },
-        });
+        const control = { scenario_id: scenarioId, policy_id: policyId, seed, speed: 1, predictor, horizon_s: 3 };
+        // Started together, so the two runs' clocks stay level.
+        const [response, baselineResponse] = await Promise.all([
+          api.startRun({ control }),
+          comparing ? api.startRun({ control: { ...control, policy_id: BASELINE_POLICY } }) : Promise.resolve(null),
+        ]);
         setStartedRunId(response.run_id);
+        setStartedBaselineId(baselineResponse?.run_id ?? null);
         setPinned(false);
         setCamera((current) => (current === 'cinematic' ? 'follow' : current));
-      }, 'Run started.'),
-    [act, scenarioId, policyId, seed, predictor],
+      }, comparing ? 'Run started, with the reactive baseline beside it.' : 'Run started.'),
+    [act, scenarioId, policyId, seed, predictor, comparing],
   );
 
+  // Transport acts on both runs, so they stay at the same moment.
   const control = useCallback(
     (action: 'play' | 'pause' | 'reset' | 'stop', extra?: Record<string, number>) =>
       act(async () => {
         if (!runId) return;
-        await api.controlRun(runId, { action, ...extra });
+        await Promise.all([
+          api.controlRun(runId, { action, ...extra }),
+          baselineId ? api.controlRun(baselineId, { action, ...extra }) : Promise.resolve(null),
+        ]);
       }),
-    [act, runId],
+    [act, runId, baselineId],
   );
 
   const replay = useCallback(
     () =>
       act(async () => {
         if (!runId) throw new Error('Start a run first, then replay it.');
-        const response = await api.replay(runId);
+        const [response, baselineResponse] = await Promise.all([
+          api.replay(runId),
+          baselineId ? api.replay(baselineId) : Promise.resolve(null),
+        ]);
         setStartedRunId(response.run_id);
+        setStartedBaselineId(baselineResponse?.run_id ?? null);
       }, 'Replaying the recorded run.'),
-    [act, runId],
+    [act, runId, baselineId],
   );
 
   const seek = useCallback(
     (t: number) =>
       act(async () => {
         if (!runId) return;
-        await api.controlRun(runId, { action: 'seek', t });
+        await Promise.all([
+          api.controlRun(runId, { action: 'seek', t }),
+          baselineId ? api.controlRun(baselineId, { action: 'seek', t }) : Promise.resolve(null),
+        ]);
       }),
-    [act, runId],
+    [act, runId, baselineId],
   );
 
   // When a run finishes, fetch the metrics file the engine wrote for it - the
@@ -255,6 +318,41 @@ export function MissionView() {
     };
   }, [runId, completed]);
   const showSummary = summary !== null && summary.runId === runId && completed && summaryClosedFor !== runId;
+
+  // The baseline's metrics too, once it has finished, for the side-by-side card.
+  const baselineCompleted = baseline.state?.status === 'completed';
+  useEffect(() => {
+    if (!baselineId || !baselineCompleted) return undefined;
+    let cancelled = false;
+    api
+      .getRunMetrics(baselineId)
+      .then((metrics) => {
+        if (!cancelled) setBaselineSummary({ runId: baselineId, metrics });
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [baselineId, baselineCompleted]);
+  const baselineMetrics = baselineSummary !== null && baselineSummary.runId === baselineId ? baselineSummary.metrics : null;
+
+  // The baseline as it was at this run's moment - its own buffer, read at this
+  // run's time, so the two are compared at the same point of the route.
+  const baselineEvent = useMemo(
+    () => (baselineId && run.latest ? baseline.source.eventAt(run.latest.t) : null),
+    // `baseline.latest` changes whenever the baseline's buffer grows.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [baselineId, baseline.source, baseline.latest, run.latest],
+  );
+  // Each run's whole timeline for the dock's tracks; `latest` changes as it grows.
+  const runTrack = useMemo(
+    () => (runId ? { events: run.source.timeline, version: run.latest?.seq ?? 0 } : null),
+    [runId, run.source, run.latest],
+  );
+  const baselineTrack = useMemo(
+    () => (baselineId ? { events: baseline.source.timeline, version: baseline.latest?.seq ?? 0 } : null),
+    [baselineId, baseline.source, baseline.latest],
+  );
 
   const scenario = useMemo(
     () => scenarios.find((s) => s.id === (run.state?.scenario_id ?? scenarioId)),
@@ -286,12 +384,12 @@ export function MissionView() {
 
         {/* --- HUD: what the scene is showing, top centre ----------------------- */}
         <div className="pointer-events-none absolute top-3 left-1/2 z-10 flex -translate-x-1/2 items-center gap-2">
-          {runId ? (
+          {runId && !baselineId ? (
             <span className="hud-chip" title="The scene is driven by engine events for this run.">
               <span className="h-2 w-2 rounded-full" style={{ background: 'var(--color-blue)' }} />
               PREDICTIVE HANDOFF
             </span>
-          ) : (
+          ) : runId ? null : (
             <span
               className="hud-chip text-[color:var(--color-warn)]"
               title="No run yet: the scene plays the deterministic Phase 1 preview. Nothing on screen is a measurement."
@@ -314,14 +412,22 @@ export function MissionView() {
             </span>
           )}
           {carrying && (
-            <span className="hud-chip" style={{ color: NETWORK_COLOR[carrying] }}>
+            <span
+              className={`hud-chip ${baselineId ? 'max-[1599px]:hidden!' : ''}`}
+              style={{ color: NETWORK_COLOR[carrying] }}
+            >
               <NetworkIcon link={carrying} size={14} />
               {LINK_LABEL[carrying].label} carrying
             </span>
           )}
+          {/* Beside the baseline: both sessions, as their receivers measure them. */}
+          {runId && baselineId && run.latest?.app && <SessionChip label="CONTINUA" app={run.latest.app} tone="var(--color-blue)" />}
+          {runId && baselineId && baselineEvent?.app && (
+            <SessionChip label="REACTIVE" app={baselineEvent.app} tone="var(--color-muted)" />
+          )}
           {/* The promise, as the receiver measures it: is the session up, and
               has it ever had to reconnect? */}
-          {runId && run.latest?.app && (
+          {runId && !baselineId && run.latest?.app && (
             <span
               className="hud-chip"
               style={{ color: run.latest.app.in_outage ? 'var(--color-bad)' : 'var(--color-good)' }}
@@ -389,8 +495,15 @@ export function MissionView() {
             </h2>
             <p className="mt-1.5 text-[12.5px] leading-relaxed text-[color:var(--color-muted)]">
               A response rover leaves a wired dock and drives through Wi-Fi and cellular coverage into a
-              satellite-served sector. Run a scenario and the CONTINUA controller moves the session between the four
-              links before each one fails; every decision is logged with the measurements it was based on.
+              satellite-served sector. The CONTINUA controller moves the session between the four links before each
+              one fails; every decision is logged with the measurements it was based on.
+              {comparing && (
+                <>
+                  {' '}
+                  A reactive controller, which switches only after a link has failed, drives the same route and seed
+                  beside it - watch the two camera halves at each handover.
+                </>
+              )}
             </p>
             <div className="mt-3 flex flex-wrap items-center gap-2.5">
               <button type="button" className="control control-primary" onClick={start} disabled={busy}>
@@ -405,6 +518,7 @@ export function MissionView() {
 
         {showSummary && runId && (
           <RunSummary
+            baseline={baselineMetrics ? { metrics: baselineMetrics, policy: BASELINE_POLICY } : null}
             metrics={summary.metrics}
             title={scenario?.title ?? run.state?.scenario_id ?? scenarioId}
             policy={run.state?.policy_id ?? policyId}
@@ -451,7 +565,7 @@ export function MissionView() {
         <aside className="mission-side mission-right scroll-y enter-late flex flex-col gap-3 *:shrink-0">
           <RouteMap event={run.latest} events={run.decisions} />
           <ApplicationPanel event={run.latest} />
-          <CameraFeed event={run.latest} />
+          <CameraFeed event={run.latest} baseline={baselineId ? baselineEvent : undefined} />
         </aside>
 
         {/* --- bottom: the run ---------------------------------------------------------- */}
@@ -486,6 +600,10 @@ export function MissionView() {
             onReplay={replay}
             onSpeed={(speed) => control('play', { speed })}
             onSeek={seek}
+            compare={comparing}
+            onCompare={setCompare}
+            track={runTrack}
+            baseline={baselineTrack}
             extra={
               <>
                 <CameraSwitch value={camera} onChange={setCamera} />

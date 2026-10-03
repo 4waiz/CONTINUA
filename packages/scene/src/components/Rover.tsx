@@ -11,6 +11,7 @@
  * wheel spin about local Z, steering about local Y.
  */
 
+import type { SceneStateSource } from '@continua/contracts';
 import { useFrame } from '@react-three/fiber';
 import { useGLTF } from '@react-three/drei';
 import { useEffect, useMemo, useRef } from 'react';
@@ -26,6 +27,7 @@ import {
 import { clamp, smoothstep } from '../math/noise';
 import { useSceneRuntime } from '../runtime/SceneRuntime';
 import { ROAD_SURFACE_OFFSET } from '../world/road';
+import { SATELLITE_SKY } from '../world/sites';
 import { VEHICLE } from '../preview/previewSource';
 import { ROVER_MODEL_LOD1_URL, ROVER_MODEL_URL } from './assets';
 
@@ -107,7 +109,33 @@ interface Rig {
   body: Group;
   wheels: Object3D[];
   steer: Object3D[];
+  /** Moving sensors (optional: an older export has none). */
+  lidar: Object3D | null;
+  satMount: Object3D | null;
+  satPanel: Object3D | null;
   missing: string[];
+}
+
+/** The LiDAR's spin, rad/s: two revolutions a second read as a scanner without strobing. */
+const LIDAR_SPIN = Math.PI * 4;
+/** How far the satellite panel tilts when deployed: square to a satellite 45 degrees up. */
+const SAT_TILT = Math.PI / 2 - Math.asin(SATELLITE_SKY.y);
+
+/**
+ * How far the satellite terminal is deployed, 0..1: the share of the last
+ * 1.5 s the satellite link spent warming or carrying, eased. It raises over a
+ * second and a half as the link is brought up and stows the same way - and,
+ * read from the source at fixed offsets, it is a pure function of time.
+ */
+function satelliteDeploy(source: SceneStateSource, t: number): number {
+  const samples = 6;
+  let on = 0;
+  for (let k = 0; k < samples; k += 1) {
+    const state = source.sampleAt(Math.max(0, t - k * 0.3));
+    if (state.active === 'satellite' || state.warming.includes('satellite')) on += 1;
+  }
+  const x = on / samples;
+  return x * x * (3 - 2 * x);
 }
 
 function buildRig(source: Object3D): Rig {
@@ -155,7 +183,16 @@ function buildRig(source: Object3D): Rig {
   const root = new Group();
   root.name = 'CONTINUA_RoverRoot';
   root.add(vehicle);
-  return { root, body, wheels, steer, missing };
+  return {
+    root,
+    body,
+    wheels,
+    steer,
+    lidar: root.getObjectByName('CONTINUA_LidarHead') ?? null,
+    satMount: root.getObjectByName('CONTINUA_SatMount') ?? null,
+    satPanel: root.getObjectByName('CONTINUA_SatPanel') ?? null,
+    missing,
+  };
 }
 
 export function Rover({
@@ -213,6 +250,24 @@ export function Rover({
 
     for (const wheel of rig.wheels) wheel.rotation.z = -pose.wheelAngle;
     for (const pivot of rig.steer) pivot.rotation.y = pose.steerAngle;
+
+    // The LiDAR head spins, always.
+    if (rig.lidar) rig.lidar.rotation.y = state.simTime * LIDAR_SPIN;
+
+    // The satellite terminal turns its panel to the satellite and tilts it up
+    // while that link is warming or carrying; otherwise it lies stowed. The
+    // panel is hinged along its back edge, so it faces back over the hinge:
+    // the turntable puts the hinge on the satellite's side.
+    if (rig.satMount && rig.satPanel) {
+      const deploy = satelliteDeploy(source, state.simTime);
+      const heading = pose.heading;
+      // The satellite's horizontal bearing in the rover's own frame.
+      const localX = SATELLITE_SKY.x * Math.cos(heading) - SATELLITE_SKY.z * Math.sin(heading);
+      const localZ = SATELLITE_SKY.x * Math.sin(heading) + SATELLITE_SKY.z * Math.cos(heading);
+      const bearing = Math.atan2(-localZ, localX);
+      rig.satMount.rotation.y = (bearing + Math.PI) * deploy;
+      rig.satPanel.rotation.z = SAT_TILT * deploy;
+    }
   });
 
   return (

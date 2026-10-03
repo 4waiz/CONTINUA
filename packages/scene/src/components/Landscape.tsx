@@ -36,6 +36,7 @@ import {
   IcosahedronGeometry,
   InstancedMesh,
   LinearFilter,
+  MeshLambertMaterial,
   Matrix4,
   MeshStandardMaterial,
   PlaneGeometry,
@@ -76,7 +77,14 @@ interface RangeSpec {
   seed: number;
   segments: number;
   rows: number;
-  foot: string;
+  /** Spacing of the erosion flutes down the faces, metres along the foot. */
+  flute: number;
+  /** Spur ridges running down from the crest, per radian of arc. */
+  spurs: number;
+  /** Forest, forest in shade, sunlit crests, bare rock. */
+  lush: string;
+  shade: string;
+  crest: string;
   rock: string;
 }
 
@@ -87,14 +95,18 @@ const NEAR_RANGE: RangeSpec = {
   a: 860,
   b: 600,
   depth: 560,
-  peakEast: 190,
-  peakElse: 130,
+  peakEast: 215,
+  peakElse: 150,
   from: -0.55,
   to: 2.45,
   seed: 4242,
-  segments: 720,
-  rows: 44,
-  foot: SCENE_COLOR.mountainFoot,
+  segments: 1500,
+  rows: 64,
+  flute: 15,
+  spurs: 10,
+  lush: SCENE_COLOR.mountainLush,
+  shade: SCENE_COLOR.mountainShade,
+  crest: SCENE_COLOR.mountainCrest,
   rock: SCENE_COLOR.mountainRock,
 };
 
@@ -105,66 +117,114 @@ const FAR_RANGE: RangeSpec = {
   a: 1330,
   b: 1020,
   depth: 560,
-  peakEast: 330,
-  peakElse: 260,
+  peakEast: 360,
+  peakElse: 280,
   from: -0.75,
   to: 4.05,
   seed: 9191,
-  segments: 640,
-  rows: 22,
-  foot: SCENE_COLOR.mountainFar,
+  segments: 1000,
+  rows: 30,
+  flute: 28,
+  spurs: 7,
+  lush: SCENE_COLOR.mountainFar,
+  shade: SCENE_COLOR.mountainFarShade,
+  crest: SCENE_COLOR.mountainFarCrest,
   rock: SCENE_COLOR.mountainFarRock,
 };
 
+/** Ridged value noise: 1 along the crest lines of the noise, 0 in its folds. */
+function ridged(x: number, y: number, seed: number): number {
+  return 1 - Math.abs(2 * valueNoise2(x, y, seed) - 1);
+}
+
+/**
+ * A range as a band of ground around the island: lush, steep island
+ * mountains - broad massifs with sharp summits, spurs running down to the
+ * shore with valleys between them, and the faces fluted by erosion into
+ * narrow gullies straight down the fall line. Forest everywhere it can hold,
+ * darker in the gullies, catching the light on the ribs between them, bare
+ * rock where the faces are too steep.
+ */
 function buildRange(spec: RangeSpec, detail: number): BufferGeometry {
   const segments = Math.round(spec.segments * detail);
-  const rows = Math.max(4, Math.round(spec.rows * detail));
+  const rows = Math.max(8, Math.round(spec.rows * detail));
   const span = spec.to - spec.from;
-  const positions: number[] = [];
-  const colours: number[] = [];
-  const indices: number[] = [];
-  const foot = new Color(spec.foot);
-  const rock = new Color(spec.rock);
-  const colour = new Color();
+  const stride = rows + 1;
+  const count = (segments + 1) * stride;
+  const positions = new Float32Array(count * 3);
+  const fluting = new Float32Array(count);
+  const valleys = new Float32Array(count);
+  const faces = new Float32Array(count);
+  // The foot's length, for flutes a fixed distance apart along it.
+  const footLength = span * 0.5 * (spec.a + spec.b);
+  const fluteCount = footLength / spec.flute;
 
   for (let i = 0; i <= segments; i += 1) {
     const u = i / segments;
     const theta = spec.from + u * span;
     const cos = Math.cos(theta);
     const sin = Math.sin(theta);
-    // Noise on a circle, so the range has no seam; broad massifs plus sharp
-    // ridged peaks, taller to the east, tapering into the plain at both ends.
-    const massif = fbm2(cos * 2.1 + 10, sin * 2.1 + 10, 4, spec.seed);
-    const crest = 1 - Math.abs(2 * valueNoise2(cos * 8.5 + 3, sin * 8.5 + 7, spec.seed + 5) - 1);
+    // The crest along the arc - noise on a circle, so the range has no seam:
+    // broad massifs and the summits on them, taller to the east, tapering
+    // into the plain at both ends.
+    const massif = 0.5 + 0.5 * fbm2(cos * 1.7 + 10, sin * 1.7 + 10, 4, spec.seed);
+    // Summits are broad shoulders above the massif, never needles.
+    const summit = ridged(cos * 3.2 + 3, sin * 3.2 + 7, spec.seed + 5);
     const east = smoothstep(-0.25, 0.85, cos);
-    const taper = smoothstep(0, 0.1, u) * smoothstep(0, 0.1, 1 - u);
+    const taper = smoothstep(0, 0.07, u) * smoothstep(0, 0.07, 1 - u);
     const peak = lerp(spec.peakElse, spec.peakEast, east);
-    const crestHeight = peak * taper * clamp(0.42 + 0.5 * massif + 0.38 * crest * crest, 0.06, 1.25);
+    const crest = peak * taper * clamp(0.24 + 0.7 * massif + 0.22 * summit * summit, 0.05, 1.2);
+    // Some faces are fluted cliffs, others smooth forested slopes.
+    const fluteAmount = smoothstep(-0.35, 0.45, fbm2(u * 11 + 4, 2.3, 3, spec.seed + 27));
+    // Where the crest stands across the band wanders, so the front is never a wall.
+    const crestAt = 0.27 + 0.13 * (0.5 + 0.5 * fbm2(u * 8 + 2, 1.7, 2, spec.seed + 21));
 
     for (let j = 0; j <= rows; j += 1) {
-      const t = j / rows;
+      // Rows crowd toward the front, where the faces are.
+      const t = Math.pow(j / rows, 1.45);
       const reach = t * spec.depth;
       const x = spec.cx + (spec.a + reach) * cos;
       const z = spec.cz + (spec.b + reach) * sin;
-      // Steep toward the viewer, a long fall behind. Spurs and gullies are
-      // shaped in world space, so they run down the faces, not around them.
-      const rise = smoothstep(0, 0.55, t);
-      const fall = 1 - 0.5 * smoothstep(0.62, 1, t);
-      const spur = 1 - Math.abs(2 * valueNoise2(x * 0.011, z * 0.011, spec.seed + 9) - 1);
-      const rough = fbm2(x * 0.032, z * 0.032, 3, spec.seed + 17);
-      const relief = 0.7 + 0.42 * spur * spur + 0.1 * rough;
-      const y = -8 + crestHeight * rise * fall * relief;
-      positions.push(x, y, z);
 
-      const height = clamp((y + 8) / Math.max(peak, 1), 0, 1);
-      // Woods in clumps on the lower slopes, bare rock up the spurs and crests.
-      const clump = valueNoise2(x * 0.05, z * 0.05, spec.seed + 13);
-      const rockiness = smoothstep(0.34, 0.78, height + 0.22 * (spur - 0.5) + 0.08 * rough);
-      colour.copy(foot).multiplyScalar(0.82 + 0.3 * clump).lerp(rock, rockiness);
-      colours.push(colour.r, colour.g, colour.b);
+      // A steep front up to the crest, a longer fall behind it.
+      const front = smoothstep(0, crestAt, t);
+      const back = 1 - 0.5 * smoothstep(crestAt + 0.12, 1, t);
+      let h = crest * Math.pow(front, 0.85) * back;
+      // Foothills: forested shoulders at the foot of the cliffs, so the faces
+      // stand on ground rather than rising straight off the water - long under
+      // the spurs, low in the valleys, never one level terrace along the range.
+      const shoulder = valueNoise2(u * span * 9, 0.5, spec.seed + 23);
+      const spurAt = ridged(u * span * spec.spurs + 0.45 * fbm2(u * 26, 0.2, 2, spec.seed + 31), 0.5, spec.seed + 41);
+      const footHeight = crest * (0.05 + 0.32 * spurAt * spurAt * (0.4 + 0.6 * shoulder));
+      h = Math.max(h, footHeight * smoothstep(0, 0.7, t / crestAt) * (1 - smoothstep(0.75, 1.25, t / crestAt)));
+
+      // Spurs from the crest down to the shore; valleys between them, cut
+      // deepest low on the face where they open out.
+      const meander = 0.45 * fbm2(u * 26, t * 2.6, 2, spec.seed + 31);
+      const spur = ridged(u * span * spec.spurs + meander, 0.5, spec.seed + 41);
+      const valley = Math.pow(1 - spur, 1.5);
+      const low = 1 - 0.55 * front;
+      h *= 1 - 0.46 * valley * low * smoothstep(0, 0.12, t);
+
+      // Erosion flutes on the faces: narrow ribs and gullies down the fall line.
+      const face = smoothstep(0.08, 0.45, front) * (1 - smoothstep(crestAt * 0.85, crestAt * 1.5, t));
+      const wander = 0.9 * fbm2(u * 70, t * 5, 2, spec.seed + 51);
+      const rib = Math.pow(ridged(u * fluteCount + wander, t * 0.9, spec.seed + 61), 1.4);
+      const fine = ridged(u * fluteCount * 1.7 + 5 + wander, t * 1.6, spec.seed + 71);
+      const fluted = 0.84 * rib + 0.16 * fine;
+      h *= 1 - 0.19 * (1 - fluted) * face * fluteAmount;
+
+      const index = i * stride + j;
+      positions[index * 3] = x;
+      positions[index * 3 + 1] = -8 + h;
+      positions[index * 3 + 2] = z;
+      fluting[index] = lerp(0.6, fluted, fluteAmount);
+      valleys[index] = valley;
+      faces[index] = face;
     }
   }
-  const stride = rows + 1;
+
+  const indices: number[] = [];
   for (let i = 0; i < segments; i += 1) {
     for (let j = 0; j < rows; j += 1) {
       const a = i * stride + j;
@@ -174,22 +234,158 @@ function buildRange(spec: RangeSpec, detail: number): BufferGeometry {
   }
   const geometry = new BufferGeometry();
   geometry.setAttribute('position', new Float32BufferAttribute(positions, 3));
-  geometry.setAttribute('color', new Float32BufferAttribute(colours, 3));
   geometry.setIndex(indices);
   geometry.computeVertexNormals();
+
+  // Colour from the shape: forest, shaded in the gullies and valleys, lit on
+  // the ribs, giving way to rock where the ground is too steep to hold it.
+  const normals = geometry.getAttribute('normal');
+  const colours = new Float32Array(count * 3);
+  const lush = new Color(spec.lush);
+  const shade = new Color(spec.shade);
+  const crestTone = new Color(spec.crest);
+  const rock = new Color(spec.rock);
+  const colour = new Color();
+  for (let index = 0; index < count; index += 1) {
+    const x = positions[index * 3]!;
+    const z = positions[index * 3 + 2]!;
+    const slope = 1 - Math.abs(normals.getY(index));
+    const patch = valueNoise2(x * 0.018, z * 0.018, spec.seed + 81);
+    colour.copy(lush).multiplyScalar(0.88 + 0.24 * patch);
+    colour.lerp(shade, clamp((1 - fluting[index]!) * 0.75 * faces[index]! + valleys[index]! * 0.4, 0, 0.88));
+    colour.lerp(crestTone, fluting[index]! * fluting[index]! * 0.42 * faces[index]!);
+    const scar = valueNoise2(x * 0.03, z * 0.03, spec.seed + 91);
+    colour.lerp(rock, smoothstep(0.5, 0.72, slope + 0.22 * (scar - 0.5)));
+    colours[index * 3] = colour.r;
+    colours[index * 3 + 1] = colour.g;
+    colours[index * 3 + 2] = colour.b;
+  }
+  geometry.setAttribute('color', new Float32BufferAttribute(colours, 3));
   geometry.computeBoundingSphere();
   return geometry;
 }
 
+/**
+ * The ranges' surface up close: forest canopy. Cellular noise gives each tree
+ * a rounded crown, lit on top, with dark gaps between crowns and a little
+ * variety of green from tree to tree; on steep faces the crowns are laid out
+ * across the slope instead of being stretched down it. It fades into the
+ * vertex colours with distance, where the haze takes over. (The low tier
+ * draws the vertex colours alone, with Lambert shading - see `Mountains`.)
+ */
+function mountainMaterial(time: { value: number }): MeshStandardMaterial {
+  const material = new MeshStandardMaterial({ vertexColors: true, roughness: 0.95, metalness: 0, side: DoubleSide });
+  return patchStandard(material, {
+    key: 'continua-mountains-v3',
+    uniforms: { uTime: time },
+    header: /* glsl */ `
+      // Crowns about nine metres across.
+      #define CT_CROWN 0.11
+      // How many pixels one crown spans here: the texture fades out before
+      // crowns shrink to a few pixels, where they would only shimmer.
+      float ctCrownPixels() {
+        return 1.0 / max(length(fwidth(vCtWorld)) * CT_CROWN, 1e-4);
+      }
+      // Worley noise: x = 1 at a crown's centre falling to 0 at its edge,
+      // y = a per-crown random value.
+      vec2 ctCrowns(vec2 p) {
+        vec2 i = floor(p);
+        vec2 f = fract(p);
+        float best = 8.0;
+        float id = 0.0;
+        for (int y = -1; y <= 1; y++) {
+          for (int x = -1; x <= 1; x++) {
+            vec2 g = vec2(float(x), float(y));
+            vec2 cell = i + g;
+            vec2 r = g + vec2(ctHash(cell), ctHash(cell + 17.3)) * 0.85 - f;
+            float d = dot(r, r);
+            if (d < best) {
+              best = d;
+              id = ctHash(cell + 41.7);
+            }
+          }
+        }
+        return vec2(clamp(1.0 - sqrt(best) * 1.15, 0.0, 1.0), id);
+      }
+      // Crowns on the ground plane where it is gentle, across the slope where steep.
+      vec2 ctCanopy(vec3 world, vec3 n) {
+        vec2 level = ctCrowns(world.xz * CT_CROWN);
+        vec2 across = normalize(vec2(-n.z, n.x) + 1e-4);
+        vec2 steep = ctCrowns(vec2(dot(world.xz, across), world.y * 1.15) * CT_CROWN);
+        return mix(steep, level, smoothstep(0.55, 0.85, n.y));
+      }
+    `,
+    colour: /* glsl */ `
+      #ifndef CT_LITE
+        vec3 ctN = normalize(inverseTransformDirection(vNormal, viewMatrix));
+        float ctNear = smoothstep(2.5, 7.0, ctCrownPixels());
+        vec2 ctTree = ctCanopy(vCtWorld, ctN);
+        float ctClumps = ctNoise(vCtWorld.xz * 0.035 + 3.0);
+        // Lit crowns, dark gaps, and tree-to-tree variety: yellower, bluer.
+        vec3 ctTint = mix(vec3(1.06, 1.04, 0.86), vec3(0.88, 0.98, 1.02), ctTree.y);
+        vec3 ctForest = ctTint * (0.68 + 0.44 * ctTree.x) * (0.9 + 0.2 * ctClumps);
+        diffuseColor.rgb *= mix(vec3(1.0), ctForest, ctNear);
+        // The same cloud shadows that drift over the island, a function of
+        // the scene clock alone.
+        float ctCloud = smoothstep(0.5, 0.74, ctFbm2(vCtWorld.xz * 0.0055 + vec2(uTime * 0.03, uTime * 0.011)));
+        diffuseColor.rgb *= 1.0 - 0.22 * ctCloud;
+      #endif
+    `,
+    normal: /* glsl */ `
+      #ifndef CT_LITE
+        {
+          vec3 ctN = normalize(inverseTransformDirection(vNormal, viewMatrix));
+          float ctNear = smoothstep(5.0, 14.0, ctCrownPixels());
+          vec2 ctTree = ctCanopy(vCtWorld, ctN);
+          normal = ctBump(-vViewPosition, normal, ctTree.x * ctNear, 1.4);
+        }
+      #endif
+    `,
+  });
+}
+
+/**
+ * Sea mist at the mountains' foot: the haze thickens toward the water, so the
+ * ranges rise out of it instead of meeting the sea at a hard line. Applied
+ * after lighting, on top of the scene's own fog.
+ */
+function withMist(material: MeshStandardMaterial): MeshStandardMaterial {
+  const patch = material.onBeforeCompile;
+  material.onBeforeCompile = (shader, renderer) => {
+    patch.call(material, shader, renderer);
+    shader.fragmentShader = shader.fragmentShader.replace(
+      '#include <fog_fragment>',
+      `#if defined( USE_FOG ) && !defined( CT_LITE )
+         float ctMist = (1.0 - smoothstep(-8.0, 75.0, vCtWorld.y)) * smoothstep(250.0, 800.0, vCtDist);
+         gl_FragColor.rgb = mix(gl_FragColor.rgb, fogColor, ctMist * 0.48);
+       #endif
+       #include <fog_fragment>`,
+    );
+  };
+  return material;
+}
+
 export function Mountains({ quality }: { quality: 'high' | 'balanced' | 'low' }) {
-  // Half the mesh on the low tier: at that distance the silhouette carries it.
-  const detail = quality === 'low' ? 0.5 : 1;
+  // At that distance the silhouette carries a coarser mesh on the lower tiers.
+  const detail = quality === 'low' ? 0.4 : quality === 'balanced' ? 0.7 : 1;
+  const lite = quality === 'low';
+  const { clock } = useSceneRuntime();
   const near = useMemo(() => buildRange(NEAR_RANGE, detail), [detail]);
   const far = useMemo(() => buildRange(FAR_RANGE, detail), [detail]);
+  const time = useMemo(() => ({ value: 0 }), []);
+  // The low tier draws the ranges' vertex colours alone, so they need nothing
+  // more than Lambert shading - they cover a third of the screen, and on a
+  // software rasteriser the physically based model cost a sixth of a frame.
   const material = useMemo(
-    () => new MeshStandardMaterial({ vertexColors: true, roughness: 1, metalness: 0, side: DoubleSide }),
-    [],
+    () =>
+      lite
+        ? new MeshLambertMaterial({ vertexColors: true, side: DoubleSide })
+        : withMist(mountainMaterial(time)),
+    [lite, time],
   );
+  useFrame(() => {
+    time.value = clock.time;
+  });
   // Separate lifetimes: a change of tier replaces the meshes, never the
   // material still drawing them.
   useEffect(
@@ -236,12 +432,17 @@ function buildShoreTexture(): DataTexture {
 }
 
 function seaMaterial(shore: DataTexture, time: { value: number }, lite: boolean): MeshStandardMaterial {
+  // The low tier's sea is opaque: under the island it is hidden, and drawn
+  // opaque - before the land, depth-tested - a software rasteriser rejects
+  // those fragments instead of shading half a screen of water it then blends
+  // away (about half of a SwiftShader frame). The shallows lose their
+  // see-through sand there, nothing else.
   const material = new MeshStandardMaterial({
     color: '#ffffff',
     roughness: 0.07,
     metalness: 0,
-    transparent: true,
-    depthWrite: false,
+    transparent: !lite,
+    depthWrite: lite,
   });
   material.envMapIntensity = 1.1;
   const { minX, maxX, minZ, maxZ } = TERRAIN;
@@ -304,11 +505,13 @@ function seaMaterial(shore: DataTexture, time: { value: number }, lite: boolean)
       roughnessFactor = mix(roughnessFactor, 0.6, foam);
     `,
     normal: /* glsl */ `
+      #ifndef CT_LITE
       {
         vec2 p = vCtWorld.xz;
         float fade = 1.0 - smoothstep(60.0, 1100.0, vCtDist);
         normal = ctBump(-vViewPosition, normal, ctWaves(p, uTime) * fade, 0.55);
       }
+      #endif
     `,
   });
 }

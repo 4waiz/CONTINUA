@@ -82,12 +82,93 @@ export function carryingSegments(decisions: EngineEvent[], history: EngineEvent[
   return segments;
 }
 
+/**
+ * One run's whole timeline (the scene source keeps every event; the panels'
+ * buffers keep only the recent ones), and a counter that changes as it grows.
+ */
+export interface RunTrack {
+  events: readonly EngineEvent[];
+  version: number;
+}
+
+/**
+ * When the session was down, by its receiver: the intervals in which
+ * `app.in_outage` held. A link can still be "carrying" while the session is
+ * down - a reactive policy keeps the failed link until it notices - so this
+ * is drawn over the carrying track, not derived from it.
+ */
+export function outageSpans(events: readonly EngineEvent[]): { from: number; to: number }[] {
+  const spans: { from: number; to: number }[] = [];
+  let open: number | null = null;
+  for (const event of events) {
+    const down = event.app?.in_outage === true;
+    if (down && open === null) open = event.t;
+    if (!down && open !== null) {
+      spans.push({ from: open, to: event.t });
+      open = null;
+    }
+  }
+  const last = events[events.length - 1];
+  if (open !== null && last) spans.push({ from: open, to: last.t });
+  return spans;
+}
+
+function Track({
+  segments,
+  outages,
+  x,
+  top,
+  height,
+}: {
+  segments: Segment[];
+  outages: { from: number; to: number }[];
+  x: (seconds: number) => string;
+  top: string;
+  height: number;
+}) {
+  return (
+    <div
+      className="absolute inset-x-0 overflow-hidden rounded-full bg-[color:var(--color-line)]"
+      style={{ top, height }}
+    >
+      {segments.map((segment, index) => (
+        <span
+          key={index}
+          className="absolute inset-y-0"
+          style={{
+            left: x(segment.from),
+            width: `calc(${x(segment.to)} - ${x(segment.from)})`,
+            background: segment.link ? NETWORK_COLOR[segment.link] : 'var(--color-bad)',
+            opacity: segment.link ? 1 : 0.8,
+          }}
+          title={segment.link ? `${LINK_LABEL[segment.link].label} carrying` : 'No carrying path'}
+        />
+      ))}
+      {/* At least two pixels, so a fraction of a second still shows. */}
+      {outages.map((span, index) => (
+        <span
+          key={`o${index}`}
+          className="absolute inset-y-0"
+          style={{
+            left: x(span.from),
+            width: `max(2px, calc(${x(span.to)} - ${x(span.from)}))`,
+            background: 'var(--color-bad)',
+          }}
+          title={`Session down ${(span.to - span.from).toFixed(2)} s at t+${span.from.toFixed(1)}s`}
+        />
+      ))}
+    </div>
+  );
+}
+
 function Timeline({
   t,
   duration,
   decisions,
   history,
   latest,
+  track,
+  baseline,
   disabled,
   onSeek,
 }: {
@@ -96,10 +177,34 @@ function Timeline({
   decisions: EngineEvent[];
   history: EngineEvent[];
   latest: EngineEvent | null;
+  /** This run's whole timeline, when the page has it. */
+  track?: RunTrack | null;
+  /** The reactive baseline's run, drawn as a second track beneath (compare mode). */
+  baseline?: RunTrack | null;
   disabled: boolean;
   onSeek: (t: number) => void;
 }) {
-  const segments = useMemo(() => carryingSegments(decisions, history, latest), [decisions, history, latest]);
+  const segments = useMemo(
+    () => (track ? carryingSegments([], [...track.events], null) : carryingSegments(decisions, history, latest)),
+    // `track.events` grows in place; its version says when.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [track?.events, track?.version, decisions, history, latest],
+  );
+  const outages = useMemo(
+    () => (track ? outageSpans(track.events) : outageSpans(history)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [track?.events, track?.version, history],
+  );
+  const baselineSegments = useMemo(
+    () => (baseline ? carryingSegments([], [...baseline.events], null) : null),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [baseline?.events, baseline?.version],
+  );
+  const baselineOutages = useMemo(
+    () => (baseline ? outageSpans(baseline.events) : []),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [baseline?.events, baseline?.version],
+  );
   // Only the decisions that move the session or change how it is driven get a
   // tick. Throttles and duplication windows happen dozens of times a run and
   // turned the track into a hatch; they are all in the Decision Log.
@@ -124,23 +229,17 @@ function Timeline({
   const span = duration > 0 ? duration : 1;
   const x = (seconds: number) => `${Math.max(0, Math.min(100, (seconds / span) * 100))}%`;
 
+  const split = baselineSegments !== null;
   return (
     <div className="relative h-[26px] min-w-[180px] flex-1">
-      <div className="absolute inset-x-0 top-1/2 h-[6px] -translate-y-1/2 overflow-hidden rounded-full bg-[color:var(--color-line)]">
-        {segments.map((segment, index) => (
-          <span
-            key={index}
-            className="absolute inset-y-0"
-            style={{
-              left: x(segment.from),
-              width: `calc(${x(segment.to)} - ${x(segment.from)})`,
-              background: segment.link ? NETWORK_COLOR[segment.link] : 'var(--color-bad)',
-              opacity: segment.link ? 1 : 0.8,
-            }}
-            title={segment.link ? `${LINK_LABEL[segment.link].label} carrying` : 'No carrying path'}
-          />
-        ))}
-      </div>
+      {split ? (
+        <>
+          <Track segments={segments} outages={outages} x={x} top="3px" height={8} />
+          <Track segments={baselineSegments} outages={baselineOutages} x={x} top="15px" height={8} />
+        </>
+      ) : (
+        <Track segments={segments} outages={outages} x={x} top="10px" height={6} />
+      )}
       {ticks.map((tick, index) => (
         <span
           key={index}
@@ -148,9 +247,9 @@ function Timeline({
           className="pointer-events-none absolute rounded-full"
           style={{
             left: x(tick.t),
-            top: tick.switched ? 1 : 7,
+            top: split ? 0 : tick.switched ? 1 : 7,
             width: tick.switched ? 3 : 2,
-            height: tick.switched ? 24 : 12,
+            height: split ? 14 : tick.switched ? 24 : 12,
             transform: 'translateX(-50%)',
             background: tick.color,
             opacity: tick.switched ? 1 : 0.55,
@@ -179,7 +278,7 @@ function TimelineLegend() {
     { label: 'Wired · Wi-Fi', color: NETWORK_COLOR.wifi },
     { label: 'Cellular', color: NETWORK_COLOR.cellular },
     { label: 'Satellite', color: NETWORK_COLOR.satellite },
-    { label: 'No path', color: 'var(--color-bad)' },
+    { label: 'Session down', color: 'var(--color-bad)' },
   ];
   return (
     <ul className="hidden shrink-0 items-center gap-2.5 xl:flex" aria-label="Timeline colours: the link carrying the session">
@@ -271,6 +370,10 @@ export function MissionDock({
   onSpeed,
   onSeek,
   extra,
+  compare,
+  onCompare,
+  track,
+  baseline,
 }: {
   scenarios: ScenarioSpec[];
   policies: PolicySpec[];
@@ -296,6 +399,13 @@ export function MissionDock({
   onSpeed: (speed: number) => void;
   onSeek: (t: number) => void;
   extra?: ReactNode;
+  /** Whether a run starts with the reactive baseline beside it. */
+  compare: boolean;
+  onCompare: (compare: boolean) => void;
+  /** This run's whole timeline, for its track. */
+  track?: RunTrack | null;
+  /** The baseline's track, when one is running beside this run. */
+  baseline?: RunTrack | null;
 }) {
   return (
     <section className="glass flex flex-col gap-2 px-3 py-2.5" aria-label="Run controls">
@@ -342,6 +452,19 @@ export function MissionDock({
             value={seed}
             onChange={(event) => onSeed(Number(event.target.value) || 0)}
           />
+        </label>
+        <label
+          className="flex shrink-0 cursor-pointer items-center gap-1.5 text-[12px] font-medium text-[color:var(--color-muted)]"
+          title="Run the reactive baseline (B0) on the same scenario, route and seed alongside, and show the two side by side"
+        >
+          <input
+            type="checkbox"
+            className="h-[15px] w-[15px] accent-[color:var(--color-blue)]"
+            checked={compare}
+            onChange={(event) => onCompare(event.target.checked)}
+            disabled={policyId === 'B0'}
+          />
+          vs reactive
         </label>
         {!IS_PUBLIC_PREVIEW && (
           <button type="button" className="control control-primary shrink-0" onClick={onStart} disabled={busy}>
@@ -403,12 +526,20 @@ export function MissionDock({
           {formatClock(t)}
           <span className="text-[color:var(--color-faint)]"> / {formatClock(duration)}</span>
         </span>
+        {baseline && (
+          <span className="flex shrink-0 flex-col text-right text-[11px] font-semibold leading-[12px]" aria-hidden>
+            <span className="text-[color:var(--color-blue)]">CONTINUA</span>
+            <span className="text-[color:var(--color-faint)]">Reactive</span>
+          </span>
+        )}
         <Timeline
           t={t}
           duration={duration}
           decisions={decisions}
           history={history}
           latest={latest}
+          track={track}
+          baseline={baseline}
           disabled={!runId}
           onSeek={onSeek}
         />

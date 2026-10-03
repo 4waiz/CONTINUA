@@ -674,7 +674,14 @@ def build_interior(mats: dict, detail: str) -> list[bpy.types.Object]:
 # ==========================================================================
 
 
-def build_sensors(mats: dict, detail: str) -> list[bpy.types.Object]:
+def build_sensors(mats: dict, detail: str) -> tuple[list[bpy.types.Object], dict]:
+    """The sensor suite: static parts, and the parts the runtime moves.
+
+    Returns the static objects and a dict of moving parts, each built about its
+    own pivot with the location to place it at: the LiDAR head (spins about
+    its vertical axis), the satellite terminal's turntable (yaw) and its flat
+    panel (hinged at the back edge, tilts up toward the satellite).
+    """
     hero = detail == "hero"
     roof = roof_edge_z(0.0) + 0.032
     white = bmesh.new()     # pod shells, satcom panel
@@ -723,12 +730,17 @@ def build_sensors(mats: dict, detail: str) -> list[bpy.types.Object]:
         target = {"blue": blue, "amber": amber, "white": led}[colour]
         lib.bm_box(dark, (0.330, y, roof + 0.192), (0.080, 0.160, 0.020))
         lib.bm_box(target, (0.334, y, roof + 0.208), (0.074, 0.150, 0.016))
-    # LiDAR on the pod, centred.
+    # LiDAR on the pod, centred: a fixed base, and a head that spins - its
+    # window band carries a white spine so the rotation can be seen.
     lid_x, lid_z = 0.170, roof + 0.188
     lib.bm_cylinder(dark, (lid_x, 0.0, lid_z + 0.015), 0.085, 0.030, 24, axis="Z")
     lib.bm_cylinder(white, (lid_x, 0.0, lid_z + 0.060), 0.090, 0.060, 28, axis="Z")
-    lib.bm_cylinder(lens, (lid_x, 0.0, lid_z + 0.120), 0.084, 0.060, 28, axis="Z")
-    lib.bm_cylinder(white, (lid_x, 0.0, lid_z + 0.168), 0.090, 0.036, 28, axis="Z")
+    head_white = bmesh.new()
+    head_lens = bmesh.new()
+    lib.bm_cylinder(head_lens, (0.0, 0.0, 0.0), 0.084, 0.060, 28, axis="Z")
+    lib.bm_cylinder(head_white, (0.0, 0.0, 0.048), 0.090, 0.036, 28, axis="Z")
+    lib.bm_box(head_white, (0.080, 0.0, 0.0), (0.020, 0.052, 0.062))
+    lib.bm_box(head_white, (-0.080, 0.0, 0.0), (0.012, 0.022, 0.062))
 
     # --- inspection camera on a mast (pan-tilt head) -------------------------
     mast_x = -0.880
@@ -743,11 +755,23 @@ def build_sensors(mats: dict, detail: str) -> list[bpy.types.Object]:
         lib.bm_cylinder(blue, (mast_x + 0.072, -0.065, rail_z + 0.465), 0.016, 0.030, 10, axis="X")
 
     # --- flat-panel satellite terminal (the remote link) ---------------------
+    # A turntable on the rack; on it a yoke, and the panel hinged along its
+    # back edge so it can turn toward the satellite and tilt up to it.
+    sat_x, sat_y = -1.480, 0.320
+    lib.bm_cylinder(dark, (sat_x, sat_y, rail_z + 0.022), 0.170, 0.026, 24 if hero else 12, axis="Z")
+    mount_dark = bmesh.new()
+    lib.bm_cylinder(mount_dark, (0.0, 0.0, 0.010), 0.150, 0.020, 24 if hero else 12, axis="Z")
+    for side in (-1, 1):
+        lib.bm_box(mount_dark, (-0.300, side * 0.190, 0.040), (0.050, 0.020, 0.060))
+    lib.bm_box(mount_dark, (-0.300, 0.0, 0.022), (0.060, 0.400, 0.024))
+    panel_white = bmesh.new()
+    panel_dark = bmesh.new()
     panel = geo.rounded_rect(0.62, 0.40, 0.045, segments=3 if hero else 2)
-    rings = [[(-1.480 + u, 0.320 + v, rail_z + 0.050) for (u, v) in panel],
-             [(-1.480 + u, 0.320 + v, rail_z + 0.085) for (u, v) in panel]]
-    geo.loft(white, rings, closed=True, cap_start=True, cap_end=True)
-    lib.bm_box(dark, (-1.480, 0.320, rail_z + 0.030), (0.40, 0.25, 0.030))
+    rings = [[(0.310 + u, v, 0.000) for (u, v) in panel],
+             [(0.310 + u, v, 0.034) for (u, v) in panel]]
+    geo.loft(panel_white, rings, closed=True, cap_start=True, cap_end=True)
+    lib.bm_box(panel_dark, (0.310, 0.0, -0.008), (0.560, 0.340, 0.016))
+    lib.bm_cylinder(panel_dark, (0.0, 0.0, 0.010), 0.012, 0.400, 10, axis="Y")
 
     # --- cellular MIMO domes and GNSS ----------------------------------------
     for x, y in ((-1.480, -0.430), (-0.330, -0.520)):
@@ -770,7 +794,23 @@ def build_sensors(mats: dict, detail: str) -> list[bpy.types.Object]:
     objs.append(geo.to_object("CONTINUA_SensorLed", led, [mats["light_front"]]))
     for obj in objs:
         geo.smooth(obj, 40.0)
-    return objs
+
+    def part(name: str, pieces: list[tuple[bmesh.types.BMesh, str]]) -> bpy.types.Object:
+        built = [geo.to_object(f"{name}__{key}", bm, [mats[key]]) for bm, key in pieces]
+        obj = geo.join(built, name)
+        geo.smooth(obj, 40.0)
+        return obj
+
+    moving = {
+        # name: (object, location, parent name or None)
+        "lidar": (part("CONTINUA_LidarHead", [(head_lens, "sensor_lens"), (head_white, "sensor_white")]),
+                  (lid_x, 0.0, lid_z + 0.120), None),
+        "mount": (part("CONTINUA_SatMount", [(mount_dark, "metal_dark")]),
+                  (sat_x, sat_y, rail_z + 0.036), None),
+        "panel": (part("CONTINUA_SatPanel", [(panel_white, "sensor_white"), (panel_dark, "metal_dark")]),
+                  (-0.300, 0.0, 0.060), "mount"),
+    }
+    return objs, moving
 
 
 # ==========================================================================
@@ -990,7 +1030,7 @@ def build_vehicle(detail: str = "hero") -> tuple[bpy.types.Object, list[bpy.type
     sides = build_side_details(mats, detail)
     chassis = build_chassis(mats, detail)
     interior = build_interior(mats, detail)
-    sensors = build_sensors(mats, detail)
+    sensors, moving = build_sensors(mats, detail)
     identity = build_identity(mats) if hero else []
 
     by_name = {o.name: o for o in rear + sides + front}
@@ -1021,6 +1061,12 @@ def build_vehicle(detail: str = "hero") -> tuple[bpy.types.Object, list[bpy.type
                     lights_rear, sensor_obj]
     for part in static_parts:
         lib.parent_to(part, root)
+    # Moving sensors, each on its own pivot (the runtime animates them by name):
+    # the LiDAR head spins; the satellite terminal turns and its panel tilts.
+    for key in ("lidar", "mount", "panel"):
+        obj, location, parent = moving[key]
+        lib.parent_to(obj, moving[parent][0] if parent else root, location)
+        static_parts.append(obj)
 
     wheels: list[bpy.types.Object] = []
     pivots: list[bpy.types.Object] = []

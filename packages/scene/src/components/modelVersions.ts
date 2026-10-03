@@ -4,7 +4,7 @@
  * every export - do not edit by hand.
  */
 export const MODEL_VERSIONS = {
-  rover: '1f249efe38c2',
-  roverLod1: 'a9e8b5a86436',
-  props: '5e377b5d7188',
+  rover: 'ae48ad0cac03',
+  roverLod1: '7fbd74f1e7a9',
+  props: '104ed725f61f',
 } as const;

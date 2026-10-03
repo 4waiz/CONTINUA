@@ -20,6 +20,7 @@ from mathutils import Matrix, Vector
 import continua_arch as arch
 import continua_geo as geo
 import continua_lib as lib
+import world_foliage as foliage
 from continua_arch import Kit, box, cylinder, slab
 
 
@@ -43,10 +44,21 @@ def _dish(bm, diameter: float, depth_ratio: float = DISH_DEPTH, segments: int = 
     geo.revolve_profile(bm, [(rr, -a) for (rr, a) in profile], segments, axis="Y")
 
 
+# The dish points at the satellite: due south in the scene (world -Z), 45
+# degrees up - the side of the sky a geostationary satellite holds, the same
+# side as the noon sun. The prop is placed with the site's yaw (sites.ts and
+# world.json: -2.4 rad), so in the authored frame that is this azimuth.
+# `SATELLITE_SKY` in sites.ts is the same direction; the link beams follow it.
+SITE_YAW = -2.4
+DISH_AZIMUTH = math.atan2(math.cos(-SITE_YAW), -math.sin(-SITE_YAW))
+DISH_ELEVATION = math.radians(45.0)
+
+
 def prop_sat_terminal(m: dict) -> bpy.types.Object:
     """Ground station compound: a 7.2 m dish on an az-el pedestal, a radome,
-    an equipment shelter, a solar row and a fence. The dish faces +X, raised
-    38 degrees; the beam attaches at 4.4 m (sites.ts linkHeight)."""
+    an equipment shelter, a solar row and a fence. The dish points at the
+    satellite (DISH_AZIMUTH, DISH_ELEVATION); the beam attaches at 4.4 m
+    (sites.ts linkHeight)."""
     k = Kit("PROP_SatTerminal", m)
     # The compound (pad, radome, shelter, solar, fence) is built in its own kit
     # and shifted by COMPOUND_SHIFT: the dish stays on the site position the
@@ -54,13 +66,22 @@ def prop_sat_terminal(m: dict) -> bpy.types.Object:
     # lies toward authored -X with the site's yaw.
     c = Kit("tmp_compound", m)
     slab(c["concrete_warm"], (-2.0, 0.0, 0.05), (30.0, 24.0, 0.1), cell=4.0)
-    # Pedestal.
+    # Pedestal; the yoke and elevation axis turn with the dish's azimuth.
     slab(k["concrete"], (0.0, 0.0, 0.55), (3.2, 3.2, 1.1), cell=1.0)
     cylinder(k["panel"], (0.0, 0.0, 1.45), 1.35, 0.7, 32)
     cylinder(k["graphite"], (0.0, 0.0, 1.85), 1.2, 0.1, 32)
+    yoke = Kit("tmp_yoke", m)
     for s in (-1, 1):
-        box(k["panel"], (0.0, s * 1.05, 3.1), (1.2, 0.35, 2.6))
-    cylinder(k["steel_dark"], (0.0, 0.0, 4.2), 0.25, 2.5, 16, axis="Y")
+        box(yoke["panel"], (0.0, s * 1.05, 3.1), (1.2, 0.35, 2.6))
+    cylinder(yoke["steel_dark"], (0.0, 0.0, 4.2), 0.25, 2.5, 16, axis="Y")
+    for key, bm in list(yoke.meshes.items()):
+        bmesh.ops.transform(bm, matrix=Matrix.Rotation(DISH_AZIMUTH, 4, "Z"), verts=bm.verts[:])
+        mesh = bpy.data.meshes.new("tmp_merge")
+        bm.to_mesh(mesh)
+        k[key].from_mesh(mesh)
+        bpy.data.meshes.remove(mesh)
+        bm.free()
+    yoke.meshes = {}
     # The reflector, its back frame and the quadripod.
     dish = Kit("tmp_dish", m)
     _dish(dish["panel"], 7.2)
@@ -76,9 +97,10 @@ def prop_sat_terminal(m: dict) -> bpy.types.Object:
                  0.06, 0.06)
     cylinder(dish["panel"], (0.0, focal_y - 0.15, 0.0), 0.32, 0.4, 16, axis="Y")
     cylinder(dish["graphite"], (0.0, 0.3, 0.0), 0.2, 0.6, 12, axis="Y")
-    turn = (Matrix.Translation((0.25, 0.0, 4.4))
-            @ Matrix.Rotation(-math.pi / 2, 4, "Z")
-            @ Matrix.Rotation(math.radians(38), 4, "X"))
+    # Built opening toward +Y: raise it, then turn +Y onto the azimuth.
+    turn = (Matrix.Translation((0.25 * math.cos(DISH_AZIMUTH), 0.25 * math.sin(DISH_AZIMUTH), 4.4))
+            @ Matrix.Rotation(DISH_AZIMUTH - math.pi / 2, 4, "Z")
+            @ Matrix.Rotation(DISH_ELEVATION, 4, "X"))
     for bm in dish.meshes.values():
         bmesh.ops.transform(bm, matrix=turn, verts=bm.verts[:])
     for key, bm in list(dish.meshes.items()):
@@ -95,16 +117,17 @@ def prop_sat_terminal(m: dict) -> bpy.types.Object:
         rr = math.sqrt(max(0.0, 3.4 ** 2 - (z - 3.6) ** 2))
         geo.revolve_profile(c["panel_grey"], [(rr + 0.01, z - 0.03), (rr + 0.04, z - 0.03),
                                               (rr + 0.04, z + 0.03), (rr + 0.01, z + 0.03)], 32, axis="Z")
-    # Equipment shelter with air conditioners.
-    slab(c["panel"], (-8.0, -6.5, 1.55), (7.0, 3.0, 3.1), cell=1.5)
-    box(c["graphite"], (-8.0, -6.5, 3.13), (7.2, 3.2, 0.08))
-    arch.door(c, "+x", -4.5, -6.5, 1.0, 2.2)
-    for y in (-7.4, -5.6):
-        slab(c["panel_grey"], (-11.7, y, 1.2), (0.6, 0.9, 0.9), cell=0.5)
-        cylinder(c["graphite"], (-12.0, y, 1.2), 0.32, 0.03, 16, axis="X")
-    geo.tube(c["galv"], [(-6.0, -5.0, 3.1), (-6.0, -5.0, 7.5)], 0.05, 8)
-    lib.bm_sphere(c["panel"], (-6.0, -5.0, 7.6), 0.14, 12, 6)
-    box(c["accent_violet"], (-4.48, -6.5, 2.75), (0.03, 2.2, 0.16))
+    # Equipment shelter with air conditioners, clear of the dish's line of sight.
+    sx0, sy0 = SHELTER
+    slab(c["panel"], (sx0, sy0, 1.55), (7.0, 3.0, 3.1), cell=1.5)
+    box(c["graphite"], (sx0, sy0, 3.13), (7.2, 3.2, 0.08))
+    arch.door(c, "+x", sx0 + 3.5, sy0, 1.0, 2.2)
+    for dy in (-0.9, 0.9):
+        slab(c["panel_grey"], (sx0 - 3.7, sy0 + dy, 1.2), (0.6, 0.9, 0.9), cell=0.5)
+        cylinder(c["graphite"], (sx0 - 4.0, sy0 + dy, 1.2), 0.32, 0.03, 16, axis="X")
+    geo.tube(c["galv"], [(sx0 + 2.0, sy0 + 1.5, 3.1), (sx0 + 2.0, sy0 + 1.5, 7.5)], 0.05, 8)
+    lib.bm_sphere(c["panel"], (sx0 + 2.0, sy0 + 1.5, 7.6), 0.14, 12, 6)
+    box(c["accent_violet"], (sx0 + 3.52, sy0, 2.75), (0.03, 2.2, 0.16))
     # Solar row.
     tilt = Matrix.Rotation(math.radians(-25), 4, "Y")
     for i in range(6):
@@ -123,17 +146,20 @@ def prop_sat_terminal(m: dict) -> bpy.types.Object:
         bpy.data.meshes.remove(mesh)
         bm.free()
     c.meshes = {}
-    # Cable bridge from the shelter to the pedestal, along the shift.
-    box(k["galv"], ((-4.5 + sx) / 2, (-6.5 + sy) / 2, 2.6),
-        (math.hypot(-4.5 + sx, -6.5 + sy), 0.5, 0.12),
-        rotation=Matrix.Rotation(math.atan2(-6.5 + sy, -4.5 + sx), 4, "Z"))
+    # Cable bridge from the pedestal to the shelter's near end.
+    ex, ey = sx0 - 3.5 + sx, sy0 + sy
+    box(k["galv"], (ex / 2, ey / 2, 2.6), (math.hypot(ex, ey), 0.5, 0.12),
+        rotation=Matrix.Rotation(math.atan2(ey, ex), 4, "Z"))
     st = k.finish(smooth_angle=45.0)
-    sign = arch.sign_text("PROP_Sat_sign", "GROUND STATION 7", (-4.47 + sx, -6.5 + sy, 2.35),
+    sign = arch.sign_text("PROP_Sat_sign", "GROUND STATION 7", (sx0 + 3.53 + sx, sy0 + sy, 2.35),
                           arch.FACING["+x"], 0.28, m["graphite"], extrude=0.02)
     return arch.attach(st, [sign])
 
 
 COMPOUND_SHIFT = (6.0, 4.0)
+# The equipment shelter's centre in the compound's frame (before the shift):
+# on the far side of the pedestal from the dish's line of sight.
+SHELTER = (2.0, 4.5)
 
 
 # ==========================================================================
@@ -253,33 +279,10 @@ def prop_rocks(m: dict) -> list[bpy.types.Object]:
     return out
 
 
-def _frond(bm, base: Vector, direction: float, droop: float, length: float, width: float) -> None:
-    """A palm frond: an arching strip with a V fold, both faces built."""
-    steps = 7
-    rings = []
-    for i in range(steps + 1):
-        t = i / steps
-        along = length * t
-        x = math.cos(direction) * along
-        y = math.sin(direction) * along
-        z = 0.9 * length * t * (1.0 - t) * 1.2 - droop * t * t * length
-        w = width * math.sin(math.pi * min(1.0, t * 1.15)) * (1.0 - 0.6 * t)
-        side = Vector((-math.sin(direction), math.cos(direction), 0.0))
-        centre = base + Vector((x, y, z))
-        rings.append([centre + side * w + Vector((0, 0, -0.18 * w)), centre + Vector((0, 0, 0.02)),
-                      centre - side * w + Vector((0, 0, -0.18 * w))])
-    # Two sheets of vertices a hair apart, wound opposite ways, so the frond
-    # is visible from below without a double-sided material.
-    front = [[bm.verts.new(p) for p in r] for r in rings]
-    back = [[bm.verts.new(p - Vector((0, 0, 0.01))) for p in r] for r in rings]
-    for (a, b), (c, d) in zip(zip(front, front[1:]), zip(back, back[1:])):
-        for j in range(2):
-            bm.faces.new((a[j], b[j], b[j + 1], a[j + 1]))
-            bm.faces.new((c[j + 1], d[j + 1], d[j], c[j]))
-
-
 def prop_palm(m: dict) -> bpy.types.Object:
-    """Date palm: a ringed, slightly curved trunk and a crown of 14 fronds."""
+    """Date palm: a ringed, slightly curved trunk and a crown of 16 pinnate
+    fronds - leaflets drawn in the foliage atlas, so the crown has the open,
+    feathery silhouette of a real palm."""
     k = Kit("PROP_Palm", m)
     h = 9.0
     path = [(0.25 * math.sin(t * 1.4) * t, 0.0, t * h) for t in [i / 12 for i in range(13)]]
@@ -287,12 +290,16 @@ def prop_palm(m: dict) -> bpy.types.Object:
     geo.sweep(k["trunk"], geo.circle(1.0, 10), path, scale=lambda t: radius(t))
     top = Vector(path[-1])
     lib.bm_sphere(k["trunk"], top + Vector((0, 0, 0.1)), 0.42, 10, 6)
-    for i in range(14):
-        direction = 2 * math.pi * i / 14 + (0.2 if i % 2 else 0.0)
-        droop = 0.55 if i % 2 else 0.35
-        _frond(k["leaf" if i % 3 else "leaf_dark"], top + Vector((0, 0, 0.25)), direction, droop,
-               4.2 if i % 2 else 3.6, 0.55)
-    return k.finish(smooth_angle=70.0)
+    crown_centre = top + Vector((0, 0, -0.6))
+    for i in range(16):
+        direction = 2 * math.pi * i / 16 + (0.18 if i % 2 else 0.0)
+        droop = (0.62, 0.38, 0.5, 0.3)[i % 4]
+        length = (4.4, 3.7, 4.1, 3.4)[i % 4]
+        foliage.frond(k["card_frond"], top + Vector((0, 0, 0.25)), direction, droop, length, 0.85,
+                      crown_centre)
+    obj = k.finish(smooth_angle=70.0)
+    foliage.finish_cards(obj)
+    return obj
 
 
 def prop_ghaf(m: dict) -> bpy.types.Object:
@@ -308,13 +315,16 @@ def prop_ghaf(m: dict) -> bpy.types.Object:
         geo.sweep(k["trunk"], geo.circle(1.0, 7), [(0.1, 0, 1.5), (1.0 * math.cos(a), 1.0 * math.sin(a), 2.8),
                                                    tuple(tip)], scale=lambda t: 0.22 - 0.12 * t)
         tips.append(tip)
+    # A broad, slightly weeping crown of fine grey-green leaf.
     for i in range(10):
         base = tips[i % 3]
         offset = Vector((rng.uniform(-1.7, 1.7), rng.uniform(-1.7, 1.7), rng.uniform(-0.3, 1.0)))
-        r = rng.uniform(1.35, 2.0)
-        _foliage(k["leaf_dark" if i % 2 else "leaf"], base + offset - Vector((0, 0, r * 0.25)), r,
-                 100 + i, squash=0.68, subdivisions=3)
-    return k.finish(smooth_angle=70.0)
+        r = rng.uniform(1.45, 2.1)
+        foliage.crown(k, "card_ghaf", "leaf", base + offset - Vector((0, 0, r * 0.25)),
+                      (r, r, r * 0.68), 40, 100 + i, card=1.45)
+    obj = k.finish(smooth_angle=70.0)
+    foliage.finish_cards(obj)
+    return obj
 
 
 def prop_shrubs(m: dict) -> list[bpy.types.Object]:
@@ -323,10 +333,13 @@ def prop_shrubs(m: dict) -> list[bpy.types.Object]:
         k = Kit(name, m)
         rng = arch.rng(seed)
         for i in range(count):
-            r = rng.uniform(0.35, 0.65)
-            c = (rng.uniform(-spread, spread), rng.uniform(-spread, spread), -r * 0.25)
-            _boulder(k["leaf_dry" if i % 2 else "leaf"], c, r, seed * 10 + i, squash=0.7)
-        out.append(k.finish(smooth_angle=60.0))
+            r = rng.uniform(0.4, 0.7)
+            c = (rng.uniform(-spread, spread), rng.uniform(-spread, spread), r * 0.35)
+            foliage.crown(k, "card_leaf_dry" if i % 2 else "card_leaf", "leaf", c, (r, r, r * 0.75),
+                          14, seed * 10 + i, card=0.7)
+        obj = k.finish(smooth_angle=60.0)
+        foliage.finish_cards(obj)
+        out.append(obj)
     return out
 
 
@@ -349,27 +362,6 @@ def prop_solar_field(m: dict) -> bpy.types.Object:
 # ==========================================================================
 
 
-def _foliage(bm, centre, radius: float, seed: int, squash: float = 0.7, subdivisions: int = 2) -> None:
-    """A cluster of leaf or bloom: a lumpy, flattened ball."""
-    rng = arch.rng(seed)
-    tmp = bmesh.new()
-    bmesh.ops.create_icosphere(tmp, subdivisions=subdivisions, radius=radius)
-    phase = rng.uniform(0.0, 6.28)
-    for v in tmp.verts:
-        n = v.co.normalized()
-        lump = (0.15 * math.sin(n.x * 4.1 + phase) * math.sin(n.y * 3.7 + phase * 0.7) * math.cos(n.z * 4.6)
-                + 0.06 * math.sin(n.x * 9.3 - phase) * math.cos(n.y * 8.1)
-                + rng.uniform(-0.05, 0.05))
-        v.co = n * radius * (1.0 + lump)
-        v.co.z *= squash
-    bmesh.ops.translate(tmp, verts=tmp.verts[:], vec=Vector(centre))
-    mesh = bpy.data.meshes.new("tmp_foliage")
-    tmp.to_mesh(mesh)
-    tmp.free()
-    bm.from_mesh(mesh)
-    bpy.data.meshes.remove(mesh)
-
-
 def prop_flame_tree(m: dict) -> bpy.types.Object:
     """Flame tree (Delonix regia): a short trunk forking low into spreading
     limbs under a broad, flat umbrella of scarlet bloom and fine green leaf."""
@@ -389,14 +381,19 @@ def prop_flame_tree(m: dict) -> bpy.types.Object:
         a = 2 * math.pi * i / 8 + rng.uniform(-0.2, 0.2)
         r = rng.uniform(2.6, 5.0)
         centre = (r * math.cos(a), r * math.sin(a), rng.uniform(5.2, 5.8))
-        _foliage(k["leaf" if i % 2 else "leaf_dark"], centre, rng.uniform(1.7, 2.3), 300 + i, squash=0.5,
-                 subdivisions=3)
+        size = rng.uniform(1.8, 2.4)
+        foliage.crown(k, "card_leaf" if i % 2 else "card_leaf_dark", "leaf", centre,
+                      (size, size, size * 0.5), 34, 300 + i, card=1.45)
     for i in range(9):
         a = 2 * math.pi * i / 9 + rng.uniform(-0.3, 0.3) + 0.35
         r = rng.uniform(0.0, 4.6) if i else 0.0
-        centre = (r * math.cos(a), r * math.sin(a), rng.uniform(6.2, 6.9))
-        _foliage(k["blossom_flame"], centre, rng.uniform(1.5, 2.1), 320 + i, squash=0.55, subdivisions=3)
-    return k.finish(smooth_angle=70.0)
+        centre = (r * math.cos(a), r * math.sin(a), rng.uniform(6.2, 6.8))
+        size = rng.uniform(1.5, 2.1)
+        foliage.crown(k, "card_flame", None, centre, (size, size, size * 0.45), 32, 320 + i,
+                      region="bloom", card=1.35, upward=0.55)
+    obj = k.finish(smooth_angle=70.0)
+    foliage.finish_cards(obj)
+    return obj
 
 
 def prop_jacaranda(m: dict) -> bpy.types.Object:
@@ -416,17 +413,23 @@ def prop_jacaranda(m: dict) -> bpy.types.Object:
         azimuth = rng.uniform(0.0, 6.283)
         centre = (3.0 * math.sin(polar) * math.cos(azimuth), 3.0 * math.sin(polar) * math.sin(azimuth),
                   6.4 + 2.2 * math.cos(polar))
-        green = i % 4 == 2
-        _foliage(k["leaf_dark" if green else "blossom_lilac"], centre, rng.uniform(1.4, 1.95), 400 + i,
-                 squash=0.8, subdivisions=3)
-    return k.finish(smooth_angle=70.0)
+        size = rng.uniform(1.45, 2.0)
+        if i % 4 == 2:
+            foliage.crown(k, "card_leaf_dark", "leaf", centre, (size, size, size * 0.8), 24, 400 + i,
+                          card=1.3)
+        else:
+            foliage.crown(k, "card_lilac", "blossom_lilac", centre, (size, size, size * 0.8), 30, 400 + i,
+                          region="bloom", card=1.3, upward=0.25, core=0.55)
+    obj = k.finish(smooth_angle=70.0)
+    foliage.finish_cards(obj)
+    return obj
 
 
 FLOWER_BUSHES = (
-    ("PROP_FlowerBush_Magenta", "blossom_magenta", 5),
-    ("PROP_FlowerBush_Coral", "blossom_coral", 6),
-    ("PROP_FlowerBush_Yellow", "blossom_yellow", 7),
-    ("PROP_FlowerBush_White", "blossom_white", 8),
+    ("PROP_FlowerBush_Magenta", "card_magenta", 5),
+    ("PROP_FlowerBush_Coral", "card_coral", 6),
+    ("PROP_FlowerBush_Yellow", "card_yellow", 7),
+    ("PROP_FlowerBush_White", "card_white", 8),
 )
 
 
@@ -438,16 +441,20 @@ def prop_flower_bushes(m: dict) -> list[bpy.types.Object]:
         k = Kit(name, m)
         rng = arch.rng(seed)
         for i in range(5):
-            r = rng.uniform(0.55, 0.85)
-            centre = (rng.uniform(-0.8, 0.8), rng.uniform(-0.8, 0.8), r * 0.45)
-            _foliage(k["leaf_dark" if i % 2 else "leaf"], centre, r, seed * 10 + i, squash=0.8)
+            r = rng.uniform(0.6, 0.9)
+            centre = (rng.uniform(-0.8, 0.8), rng.uniform(-0.8, 0.8), r * 0.55)
+            foliage.crown(k, "card_leaf_dark" if i % 2 else "card_leaf", "leaf", centre,
+                          (r, r, r * 0.8), 16, seed * 10 + i, card=0.8)
         for i in range(10):
             angle = rng.uniform(0.0, 6.283)
             reach = rng.uniform(0.25, 1.05)
-            r = rng.uniform(0.26, 0.42)
-            centre = (reach * math.cos(angle), reach * math.sin(angle), rng.uniform(0.55, 1.15))
-            _foliage(k[colour], centre, r, seed * 20 + i, squash=0.85, subdivisions=1)
-        out.append(k.finish(smooth_angle=60.0))
+            r = rng.uniform(0.3, 0.45)
+            centre = (reach * math.cos(angle), reach * math.sin(angle), rng.uniform(0.6, 1.15))
+            foliage.crown(k, colour, None, centre, (r, r, r * 0.7), 8, seed * 20 + i, region="bloom",
+                          card=0.7, upward=0.5)
+        obj = k.finish(smooth_angle=60.0)
+        foliage.finish_cards(obj)
+        out.append(obj)
     return out
 
 
@@ -462,14 +469,18 @@ def prop_flower_bed(m: dict) -> bpy.types.Object:
         box(k["concrete"], (x, 0.0, 0.15), (kerb, depth - 2 * kerb, 0.3))
     box(k["soil"], (0.0, 0.0, 0.13), (length - 2 * kerb, depth - 2 * kerb, 0.26))
     rng = arch.rng(29)
-    colours = ("blossom_yellow", "blossom_magenta", "blossom_white", "blossom_coral")
+    colours = ("card_yellow", "card_magenta", "card_white", "card_coral")
     for row, y in enumerate((-0.36, 0.36)):
         for i in range(10):
             x = -2.55 + i * 0.567 + (0.28 if row else 0.0) * 0.5
-            _foliage(k["leaf"], (x, y, 0.36), 0.24, 600 + row * 20 + i, squash=0.7, subdivisions=1)
-            _foliage(k[colours[(i + row * 2) % 4]], (x + rng.uniform(-0.06, 0.06), y + rng.uniform(-0.06, 0.06), 0.5),
-                     0.17, 640 + row * 20 + i, squash=0.75, subdivisions=1)
-    return k.finish(smooth_angle=55.0)
+            foliage.crown(k, "card_leaf", None, (x, y, 0.36), (0.26, 0.26, 0.16), 6, 600 + row * 20 + i,
+                          card=0.42)
+            foliage.crown(k, colours[(i + row * 2) % 4], None,
+                          (x + rng.uniform(-0.06, 0.06), y + rng.uniform(-0.06, 0.06), 0.48),
+                          (0.18, 0.18, 0.08), 5, 640 + row * 20 + i, region="bloom", card=0.44, upward=0.8)
+    obj = k.finish(smooth_angle=55.0)
+    foliage.finish_cards(obj)
+    return obj
 
 
 def build_all(m: dict) -> list[bpy.types.Object]:

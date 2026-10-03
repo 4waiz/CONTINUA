@@ -165,7 +165,7 @@ export function terrainMaterial(palette: {
 }, lite = false): MeshStandardMaterial {
   const material = new MeshStandardMaterial({ color: '#ffffff', roughness: 0.94, metalness: 0 });
   return patchStandard(material, {
-    key: 'continua-terrain-v5',
+    key: 'continua-terrain-v6',
     lite,
     uniforms: {
       uCampus: { value: new Color(palette.campus) },
@@ -209,8 +209,13 @@ export function terrainMaterial(palette: {
       vec2 p = vCtWorld.xz;
       float y = vCtWorld.y;
       float campus = ctCampusMask(p);
-      float broad = ctFbm(p * 0.0045);
-      float mid = ctFbm(p * 0.035 + 11.0);
+      #ifdef CT_LITE
+        float broad = ctFbm2(p * 0.0045);
+        float mid = ctFbm2(p * 0.035 + 11.0);
+      #else
+        float broad = ctFbm(p * 0.0045);
+        float mid = ctFbm(p * 0.035 + 11.0);
+      #endif
       float fine = ctNoise(p * 1.7);
       float fineFade = 1.0 - smoothstep(60.0, 220.0, vCtDist);
 
@@ -235,10 +240,18 @@ export function terrainMaterial(palette: {
         }
       #endif
 
-      // Campus lawn, mown in alternating stripes.
+      // Campus lawn, mown in alternating stripes: the stripes catch the light
+      // differently, strongly near and fading with distance; broad patches
+      // where it is greener or drier, and blade-scale grain close up.
       float stripeAA = fwidth(p.x / 7.0) * 1.5;
       float stripe = smoothstep(0.5 - stripeAA, 0.5 + stripeAA, fract(p.x / 7.0));
-      vec3 lawn = uCampus * (0.97 + 0.05 * mid) * (0.965 + 0.07 * stripe * (1.0 - smoothstep(80.0, 260.0, vCtDist)));
+      float stripeNear = 1.0 - smoothstep(60.0, 300.0, vCtDist);
+      vec3 lawn = uCampus * (0.9 + 0.14 * mid) * (0.94 + 0.12 * stripe * stripeNear);
+      lawn = mix(lawn, uGrassDry * 0.95, smoothstep(0.6, 0.9, broad) * 0.22);
+      lawn = mix(lawn, uGrassLush, smoothstep(0.62, 0.9, ctFbm2(p * 0.02 + 5.0)) * 0.3);
+      #ifndef CT_LITE
+        lawn *= 0.93 + 0.14 * (ctNoise(p * 3.1) * 0.6 + ctNoise(p * 7.7) * 0.4) * (1.0 - smoothstep(25.0, 90.0, vCtDist));
+      #endif
       vec3 ground = mix(meadow, lawn, campus);
 
       // Slopes turn to rock - the headland's cliffs above the sea.

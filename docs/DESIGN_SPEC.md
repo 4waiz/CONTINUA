@@ -207,6 +207,13 @@ function of the scene clock - they show direction, not a measured rate.
 Pre-warming links use the same beam form, dashed and at 45 % opacity. The wired
 tether sags *downward* like a cable; radio links bow *upward*.
 
+A **satellite** link is served from the sky, not from a site on the ground, and
+is drawn that way: a straight beam rises from the rover's roof toward the
+satellite - due south, 45 degrees up, the side of the sky a geostationary
+satellite holds - and a second rises from the ground station's dish, which is
+built pointing there, its gateway end. Both fade into the sky; while the
+satellite carries or warms, a small violet mark sits where they meet.
+
 ### Cameras
 
 Follow, overview and close-up for working; a **cinematic** director for

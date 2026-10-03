@@ -965,3 +965,184 @@ The rover's speed on screen now varies only as the engine's own speed profile
 does. The handover at 68.5-73.1 s in this run is a real flap - satellite,
 cellular again for 0.6 s, satellite - recorded by the engine and shown as it
 happened; nothing here changes it.
+
+## The world, rebuilt
+
+The owner's verdict on Phase 8 was "2x, not 10x". Looked at with fresh eyes,
+the world still read as a low-poly model: grey needle mountains, trees made of
+lumpy spheres, a sparse island and a lawn like green felt.
+
+* **Mountains.** The ranges are rebuilt as lush island mountains: broad massifs
+  with summits as shoulders rather than spikes, spurs running down to the
+  shore with valleys between them, faces fluted by erosion into ribs and
+  gullies down the fall line (fluted cliffs on some faces, smooth forested
+  slopes on others), and foothills that follow the spurs instead of one level
+  terrace. Forest everywhere it can hold - darker in the gullies, lit on the
+  ribs, rock on the cliffs - with a per-pixel canopy of rounded crowns
+  (cellular noise, laid across the slope on steep faces, faded out before it
+  can shimmer), the island's drifting cloud shadows, and a sea mist that
+  thickens toward the water so the ranges rise out of haze.
+* **Trees that read as trees.** Every crown, shrub, flowering bush, bedding
+  plant and palm is now built from alpha-clipped leaf, blossom and frond cards
+  around a dark core, lit as one rounded mass, each card its own shade
+  (`docs/ASSET_MANIFEST.md` §2a). The atlas is drawn by the build script; the
+  props file grew by 0.25 MB (1.26 to 1.50 MB, the atlas a 219 KB lossless
+  WebP), and each tree has about a third of the triangles its spheres had.
+* **Woods.** Thirteen copses across the island - broadleaf, with flame trees
+  and jacarandas at their edges and scrub round their margins - and a
+  screening belt of trees inside the campus fence, where before there were
+  only single trees scattered across the meadows.
+* **Lawn.** Mown stripes that catch the light near the camera, broad greener
+  and drier patches, blade-scale grain close up, and a softer, more natural
+  green.
+
+## The rover camera, without a readback
+
+The woods made the camera tile expensive: with it open, Mission frames ran
+p95 16.7 ms instead of 8.1 ms. Timer queries showed the tile's own render
+costs 0.6 ms of GPU time; the slow frames were the ones its asynchronous
+readback landed in. On Chromium over D3D11, `getBufferSubData` after the
+fence is a synchronous round trip that waits for the GPU to drain, and with
+more work queued per frame the wait grew to 13-38 ms, fifteen times a second.
+The picture no longer comes back to the CPU at all: it is tone-mapped into a
+corner of the canvas's own drawing buffer, which the main view overwrites
+later in the frame, snapshotted with `createImageBitmap` (GPU-side), and
+handed to a `bitmaprenderer` canvas in the tile.
+
+Measured (Mission with a run, 1920×1080, high tier, RTX 4070 Laptop GPU,
+uncapped):
+
+| | Phase 8 world | New world, readback | New world, no readback |
+| --- | --- | --- | --- |
+| Frames per second | 238 | 185 | 194 |
+| Frame time p50 / p95 / p99 | 3.8 / 6.2 / 8.1 ms | 4.3 / 16.7 / 21.4 ms | 4.8 / 7.5 / 9.8 ms |
+| Frames carrying a camera picture, p50 | - | 13.3 ms | 7.3 ms |
+
+At a 150 % display scale (1280×720 CSS) it runs at 175 fps, p95 9.6 ms, and
+the tile's picture is exact to the pixel.
+
+## The satellite is in the sky
+
+A satellite link was drawn as an arc from the rover to the ground station at
+the end of the road, as if the station were the satellite, and the station's
+dish faced north-west - away from where a geostationary satellite can be seen
+from the hemisphere the sun puts this island in. The dish is now built aimed
+due south and 45 degrees up (`world_remote.py`, derived from the site's yaw;
+its equipment shelter moved behind the pedestal, out of the dish's line of
+sight), and the link is drawn the way it works: a beam rises from the rover's
+roof toward the satellite, a second from the dish - the link's gateway end -
+toward the same point, packets run down to the rover and up from the dish,
+and while the satellite carries or warms a small violet mark sits where the
+beams meet. `SATELLITE_SKY` in `sites.ts` is the one direction both follow.
+Nothing in the network model changed: the engine never read the station's
+orientation.
+
+## The low tier
+
+The new world first cost a software rasteriser too much: in the full smoke
+suite the Scene Lab drew exactly the 8 frames in 4 s its floor allows. A
+profile under SwiftShader (each scene group hidden in turn,
+`video/work/diag/diag-swiftshader-groups.mjs`) put the cost in per-pixel
+shading of large surfaces, not in triangles: the sea about half the frame,
+the sky's clouds a third, the ground and the mountains most of the rest. On
+the low tier now:
+
+* the sea is opaque, so where the island hides it a software rasteriser
+  rejects it by depth instead of shading and blending half a screen of water;
+* the sky has no clouds;
+* the ground's field-scale noise has two octaves instead of four;
+* the mountains and the leaf cards are Lambert-shaded, not physically based;
+* one tree in five is drawn (was two) and two in five of the scrub and
+  flowering bushes; the mountains are at 40 % resolution;
+* a software rasteriser renders at a 0.5 pixel ratio (was 0.6).
+
+Measured under SwiftShader at 1920×1080: 576 ms a frame before the cuts,
+271 ms after them at the 0.6 ratio; the smoke suite's performance test reads
+4.2 fps run alone at the 0.5 ratio (Phase 8: 3.3), and the whole smoke suite
+now takes 4.4 minutes instead of about 7. The high and balanced tiers are
+unchanged.
+
+## CONTINUA beside the reactive baseline
+
+The Mission view now runs the claim instead of describing it. With "vs
+reactive" ticked (the default), starting a run starts two: the chosen policy
+and B0 - one link at a time, switched only after it fails - on the same
+scenario, route and seed. The exogenous trace is generated from (scenario,
+seed) before either policy runs, so the rover is in the same place at the
+same moment in both, and the comparison is paired exactly as the experiments
+pair it. The transport (play, pause, seek, reset, replay) acts on both.
+
+* **The camera tile splits.** The same rover view, the left half the
+  baseline's stream and the right half CONTINUA's, each moving only while its
+  own run's receiver reports video delivered and freezing on its own stalls.
+  Where the halves stop meeting at the divider, one stream has stalled.
+* **The timeline gets a second track.** Beneath the run's carrying-link
+  track, the baseline's - with its red no-path gaps at every handover.
+* **Two session chips** replace one: each run's session, up or down, its
+  reconnects and its seconds down, as each receiver measures them.
+* **The end-of-run card is a paired table**: reconnects, total and longest
+  interruption, safe stop and application health beside the costs of acting
+  early - handovers, overhead, bytes on the satellite link - in the same
+  table, never coloured as wins. Every figure is from the two runs' metrics
+  files.
+
+On Gradual Wi-Fi degradation, seed 1, the engine records B0's session down
+for 0.94 s at the Wi-Fi handover, 1.8 s at cellular and 4.56 s at the
+satellite (7.32 s in all, one reconnect, safe stop entered) and P1's for
+0.16 s with no reconnects. Those are simulator results for one seed, not a
+live network test; the experiments page has the paired statistics.
+
+## The rover moves its sensors
+
+The LiDAR head and the satellite terminal are now separate nodes on their own
+pivots (`build_vehicle.py`; `CONTINUA_LidarHead`, `CONTINUA_SatMount`,
+`CONTINUA_SatPanel`), and `Rover.tsx` moves them as pure functions of the
+scene clock. The LiDAR spins at two revolutions a second. The satellite panel
+lies flat while the link is idle; while satellite warms or carries the
+session it turns to the satellite's bearing and tilts up square to it - its
+deployment is the share of the last 1.5 s the link spent warming or carrying,
+eased, so it rises over a second and a half and stows the same way, and a
+scrubbed frame is still exact. The hero rover is 72,278 triangles (budget
+30,000-80,000).
+
+## Clouds
+
+The fair-weather cumulus were one layer of smooth noise and read as smears.
+Their shape is now domain-warped, a billow layer gives the thin edges a
+rounded outline, thick cores are shaded underneath, and edges near the sun
+take a faint silver lining. The low tier keeps the old, cheaper layer.
+
+## Measured
+
+On this machine (RTX 4070 Laptop GPU, Chromium on ANGLE / D3D11), 1920×1080,
+high tier with ambient occlusion, a run beside its reactive baseline:
+
+| | Phase 8 | Phase 9 |
+| --- | --- | --- |
+| Frames per second, Mission with a run (`perf-probe.mjs`, uncapped) | 238 | 191 |
+| Frame time p50 / p95 / p99 | 3.8 / 6.2 / 8.1 ms | 4.9 / 7.9 / 10.6 ms |
+| Scene clock rate during a 1x run, per frame | 0.49-2.14x | 0.97-1.03x |
+| SwiftShader, Scene Lab, low tier (smoke suite, run alone) | 3.3 fps | 4.2 fps |
+| Models, Draco | 2.30 MB | 2.56 MB |
+| Hero rover | 71,998 triangles | 72,278 triangles |
+
+The frame rate fell with the woods, the leaf cards and the second run's
+interface; the frame-time tail is what a viewer feels, and it stays under
+11 ms at p99.
+
+## Verification
+
+| Suite | Result |
+| --- | --- |
+| `npm run lint` | clean, zero warnings |
+| `npm run typecheck` | clean |
+| `npm run build` | compiles, every route |
+| `npm run test:engine` | **145 passed** (after the live-session pacing fix) |
+| `npm run test:phase2` | **11 passed**, against the production build and a live engine, compare mode on |
+| `npm run test:smoke` | **11 passed**, 10 skipped by project design, at 1920, 1440 and 1280 |
+
+Looked at in a browser at 1920×1080, 1440×900 and 1280×720 during a run
+beside the baseline: the session chips fit between the side panels at every
+width (the carrying-link chip steps aside below 1600 px), and the camera
+tile, the two timeline tracks and the end-of-run table read at each size.
+
