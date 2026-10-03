@@ -2,9 +2,9 @@
 CONTINUA world - the remote sector, and the living things.
 
 The satellite ground station the route ends at, the pipeline the rover is
-there to inspect, wind turbines on the far ridge, sandstone, and the planting
-that makes the facility read as a place in a hot, dry country: date palms,
-ghaf trees and dry scrub.
+there to inspect, the wind farm, granite boulders, and the planting that makes
+the island read as a warm, green coast: palms, broadleaf trees, scarlet flame
+trees and violet jacarandas, flowering bushes and bedding.
 
 Front faces +X unless stated otherwise; base on z = 0; authored at the origin.
 """
@@ -308,13 +308,13 @@ def prop_ghaf(m: dict) -> bpy.types.Object:
         geo.sweep(k["trunk"], geo.circle(1.0, 7), [(0.1, 0, 1.5), (1.0 * math.cos(a), 1.0 * math.sin(a), 2.8),
                                                    tuple(tip)], scale=lambda t: 0.22 - 0.12 * t)
         tips.append(tip)
-    for i in range(11):
+    for i in range(10):
         base = tips[i % 3]
-        offset = Vector((rng.uniform(-1.6, 1.6), rng.uniform(-1.6, 1.6), rng.uniform(-0.4, 0.9)))
-        r = rng.uniform(1.3, 2.0)
-        _boulder(k["leaf_dark" if i % 2 else "leaf"], base + offset - Vector((0, 0, r * 0.4)), r,
-                 100 + i, squash=0.62)
-    return k.finish(smooth_angle=60.0)
+        offset = Vector((rng.uniform(-1.7, 1.7), rng.uniform(-1.7, 1.7), rng.uniform(-0.3, 1.0)))
+        r = rng.uniform(1.35, 2.0)
+        _foliage(k["leaf_dark" if i % 2 else "leaf"], base + offset - Vector((0, 0, r * 0.25)), r,
+                 100 + i, squash=0.68, subdivisions=3)
+    return k.finish(smooth_angle=70.0)
 
 
 def prop_shrubs(m: dict) -> list[bpy.types.Object]:
@@ -344,10 +344,140 @@ def prop_solar_field(m: dict) -> bpy.types.Object:
     return k.finish(smooth_angle=40.0)
 
 
+# ==========================================================================
+# Flowering planting: the colour of a green coastal island
+# ==========================================================================
+
+
+def _foliage(bm, centre, radius: float, seed: int, squash: float = 0.7, subdivisions: int = 2) -> None:
+    """A cluster of leaf or bloom: a lumpy, flattened ball."""
+    rng = arch.rng(seed)
+    tmp = bmesh.new()
+    bmesh.ops.create_icosphere(tmp, subdivisions=subdivisions, radius=radius)
+    phase = rng.uniform(0.0, 6.28)
+    for v in tmp.verts:
+        n = v.co.normalized()
+        lump = (0.15 * math.sin(n.x * 4.1 + phase) * math.sin(n.y * 3.7 + phase * 0.7) * math.cos(n.z * 4.6)
+                + 0.06 * math.sin(n.x * 9.3 - phase) * math.cos(n.y * 8.1)
+                + rng.uniform(-0.05, 0.05))
+        v.co = n * radius * (1.0 + lump)
+        v.co.z *= squash
+    bmesh.ops.translate(tmp, verts=tmp.verts[:], vec=Vector(centre))
+    mesh = bpy.data.meshes.new("tmp_foliage")
+    tmp.to_mesh(mesh)
+    tmp.free()
+    bm.from_mesh(mesh)
+    bpy.data.meshes.remove(mesh)
+
+
+def prop_flame_tree(m: dict) -> bpy.types.Object:
+    """Flame tree (Delonix regia): a short trunk forking low into spreading
+    limbs under a broad, flat umbrella of scarlet bloom and fine green leaf."""
+    k = Kit("PROP_FlameTree", m)
+    rng = arch.rng(41)
+    geo.sweep(k["trunk"], geo.circle(1.0, 10), [(0, 0, 0), (0.15, 0.0, 1.3), (0.2, 0.1, 2.1)],
+              scale=lambda t: 0.36 - 0.1 * t)
+    for i in range(5):
+        a = 2 * math.pi * i / 5 + rng.uniform(-0.25, 0.25)
+        r = rng.uniform(3.4, 4.8)
+        tip = (r * math.cos(a), r * math.sin(a), rng.uniform(5.0, 5.7))
+        mid = (r * 0.42 * math.cos(a), r * 0.42 * math.sin(a), 3.5)
+        geo.sweep(k["trunk"], geo.circle(1.0, 7), [(0.2, 0.1, 1.9), mid, tip], scale=lambda t: 0.2 - 0.12 * t)
+    # Leaf in a broad lower layer, bloom heaped over it - the way a flame tree
+    # in flower carries its colour on top.
+    for i in range(8):
+        a = 2 * math.pi * i / 8 + rng.uniform(-0.2, 0.2)
+        r = rng.uniform(2.6, 5.0)
+        centre = (r * math.cos(a), r * math.sin(a), rng.uniform(5.2, 5.8))
+        _foliage(k["leaf" if i % 2 else "leaf_dark"], centre, rng.uniform(1.7, 2.3), 300 + i, squash=0.5,
+                 subdivisions=3)
+    for i in range(9):
+        a = 2 * math.pi * i / 9 + rng.uniform(-0.3, 0.3) + 0.35
+        r = rng.uniform(0.0, 4.6) if i else 0.0
+        centre = (r * math.cos(a), r * math.sin(a), rng.uniform(6.2, 6.9))
+        _foliage(k["blossom_flame"], centre, rng.uniform(1.5, 2.1), 320 + i, squash=0.55, subdivisions=3)
+    return k.finish(smooth_angle=70.0)
+
+
+def prop_jacaranda(m: dict) -> bpy.types.Object:
+    """Jacaranda: an upright vase of limbs under a rounded crown of violet bloom."""
+    k = Kit("PROP_Jacaranda", m)
+    rng = arch.rng(43)
+    geo.sweep(k["trunk"], geo.circle(1.0, 10), [(0, 0, 0), (0.1, 0.05, 1.6), (0.15, 0.1, 2.7)],
+              scale=lambda t: 0.3 - 0.08 * t)
+    for i in range(4):
+        a = 2 * math.pi * i / 4 + 0.4
+        tip = (2.3 * math.cos(a), 2.3 * math.sin(a), 6.0)
+        mid = (1.0 * math.cos(a), 1.0 * math.sin(a), 4.0)
+        geo.sweep(k["trunk"], geo.circle(1.0, 7), [(0.15, 0.1, 2.5), mid, tip], scale=lambda t: 0.18 - 0.1 * t)
+    # Crown: clusters over the upper half of a dome.
+    for i in range(13):
+        polar = rng.uniform(0.0, 1.25)
+        azimuth = rng.uniform(0.0, 6.283)
+        centre = (3.0 * math.sin(polar) * math.cos(azimuth), 3.0 * math.sin(polar) * math.sin(azimuth),
+                  6.4 + 2.2 * math.cos(polar))
+        green = i % 4 == 2
+        _foliage(k["leaf_dark" if green else "blossom_lilac"], centre, rng.uniform(1.4, 1.95), 400 + i,
+                 squash=0.8, subdivisions=3)
+    return k.finish(smooth_angle=70.0)
+
+
+FLOWER_BUSHES = (
+    ("PROP_FlowerBush_Magenta", "blossom_magenta", 5),
+    ("PROP_FlowerBush_Coral", "blossom_coral", 6),
+    ("PROP_FlowerBush_Yellow", "blossom_yellow", 7),
+    ("PROP_FlowerBush_White", "blossom_white", 8),
+)
+
+
+def prop_flower_bushes(m: dict) -> list[bpy.types.Object]:
+    """Bougainvillea-like mounds: dark leaf under sprays of bloom, about 2.4 m
+    across and 1.6 m high, in four colours."""
+    out = []
+    for name, colour, seed in FLOWER_BUSHES:
+        k = Kit(name, m)
+        rng = arch.rng(seed)
+        for i in range(5):
+            r = rng.uniform(0.55, 0.85)
+            centre = (rng.uniform(-0.8, 0.8), rng.uniform(-0.8, 0.8), r * 0.45)
+            _foliage(k["leaf_dark" if i % 2 else "leaf"], centre, r, seed * 10 + i, squash=0.8)
+        for i in range(10):
+            angle = rng.uniform(0.0, 6.283)
+            reach = rng.uniform(0.25, 1.05)
+            r = rng.uniform(0.26, 0.42)
+            centre = (reach * math.cos(angle), reach * math.sin(angle), rng.uniform(0.55, 1.15))
+            _foliage(k[colour], centre, r, seed * 20 + i, squash=0.85, subdivisions=1)
+        out.append(k.finish(smooth_angle=60.0))
+    return out
+
+
+def prop_flower_bed(m: dict) -> bpy.types.Object:
+    """A raised bed for roadsides and facades: a concrete kerb round dark soil
+    and two rows of bedding plants in four colours. 6 m along X, 1.6 m deep."""
+    k = Kit("PROP_FlowerBed", m)
+    length, depth, kerb = 6.0, 1.6, 0.12
+    for y in (-depth / 2 + kerb / 2, depth / 2 - kerb / 2):
+        box(k["concrete"], (0.0, y, 0.15), (length, kerb, 0.3))
+    for x in (-length / 2 + kerb / 2, length / 2 - kerb / 2):
+        box(k["concrete"], (x, 0.0, 0.15), (kerb, depth - 2 * kerb, 0.3))
+    box(k["soil"], (0.0, 0.0, 0.13), (length - 2 * kerb, depth - 2 * kerb, 0.26))
+    rng = arch.rng(29)
+    colours = ("blossom_yellow", "blossom_magenta", "blossom_white", "blossom_coral")
+    for row, y in enumerate((-0.36, 0.36)):
+        for i in range(10):
+            x = -2.55 + i * 0.567 + (0.28 if row else 0.0) * 0.5
+            _foliage(k["leaf"], (x, y, 0.36), 0.24, 600 + row * 20 + i, squash=0.7, subdivisions=1)
+            _foliage(k[colours[(i + row * 2) % 4]], (x + rng.uniform(-0.06, 0.06), y + rng.uniform(-0.06, 0.06), 0.5),
+                     0.17, 640 + row * 20 + i, squash=0.75, subdivisions=1)
+    return k.finish(smooth_angle=55.0)
+
+
 def build_all(m: dict) -> list[bpy.types.Object]:
     out = [prop_sat_terminal(m), prop_pipeline(m), prop_valve_station(m), prop_palm(m),
            prop_ghaf(m), prop_solar_field(m)]
     out += prop_wind_turbine(m)
     out += prop_rocks(m)
     out += prop_shrubs(m)
+    out += [prop_flame_tree(m), prop_jacaranda(m), prop_flower_bed(m)]
+    out += prop_flower_bushes(m)
     return out

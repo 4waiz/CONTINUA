@@ -74,23 +74,30 @@ properties in `apps/web/src/app/globals.css`.
 
 ### Colour - scene
 
-A pale desert at midday: warm, light and low in saturation, so the white rover
-stays the cleanest object in frame and the interface's cyan / blue / violet stay
-the only strong colours on screen. Values live in `SCENE_COLOR`
+A green coastal island on a clear day: meadow greens, white beaches, a
+turquoise-to-sapphire sea under a deep blue sky with fair-weather cumulus, and
+flowering trees for colour. Colourful but natural and light - the white rover
+is still the cleanest object in frame, and the interface's cyan / blue / violet
+still read as the network's colours, not the landscape's. (Phase 8 replaced the
+original pale desert at the owner's request.) Values live in `SCENE_COLOR`
 (`packages/scene/src/theme.ts`).
 
 | Token | Value | Use |
 | --- | --- | --- |
-| `sky` / `skyHorizon` | `#BFD6F0` / `#EEF2F6` | sky shader zenith and horizon |
-| `sun` | `#FFF3DE` | key light colour |
-| `fog` | `#E9EDF1` | atmospheric depth, 260 m → 1900 m |
-| `campus` | `#CFCAC0` | graded ground inside the campus |
-| `sandLight` / `sand` / `sandDark` | `#ECE1CC` / `#DDCDAF` / `#C7B391` | open desert, ripples, low ground |
-| `rockTint` | `#B9A280` | slopes |
+| `sky` / `skyHorizon` | `#3F8EDC` / `#D8EAF8` | sky shader zenith and horizon |
+| `sun` | `#FFF2DC` | key light colour |
+| `fog` | `#D3E5F5` | coastal haze, 320 m → 2400 m (the camera's far plane: sea meets sky without a seam) |
+| `campus` | `#76A74B` | mown campus lawn, striped |
+| `grass` / `grassLush` / `grassDry` / `heath` | `#79A24C` / `#557F39` / `#B9B76C` / `#8C8D5E` | meadow patchwork |
+| `flowerA`–`flowerD` | `#F2C230` / `#F4F1EA` / `#C46BD8` / `#F07A8E` | wildflowers in the meadow shader |
+| `beach` | `#EEE3C6` | beach above the waterline, wet sand at it |
+| `seaShallow` / `seaMid` / `seaDeep` | `#4FD6C8` / `#1AA6C8` / `#0F5E9C` | sea colour by water depth |
+| `rockTint` | `#8D958C` | slopes and the headland's cliffs |
+| `mountainFoot` / `mountainRock` | `#4E8A44` / `#8C9690` | near ranges: woods below, rock on the spurs |
+| `mountainFar` / `mountainFarRock` | `#6F9C8C` / `#9FB0BB` | far ranges, blued by the haze |
 | `concrete` / `apron` | `#C9CDD2` / `#C6CBD1` | building pads, aprons, terminus |
 | `road` | `#4F5664` | asphalt carriageway |
-| `roadEdge` / `roadLine` / `roadCentre` | `#C9C1B1` / `#F4F2EC` / `#F2C14E` | gravel shoulder, edge lines, dashed centre line |
-| `ridge` / `ridgeFar` | `#CBD3DE` / `#DCE2EA` | distant silhouettes |
+| `roadEdge` / `roadLine` / `roadCentre` | `#B9B3A6` / `#F4F2EC` / `#F2C14E` | gravel shoulder, edge lines, dashed centre line |
 
 ### Spacing, radius, type
 
@@ -128,31 +135,44 @@ One screen, no page scroll, at 1920×1080, 1440×900, 1366×768 and 1280×720.
 
 ## 5. Scene art direction
 
-* **Hard, warm daylight.** A sun key at intensity 3.0, 41° up in the south
-  west - mid-morning, so every building, tank and palm throws a shadow long
-  enough to give the ground form - a hemisphere fill at 0.46 (sky above, sand
-  bounce below), and an
-  environment map rendered at runtime from the same procedural sky shader the
-  background uses (`scene.environmentIntensity` 0.38) - no HDR download, so the
-  scene renders identically offline. Neutral tone mapping at exposure 0.92.
+* **Clear, warm daylight.** A sun key at intensity 3.0, 41° up over the sea -
+  mid-morning, so every building, tank and tree throws a shadow long enough to
+  give the ground form - a hemisphere fill at 0.5 (sky above, meadow bounce
+  below), and an environment map rendered at runtime from the same procedural
+  sky shader the background uses, cumulus included (`scene.environmentIntensity`
+  0.38) - no HDR download, so the scene renders identically offline. Neutral
+  tone mapping at exposure 0.92.
 * **Stable shadows.** The 4096 / 2048 / 1024 shadow map (by quality tier)
   follows the rover with its frustum snapped to whole texels in light space, so
   shadow edges do not crawl as the camera moves. The rover also carries a soft
   procedural contact shadow.
 * **Ground that reads as a place.** Terrain, road and concrete are procedural
-  shaders: campus ground blending into sand with ripples and slope tint, an
-  asphalt road with edge lines, a dashed centre line and wheel-path wear over a
-  gravel shoulder, jointed concrete pads under every building, and service
-  roads to each one. Low ridge silhouettes sit far beyond the playable bounds.
+  shaders: a mown, striped campus lawn; meadows in a field-scale patchwork with
+  wildflowers that resolve into single blooms close up; rock on steep slopes;
+  a beach and wet sand at the waterline; an asphalt road with edge lines, a
+  dashed centre line and wheel-path wear over a gravel shoulder; jointed
+  concrete pads under every building, and service roads to each one. Grass
+  tufts, flowering tufts and gravel fringe the open road, swaying with the
+  scene clock.
+* **An island.** The land is a broad island: sea along the south shore, a
+  headland past the ground station, a strait to the north, the town on the
+  west coast, every shore at least a hundred metres from the route. The sea's
+  colour comes from the water depth under each point (the island's heights,
+  sampled once), turquoise over the shelf to sapphire offshore, with surf that
+  breathes at the waterline and waves that are a function of the scene clock.
+  Mountain ranges across the water are solid, sunlit bands - woods and rock
+  near, haze-blue far - and the south is left open to the horizon.
 * **Grounded, not pasted.** Ground-truth ambient occlusion on the high tier
   darkens wherever one object meets another, and a soft occlusion footprint
-  under every solid prop darkens the sand around it; baked AO already shades
-  each object's own creases.
+  under every solid building darkens the ground around it; baked AO already
+  shades each object's own creases.
 * **A world with a job.** An operations campus (operations centre, gateway
   hall, hangar, response station, gatehouse, carports), an industrial corridor
   (halls, tank farm, pipe rack, stack, substation, pylons), and a remote sector
-  (ground station, pipeline and valve station, solar, wind turbines), dressed
-  with palms, ghafs and scrub. The full list is in `ASSET_MANIFEST.md`.
+  (ground station, pipeline and valve station, solar, an offshore wind farm),
+  dressed with palms, broadleaf woods, scarlet flame trees, violet jacarandas,
+  bougainvillea in four colours and bedding along the campus road. The full
+  list is in `ASSET_MANIFEST.md`.
 * **Restraint.** No bloom, no god rays, no particles, no floating labels over
   the vehicle. Infrastructure is marked with a thin ground ring that only grows
   a vertical stem when selected.

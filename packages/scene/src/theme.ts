@@ -22,34 +22,46 @@ export const COLOR = {
 } as const;
 
 /**
- * Scene-only colours: a pale desert at midday. Warm, light and low in
- * saturation, so the white rover stays the cleanest object in frame and the
- * interface's cyan / blue / violet stay the only strong colours on screen.
+ * Scene-only colours: a green coastal island on a clear day. Fresh meadow
+ * greens, white beaches, a turquoise-to-sapphire sea and a deep blue sky -
+ * colourful, but natural and light, so the white rover stays the cleanest
+ * object in frame and the interface's cyan / blue / violet still read as the
+ * network's colours, not the landscape's.
  */
 export const SCENE_COLOR = {
-  sky: '#A9CBEF',
-  skyHorizon: '#EEF2F6',
-  fog: '#E6ECF3',
-  sun: '#FFEBD0',
-  /** Graded campus ground: compacted, cooler, lighter than the open desert. */
-  campus: '#CFCAC0',
-  sandLight: '#ECE1CC',
-  sand: '#DDCDAF',
-  sandDark: '#C7B391',
-  rockTint: '#B9A280',
+  sky: '#3F8EDC',
+  skyHorizon: '#D8EAF8',
+  fog: '#D3E5F5',
+  sun: '#FFF2DC',
+  /** Campus lawn: mown, brighter and more even than the open meadow. */
+  campus: '#76A74B',
+  grass: '#79A24C',
+  grassLush: '#557F39',
+  grassDry: '#B9B76C',
+  heath: '#8C8D5E',
+  beach: '#EEE3C6',
+  rockTint: '#8D958C',
+  /** Ground colour for bounce light and the environment's lower half. */
+  groundBounce: '#86A862',
+  flowerA: '#F2C230',
+  flowerB: '#F4F1EA',
+  flowerC: '#C46BD8',
+  flowerD: '#F07A8E',
+  seaShallow: '#4FD6C8',
+  seaMid: '#1AA6C8',
+  seaDeep: '#0F5E9C',
   concrete: '#C9CDD2',
   road: '#4F5664',
-  roadEdge: '#C9C1B1',
+  roadEdge: '#B9B3A6',
   roadLine: '#F4F2EC',
   roadCentre: '#F2C14E',
   apron: '#C6CBD1',
   grid: '#7C93B6',
-  ridge: '#CBD3DE',
-  ridgeFar: '#DCE2EA',
-  /** Kept for callers that still read the Phase 1 names. */
-  groundNear: '#DCD8CE',
-  groundFar: '#DDCDAF',
-  groundHigh: '#ECE1CC',
+  /** Horizon ranges: green, rocky crests near; blue-grey far; the haze does the rest. */
+  mountainFoot: '#4E8A44',
+  mountainRock: '#8C9690',
+  mountainFar: '#6F9C8C',
+  mountainFarRock: '#9FB0BB',
 } as const;
 
 export const NETWORK_COLOR = {

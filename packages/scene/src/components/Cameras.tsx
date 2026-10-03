@@ -243,7 +243,7 @@ export function SceneCameras({ mode }: { mode: CameraMode }) {
     }
 
     // Never let the camera dip into a hill.
-    const groundY = terrain.height(shot.position.x, shot.position.z) + GROUND_CLEARANCE;
+    const groundY = terrain.surfaceHeight(shot.position.x, shot.position.z) + GROUND_CLEARANCE;
     shot.position.y = Math.max(shot.position.y, groundY);
 
     camera.position.copy(shot.position);

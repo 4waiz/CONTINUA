@@ -34,8 +34,9 @@ import continua_lib as lib
 
 def world_materials() -> dict[str, bpy.types.Material]:
     """Daylight palette: pale panels, graphite structure, blue-grey glass,
-    restrained CONTINUA accents. Desaturated so the white rover stays the
-    brightest, cleanest object in frame."""
+    restrained CONTINUA accents - and a green coastal island's planting, lush
+    leaf and flowering trees, so the landscape carries the colour and the
+    white rover stays the cleanest object in frame."""
     pbr = lib.pbr
     return {
         "panel": pbr("W_Panel_White", "#E6EBF2", roughness=0.55),
@@ -60,13 +61,21 @@ def world_materials() -> dict[str, bpy.types.Material]:
         "rubber": pbr("W_Rubber", "#22262D", roughness=0.85),
         "tank_white": pbr("W_Tank_White", "#EEF0F2", metallic=0.2, roughness=0.42),
         "rust": pbr("W_Rust", "#9A6B4A", metallic=0.3, roughness=0.75),
-        "sand": pbr("W_Sand", "#C9B48E", roughness=0.95),
-        "rock": pbr("W_Rock", "#B79E7C", roughness=0.92),
-        "rock_dark": pbr("W_Rock_Dark", "#8E7A61", roughness=0.94),
-        "trunk": pbr("W_Trunk", "#7C6A55", roughness=0.92),
-        "leaf": pbr("W_Leaf", "#7F9A6A", roughness=0.85),
-        "leaf_dark": pbr("W_Leaf_Dark", "#5F7A55", roughness=0.86),
-        "leaf_dry": pbr("W_Leaf_Dry", "#A3A37A", roughness=0.9),
+        "sand": pbr("W_Sand", "#E3D6B4", roughness=0.95),
+        "rock": pbr("W_Rock", "#A3A59F", roughness=0.9),
+        "rock_dark": pbr("W_Rock_Dark", "#7A7E79", roughness=0.92),
+        "trunk": pbr("W_Trunk", "#6A5745", roughness=0.92),
+        "leaf": pbr("W_Leaf", "#4C8C3A", roughness=0.82),
+        "leaf_dark": pbr("W_Leaf_Dark", "#2E6930", roughness=0.84),
+        "leaf_dry": pbr("W_Leaf_Dry", "#8DB64A", roughness=0.86),
+        "soil": pbr("W_Soil", "#5E4A3A", roughness=0.96),
+        # Flowering planting: bougainvillea, flame tree, jacaranda, bedding.
+        "blossom_magenta": pbr("W_Blossom_Magenta", "#D93A8C", roughness=0.7),
+        "blossom_coral": pbr("W_Blossom_Coral", "#F26A4B", roughness=0.7),
+        "blossom_yellow": pbr("W_Blossom_Yellow", "#F2C12E", roughness=0.7),
+        "blossom_white": pbr("W_Blossom_White", "#F5F2EA", roughness=0.7),
+        "blossom_flame": pbr("W_Blossom_Flame", "#E5482C", roughness=0.7),
+        "blossom_lilac": pbr("W_Blossom_Lilac", "#9B7ADB", roughness=0.7),
         "fabric": pbr("W_Fabric", "#F4F6F9", roughness=0.8),
         "lamp": pbr("W_Lamp", "#FFF7E6", roughness=0.2, emission="#FFF2D6",
                     emission_strength=0.6),

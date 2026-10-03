@@ -223,6 +223,45 @@ function buildLayout(): Record<string, Placement[]> {
   ];
   for (const [x, z] of ghafSpots) add('PROP_Ghaf', { x, z, yaw: random() * 6.28, scale: 0.85 + random() * 0.4 });
 
+  // Flame trees and jacarandas on the campus lawns: the island's colour.
+  const flowering: [string, number, number][] = [
+    ['PROP_FlameTree', -112, -62], ['PROP_Jacaranda', -98, -90], ['PROP_FlameTree', -14, -82],
+    ['PROP_Jacaranda', 14, -52], ['PROP_FlameTree', 36, -90], ['PROP_Jacaranda', 104, -88],
+    ['PROP_FlameTree', 152, -84], ['PROP_Jacaranda', 186, -34], ['PROP_FlameTree', 214, -72],
+    ['PROP_Jacaranda', -112, 84], ['PROP_FlameTree', -84, 96], ['PROP_Jacaranda', -6, 92],
+    ['PROP_FlameTree', 66, 100], ['PROP_FlameTree', 160, 96], ['PROP_Jacaranda', 212, 96],
+  ];
+  for (const [prop, x, z] of flowering) add(prop, { x, z, yaw: random() * 6.28, scale: 0.85 + random() * 0.3 });
+
+  // Bedding along the campus road out of the dock, clear of the service-road
+  // junctions; each bed lies along the road.
+  const junctions = SERVICE_ROADS.map((road) => road.points[0]![0]);
+  for (let d = 30; d < GATE_DISTANCE - 18; d += 12) {
+    for (const side of [1, -1]) {
+      const at = besideRoute(d, side * 8.6);
+      if (junctions.some((x) => Math.abs(at.x - x) < 9)) continue;
+      add('PROP_FlowerBed', at);
+    }
+  }
+
+  // Bougainvillea inside the fence, at the gatehouse and round the plaza.
+  const bushes = ['PROP_FlowerBush_Magenta', 'PROP_FlowerBush_Coral', 'PROP_FlowerBush_Yellow', 'PROP_FlowerBush_White'];
+  let bush = 0;
+  const addBush = (x: number, z: number) => {
+    if (distanceToRoute(x, z) < 10 || insidePad(x, z, PADS, 1)) return;
+    add(bushes[bush % bushes.length]!, { x, z, yaw: random() * 6.28, scale: 0.85 + random() * 0.4 });
+    bush += 1;
+  };
+  for (let x = CAMPUS.minX + 10; x < CAMPUS.maxX - 8; x += 17) {
+    addBush(x + random() * 4, CAMPUS.minZ + 3.5);
+    addBush(x + random() * 4, CAMPUS.maxZ - 3.5);
+  }
+  for (const lateral of [-13, -17, 13, 17]) {
+    const at = besideRoute(GATE_DISTANCE - 10, lateral);
+    addBush(at.x, at.z);
+  }
+  for (const [x, z] of [[-70, 12], [-22, 12], [-66, 50], [-26, 50]] as const) addBush(x, z);
+
   // --- the corridor: halls, tank farm, rack, substation, stack, power line ----------
   add('PROP_Warehouse', { x: 290, z: 75, yaw: HALF_PI }, { x: 392, z: 82, yaw: HALF_PI });
   add('PROP_Substation', { x: 292, z: -60, yaw: 0 });
@@ -243,8 +282,9 @@ function buildLayout(): Record<string, Placement[]> {
     add('PROP_PipeRack', besideRoute(d, -19));
   }
 
-  // A transmission line well south of the corridor - tall, so it reads at distance.
-  for (let i = 0; i < 9; i += 1) {
+  // A transmission line well south of the corridor - tall, so it reads at
+  // distance - ending before the coast swings in toward the road.
+  for (let i = 0; i < 6; i += 1) {
     const x = 120 + i * 78;
     add('PROP_Pylon', { x, z: -176 - 10 * Math.sin(i * 0.9), yaw: 0.06 });
   }
@@ -302,17 +342,21 @@ function buildLayout(): Record<string, Placement[]> {
     const remote = x > 430;
     const bucket = random();
     const placement = { x, z, yaw: random() * Math.PI * 2, scale: 0.6 + random() * 0.9 };
-    if (remote && bucket < 0.3) add('PROP_Rock_A', placement);
-    else if (remote && bucket < 0.5) add('PROP_Rock_B', placement);
-    else if (remote && bucket < 0.56) add('PROP_Rock_C', placement);
-    else if (bucket < 0.8) add('PROP_Shrub_A', placement);
-    else add('PROP_Shrub_B', placement);
+    if (remote && bucket < 0.12) add('PROP_Rock_A', placement);
+    else if (remote && bucket < 0.2) add('PROP_Rock_B', placement);
+    else if (remote && bucket < 0.23) add('PROP_Rock_C', placement);
+    else if (bucket < 0.55) add('PROP_Shrub_A', placement);
+    else if (bucket < 0.78) add('PROP_Shrub_B', placement);
+    else add(bushes[Math.floor(random() * bushes.length)]!, placement);
   }
-  for (let i = 0; i < 30; i += 1) {
-    const x = 240 + random() * 820;
-    const z = -320 + random() * 640;
+  // Woods across the meadows, with flowering trees among them.
+  for (let i = 0; i < 100; i += 1) {
+    const x = 240 + random() * 840;
+    const z = -330 + random() * 680;
     if (distanceToRoute(x, z) < 22 || insidePad(x, z, pads, 10)) continue;
-    add('PROP_Ghaf', { x, z, yaw: random() * 6.28, scale: 0.8 + random() * 0.5 });
+    const kind = random();
+    const prop = kind < 0.72 ? 'PROP_Ghaf' : kind < 0.88 ? 'PROP_FlameTree' : 'PROP_Jacaranda';
+    add(prop, { x, z, yaw: random() * 6.28, scale: 0.8 + random() * 0.5 });
   }
 
   return out;

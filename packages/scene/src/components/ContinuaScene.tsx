@@ -22,8 +22,10 @@ import {
   useSetSceneSettings,
 } from '../runtime/SceneRuntime';
 import { Ground } from './Ground';
+import { Mountains, RoadsideScatter, Sea } from './Landscape';
 import { Lighting } from './Lighting';
 import { PostEffects } from './PostEffects';
+import { RoverCam } from './RoverCam';
 import { CoverageOverlay, LinkBeams } from './Network';
 import { Rover } from './Rover';
 import { SceneCameras } from './Cameras';
@@ -90,18 +92,18 @@ function DebugBridge() {
 
 /**
  * Compiles every shader the scene needs before its first frame, without
- * blocking the page. The render loop is held while the driver compiles in
- * parallel (`KHR_parallel_shader_compile`, through three's `compileAsync`), so
- * the loading overlay keeps animating and the first drawn frame does not stall
- * for seconds. It replaces drei's `<Preload all />`, which compiled the same
- * ~100 programs synchronously and then rendered the whole scene six more times
- * into a cube map to warm textures - and this scene has no textures.
+ * blocking the page. The render loop is held (see `ContinuaScene`'s
+ * `frameloop`) while the driver compiles in parallel
+ * (`KHR_parallel_shader_compile`, through three's `compileAsync`), so the
+ * loading overlay keeps animating and the first drawn frame does not stall for
+ * seconds. It replaces drei's `<Preload all />`, which compiled the same ~100
+ * programs synchronously and then rendered the whole scene six more times into
+ * a cube map to warm textures - and this scene has no textures.
  */
-function Precompile() {
+function Precompile({ onCompiled }: { onCompiled: () => void }) {
   const gl = useThree((state) => state.gl);
   const scene = useThree((state) => state.scene);
   const camera = useThree((state) => state.camera);
-  const setFrameloop = useThree((state) => state.setFrameloop);
   useLayoutEffect(() => {
     let cancelled = false;
     // Things that are hidden until a handoff or a toggle still need their
@@ -113,19 +115,29 @@ function Precompile() {
         object.visible = true;
       }
     });
-    setFrameloop('never');
     performance.mark('continua:compile-start');
-    const release = () => {
-      performance.mark('continua:compile-end');
+    let released = false;
+    const restore = () => {
+      if (released) return;
+      released = true;
       for (const object of hidden) object.visible = false;
-      if (!cancelled) setFrameloop('always');
+    };
+    const release = () => {
+      if (released) return;
+      performance.mark('continua:compile-end');
+      restore();
+      if (!cancelled) onCompiled();
     };
     gl.compileAsync(scene, camera).then(release, release);
+    // compileAsync polls each program from a timer and never settles if one of
+    // its materials is disposed meanwhile; the loop must not wait on it forever.
+    const fallback = setTimeout(release, 8000);
     return () => {
       cancelled = true;
-      setFrameloop('always');
+      clearTimeout(fallback);
+      restore();
     };
-  }, [gl, scene, camera, setFrameloop]);
+  }, [gl, scene, camera, onCompiled]);
   return null;
 }
 
@@ -149,6 +161,7 @@ function QualityGovernor() {
         const next = settings.quality === 'high' ? 'balanced' : settings.quality === 'balanced' ? 'low' : null;
         if (!next) return;
         stepped.current = true;
+        lowerCeiling(next);
         setSettings({ quality: next });
       }}
     />
@@ -158,10 +171,12 @@ function QualityGovernor() {
 function SceneContents({
   quality,
   onFirstFrame,
+  onCompiled,
   adaptive,
 }: {
   quality: QualityTier;
   onFirstFrame?: () => void;
+  onCompiled: () => void;
   adaptive: boolean;
 }) {
   const settings = useSceneSettings();
@@ -178,10 +193,14 @@ function SceneContents({
       <SceneDriver frozen={inspect} />
       <Lighting quality={quality} />
       <Ground quality={quality} />
+      <Mountains quality={quality} />
+      <Sea quality={quality} />
+      {quality !== 'low' && <RoadsideScatter quality={quality} />}
       <WorldProps
         showMarkers={settings.showMarkers && !inspect}
         selectedSiteId={settings.selectedSiteId}
         onSelectSite={onSelectSite}
+        lite={quality === 'low'}
       />
       <Rover lod={quality === 'low'} />
       <CoverageOverlay visible={settings.showCoverage && !inspect} />
@@ -190,7 +209,8 @@ function SceneContents({
       {quality === 'low' && <BakeShadows />}
       {quality === 'high' && <PostEffects />}
       {adaptive && <QualityGovernor />}
-      <Precompile />
+      <RoverCam quality={quality} />
+      <Precompile onCompiled={onCompiled} />
       <FirstFrameSignal onFirstFrame={onFirstFrame} />
       <DebugBridge />
     </>
@@ -210,6 +230,11 @@ export interface ContinuaSceneProps {
    * stepped capture, where the measured rate is the harness's, not the GPU's.
    */
   adaptive?: boolean;
+  /**
+   * Draw frames (default). False holds the render loop: the app's shared
+   * canvas while no page is showing it.
+   */
+  active?: boolean;
 }
 
 /**
@@ -230,6 +255,13 @@ function isSoftwareRenderer(context: WebGLRenderingContext | WebGL2RenderingCont
 }
 
 let softwareProbe: boolean | null = null;
+
+const TIERS: readonly QualityTier[] = ['low', 'balanced', 'high'];
+let ceiling: QualityTier = 'high';
+
+function lowerCeiling(tier: QualityTier): void {
+  if (TIERS.indexOf(tier) < TIERS.indexOf(ceiling)) ceiling = tier;
+}
 
 /**
  * Asked once, on a throwaway context, *before* the scene's canvas exists:
@@ -254,10 +286,34 @@ function probeSoftwareRenderer(): boolean {
   return softwareProbe;
 }
 
-export function ContinuaScene({ className, fallback, onReady, onFirstFrame, adaptive = true }: ContinuaSceneProps) {
+/**
+ * The highest quality tier this device has shown it can hold: lowered for good
+ * by a software rasteriser or by the frame-rate governor. A page that brings
+ * its own settings to the app's shared canvas starts at or below it, so moving
+ * between pages cannot put a struggling machine back on the high tier.
+ */
+export function qualityCeiling(): QualityTier {
+  if (probeSoftwareRenderer()) lowerCeiling('low');
+  return ceiling;
+}
+
+export function ContinuaScene({
+  className,
+  fallback,
+  onReady,
+  onFirstFrame,
+  adaptive = true,
+  active = true,
+}: ContinuaSceneProps) {
   const settings = useSceneSettings();
   const setSettings = useSetSceneSettings();
   const [software] = useState(probeSoftwareRenderer);
+  // The loop starts once every program is compiled, and runs only while the
+  // canvas is on screen. Passed to the canvas as a prop rather than set from
+  // inside it: the canvas re-applies its props on every render, so a loop held
+  // from inside would be released again by any unrelated re-render.
+  const [compiled, setCompiled] = useState(false);
+  const onCompiled = useCallback(() => setCompiled(true), []);
   // Adapt to the device before the first frame rather than after a stutter.
   const [pixelRatioCap] = useState(() => {
     if (typeof window === 'undefined') return 2;
@@ -277,6 +333,7 @@ export function ContinuaScene({ className, fallback, onReady, onFirstFrame, adap
   return (
     <Canvas
       className={className}
+      frameloop={compiled && active ? 'always' : 'never'}
       dpr={dpr}
       shadows={settings.quality === 'low' ? false : { enabled: true, type: PCFShadowMap }}
       gl={{
@@ -297,15 +354,21 @@ export function ContinuaScene({ className, fallback, onReady, onFirstFrame, adap
         // Start a software-rendered context on the low tier rather than at one
         // frame a second. Only the starting point: the quality control still
         // lets the viewer choose any tier.
-        if (settings.quality !== 'low' && (software || isSoftwareRenderer(gl.getContext()))) {
-          setSettings({ quality: 'low' });
+        if (software || isSoftwareRenderer(gl.getContext())) {
+          lowerCeiling('low');
+          if (settings.quality !== 'low') setSettings({ quality: 'low' });
         }
         onReady?.();
       }}
       style={{ background: SCENE_COLOR.skyHorizon }}
     >
       <Suspense fallback={fallback ?? null}>
-        <SceneContents quality={settings.quality} onFirstFrame={onFirstFrame} adaptive={adaptive} />
+        <SceneContents
+          quality={settings.quality}
+          onFirstFrame={onFirstFrame}
+          onCompiled={onCompiled}
+          adaptive={adaptive}
+        />
       </Suspense>
       <AdaptiveDpr pixelated={false} />
       <AdaptiveEvents />

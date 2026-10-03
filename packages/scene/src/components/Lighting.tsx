@@ -1,10 +1,10 @@
 'use client';
 
 /**
- * Midday desert light: a pale sky with a soft sun glow, a warm key light whose
- * shadow frustum follows the rover, a sky/sand hemisphere fill, and an
- * environment built from the same sky so paint and glass reflect what is
- * actually around them.
+ * A clear coastal day: a deep blue sky with fair-weather cumulus, a warm key
+ * light whose shadow frustum follows the rover, a sky/meadow hemisphere fill,
+ * and an environment built from the same sky so paint, glass and the sea
+ * reflect what is actually around them.
  *
  * The sun never moves and nothing reads the wall clock, so lighting is a pure
  * function of where the rover is - a frame captured twice is the same frame.
@@ -45,25 +45,47 @@ const SKY_FRAGMENT = /* glsl */ `
     vec2 i = floor(p), f = fract(p), u = f * f * (3.0 - 2.0 * f);
     return mix(mix(h21(i), h21(i + vec2(1, 0)), u.x), mix(h21(i + vec2(0, 1)), h21(i + vec2(1, 1)), u.x), u.y);
   }
+  #ifdef CT_LITE
+    #define CLOUD_OCTAVES 3
+  #else
+    #define CLOUD_OCTAVES 5
+  #endif
+  float fbm(vec2 p) {
+    float sum = 0.0, amp = 0.5;
+    for (int i = 0; i < CLOUD_OCTAVES; i++) { sum += amp * n2(p); p = p * 2.02 + vec2(13.1, 7.7); amp *= 0.5; }
+    return sum;
+  }
   void main() {
     vec3 dir = normalize(vWorld - cameraPosition);
-    float h = clamp(dir.y * 1.25 + 0.06, 0.0, 1.0);
-    vec3 sky = mix(uHorizon, uTop, pow(h, 0.75));
-    // A soft glow toward the sun, strongest near the horizon.
+    float h = clamp(dir.y, 0.0, 1.0);
+    // Deep blue overhead, paling to a bright haze at the horizon.
+    vec3 sky = mix(uHorizon, uTop, pow(smoothstep(0.0, 0.65, h), 0.6));
     float sunDot = max(dot(dir, uSunDir), 0.0);
-    sky += uSun * (pow(sunDot, 8.0) * 0.18 + pow(sunDot, 600.0) * 0.6);
-    // Faint high cloud: long streaks, only well above the horizon.
-    vec2 q = dir.xz / max(dir.y, 0.08) * 0.9;
-    float cloud = n2(q * 1.3 + vec2(0.0, q.x * 0.2)) * 0.6 + n2(q * 3.1) * 0.4;
-    cloud = smoothstep(0.58, 0.9, cloud) * smoothstep(0.08, 0.35, dir.y);
-    sky = mix(sky, vec3(1.0), cloud * 0.35);
+    sky += uSun * (pow(sunDot, 6.0) * 0.14 + pow(sunDot, 64.0) * 0.22 + pow(sunDot, 900.0) * 1.2);
+    // Fair-weather cumulus on a high deck: white where the sun reaches them,
+    // softly blue-grey underneath, thinning out toward the horizon haze.
+    if (dir.y > 0.0) {
+      vec2 q = dir.xz / (dir.y + 0.06) * 2.2;
+      vec2 drift = vec2(3.0, 1.0);
+      float d = fbm(q * 0.9 + drift);
+      float cover = smoothstep(0.44, 0.64, d) * smoothstep(0.02, 0.16, dir.y);
+      #ifdef CT_LITE
+        float shade = 0.45;
+      #else
+        float toward = fbm(q * 0.9 + drift + uSunDir.xz * 0.08);
+        float shade = clamp((d - toward) * 5.0 + 0.45, 0.0, 1.0);
+      #endif
+      vec3 cloud = mix(vec3(1.0, 0.995, 0.985), vec3(0.74, 0.80, 0.89), shade * 0.75);
+      sky = mix(sky, cloud, cover * 0.94);
+    }
     gl_FragColor = vec4(sky, 1.0);
     #include <colorspace_fragment>
   }
 `;
 
-function skyMaterial(): ShaderMaterial {
+function skyMaterial(lite: boolean): ShaderMaterial {
   return new ShaderMaterial({
+    defines: lite ? { CT_LITE: '' } : {},
     uniforms: {
       uTop: { value: new Color(SCENE_COLOR.sky) },
       uHorizon: { value: new Color(SCENE_COLOR.skyHorizon) },
@@ -78,8 +100,8 @@ function skyMaterial(): ShaderMaterial {
   });
 }
 
-function GradientSky() {
-  const material = useMemo(() => skyMaterial(), []);
+function GradientSky({ lite }: { lite: boolean }) {
+  const material = useMemo(() => skyMaterial(lite), [lite]);
   useEffect(() => () => material.dispose(), [material]);
   return (
     <mesh material={material} renderOrder={-100} frustumCulled={false}>
@@ -88,9 +110,10 @@ function GradientSky() {
   );
 }
 
-/** The same sky, plus warm sand below, rendered once into the environment map. */
+/** The same sky, plus the meadow below, rendered once into the environment map. */
 function SkyEnvironment({ resolution }: { resolution: number }) {
-  const material = useMemo(() => skyMaterial(), []);
+  // Captured once: always the full sky.
+  const material = useMemo(() => skyMaterial(false), []);
   useEffect(() => () => material.dispose(), [material]);
   // Stable children: drei re-captures the cube *and* re-runs the PMREM filter
   // (hundreds of passes) whenever they change identity, which an unmemoised
@@ -104,7 +127,7 @@ function SkyEnvironment({ resolution }: { resolution: number }) {
         </mesh>
         <mesh rotation-x={-Math.PI / 2} position={[0, -2, 0]}>
           <circleGeometry args={[90, 32]} />
-          <meshBasicMaterial color={SCENE_COLOR.sand} />
+          <meshBasicMaterial color={SCENE_COLOR.groundBounce} />
         </mesh>
       </>
     ),
@@ -124,7 +147,9 @@ export function Lighting({ quality }: { quality: 'high' | 'balanced' | 'low' }) 
   const target = useMemo(() => new Object3D(), []);
 
   useEffect(() => {
-    scene.fog = new Fog(SCENE_COLOR.fog, 260, 1900);
+    // Clear coastal air: the haze starts later and ends where the camera's far
+    // plane does, so the sea meets the sky without a seam.
+    scene.fog = new Fog(SCENE_COLOR.fog, 320, 2400);
     // The sky environment is bright everywhere; at full strength it floods
     // every shadow and the scene reads flat. A third of it keeps reflections
     // and fill while the sun does the modelling.
@@ -171,8 +196,8 @@ export function Lighting({ quality }: { quality: 'high' | 'balanced' | 'low' }) 
 
   return (
     <>
-      <GradientSky />
-      <hemisphereLight args={[SCENE_COLOR.sky, SCENE_COLOR.sand, 0.46]} />
+      <GradientSky lite={quality === 'low'} />
+      <hemisphereLight args={['#A9CDF0', SCENE_COLOR.groundBounce, 0.5]} />
       <directionalLight
         ref={lightRef}
         intensity={3.0}

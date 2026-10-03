@@ -4,9 +4,9 @@
 *The network changes. The session doesn't.*
 
 An interactive 3D scene following an unarmed emergency-response / industrial
-inspection rover as it drives from a wired docking facility, through Wi-Fi and
-cellular coverage, into a remote satellite-served sector - and shows how the
-session survives every handoff.
+inspection rover as it drives across a green coastal island - from a wired
+docking facility, through Wi-Fi and cellular coverage, out to a
+satellite-served headland - and shows how the session survives every handoff.
 
 ![CONTINUA dashboard](assets/previews/browser/dashboard-1920.png)
 
@@ -168,11 +168,12 @@ misses from 49 % to **31 %**.
 value is in *preparation* and *application-awareness*, not in prediction. Full
 numbers, including where CONTINUA loses, are in `docs/PROGRESS.md`.
 
-Rendering (kept separate from network metrics): 146-175 fps uncapped at
+Rendering (kept separate from network metrics): 238 fps uncapped at
 1920×1080 during a run, high tier with ambient occlusion on, on an RTX 4070
-Laptop GPU (`node scripts/perf-probe.mjs`); one render per frame; 2.07 MB of
-Draco-compressed models. On a slower GPU the scene steps its own quality tier
-down, and a software rasteriser starts on the low tier.
+Laptop GPU (`node scripts/perf-probe.mjs`); one shared canvas for every scene
+page, so switching pages builds nothing; 2.23 MB of Draco-compressed models.
+On a slower GPU the scene steps its own quality tier down, and a software
+rasteriser starts on the low tier.
 
 ## Phases
 
@@ -183,3 +184,4 @@ down, and a software rasteriser starts on the low tier.
 | 3 | Demo video: claim ledger, deterministic capture, narration, edit | **complete** |
 | 4 | Per-class steering, control mode handover, B2-defer baseline, test2 comparison | **complete** (see `docs/PHASE_4_RESULTS.md`) |
 | 7 | Visual overhaul: Mk2 rover, 48-prop world kit, procedural ground and daylight, immersive interface | **complete** (see `docs/PROGRESS.md`) |
+| 8 | A green coastal island (sea, beaches, mountains, clouds, flowering trees), one shared canvas across pages, a live rover camera | **complete** (see `docs/PROGRESS.md`) |

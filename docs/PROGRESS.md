@@ -704,3 +704,149 @@ What it took:
 Looked at in a browser at 1920×1080, 1440×900, 1366×768 and 1280×720
 (`node scripts/ui-screenshots.mjs`): no page scrolls, nothing is unreachable,
 no text is smaller than 11 px.
+
+# Phase 8 - a coastal island, one canvas, a rover camera
+
+The owner's verdict on Phase 7 was that it was better but not yet a leap, that
+the beige desert everywhere was the wrong world, and that the app still felt
+laggy in places. This pass changes the world's character and removes the last
+rebuild from navigation. **No engine code, contract, metric definition or
+experiment result changed.** Nothing in the network model knows about the sea,
+the mountains or the planting: coverage is still the geometric model in
+`world.json`, and the landscape cannot move a measured number.
+
+## The world
+
+* **An island instead of a desert.** The terrain is a broad island: sea along
+  the south shore, a headland past the ground station, a strait to the north,
+  the town on the west coast. Every shore is at least a hundred metres from the
+  route, so the road's elevation profile and everything the engine shares are
+  unchanged by it. A 6 % beach runs down through the waterline to a shelf.
+* **The sea** is one plane whose colour comes from the depth of water under
+  each point - the island's own heights, sampled once into a small texture -
+  turquoise over the shelf to sapphire offshore, with surf that breathes at the
+  waterline and waves that are a function of the scene clock.
+* **Meadows and lawns.** The ground shader is a field-scale patchwork of
+  greens with wildflowers that resolve into single blooms close up; the campus
+  is a mown, striped lawn; steep ground turns to rock; the beach is pale above
+  the waterline and wet at it. Grass tufts, flowering tufts in four colours and
+  gravel fringe the open road and sway with the scene clock.
+* **Mountains across the water.** The flat-shaded ridge curtain, which read as
+  grey boxes on the horizon, is replaced by two solid ranges with spurs and
+  gullies shaped in world space, so the sun models them: woods and rock near,
+  haze-blue far. The south is open sea to the horizon.
+* **A sky with weather.** A deep blue zenith, a bright coastal haze at the
+  horizon and fair-weather cumulus, white where the sun reaches them and
+  blue-grey underneath. The environment map is captured from the same sky, so
+  the rover's paint and the sea reflect the clouds.
+* **Colour from planting, not from neon.** New Blender props: scarlet flame
+  trees, violet jacarandas, bougainvillea in four colours and kerbed flower
+  beds along the campus road; the broadleaf trees and palms are lusher; the
+  boulders are granite. 55 props, 113,222 triangles, 1.19 MB with Draco.
+
+## Smoothness
+
+* **One canvas for the whole app.** Mission, Scenario Lab and Scene Lab each
+  built their own canvas, so every switch between them created a WebGL context,
+  re-uploaded every model, re-captured the sky and showed the loader for half a
+  second to a second. The canvas now lives in the root layout and is moved into
+  the page's own box (`SceneHost`); a switch swaps the runtime it draws.
+  Measured with an instrumented `getContext` (Scene Lab, Experiments,
+  Mission, Decision Log, Scenario Lab, Mission): after the first load, the
+  tour creates **no new WebGL context**, the same canvas element is on screen
+  on every scene page, and the worst frame in the 1.2 s after any switch is
+  17 ms - one frame at 60 Hz.
+* **The render loop is a prop.** The precompile hold was set from inside the
+  canvas, and the canvas re-applies its props on every render, so any unrelated
+  re-render could release it early. `frameloop` is now passed in.
+
+## The rover camera
+
+The Mission camera tile showed a drawn test pattern. It is now the simulated
+world rendered from the camera windows on the rover's sensor crown - tone-
+mapped exactly as the main view, 480×270, at most 15 pictures a second (3 on
+the low tier), reusing the main view's shadow map, read back without stalling
+the GPU, and only while the tile is open during a run. It is labelled a
+synthetic stream, and it behaves like the video class it stands for: it moves
+only while the engine keeps reporting newly delivered video frames, it freezes
+the moment the receiver reports the stream stalled, and its frame counter is
+the engine's own count.
+
+## Defects found and fixed in Phase 8
+
+1. **A null stall rendered as "0 ms".** The camera tile printed a missing
+   `stall_ms` as zero. It now reads "unavailable", as the hard rules require.
+2. **A dark square under every palm.** The ground-contact footprint, meant for
+   buildings, drew a dark rectangle under plants and boulders - invisible on
+   sand, a stain on a lawn. Plants and boulders no longer get one.
+3. **A camera could have gone under the sea.** The camera clamp kept cameras
+   above the ground, which offshore is the seabed. Cameras and coverage
+   footprints now stay above the water's surface.
+4. **The first island was too heavy for a software rasteriser.** Under
+   SwiftShader it drew 1.9 fps, below the smoke suite's floor of 2: the new
+   trees nearly tripled the low tier's triangles (239k to 642k), and the
+   clouds, the meadow and the sea added per-pixel noise. The low tier now
+   gets a lighter sky (three octaves, no sunward sample), the meadow without
+   its detail layers, a one-octave sea, half-resolution mountains and two in
+   five of the meadow trees: 3.3 fps, inside the 2.4-3.8 fps the desert world
+   measured on the same machine. The high and balanced tiers are unchanged.
+5. **The capture view hung on a software rasteriser.** Its own canvas started
+   on the high tier and switched to low a moment later, and the switch freed
+   a material that was still drawing: the mountains' cleanup disposed their
+   material together with the geometry it replaced. three's `compileAsync`,
+   polling that material from a timer, then threw and never settled, so the
+   render loop stayed held and the frame never became ready - the phase 2
+   capture test caught it, stuck on "preparing shaders". Now the mountains'
+   geometry and material have separate lifetimes; every Mission runtime starts
+   at the device's quality ceiling, so a software rasteriser never compiles the
+   high tier first; a tier change only changes how many instances an
+   instanced mesh draws, never the mesh, whose rebuild would release the
+   glTF's shared materials; shared glTF resources are never disposed with a
+   mesh; and the precompile hold gives up after 8 s whatever happens. On the
+   same software rasteriser the capture frame is now ready in about 2 s.
+
+## Known limitations of Phase 8
+
+* **The demo video predates Phases 7 and 8.** `deliverables/CONTINUA_Team_Kanban_Demo.mp4`
+  shows the Phase 3 desert world and interface; re-capturing it is a separate
+  job.
+* **The landscape is not in the network model.** Mountains do not shadow a
+  link and the sea does not attenuate one; coverage is the same geometric model.
+* **The rover camera is synthetic.** It is a render of the simulated world,
+  never transported video; only its motion is tied to the engine's video
+  figures.
+
+## Measured
+
+On this machine (RTX 4070 Laptop GPU, Chromium on ANGLE / D3D11), 1920×1080,
+high tier with ambient occlusion:
+
+| | Phase 7 | Phase 8 |
+| --- | --- | --- |
+| Mission with a run, frames per second (`perf-probe.mjs`, uncapped) | 146-175 | 238 |
+| Frame time p50 / p95 / p99 | - | 3.8 / 6.2 / 8.1 ms |
+| Long main-thread tasks | 0 | 0 |
+| Page switch to a drawn scene | 0.4-0.7 s, loader shown | no loader, worst frame 17 ms |
+| New WebGL contexts on a tour of every page | one per scene page | 0 |
+| First load to a drawn scene | 3.5 s | 4.6 s |
+| Models, Draco | 2.07 MB | 2.23 MB |
+| SwiftShader, Scene Lab, low tier | 2.4-3.8 fps | 3.3 fps |
+
+The first load is a second slower: the world has a third more geometry, the
+sea samples the island once, and there are more programs to compile. Every
+load after it is a runtime swap.
+
+## Verification
+
+| Suite | Result |
+| --- | --- |
+| `npm run lint` | clean, zero warnings |
+| `npm run typecheck` | clean |
+| `npm run build` | compiles, every route |
+| `npm run test:engine` | **145 passed** (no engine code changed in this phase) |
+| `npm run test:phase2` | **11 passed**, against the production build and a live engine |
+| `npm run test:smoke` | **11 passed**, 10 skipped by project design, at 1920, 1440 and 1280 |
+
+Looked at in a browser at 1920×1080, 1440×900, 1366×768 and 1280×720, idle and
+during a run (`node scripts/ui-screenshots.mjs`, with and without `--run`): no
+page scrolls, nothing is unreachable, no text is smaller than 11 px.

@@ -82,6 +82,7 @@ export function CaptureView({ runId, fullBleed = false }: { runId: string | null
             onSceneReady={onSceneReady}
             speed={run.state?.speed ?? 1}
             adaptive={false}
+            inline
           />
         ) : (
           <div className="grid h-full place-items-center text-[13px] text-[color:var(--color-muted)]">

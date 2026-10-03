@@ -1,73 +1,65 @@
 'use client';
 
 /**
- * The rover's camera, as the operator would see it picture-in-picture.
+ * The rover's forward camera, as the operator would see it picture-in-picture.
  *
- * It is a generated test pattern, not transported pixels, and it says so. The
- * frame counter advances **only when the engine reports a newly delivered
- * frame**, so a stall in the model is a visible freeze here - a local render
- * that bypassed the network would be no evidence that video survived.
+ * The picture is the simulated world rendered from the camera windows on the
+ * rover's sensor crown - synthetic, never transported pixels, and the badge
+ * says so. What it stands for is the video class, so it behaves like it: it
+ * moves only while the engine keeps reporting newly delivered video frames, it
+ * freezes the moment the receiver reports the stream stalled, and the frame
+ * counter is the engine's own count. A local render that carried on through a
+ * stall would be no evidence that video survived.
  */
 
 import type { EngineEvent } from '@continua/contracts/engine';
+import {
+  ROVER_CAM_HEIGHT,
+  ROVER_CAM_WIDTH,
+  feedRoverCam,
+  setRoverCamSink,
+  setRoverCamStalled,
+} from '@continua/scene';
 import { useEffect, useRef, useState } from 'react';
 import { CameraIcon, ChevronIcon } from '../ui/icons';
 
 export function CameraFeed({ event }: { event: EngineEvent | null }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const lastFrames = useRef(-1);
   // Open by default only where the right column has room for it under the
   // route map and the health panel; elsewhere it is one click away.
   const [open, setOpen] = useState(() => typeof window === 'undefined' || window.innerHeight >= 1000);
   const video = event?.app?.classes.video;
+  const streaming = Boolean(video);
+  const stalled = video?.stalled_now === true;
+  const delivered = video?.frames_delivered;
 
+  // Take the forward camera's pictures while the tile is open and a run streams.
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas || !video || !open) return;
-    if (video.frames_delivered === lastFrames.current) return; // stalled: do not redraw
-    lastFrames.current = video.frames_delivered;
+    if (!open || !streaming || !canvas) return undefined;
     const context = canvas.getContext('2d');
-    if (!context) return;
-    const { width, height } = canvas;
-    const gradient = context.createLinearGradient(0, 0, 0, height);
-    gradient.addColorStop(0, '#26324a');
-    gradient.addColorStop(1, '#0f1626');
-    context.fillStyle = gradient;
-    context.fillRect(0, 0, width, height);
-    // A horizon and a road vanishing to it: enough to read as a forward view.
-    context.fillStyle = 'rgba(255,255,255,0.06)';
-    context.fillRect(0, height * 0.55, width, height * 0.45);
-    context.strokeStyle = 'rgba(255,255,255,0.18)';
-    context.lineWidth = 1.5;
-    context.beginPath();
-    context.moveTo(width * 0.5 - 2, height * 0.55);
-    context.lineTo(width * 0.18, height);
-    context.moveTo(width * 0.5 + 2, height * 0.55);
-    context.lineTo(width * 0.82, height);
-    context.stroke();
-    // Reticle.
-    context.strokeStyle = 'rgba(18,185,232,0.75)';
-    context.lineWidth = 1.2;
-    const cx = width / 2;
-    const cy = height * 0.5;
-    context.strokeRect(cx - 18, cy - 12, 36, 24);
-    context.beginPath();
-    context.moveTo(cx - 30, cy);
-    context.lineTo(cx - 22, cy);
-    context.moveTo(cx + 22, cy);
-    context.lineTo(cx + 30, cy);
-    context.stroke();
-    // A moving element, so a frozen frame is obvious at a glance.
-    const phase = (video.frames_delivered % 60) / 60;
-    context.fillStyle = '#12B9E8';
-    context.fillRect(8 + phase * (width - 44), height - 18, 28, 4);
-    context.fillStyle = 'rgba(255,255,255,0.9)';
-    context.font = '600 10px ui-monospace, monospace';
-    context.fillText(`FRAME ${String(video.frames_delivered).padStart(6, '0')}`, 8, 15);
-    context.fillText(`t+${(event?.t ?? 0).toFixed(2)}s`, width - 72, 15);
-  }, [video, event?.t, open]);
+    if (!context) return undefined;
+    const image = context.createImageData(ROVER_CAM_WIDTH, ROVER_CAM_HEIGHT);
+    const row = ROVER_CAM_WIDTH * 4;
+    setRoverCamSink((pixels) => {
+      // WebGL rows run bottom-up, a 2D canvas's top-down.
+      const height = ROVER_CAM_HEIGHT;
+      for (let y = 0; y < height; y += 1) {
+        image.data.set(pixels.subarray((height - 1 - y) * row, (height - y) * row), y * row);
+      }
+      context.putImageData(image, 0, 0);
+    });
+    return () => setRoverCamSink(null);
+  }, [open, streaming]);
 
-  const stalled = video?.stalled_now === true;
+  // Each newly delivered frame keeps the picture moving; a stall freezes it.
+  useEffect(() => {
+    if (delivered !== undefined) feedRoverCam();
+  }, [delivered]);
+
+  useEffect(() => {
+    setRoverCamStalled(stalled);
+  }, [stalled]);
 
   return (
     <section className="glass overflow-hidden" aria-label="Camera">
@@ -81,24 +73,55 @@ export function CameraFeed({ event }: { event: EngineEvent | null }) {
         <span className="section-label flex-1">Camera</span>
         <span
           className="rounded-full bg-[color-mix(in_srgb,var(--color-warn)_14%,white)] px-2 py-[2px] text-[11px] font-bold tracking-[0.05em] text-[color:var(--color-warn)]"
-          title="Generated test pattern. Frames advance only when the model delivers them. Not transported pixels."
+          title="The simulated world rendered from the rover's forward camera - not transported pixels. It moves only while the engine reports video frames delivered, and freezes while the receiver reports the stream stalled."
         >
           SYNTHETIC STREAM
         </span>
-        <ChevronIcon size={14} className="text-[color:var(--color-faint)] transition-transform" style={{ transform: open ? 'rotate(90deg)' : undefined }} />
+        <ChevronIcon
+          size={14}
+          className="text-[color:var(--color-faint)] transition-transform"
+          style={{ transform: open ? 'rotate(90deg)' : undefined }}
+        />
       </button>
       {open && (
         <div className="px-3 pb-3">
-          <div className="relative overflow-hidden rounded-[11px] bg-[#0f1626]">
-            <canvas ref={canvasRef} width={320} height={160} className="block aspect-[2/1] w-full" />
+          <div className="relative overflow-hidden rounded-[11px] bg-[#1b2435]">
+            <canvas
+              ref={canvasRef}
+              width={ROVER_CAM_WIDTH}
+              height={ROVER_CAM_HEIGHT}
+              className="block aspect-video w-full"
+              style={{ opacity: streaming ? 1 : 0 }}
+            />
+            {video && (
+              <>
+                {/* Framing marks of an inspection camera, kept thin. */}
+                <svg
+                  className="pointer-events-none absolute inset-0 h-full w-full"
+                  viewBox="0 0 160 90"
+                  preserveAspectRatio="none"
+                  aria-hidden
+                >
+                  <g fill="none" stroke="rgb(255 255 255 / 0.55)" strokeWidth="0.6" vectorEffect="non-scaling-stroke">
+                    <path d="M70 40 h-4 v3 M90 40 h4 v3 M70 50 h-4 v-3 M90 50 h4 v-3" />
+                  </g>
+                </svg>
+                <div className="pointer-events-none absolute inset-x-0 top-0 flex justify-between bg-gradient-to-b from-[rgb(10_16_28/0.45)] to-transparent px-2 pb-3 pt-1.5 font-[family-name:var(--font-mono)] text-[11px] font-semibold text-white">
+                  <span>FWD · FRAME {String(video.frames_delivered).padStart(6, '0')}</span>
+                  <span>t+{(event?.t ?? 0).toFixed(1)}s</span>
+                </div>
+              </>
+            )}
             {!video && (
               <div className="absolute inset-0 grid place-items-center text-[11.5px] font-medium text-white/60">
                 no stream until a run starts
               </div>
             )}
             {stalled && (
-              <div className="absolute inset-0 grid place-items-center bg-[rgba(16,23,37,0.55)]">
-                <span className="rounded-full bg-[color:var(--color-bad)] px-2.5 py-1 text-[11px] font-semibold text-white">STALLED</span>
+              <div className="absolute inset-0 grid place-items-center bg-[rgb(16_23_37/0.42)]">
+                <span className="rounded-full bg-[color:var(--color-bad)] px-2.5 py-1 text-[11px] font-semibold text-white">
+                  STALLED{video?.stall_ms != null ? ` · ${video.stall_ms.toFixed(0)} ms` : ''}
+                </span>
               </div>
             )}
           </div>
@@ -109,12 +132,14 @@ export function CameraFeed({ event }: { event: EngineEvent | null }) {
             </div>
             <div>
               <dt className="text-[color:var(--color-faint)]">Stall</dt>
-              <dd className="metric font-semibold">{video ? `${(video.stall_ms ?? 0).toFixed(0)} ms` : ' - '}</dd>
+              <dd className="metric font-semibold">
+                {video ? (video.stall_ms != null ? `${video.stall_ms.toFixed(0)} ms` : 'unavailable') : ' - '}
+              </dd>
             </div>
             <div>
               <dt className="text-[color:var(--color-faint)]">Miss</dt>
               <dd className="metric font-semibold">
-                {video?.deadline_miss_pct != null ? `${video.deadline_miss_pct.toFixed(1)} %` : ' - '}
+                {video ? (video.deadline_miss_pct != null ? `${video.deadline_miss_pct.toFixed(1)} %` : 'unavailable') : ' - '}
               </dd>
             </div>
           </dl>

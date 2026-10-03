@@ -61,9 +61,22 @@ the UI which it is looking at, and the HUD is required to display it.
 
 ### b. Scene ↔ page
 
-`<ContinuaScene>` owns the `<Canvas>` and nothing else. It is mounted by the
-dashboard, by `/scene-lab`, and (in Phase 3) by the capture harness. Everything
+`<ContinuaScene>` owns the `<Canvas>` and nothing else. Everything
 page-specific - panels, controls, chrome - lives in `apps/web`.
+
+There is **one canvas for the whole app** (`SceneHost`, mounted from the root
+layout, so it outlives every navigation). Mission, Scenario Lab and Scene Lab
+each lend it a box - the canvas element is moved into the page's own stage, so
+fullscreen, pointer events and layering behave exactly as if the page owned it
+- and name the runtime (source, clock, settings) to draw
+(`sceneHostStore.ts`). Moving a canvas element keeps its WebGL context, its
+compiled programs and its GPU buffers, so switching pages swaps a runtime
+instead of rebuilding a scene; with no scene page open the canvas is detached
+and its render loop held. A page starts at or below the quality tier the device
+has already shown it can hold (`qualityCeiling`). The capture view keeps a
+canvas of its own (`SceneStage inline`): its frame is a fixed 16:9 box that
+must share nothing. Experiments or the Decision Log opened on their own never
+download three.js - the host is only loaded once a scene page asks for it.
 
 ### c. React ↔ render loop
 
@@ -178,6 +191,17 @@ Each is pre-warmed 55 m ahead, which is what the dashed beam and the
   renderer before the scene's canvas is created. SwiftShader, llvmpipe,
   softpipe and the Microsoft Basic Render Driver get a canvas without MSAA (it
   can only be chosen at creation) at a 0.6 pixel ratio, and the `low` tier.
+* **One canvas, kept.** Page switches move the shared canvas between pages
+  (§2b): no new WebGL context, no model re-upload, no environment re-capture,
+  no loader after the first visit.
+* **The render loop is a prop.** `frameloop` is passed to the canvas - held
+  until every program is compiled and while no page shows the canvas - rather
+  than set from inside it, because the canvas re-applies its props on every
+  render and would release a hold set any other way.
+* **The rover camera is cheap.** The Mission camera tile is the scene rendered
+  from the sensor crown into a 480×270 target, at most 15 times a second (3 on
+  the low tier), reusing the main view's shadow map, read back asynchronously
+  (`readRenderTargetPixelsAsync`), and only while the tile is open on a run.
 * **No per-frame React.** See §2c.
 
 ## 7. Testing

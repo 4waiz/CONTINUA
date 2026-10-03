@@ -32,9 +32,9 @@ AO below.
 | --- | --- | --- | --- |
 | `continua_rover.glb` | 783,100 (765 KB) | 71,998 | Hero rover: 12 meshes, 2 steering pivots, 24 materials |
 | `continua_rover_lod1.glb` | 257,556 (252 KB) | 23,266 | Low-detail rover for the `low` quality tier |
-| `continua_props.glb` | 1,030,480 (1006 KB) | 97,588 | 48 world props, instanced at runtime |
+| `continua_props.glb` | 1,185,792 (1158 KB) | 113,222 | 55 world props, instanced at runtime |
 
-The three files total **2.07 MB**; the decoder adds `draco_decoder.wasm`
+The three files total **2.23 MB**; the decoder adds `draco_decoder.wasm`
 (192 KB) and `draco_wasm_wrapper.js` (58 KB).
 
 **Cache busting.** `/models/*` is served `immutable` for a year
@@ -77,7 +77,7 @@ reading as dirt.
 | `build_vehicle.py` | The Mk2 rover and its LOD1 |
 | `world_campus.py` | Operations centre, gateway hall, hangar, response station, gatehouse, carports, cars, water tower, street furniture |
 | `world_industry.py` | Warehouses, tank farm and its bund, pipe rack, stack, substation, pylons, cell tower, Wi-Fi mast, dock, containers, skyline |
-| `world_remote.py` | Ground station, pipeline and valve station, wind turbines, rocks, palms, ghafs, shrubs, solar field |
+| `world_remote.py` | Ground station, pipeline and valve station, wind turbines, granite boulders, palms, broadleaf trees, flame trees, jacarandas, flowering bushes, flower beds, shrubs, solar field |
 | `build_props.py` | Builds every prop, bakes AO, exports the props GLB |
 
 `npm run blender:all` runs vehicle, props and preview renders in sequence.
@@ -212,14 +212,18 @@ site.
 | --- | --- | --- | --- |
 | `PROP_SatTerminal` | 7,288 | 7.2 m dish facing +X at 38°; compound offset (6, 4) | Satellite ground station (beam at 4.4 m) |
 | `PROP_ValveStation` | 1,732 | Pipeline along X | Inspection target |
-| `PROP_Palm` | 1,140 | 14 fronds | Date palms |
-| `PROP_Ghaf` | 1,026 | Three limbs, drooping canopy | Ghaf trees |
+| `PROP_Palm` | 1,140 | 14 fronds | Palms |
+| `PROP_Ghaf` | 3,346 | Three limbs, a broad canopy of ten smooth clusters | Broadleaf woods (node name kept from the desert world) |
+| `PROP_FlameTree` | 5,686 | Five spreading limbs; leaf below, scarlet bloom heaped on top | Flame trees, campus and meadows |
+| `PROP_Jacaranda` | 4,368 | Vase of four limbs under a violet dome | Jacarandas, campus and meadows |
+| `PROP_FlowerBush_Magenta` / `_Coral` / `_Yellow` / `_White` | 600 each | Dark leaf mound under sprays of bloom | Bougainvillea: campus fence, gate, plaza, meadows |
+| `PROP_FlowerBed` | 860 | 6 × 1.6 m kerbed bed, two rows of bedding in four colours | Along the campus road |
 | `PROP_WindTurbine_Rotor` | 738 | Hub at (2.6, 0, 62) | Rotor, spun from the scene clock |
 | `PROP_SolarField` | 712 | 20 m along X, tilted to +Y | Solar field |
-| `PROP_Shrub_A` / `_B` | 320 / 480 | - | Scrub |
+| `PROP_Shrub_A` / `_B` | 320 / 480 | - | Green shrubs |
 | `PROP_Pipeline` | 456 | 12 m run along X | Inspected pipeline, instanced |
-| `PROP_WindTurbine` | 292 | 60 m tower | Turbines on the ridge |
-| `PROP_Rock_A/B/C` | 160 / 80 / 240 | Irregular | Boulders |
+| `PROP_WindTurbine` | 292 | 60 m tower | Wind farm, on the shore and offshore |
+| `PROP_Rock_A/B/C` | 160 / 80 / 240 | Irregular | Granite boulders |
 
 Turbine rotors are animated as a pure function of `clock.time`, so a scrubbed
 or captured frame is exact. Glass uses a higher environment intensity and the

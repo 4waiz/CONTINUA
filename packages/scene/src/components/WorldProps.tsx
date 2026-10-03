@@ -39,7 +39,7 @@ import { NETWORK_COLOR } from '../theme';
 import { useSceneRuntime } from '../runtime/SceneRuntime';
 import { PYLON_CONDUCTORS, TURBINE, WORLD_LAYOUT, type Placement } from '../world/layout';
 import { SITES, type SiteMarker } from '../world/sites';
-import { terrain } from '../world/terrain';
+import { SEA_LEVEL, terrain } from '../world/terrain';
 import { PROPS_MODEL_URL } from './assets';
 
 export { PROPS_MODEL_URL };
@@ -90,10 +90,13 @@ function InstancedPrimitive({
   primitive,
   placements,
   castShadow = true,
+  count,
 }: {
   primitive: Primitive;
   placements: readonly Placement[];
   castShadow?: boolean;
+  /** How many of the placements to draw (all by default). */
+  count?: number;
 }) {
   const ref = useRef<InstancedMesh>(null);
 
@@ -106,9 +109,11 @@ function InstancedPrimitive({
       matrix.copy(_placement).multiply(primitive.relative);
       mesh.setMatrixAt(index, matrix);
     });
+    // Drawn instances first; the bounding sphere is of what is drawn.
+    mesh.count = count ?? placements.length;
     mesh.instanceMatrix.needsUpdate = true;
     mesh.computeBoundingSphere();
-  }, [placements, primitive]);
+  }, [placements, primitive, count]);
 
   if (placements.length === 0) return null;
   return (
@@ -118,6 +123,9 @@ function InstancedPrimitive({
       castShadow={castShadow}
       receiveShadow
       frustumCulled
+      // The geometry and material belong to the cached glTF and every other
+      // instance of them: never let the renderer dispose them with this mesh.
+      dispose={null}
     />
   );
 }
@@ -156,6 +164,10 @@ const NO_FOOTPRINT = new Set([
   'PROP_Substation', 'PROP_ValveStation', 'PROP_DockStation', 'PROP_Gatehouse', 'PROP_Carport',
   'PROP_WaterTower', 'PROP_SolarField', 'PROP_Flagpole', 'PROP_LightPole', 'PROP_Bollard',
   'PROP_Pipeline', 'PROP_CellTower', 'PROP_WifiMast',
+  // Plants and boulders: a dark square under a palm on a lawn reads as a stain.
+  'PROP_Palm', 'PROP_Ghaf', 'PROP_Shrub_A', 'PROP_Shrub_B', 'PROP_Rock_A', 'PROP_Rock_B', 'PROP_Rock_C',
+  'PROP_FlameTree', 'PROP_Jacaranda', 'PROP_FlowerBed', 'PROP_FlowerBush_Magenta', 'PROP_FlowerBush_Coral',
+  'PROP_FlowerBush_Yellow', 'PROP_FlowerBush_White',
 ]);
 
 const FOOTPRINT_VERTEX = /* glsl */ `
@@ -331,6 +343,7 @@ function TurbineRotors({ library, placements }: { library: Map<string, Object3D>
           args={[primitive.geometry, primitive.material as Material, placements.length]}
           castShadow
           frustumCulled={false}
+          dispose={null}
         />
       ))}
     </group>
@@ -409,6 +422,7 @@ function AmbientTraffic({ library }: { library: Map<string, Object3D> }) {
             castShadow
             receiveShadow
             frustumCulled={false}
+            dispose={null}
           />
         )),
       )}
@@ -517,6 +531,25 @@ function SiteMarkerRing({
 // ---------------------------------------------------------------------------
 
 /** Placement lists by prop node name: network sites first, then dressing. */
+/**
+ * The trees carry most of the world's triangles; the low tier draws two in
+ * five. Their placements are ordered keepers-first so the tier only changes
+ * how many instances are drawn - never the instanced mesh itself, whose
+ * rebuild would release the glTF's shared materials mid-compile.
+ */
+const THINNED_ON_LOW = new Set(['PROP_Ghaf', 'PROP_FlameTree', 'PROP_Jacaranda']);
+
+function keepersFirst(list: readonly Placement[]): { ordered: Placement[]; keep: number } {
+  const keep = list.filter((_, index) => index % 5 < 2);
+  const rest = list.filter((_, index) => index % 5 >= 2);
+  return { ordered: [...keep, ...rest], keep: keep.length };
+}
+
+/** How many of `n` placements `keepersFirst` keeps: those with index % 5 < 2. */
+function keeperCount(n: number): number {
+  return Math.floor(n / 5) * 2 + Math.min(n % 5, 2);
+}
+
 function allPlacements(): Map<string, Placement[]> {
   const byProp = new Map<string, Placement[]>();
   for (const site of SITES) {
@@ -526,23 +559,32 @@ function allPlacements(): Map<string, Placement[]> {
   }
   for (const [prop, placements] of Object.entries(WORLD_LAYOUT)) {
     const list = byProp.get(prop) ?? [];
-    list.push(...placements);
+    // Seeded scatter can land past the shore; only the wind farm stands at sea.
+    const afloat = prop === TURBINE.tower || prop === TURBINE.rotor;
+    const kept = afloat ? [...placements] : placements.filter((item) => terrain.height(item.x, item.z) > SEA_LEVEL + 0.25);
+    list.push(...(THINNED_ON_LOW.has(prop) ? keepersFirst(kept).ordered : kept));
     byProp.set(prop, list);
   }
   return byProp;
 }
 
 /** Small, numerous dressing that is not worth a shadow-map pass. */
-const NO_SHADOW = new Set(['PROP_Fence', 'PROP_Shrub_A', 'PROP_Shrub_B', 'PROP_Bollard', 'PROP_Skyline_A', 'PROP_Skyline_B', 'PROP_Skyline_C']);
+const NO_SHADOW = new Set([
+  'PROP_Fence', 'PROP_Shrub_A', 'PROP_Shrub_B', 'PROP_Bollard', 'PROP_Skyline_A', 'PROP_Skyline_B', 'PROP_Skyline_C',
+  'PROP_FlowerBed',
+]);
 
 export function WorldProps({
   showMarkers,
   selectedSiteId,
   onSelectSite,
+  lite = false,
 }: {
   showMarkers: boolean;
   selectedSiteId: string | null;
   onSelectSite: (id: string) => void;
+  /** The low tier: fewer trees. */
+  lite?: boolean;
 }) {
   const { scene } = useGLTF(PROPS_MODEL_URL);
 
@@ -585,6 +627,7 @@ export function WorldProps({
             primitive={primitive}
             placements={entry.placements}
             castShadow={!NO_SHADOW.has(entry.name)}
+            count={lite && THINNED_ON_LOW.has(entry.name) ? keeperCount(entry.placements.length) : undefined}
           />
         )),
       )}

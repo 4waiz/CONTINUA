@@ -9,6 +9,7 @@
 // --- runtime ---------------------------------------------------------------
 export {
   SceneRuntimeProvider,
+  SceneRuntimeBridge,
   useSceneRuntime,
   useSceneSettings,
   useSetSceneSettings,
@@ -46,13 +47,20 @@ export {
 } from './world/sites';
 
 // --- components ------------------------------------------------------------
-export { ContinuaScene, type ContinuaSceneProps } from './components/ContinuaScene';
+export { ContinuaScene, qualityCeiling, type ContinuaSceneProps } from './components/ContinuaScene';
 export { Ground } from './components/Ground';
 export { Lighting } from './components/Lighting';
 export { Rover, ROVER_MODEL_URL, ROVER_MODEL_LOD1_URL } from './components/Rover';
 export { WorldProps, PROPS_MODEL_URL } from './components/WorldProps';
 export { CoverageOverlay, LinkBeams } from './components/Network';
 export { SceneCameras } from './components/Cameras';
+export {
+  ROVER_CAM_HEIGHT,
+  ROVER_CAM_WIDTH,
+  feedRoverCam,
+  setRoverCamSink,
+  setRoverCamStalled,
+} from './components/RoverCam';
 
 // --- design tokens ---------------------------------------------------------
 export { COLOR, SCENE_COLOR, NETWORK_COLOR, SPACE, RADIUS, TYPE } from './theme';

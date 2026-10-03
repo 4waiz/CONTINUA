@@ -58,6 +58,9 @@ AO_DISTANCE = {
     "PROP_Car_A": 1.0, "PROP_Car_B": 1.0, "PROP_Car_C": 1.0, "PROP_Van": 1.0,
     "PROP_Palm": 1.2, "PROP_Ghaf": 1.6, "PROP_Shrub_A": 0.6, "PROP_Shrub_B": 0.6,
     "PROP_Rock_A": 1.0, "PROP_Rock_B": 0.8, "PROP_Rock_C": 1.4,
+    "PROP_FlameTree": 1.8, "PROP_Jacaranda": 1.6, "PROP_FlowerBed": 0.4,
+    "PROP_FlowerBush_Magenta": 0.6, "PROP_FlowerBush_Coral": 0.6, "PROP_FlowerBush_Yellow": 0.6,
+    "PROP_FlowerBush_White": 0.6,
     "PROP_Skyline_A": 6.0, "PROP_Skyline_B": 6.0, "PROP_Skyline_C": 6.0,
     "PROP_WindTurbine_Rotor": 2.0, "PROP_Pylon": 1.2, "PROP_CellTower": 1.2,
 }

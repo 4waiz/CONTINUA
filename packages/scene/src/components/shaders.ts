@@ -10,7 +10,7 @@
  * renderer's own and match every other object in the scene.
  */
 
-import { Color, MeshStandardMaterial, type WebGLProgramParametersWithUniforms } from 'three';
+import { Color, MeshStandardMaterial, Texture, type WebGLProgramParametersWithUniforms } from 'three';
 
 /** Value noise, fbm and a screen-space bump: shared by every patched shader. */
 export const GLSL_NOISE = /* glsl */ `
@@ -38,6 +38,10 @@ export const GLSL_NOISE = /* glsl */ `
       amp *= 0.5;
     }
     return sum;
+  }
+  // Two octaves, for broad patterns where the fine ones are never seen.
+  float ctFbm2(vec2 p) {
+    return (ctNoise(p) * 0.5 + ctNoise(p * 2.03 + vec2(17.1, 9.2)) * 0.25) / 0.75;
   }
   // Bump mapping from a scalar height in screen space (Mikkelsen 2010).
   vec3 ctBump(vec3 surfPos, vec3 surfNorm, float height, float scale) {
@@ -69,16 +73,28 @@ export function patchStandard(
     colour: string;
     roughness?: string;
     normal?: string;
+    /** The low tier's variant: `CT_LITE` is defined, and the shader skips detail. */
+    lite?: boolean;
   },
 ): MeshStandardMaterial {
-  material.customProgramCacheKey = () => options.key;
+  const key = options.lite ? `${options.key}-lite` : options.key;
+  material.customProgramCacheKey = () => key;
+  if (options.lite) material.defines = { ...(material.defines ?? {}), CT_LITE: '' };
   material.onBeforeCompile = (shader: WebGLProgramParametersWithUniforms) => {
     Object.assign(shader.uniforms, options.uniforms ?? {});
     const uniformDecl = Object.entries(options.uniforms ?? {})
       .map(([name, entry]) => {
         const value = entry.value;
         const type =
-          value instanceof Color ? 'vec3' : typeof value === 'number' ? 'float' : Array.isArray(value) ? `vec${value.length}` : 'vec4';
+          value instanceof Texture
+            ? 'sampler2D'
+            : value instanceof Color
+              ? 'vec3'
+              : typeof value === 'number'
+                ? 'float'
+                : Array.isArray(value)
+                  ? `vec${value.length}`
+                  : 'vec4';
         return `uniform ${type} ${name};`;
       })
       .join('\n');
@@ -135,21 +151,33 @@ export function patchStandard(
 
 export function terrainMaterial(palette: {
   campus: string;
-  sandLight: string;
-  sand: string;
-  sandDark: string;
+  grass: string;
+  grassLush: string;
+  grassDry: string;
+  heath: string;
+  beach: string;
   rock: string;
+  flowers: readonly [string, string, string, string];
+  seaLevel: number;
   campusRect: [number, number, number, number];
-}): MeshStandardMaterial {
-  const material = new MeshStandardMaterial({ color: '#ffffff', roughness: 0.96, metalness: 0 });
+}, lite = false): MeshStandardMaterial {
+  const material = new MeshStandardMaterial({ color: '#ffffff', roughness: 0.94, metalness: 0 });
   return patchStandard(material, {
-    key: 'continua-terrain-v2',
+    key: 'continua-terrain-v4',
+    lite,
     uniforms: {
       uCampus: { value: new Color(palette.campus) },
-      uSandLight: { value: new Color(palette.sandLight) },
-      uSand: { value: new Color(palette.sand) },
-      uSandDark: { value: new Color(palette.sandDark) },
+      uGrass: { value: new Color(palette.grass) },
+      uGrassLush: { value: new Color(palette.grassLush) },
+      uGrassDry: { value: new Color(palette.grassDry) },
+      uHeath: { value: new Color(palette.heath) },
+      uBeach: { value: new Color(palette.beach) },
       uRock: { value: new Color(palette.rock) },
+      uFlowerA: { value: new Color(palette.flowers[0]) },
+      uFlowerB: { value: new Color(palette.flowers[1]) },
+      uFlowerC: { value: new Color(palette.flowers[2]) },
+      uFlowerD: { value: new Color(palette.flowers[3]) },
+      uSeaLevel: { value: palette.seaLevel },
       uCampusRect: { value: palette.campusRect },
     },
     header: /* glsl */ `
@@ -159,52 +187,84 @@ export function terrainMaterial(palette: {
                      * smoothstep(r.z - 6.0, r.z + 6.0, p.y) * (1.0 - smoothstep(r.w - 6.0, r.w + 6.0, p.y));
         return inside;
       }
-      // Wind ripples across the open desert: long, slightly wavering crests.
-      float ctRipple(vec2 p) {
-        vec2 q = vec2(p.x * 0.8 + p.y * 0.6, -p.x * 0.6 + p.y * 0.8);
-        float warp = ctNoise(q * 0.05) * 6.0;
-        return 0.5 + 0.5 * sin(q.x * 0.9 + warp);
+      // Wildflowers: one bloom in some cells of a fine grid, a round dot of
+      // colour, faded out with distance before it can shimmer.
+      vec4 ctBloom(vec2 p, float dist) {
+        vec2 grid = p * 4.0;
+        vec2 cell = floor(grid);
+        float chance = ctHash(cell + 3.1);
+        vec2 centre = vec2(ctHash(cell + 7.3), ctHash(cell + 1.9)) * 0.6 + 0.2;
+        float r = length(fract(grid) - centre);
+        float aa = fwidth(grid.x) * 0.9;
+        float bloomDot = 1.0 - smoothstep(0.16 - aa, 0.16 + aa, r);
+        float pick = ctHash(cell + 11.7);
+        vec3 colour = pick < 0.34 ? uFlowerA : pick < 0.6 ? uFlowerB : pick < 0.82 ? uFlowerC : uFlowerD;
+        return vec4(colour, bloomDot * step(0.86, chance) * (1.0 - smoothstep(18.0, 55.0, dist)));
       }
     `,
     colour: /* glsl */ `
       vec2 p = vCtWorld.xz;
+      float y = vCtWorld.y;
       float campus = ctCampusMask(p);
-      float remote = smoothstep(380.0, 620.0, p.x);
       float broad = ctFbm(p * 0.0045);
       float mid = ctFbm(p * 0.035 + 11.0);
       float fine = ctNoise(p * 1.7);
       float fineFade = 1.0 - smoothstep(60.0, 220.0, vCtDist);
 
-      vec3 desert = mix(uSand, uSandLight, smoothstep(0.30, 0.72, broad));
-      desert = mix(desert, uSandDark, smoothstep(0.55, 0.85, mid) * 0.45);
-      // Gravel plains: broad, darker, slightly cooler patches that break up the
-      // open desert at the scale the overview camera sees it.
-      float plains = smoothstep(0.52, 0.74, ctFbm(p * 0.0021 + vec2(3.7, -8.1)));
-      desert = mix(desert, uSandDark * vec3(0.97, 0.98, 1.0), plains * 0.32 * (1.0 - remote * 0.6));
-      // Remote sand is paler.
-      desert = mix(desert, uSandLight, remote * 0.35);
-      // Wind ripples across all open sand, strongest in the remote sector, and
-      // still there in the middle distance where the eye looks for texture.
-      float rippleFade = 1.0 - smoothstep(180.0, 420.0, vCtDist);
-      desert *= 1.0 - (0.028 + remote * 0.035) * ctRipple(p) * rippleFade;
+      // Meadow: fresh green, lusher hollows, sun-bleached patches, heath -
+      // a patchwork at the scale of fields, mottled at the scale of tussocks.
+      vec3 meadow = mix(uGrass, uGrassLush, smoothstep(0.3, 0.7, broad));
+      meadow = mix(meadow, uGrassDry * 0.92, smoothstep(0.58, 0.86, mid) * 0.35);
+      #ifndef CT_LITE
+        meadow = mix(meadow, uGrassDry, smoothstep(0.5, 0.8, ctFbm2(p * 0.011 + vec2(-6.0, 2.5))) * 0.7);
+        float heath = smoothstep(0.52, 0.74, ctFbm(p * 0.0021 + vec2(3.7, -8.1)));
+        meadow = mix(meadow, uHeath, heath * 0.45);
+        meadow *= 0.9 + 0.2 * ctFbm2(p * 0.09 + 21.0);
+        // Flowering meadows: broad drifts, seen as a tint far away and as
+        // single blooms close up.
+        float drift = smoothstep(0.52, 0.78, ctFbm2(p * 0.009 + vec2(4.0, -2.0)));
+        vec3 driftTint = mix(uFlowerA, uFlowerC, step(0.5, ctNoise(p * 0.004 + 9.0)));
+        meadow = mix(meadow, driftTint, drift * 0.16 * smoothstep(40.0, 180.0, vCtDist));
+        // Single blooms only where they can be seen.
+        if (vCtDist < 55.0) {
+          vec4 bloom = ctBloom(p, vCtDist);
+          meadow = mix(meadow, bloom.rgb, bloom.a * (0.35 + 0.65 * drift));
+        }
+      #endif
 
-      vec3 graded = uCampus * (0.97 + 0.06 * mid);
-      vec3 ground = mix(desert, graded, campus);
-      // Slopes read darker and warmer, so the hills have form under flat light.
+      // Campus lawn, mown in alternating stripes.
+      float stripeAA = fwidth(p.x / 7.0) * 1.5;
+      float stripe = smoothstep(0.5 - stripeAA, 0.5 + stripeAA, fract(p.x / 7.0));
+      vec3 lawn = uCampus * (0.97 + 0.05 * mid) * (0.965 + 0.07 * stripe * (1.0 - smoothstep(80.0, 260.0, vCtDist)));
+      vec3 ground = mix(meadow, lawn, campus);
+
+      // Slopes turn to rock - the headland's cliffs above the sea.
       vec3 worldNormal = normalize(inverseTransformDirection(vNormal, viewMatrix));
       float slope = 1.0 - clamp(worldNormal.y, 0.0, 1.0);
-      ground = mix(ground, uRock, smoothstep(0.08, 0.35, slope) * 0.55);
-      ground *= 0.97 + 0.06 * fine * fineFade;
+      ground = mix(ground, uRock * (0.92 + 0.12 * mid), smoothstep(0.16, 0.42, slope) * 0.85);
+      ground *= 0.965 + 0.07 * fine * fineFade;
+
+      // The shore: a pale beach above the waterline, wet sand at it, and a
+      // sandy shelf below that the shallows show through.
+      float beach = 1.0 - smoothstep(uSeaLevel + 0.9, uSeaLevel + 2.3, y + 0.5 * (mid - 0.5));
+      ground = mix(ground, uBeach * (0.95 + 0.08 * mid), beach * (1.0 - smoothstep(0.3, 0.5, slope)));
+      float wet = 1.0 - smoothstep(uSeaLevel - 0.15, uSeaLevel + 0.35, y);
+      ground = mix(ground, uBeach * vec3(0.80, 0.80, 0.78), wet * 0.7);
       diffuseColor.rgb *= ground;
     `,
     normal: /* glsl */ `
+      #ifndef CT_LITE
       {
         vec2 p = vCtWorld.xz;
-        float remote = smoothstep(380.0, 620.0, p.x);
         float fade = 1.0 - smoothstep(30.0, 140.0, vCtDist);
-        float h = ctRipple(p) * 0.35 * remote + ctNoise(p * 2.2) * 0.12;
+        // Tussocky turf; fine ripples on the beach.
+        float beach = 1.0 - smoothstep(uSeaLevel + 0.9, uSeaLevel + 2.3, vCtWorld.y);
+        float turf = ctNoise(p * 2.4) * 0.12 + ctNoise(p * 6.5) * 0.05;
+        float ripple = 0.5 + 0.5 * sin(p.x * 1.9 + p.y * 1.1 + ctNoise(p * 0.3) * 4.0);
+        float h = mix(turf, ripple * 0.08, beach);
         normal = ctBump(-vViewPosition, normal, h * fade, 1.0);
       }
+      #endif
     `,
   });
 }

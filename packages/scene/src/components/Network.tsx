@@ -43,7 +43,7 @@ const ROVER_ANTENNA = new Vector3(-0.6, 2.25, 0);
 // Coverage footprints
 // ---------------------------------------------------------------------------
 
-/** A filled disc whose vertices follow the terrain, so it never clips through. */
+/** A filled disc whose vertices follow the terrain - or the sea over it - so it never clips through. */
 function buildFootprint(cx: number, cz: number, radius: number): BufferGeometry {
   const rings = 6;
   const segments = 64;
@@ -51,14 +51,14 @@ function buildFootprint(cx: number, cz: number, radius: number): BufferGeometry 
   const indices: number[] = [];
   const lift = 0.22;
 
-  positions.push(cx, terrain.height(cx, cz) + lift, cz);
+  positions.push(cx, terrain.surfaceHeight(cx, cz) + lift, cz);
   for (let ring = 1; ring <= rings; ring += 1) {
     const r = (radius * ring) / rings;
     for (let s = 0; s < segments; s += 1) {
       const angle = (s / segments) * Math.PI * 2;
       const x = cx + Math.cos(angle) * r;
       const z = cz + Math.sin(angle) * r;
-      positions.push(x, terrain.height(x, z) + lift, z);
+      positions.push(x, terrain.surfaceHeight(x, z) + lift, z);
     }
   }
   for (let s = 0; s < segments; s += 1) {

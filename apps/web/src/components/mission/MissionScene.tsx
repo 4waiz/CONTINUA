@@ -16,11 +16,12 @@
 import {
   EngineSceneStateSource,
   previewSource,
+  qualityCeiling,
   SceneRuntimeProvider,
   useSceneRuntime,
   useSetSceneSettings,
 } from '@continua/scene';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { SceneStage } from '../SceneStage';
 
 /**
@@ -143,6 +144,7 @@ export function MissionScene({
   camera = 'follow',
   speed = 1,
   adaptive = true,
+  inline = false,
 }: {
   source: EngineSceneStateSource;
   t: number;
@@ -152,22 +154,27 @@ export function MissionScene({
   speed?: number;
   /** See `SceneStage`'s `adaptive`. */
   adaptive?: boolean;
+  /** See `SceneStage`'s `inline`: capture draws on a canvas of its own. */
+  inline?: boolean;
   className?: string;
   preview?: boolean;
   /** The scene has loaded and drawn - see `SceneStage`'s `onReady`. */
   onSceneReady?: () => void;
   camera?: MissionCamera;
 }) {
+  // The device's known ceiling from the first frame: a software rasteriser
+  // starts on the low tier instead of compiling the high one and switching.
+  const [initialSettings] = useState(() => ({ ...MISSION_SETTINGS, quality: qualityCeiling() }));
   // One tree, whether or not a run has arrived yet. Returning a *different*
   // tree for preview put `SceneStage` at a different child index, so the moment
   // a run appeared React unmounted the canvas and built a new one - a WebGL
   // context and a glTF reload for a change of data source. Swapping only the
   // `source` prop rebuilds the runtime and leaves everything below it alone.
   return (
-    <SceneRuntimeProvider source={preview ? previewSource : source} initialSettings={MISSION_SETTINGS}>
+    <SceneRuntimeProvider source={preview ? previewSource : source} initialSettings={initialSettings}>
       <ClockSync t={t} duration={duration} playing={playing} speed={speed} enabled={!preview} />
       <CameraSync camera={camera} />
-      <SceneStage className={className} onReady={onSceneReady} adaptive={adaptive} />
+      <SceneStage className={className} onReady={onSceneReady} adaptive={adaptive} inline={inline} />
     </SceneRuntimeProvider>
   );
 }

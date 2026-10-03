@@ -150,6 +150,14 @@ export function SceneRuntimeProvider({
   return <RuntimeContext.Provider value={runtime}>{children}</RuntimeContext.Provider>;
 }
 
+/**
+ * Puts an existing runtime into context - for a canvas that lives outside the
+ * provider that owns the runtime (the app's shared scene host).
+ */
+export function SceneRuntimeBridge({ runtime, children }: { runtime: SceneRuntime; children: ReactNode }) {
+  return <RuntimeContext.Provider value={runtime}>{children}</RuntimeContext.Provider>;
+}
+
 export function useSceneRuntime(): SceneRuntime {
   const runtime = useContext(RuntimeContext);
   if (!runtime) throw new Error('useSceneRuntime must be used inside <SceneRuntimeProvider>');

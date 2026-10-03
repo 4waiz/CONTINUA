@@ -134,8 +134,8 @@ Light mode. Not cyberpunk.
 | `blue` | `#176BFF` | primary accent, cellular |
 | `violet` | `#7C3CFF` | satellite accent |
 
-Spacious rounded panels, hairline borders, restrained shadows, soft daylight,
-pale terrain. **Banned:** heavy bloom, giant floating labels, random particles,
+Spacious rounded panels, hairline borders, restrained shadows, clear daylight
+over a green coastal island - colourful, but natural, never neon. **Banned:** heavy bloom, giant floating labels, random particles,
 neon spaghetti, illegible glass panels, decorative fake metrics.
 
 Three concepts stay visually distinct and must never be merged:

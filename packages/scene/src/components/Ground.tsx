@@ -1,8 +1,9 @@
 'use client';
 
 /**
- * Ground: terrain, distant ridges, the route's carriageway, service roads and
- * building hardstanding.
+ * Ground: terrain, the route's carriageway, service roads and building
+ * hardstanding. The horizon ranges and the roadside scatter are in
+ * `Landscape.tsx`.
  *
  * All of it is generated once from `terrain.height`, which is also what the
  * rover and the cameras read - so the road cannot float, the wheels cannot sink
@@ -16,15 +17,13 @@ import {
   BufferAttribute,
   BufferGeometry,
   Color,
-  DoubleSide,
   Float32BufferAttribute,
   MeshStandardMaterial,
 } from 'three';
-import { makeRandom } from '../math/noise';
 import { SCENE_COLOR } from '../theme';
 import { buildRouteRibbon, ROAD_HALF_WIDTH, ROAD_SURFACE_OFFSET } from '../world/road';
 import { CAMPUS, PADS, SERVICE_ROADS, type ServiceRoad } from '../world/layout';
-import { ridgeHeight, TERRAIN, terrain } from '../world/terrain';
+import { SEA_LEVEL, TERRAIN, terrain } from '../world/terrain';
 import { route } from '../world/route';
 import { concreteMaterial, patchStandard, roadMaterial, terrainMaterial } from './shaders';
 
@@ -57,34 +56,6 @@ function buildTerrainGeometry(segmentsX: number, segmentsZ: number): BufferGeome
   const geometry = new BufferGeometry();
   geometry.setAttribute('position', new BufferAttribute(positions, 3));
   geometry.setIndex(indices);
-  geometry.computeVertexNormals();
-  geometry.computeBoundingSphere();
-  return geometry;
-}
-
-/** Layered silhouette ridges well beyond the playable area. */
-function buildRidges(radius: number, seed: number, height: number): BufferGeometry {
-  const random = makeRandom(seed);
-  const segments = 128;
-  const positions: number[] = [];
-  const previous = { x: 0, z: 0, h: 0, set: false };
-  for (let i = 0; i <= segments; i += 1) {
-    const angle = (i / segments) * Math.PI * 2;
-    const wobble = 1 + (random() - 0.5) * 0.14;
-    const x = 520 + Math.cos(angle) * radius * wobble;
-    const z = Math.sin(angle) * radius * wobble * 0.82;
-    const h = ridgeHeight(x, z) * height * (0.55 + random() * 0.75);
-    if (previous.set) {
-      positions.push(previous.x, -4, previous.z, x, -4, z, previous.x, previous.h, previous.z);
-      positions.push(x, -4, z, x, h, z, previous.x, previous.h, previous.z);
-    }
-    previous.x = x;
-    previous.z = z;
-    previous.h = h;
-    previous.set = true;
-  }
-  const geometry = new BufferGeometry();
-  geometry.setAttribute('position', new Float32BufferAttribute(positions, 3));
   geometry.computeVertexNormals();
   geometry.computeBoundingSphere();
   return geometry;
@@ -185,8 +156,6 @@ export function Ground({ quality }: { quality: 'high' | 'balanced' | 'low' }) {
     () => buildTerrainGeometry(Math.round(TERRAIN.segmentsX * detail), Math.round(TERRAIN.segmentsZ * detail)),
     [detail],
   );
-  const ridgeNear = useMemo(() => buildRidges(980, 4242, 1.5), []);
-  const ridgeFar = useMemo(() => buildRidges(1420, 9191, 2.3), []);
 
   const road = useMemo(() => buildRouteRibbon(), []);
   const shoulder = useMemo(
@@ -211,14 +180,6 @@ export function Ground({ quality }: { quality: 'high' | 'balanced' | 'low' }) {
 
   const materials = useMemo(() => {
     const set = {
-      terrain: terrainMaterial({
-        campus: SCENE_COLOR.campus,
-        sandLight: SCENE_COLOR.sandLight,
-        sand: SCENE_COLOR.sand,
-        sandDark: SCENE_COLOR.sandDark,
-        rock: SCENE_COLOR.rockTint,
-        campusRect: [CAMPUS.minX, CAMPUS.maxX, CAMPUS.minZ, CAMPUS.maxZ],
-      }),
       road: roadMaterial(
         { road: SCENE_COLOR.road, line: SCENE_COLOR.roadLine, centre: SCENE_COLOR.roadLine },
         { centreLine: true, key: 'continua-road-main-v1' },
@@ -247,16 +208,29 @@ export function Ground({ quality }: { quality: 'high' | 'balanced' | 'low' }) {
   }, []);
   useEffect(() => () => Object.values(materials).forEach((material) => material.dispose()), [materials]);
 
+  // The ground's own shader has a lighter variant for the low tier.
+  const lite = quality === 'low';
+  const terrainShading = useMemo(
+    () =>
+      terrainMaterial({
+        campus: SCENE_COLOR.campus,
+        grass: SCENE_COLOR.grass,
+        grassLush: SCENE_COLOR.grassLush,
+        grassDry: SCENE_COLOR.grassDry,
+        heath: SCENE_COLOR.heath,
+        beach: SCENE_COLOR.beach,
+        rock: SCENE_COLOR.rockTint,
+        flowers: [SCENE_COLOR.flowerA, SCENE_COLOR.flowerB, SCENE_COLOR.flowerC, SCENE_COLOR.flowerD],
+        seaLevel: SEA_LEVEL,
+        campusRect: [CAMPUS.minX, CAMPUS.maxX, CAMPUS.minZ, CAMPUS.maxZ],
+      }, lite),
+    [lite],
+  );
+  useEffect(() => () => terrainShading.dispose(), [terrainShading]);
+
   return (
     <group name="CONTINUA_Ground">
-      <mesh geometry={terrainGeometry} material={materials.terrain} receiveShadow />
-
-      <mesh geometry={ridgeNear}>
-        <meshBasicMaterial color={SCENE_COLOR.ridge} side={DoubleSide} fog />
-      </mesh>
-      <mesh geometry={ridgeFar}>
-        <meshBasicMaterial color={SCENE_COLOR.ridgeFar} side={DoubleSide} fog />
-      </mesh>
+      <mesh geometry={terrainGeometry} material={terrainShading} receiveShadow />
 
       <mesh geometry={concretePads} material={materials.concrete} receiveShadow />
       <mesh geometry={asphaltPads} material={materials.serviceRoad} receiveShadow />
