@@ -127,10 +127,12 @@ const CINEMATIC: readonly { seconds: number; shot: ShotFn; blend?: number }[] = 
   // Behind and above: where the story starts.
   { seconds: 10, shot: (d, _t, out) => followShot(d, out) },
   // Tracking alongside, low: the rover as a vehicle, the world sliding past.
+  // Inside the roadside planting (beds at 8.6 m, palms at 12.5 m), so nothing
+  // passes between the camera and the rover.
   {
     seconds: 9,
     shot: (d, t, out) => {
-      aroundRover(d, 1.2 + Math.sin(t * 0.3) * 1.2, 10, 2.3, out.position);
+      aroundRover(d, 1.2 + Math.sin(t * 0.3) * 1.2, 6.4, 2.1, out.position);
       aroundRover(d, 0.6, 0, 1.2, out.target);
       out.fov = 38;
       return out;

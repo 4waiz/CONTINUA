@@ -11,7 +11,7 @@
 import { AdaptiveDpr, AdaptiveEvents, BakeShadows, PerformanceMonitor } from '@react-three/drei';
 import { Canvas } from '@react-three/fiber';
 import { Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { NeutralToneMapping, PCFShadowMap, SRGBColorSpace, type Object3D } from 'three';
+import { HalfFloatType, NeutralToneMapping, PCFShadowMap, SRGBColorSpace, WebGLRenderTarget, type Object3D } from 'three';
 import type { QualityTier } from '@continua/contracts';
 import { useFrame, useThree } from '@react-three/fiber';
 import { SCENE_COLOR } from '../theme';
@@ -100,14 +100,17 @@ function DebugBridge() {
  * programs synchronously and then rendered the whole scene six more times into
  * a cube map to warm textures - and this scene has no textures.
  */
-function Precompile({ onCompiled }: { onCompiled: () => void }) {
+function Precompile({ onCompiled, toScreen }: { onCompiled: () => void; toScreen: boolean }) {
   const gl = useThree((state) => state.gl);
   const scene = useThree((state) => state.scene);
   const camera = useThree((state) => state.camera);
   useLayoutEffect(() => {
     let cancelled = false;
+    performance.mark('continua:compile-start');
     // Things that are hidden until a handoff or a toggle still need their
     // programs; compiling them now saves a stall the first time they appear.
+    // compile() inside compileAsync is synchronous, so they are visible only
+    // for the length of this effect.
     const hidden: Object3D[] = [];
     scene.traverse((object) => {
       if (!object.visible) {
@@ -115,29 +118,36 @@ function Precompile({ onCompiled }: { onCompiled: () => void }) {
         object.visible = true;
       }
     });
-    performance.mark('continua:compile-start');
-    let released = false;
-    const restore = () => {
-      if (released) return;
-      released = true;
-      for (const object of hidden) object.visible = false;
-    };
+    // A program depends on where it draws. Into a render target - the high
+    // tier's post-processing, the rover camera - it outputs linear colour
+    // without tone mapping; onto the canvas it does both. Compile the variants
+    // the frames will use, or the first frame compiles them again, all at
+    // once, on the main thread.
+    const offscreen = new WebGLRenderTarget(1, 1, { type: HalfFloatType });
+    const previous = gl.getRenderTarget();
+    gl.setRenderTarget(offscreen);
+    const pending: Promise<unknown>[] = [gl.compileAsync(scene, camera)];
+    gl.setRenderTarget(previous);
+    offscreen.dispose();
+    if (toScreen) pending.push(gl.compileAsync(scene, camera));
+    for (const object of hidden) object.visible = false;
+
+    let settled = false;
     const release = () => {
-      if (released) return;
+      if (settled) return;
+      settled = true;
       performance.mark('continua:compile-end');
-      restore();
       if (!cancelled) onCompiled();
     };
-    gl.compileAsync(scene, camera).then(release, release);
+    Promise.all(pending).then(release, release);
     // compileAsync polls each program from a timer and never settles if one of
     // its materials is disposed meanwhile; the loop must not wait on it forever.
     const fallback = setTimeout(release, 8000);
     return () => {
       cancelled = true;
       clearTimeout(fallback);
-      restore();
     };
-  }, [gl, scene, camera, onCompiled]);
+  }, [gl, scene, camera, onCompiled, toScreen]);
   return null;
 }
 
@@ -210,7 +220,7 @@ function SceneContents({
       {quality === 'high' && <PostEffects />}
       {adaptive && <QualityGovernor />}
       <RoverCam quality={quality} />
-      <Precompile onCompiled={onCompiled} />
+      <Precompile onCompiled={onCompiled} toScreen={quality !== 'high'} />
       <FirstFrameSignal onFirstFrame={onFirstFrame} />
       <DebugBridge />
     </>

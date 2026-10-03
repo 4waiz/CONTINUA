@@ -10,10 +10,23 @@
  * function of where the rover is - a frame captured twice is the same frame.
  */
 
-import { Environment } from '@react-three/drei';
 import { useFrame, useThree } from '@react-three/fiber';
-import { useEffect, useMemo, useRef } from 'react';
-import { BackSide, Color, DirectionalLight, Fog, Object3D, ShaderMaterial, Vector3 } from 'three';
+import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
+import {
+  BackSide,
+  CircleGeometry,
+  Color,
+  DirectionalLight,
+  Fog,
+  Mesh,
+  MeshBasicMaterial,
+  Object3D,
+  PMREMGenerator,
+  Scene,
+  ShaderMaterial,
+  SphereGeometry,
+  Vector3,
+} from 'three';
 import { SCENE_COLOR } from '../theme';
 import { useSceneRuntime } from '../runtime/SceneRuntime';
 
@@ -110,34 +123,44 @@ function GradientSky({ lite }: { lite: boolean }) {
   );
 }
 
-/** The same sky, plus the meadow below, rendered once into the environment map. */
+/**
+ * The same sky, plus the meadow below, filtered once into the environment map
+ * - synchronously, as the scene mounts. drei's <Environment> captured it on the
+ * first frame instead, so when the scene's programs were compiled ahead of
+ * time no material had an environment yet, and the first frame compiled every
+ * lit material a second time, with one, on the main thread: about 1.7 s.
+ */
 function SkyEnvironment({ resolution }: { resolution: number }) {
-  // Captured once: always the full sky.
-  const material = useMemo(() => skyMaterial(false), []);
-  useEffect(() => () => material.dispose(), [material]);
-  // Stable children: drei re-captures the cube *and* re-runs the PMREM filter
-  // (hundreds of passes) whenever they change identity, which an unmemoised
-  // subtree does on every parent render - that was twenty times a second
-  // during a run.
-  const contents = useMemo(
-    () => (
-      <>
-        <mesh material={material} scale={100}>
-          <sphereGeometry args={[1, 32, 16]} />
-        </mesh>
-        <mesh rotation-x={-Math.PI / 2} position={[0, -2, 0]}>
-          <circleGeometry args={[90, 32]} />
-          <meshBasicMaterial color={SCENE_COLOR.groundBounce} />
-        </mesh>
-      </>
-    ),
-    [material],
-  );
-  return (
-    <Environment resolution={resolution} frames={1}>
-      {contents}
-    </Environment>
-  );
+  const gl = useThree((state) => state.gl);
+  const scene = useThree((state) => state.scene);
+  useLayoutEffect(() => {
+    const material = skyMaterial(false);
+    const sphere = new SphereGeometry(1, 32, 16);
+    const disc = new CircleGeometry(90, 32);
+    const groundMaterial = new MeshBasicMaterial({ color: SCENE_COLOR.groundBounce });
+    const sky = new Mesh(sphere, material);
+    sky.scale.setScalar(100);
+    const ground = new Mesh(disc, groundMaterial);
+    ground.rotation.x = -Math.PI / 2;
+    ground.position.y = -2;
+    const capture = new Scene();
+    capture.add(sky, ground);
+
+    const generator = new PMREMGenerator(gl);
+    const target = generator.fromScene(capture, 0, 0.1, 1000, { size: resolution });
+    generator.dispose();
+    material.dispose();
+    sphere.dispose();
+    disc.dispose();
+    groundMaterial.dispose();
+
+    scene.environment = target.texture;
+    return () => {
+      if (scene.environment === target.texture) scene.environment = null;
+      target.dispose();
+    };
+  }, [gl, scene, resolution]);
+  return null;
 }
 
 export function Lighting({ quality }: { quality: 'high' | 'balanced' | 'low' }) {
@@ -146,7 +169,11 @@ export function Lighting({ quality }: { quality: 'high' | 'balanced' | 'low' }) 
   const lightRef = useRef<DirectionalLight>(null);
   const target = useMemo(() => new Object3D(), []);
 
-  useEffect(() => {
+  // A layout effect, so the fog exists before the scene's programs are
+  // compiled ahead of the first frame (Precompile): fog is part of every
+  // program, and compiled without it they were all compiled again, on the
+  // main thread, the first time the scene drew.
+  useLayoutEffect(() => {
     // Clear coastal air: the haze starts later and ends where the camera's far
     // plane does, so the sea meets the sky without a seam.
     scene.fog = new Fog(SCENE_COLOR.fog, 320, 2400);

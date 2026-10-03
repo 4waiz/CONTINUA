@@ -846,6 +846,9 @@ the engine's own count.
   cycle climbs back into it. Every shot is still a pure function of time.
 * **Cloud shadows** drift over the land and the sea on the breeze, a function
   of the scene clock; the low tier skips them.
+* **The tracking shot rides inside the planting.** It ran 10 m off the road,
+  between the flower beds and the palm avenue, so palms swept across the rover
+  on the campus road; at 6.4 m nothing passes between camera and rover there.
 
 ## Measured
 
@@ -859,13 +862,29 @@ high tier with ambient occlusion:
 | Long main-thread tasks | 0 | 0 |
 | Page switch to a drawn scene | 0.4-0.7 s, loader shown | no loader, worst frame 17 ms |
 | New WebGL contexts on a tour of every page | one per scene page | 0 |
-| First load to a drawn scene | 3.5 s | 4.6 s |
+| First load to a drawn scene | 3.5 s | 2.5 s |
 | Models, Draco | 2.07 MB | 2.23 MB |
 | SwiftShader, Scene Lab, low tier | 2.4-3.8 fps | 3.3 fps |
 
-The first load is a second slower: the world has a third more geometry, the
-sea samples the island once, and there are more programs to compile. Every
-load after it is a runtime swap.
+The richer world first made the first load a second slower (4.6 s); the fix
+below brought it to 2.5 s. Every load after it is a runtime swap.
+
+## First load: the precompile compiled the wrong programs
+
+The scene compiles its programs ahead of the first frame, in parallel, while
+the loader shows. Instrumenting `linkProgram` showed the first frame still
+linking 37 programs one after another on the main thread - a single 1.8 s
+frame, the loader frozen for all of it. Diffing their cache keys against the
+precompiled ones found one flag: **fog**. The fog was set in a passive effect,
+which runs after the precompile's layout effect, so every material was
+compiled without fog and compiled again, with it, on the first frame. The fog
+is now set in a layout effect, ahead of the precompile; the sky's environment
+map is filtered synchronously at mount instead of on the first frame (drei's
+`<Environment>` captured it there); and the precompile builds the variant
+each frame draws (into the post-processing target on the high tier, onto the
+canvas otherwise). The first frame now links 13 programs (shadow depth, the
+post-processing passes, line variants) and takes 0.22 s instead of 1.8 s; the
+scene is drawn about 1.5 s sooner.
 
 ## Verification
 
