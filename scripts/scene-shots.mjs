@@ -10,6 +10,7 @@
  *   node scripts/scene-shots.mjs                         # the standard set
  *   node scripts/scene-shots.mjs --out video/work/scene  # where to write
  *   node scripts/scene-shots.mjs --only inspect,follow-dock
+ *   node scripts/scene-shots.mjs --set evidence           # the README evidence views
  *
  * Uses the GPU when one is available (`--use-gl=angle`), which is what a
  * visitor sees; the Playwright test projects use SwiftShader instead.
@@ -43,6 +44,35 @@ const SHOTS = [
   ['follow-remote', 92, { mode: 'mission', camera: 'follow' }],
 ];
 
+/**
+ * The inspection set from tests/evidence.spec.ts - same names, times and
+ * settings - rendered on the GPU at the high tier. The test project draws it
+ * with SwiftShader, which now starts on the low tier, so these are the frames
+ * the README shows.
+ */
+const EVIDENCE = [
+  ['view-01-facility-dock', 4, { camera: 'follow', mode: 'mission' }],
+  ['view-02-vehicle-closeup', 22, { camera: 'closeup' }],
+  ['view-03-courtyard-wifi', 26, { camera: 'overview' }],
+  ['view-04-corridor-cellular', 55, { camera: 'overview' }],
+  ['view-05-remote-satellite', 88, { camera: 'overview' }],
+  ['view-06-remote-follow', 92, { camera: 'follow' }],
+  ['view-07-coverage-overlay', 46, { camera: 'overview', showCoverage: true }],
+  ['view-08-inspect-turntable', 3, { mode: 'inspect', showCoverage: false }],
+];
+
+/** Frames either side of the preview's handoffs (wired->Wi-Fi ~9.7 s, Wi-Fi->cellular ~41.6 s). */
+const HANDOFF = [
+  ['handoff-wifi-reach', 10.05, { mode: 'mission', camera: 'follow' }],
+  ['handoff-wifi-burst', 10.7, { mode: 'mission', camera: 'follow' }],
+  ['handoff-cell-reach', 41.95, { mode: 'mission', camera: 'follow' }],
+  ['handoff-cell-overview', 42.35, { mode: 'mission', camera: 'overview' }],
+  ['handoff-cell-closeup', 42.45, { mode: 'mission', camera: 'closeup' }],
+];
+
+const SETS = { standard: SHOTS, evidence: EVIDENCE, handoff: HANDOFF };
+const SET = SETS[arg('--set', 'standard')] ?? SHOTS;
+
 async function main() {
   mkdirSync(OUT, { recursive: true });
   const browser = await chromium.launch({
@@ -59,13 +89,13 @@ async function main() {
   await page.waitForFunction(() => Boolean(window.__CONTINUA__?.three), undefined, { timeout: 120_000 });
   await page.waitForTimeout(2500);
 
-  for (const [name, time, settings] of SHOTS) {
+  for (const [name, time, settings] of SET) {
     if (only && !only.includes(name)) continue;
     await page.evaluate(
       ({ t, patch }) => {
         const api = window.__CONTINUA__;
         api.clock.pause();
-        api.settings.set(patch);
+        api.settings.set({ quality: 'high', ...patch });
         api.clock.setTime(t);
       },
       { t: time, patch: settings },

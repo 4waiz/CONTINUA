@@ -152,19 +152,32 @@ Each is pre-warmed 55 m ahead, which is what the dashed beam and the
 
 ## 6. Performance strategy
 
-* **Instancing.** Repeated props (barriers, poles, containers, signs, three rock
-  variants, route markers) go through one `InstancedMesh` per glTF primitive.
-  Unique structures are cloned once. Measured: 131 draw calls for the full
-  scene.
-* **Shared materials.** All Blender materials are created once per build and
-  reused across props; the glTF exporter deduplicates them, giving 6 textures
-  and 93 geometries at runtime.
-* **Shadow frustum follows the vehicle.** A 92 m box tracks the rover instead of
-  trying to cover 900 m of world.
+* **Instancing.** Every prop - one operations centre or four hundred fence
+  panels - goes through one `InstancedMesh` per glTF primitive, and every
+  ground-contact footprint is one instance of a single mesh. Measured: about
+  380 draw calls and 0.8 M triangles for a frame of a run at the high tier,
+  shadow pass included, at over 300 fps on the development laptop's GPU.
+* **Shared materials.** Materials are created once per build and shared by
+  every prop that uses them; there are no textures at all.
+* **Shadow frustum follows the vehicle**, snapped to whole shadow texels so its
+  edges do not crawl.
+* **One render per frame.** Engine updates re-render React, never the canvas:
+  the scene stage is memoised, and the sky environment is captured once.
+* **Playout delay.** A live run is shown a quarter of a simulated second behind
+  the newest engine sample, so vehicle motion always interpolates between two
+  real samples and never extrapolates one; the scene clock's rate is trimmed
+  toward that target rather than snapped (`MissionScene`'s `ClockSync`).
+* **Asynchronous shader compilation.** The scene compiles every program with
+  `compileAsync` while its render loop is held, so the first frame does not
+  stall the page.
 * **Quality tiers.** `high` / `balanced` / `low` scale terrain resolution, pixel
   ratio, antialiasing, shadows, and swap in the LOD rover.
 * **Adaptive pixel ratio** at mount from `hardwareConcurrency` and
   `devicePixelRatio`, plus drei's `AdaptiveDpr` under load.
+* **Software rasterisers start low.** A throwaway context is asked for its
+  renderer before the scene's canvas is created. SwiftShader, llvmpipe,
+  softpipe and the Microsoft Basic Render Driver get a canvas without MSAA (it
+  can only be chosen at creation) at a 0.6 pixel ratio, and the `low` tier.
 * **No per-frame React.** See §2c.
 
 ## 7. Testing

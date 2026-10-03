@@ -9,11 +9,14 @@
  */
 
 import { useGLTF } from '@react-three/drei';
+import { MODEL_VERSIONS } from './modelVersions';
 
 export const DRACO_DECODER_PATH = '/draco/';
 
 useGLTF.setDecoderPath(DRACO_DECODER_PATH);
 
-export const ROVER_MODEL_URL = '/models/continua_rover.glb';
-export const ROVER_MODEL_LOD1_URL = '/models/continua_rover_lod1.glb';
-export const PROPS_MODEL_URL = '/models/continua_props.glb';
+// Content-addressed: `/models` is served with a one-year immutable cache, so a
+// regenerated model must arrive under a new URL or browsers keep the old one.
+export const ROVER_MODEL_URL = `/models/continua_rover.glb?v=${MODEL_VERSIONS.rover}`;
+export const ROVER_MODEL_LOD1_URL = `/models/continua_rover_lod1.glb?v=${MODEL_VERSIONS.roverLod1}`;
+export const PROPS_MODEL_URL = `/models/continua_props.glb?v=${MODEL_VERSIONS.props}`;

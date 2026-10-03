@@ -233,6 +233,9 @@ function buildLayout(): Record<string, Placement[]> {
     { x: 446, z: -86, yaw: 1.1 },
   );
   add('PROP_Tank_Small', { x: 418, z: -112, yaw: 0.5 }, { x: 438, z: -112, yaw: 2.2 });
+  // Containment bund around the four storage tanks; its step-over meets the
+  // tank-farm service road at x = 432.
+  add('PROP_Bund', { x: 431, z: -96, yaw: 0 });
   add('PROP_Tank_Sphere', { x: 466, z: -104, yaw: 0.4 });
 
   // Pipe rack along the south side of the corridor road.
@@ -246,10 +249,14 @@ function buildLayout(): Record<string, Placement[]> {
     add('PROP_Pylon', { x, z: -176 - 10 * Math.sin(i * 0.9), yaw: 0.06 });
   }
 
-  // Jersey barriers and route markers along the corridor carriageway.
-  for (let d = distanceAtX(246); d < distanceAtX(446); d += 12) {
-    add('PROP_Barrier', besideRoute(d, 6.4));
-    add('PROP_Barrier', besideRoute(d + 6, -6.4));
+  // Jersey barriers: one continuous line between the carriageway and the pipe
+  // rack, laid end to end the way they are actually used, and broken only where
+  // a service road crosses it. Spaced out every few metres they read as debris.
+  const crossings = SERVICE_ROADS.map((road) => ({ x: road.points[0]![0], clear: road.halfWidth + 2.5 }));
+  for (let d = distanceAtX(258); d < distanceAtX(474); d += 3.04) {
+    const at = besideRoute(d, -6.4);
+    if (crossings.some((road) => Math.abs(at.x - road.x) < road.clear)) continue;
+    add('PROP_Barrier', at);
   }
 
   // --- the remote sector: pipeline, valve station, turbines, solar ----------------

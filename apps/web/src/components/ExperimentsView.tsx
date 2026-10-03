@@ -11,6 +11,7 @@
 import { api, EngineApiError, type CapabilityReport, type ScenarioSpec } from '@/lib/api';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppShell } from './AppShell';
+import { CompareIcon } from './ui/icons';
 import { IS_PUBLIC_PREVIEW, REPO_URL } from '@/lib/deployment';
 import { ComparisonChart } from './experiments/ComparisonChart';
 import { Chip, Panel } from './ui/primitives';
@@ -201,69 +202,73 @@ export function ExperimentsView() {
   ];
 
   return (
-    <AppShell
-      bar={
-        <div className="panel flex flex-wrap items-center gap-x-5 gap-y-2.5 px-5 py-3">
+    <AppShell>
+      <div className="flex h-full min-h-0 flex-col gap-3">
+        {/* One header strip: what this page is, what is on disk, and the one
+            action it offers. It replaces a toolbar plus four stat cards. */}
+        <section className="panel flex shrink-0 flex-wrap items-center gap-x-6 gap-y-3 px-5 py-3.5">
+          <div className="min-w-[260px] flex-1">
+            <h2 className="text-[15px] font-semibold leading-tight">Paired policy comparison</h2>
+            <p className="mt-1 max-w-[560px] text-[11.5px] leading-snug text-[color:var(--color-muted)]">
+              {IS_PUBLIC_PREVIEW
+                ? 'These experiments were executed by the CONTINUA engine and are shown exactly as recorded. '
+                : ''}
+              Every policy runs against the same seed per trial, so all of them face identical link conditions,
+              background demand and loss draws. Seeds come from disjoint blocks.
+            </p>
+          </div>
+
+          <dl className="flex shrink-0 items-center gap-6">
+            {summary.map((item) => (
+              <div key={item.label} className="leading-tight" title={item.note}>
+                <dt className="section-label">{item.label}</dt>
+                <dd className="metric mt-1 text-[19px] font-semibold tracking-[-0.02em]">{item.value}</dd>
+              </div>
+            ))}
+          </dl>
+
+          <span className="divider-v hidden xl:block" />
+
           {/* Executing a comparison needs the engine. Viewing the ones already
               executed does not, and that is what this page is mostly for. */}
-          <label className="flex flex-col gap-1" hidden={IS_PUBLIC_PREVIEW}>
-            <span className="panel-label">Scenario</span>
-            <select className="control min-w-[230px]" value={scenarioId} onChange={(e) => setScenarioId(e.target.value)}>
-              {scenarios.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.title}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="flex flex-col gap-1" hidden={IS_PUBLIC_PREVIEW}>
-            <span className="panel-label">Paired trials</span>
-            <input
-              className="control w-[92px]"
-              type="number"
-              min={1}
-              max={200}
-              value={trials}
-              onChange={(e) => setTrials(Math.max(1, Number(e.target.value) || 1))}
-            />
-          </label>
-          {IS_PUBLIC_PREVIEW ? (
-            <a className="control no-underline" href={REPO_URL} target="_blank" rel="noreferrer">
-              Run your own comparison
-            </a>
-          ) : (
-            <button type="button" className="control" onClick={start} disabled={progress?.status === 'running'}>
-              ⇄ Run comparison
-            </button>
-          )}
+          <div className="flex shrink-0 items-end gap-2.5">
+            <label className="flex flex-col gap-1" hidden={IS_PUBLIC_PREVIEW}>
+              <span className="section-label">Scenario</span>
+              <select className="control min-w-[220px]" value={scenarioId} onChange={(e) => setScenarioId(e.target.value)}>
+                {scenarios.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.title}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="flex flex-col gap-1" hidden={IS_PUBLIC_PREVIEW}>
+              <span className="section-label">Paired trials</span>
+              <input
+                className="control w-[84px]"
+                type="number"
+                min={1}
+                max={200}
+                value={trials}
+                onChange={(e) => setTrials(Math.max(1, Number(e.target.value) || 1))}
+              />
+            </label>
+            {IS_PUBLIC_PREVIEW ? (
+              <a className="control no-underline" href={REPO_URL} target="_blank" rel="noreferrer">
+                Run your own comparison
+              </a>
+            ) : (
+              <button type="button" className="control control-primary" onClick={start} disabled={progress?.status === 'running'}>
+                <CompareIcon size={15} /> Run comparison
+              </button>
+            )}
+          </div>
           {progress && progress.status === 'running' && (
-            <span className="text-[11.5px] text-[color:var(--color-muted)]">
-              {progress.done ?? 0}/{progress.total ?? 0} · {progress.label ?? ''}
+            <span className="w-full text-[11.5px] text-[color:var(--color-muted)]">
+              Running {progress.done ?? 0}/{progress.total ?? 0} · {progress.label ?? ''}
             </span>
           )}
-          <p className="min-w-[240px] flex-1 text-[11px] leading-snug text-[color:var(--color-muted)]">
-            {IS_PUBLIC_PREVIEW
-              ? 'These experiments were executed by the CONTINUA engine and are shown exactly as recorded. '
-              : ''}
-            Every policy runs against the same seed per trial, so all of them face identical link
-            conditions, background demand and loss draws. Seeds come from the disjoint <code>test</code>{' '}
-            block.
-          </p>
-        </div>
-      }
-    >
-      <div className="flex h-full min-h-0 flex-col gap-3">
-        <div className="grid shrink-0 grid-cols-2 gap-3 lg:grid-cols-4">
-          {summary.map((item) => (
-            <div key={item.label} className="card px-4 py-3">
-              <p className="panel-label">{item.label}</p>
-              <p className="metric mt-1 text-[26px] font-semibold leading-none tracking-[-0.03em]">
-                {item.value}
-              </p>
-              <p className="mt-1 text-[11.5px] text-[color:var(--color-muted)]">{item.note}</p>
-            </div>
-          ))}
-        </div>
+        </section>
 
         <div className="grid min-h-0 flex-1 grid-cols-1 grid-rows-[minmax(0,1fr)] gap-3 xl:grid-cols-[292px_minmax(0,1fr)]">
           <div className="scroll-y flex flex-col gap-3 pr-0.5">

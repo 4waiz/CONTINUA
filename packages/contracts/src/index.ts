@@ -160,6 +160,13 @@ export interface MissionZone {
  */
 export type SceneStateSourceKind = 'preview' | 'engine';
 
+/** A change of carrying link, as the scene animates it. */
+export interface HandoffMark {
+  readonly at: Seconds;
+  readonly from: AccessNetworkId | null;
+  readonly to: AccessNetworkId;
+}
+
 export interface SceneState {
   readonly runId: string;
   readonly source: SceneStateSourceKind;
@@ -174,6 +181,12 @@ export interface SceneState {
   readonly degraded: readonly AccessNetworkId[];
   readonly traffic: TrafficState;
   readonly latestDecision: Decision | null;
+  /**
+   * The latest change of carrying link at or before `simTime`, so the scene can
+   * draw a handoff as a pure function of time. Optional: a source that cannot
+   * say leaves it out, and nothing is animated.
+   */
+  readonly handoff?: HandoffMark | null;
 }
 
 /**
@@ -200,7 +213,7 @@ export interface SceneStateSource {
 // Camera and playback contracts (shared with the Phase 3 capture pipeline)
 // ---------------------------------------------------------------------------
 
-export type CameraMode = 'follow' | 'overview' | 'closeup' | 'turntable';
+export type CameraMode = 'follow' | 'overview' | 'closeup' | 'turntable' | 'cinematic';
 export type SceneMode = 'inspect' | 'mission';
 export type QualityTier = 'high' | 'balanced' | 'low';
 

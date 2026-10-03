@@ -14,25 +14,42 @@
  */
 
 import {
+  EngineSceneStateSource,
   previewSource,
   SceneRuntimeProvider,
   useSceneRuntime,
-  type EngineSceneStateSource,
+  useSetSceneSettings,
 } from '@continua/scene';
 import { useEffect } from 'react';
 import { SceneStage } from '../SceneStage';
 
-const DRIFT_TOLERANCE_S = 0.35;
+/**
+ * How far behind the newest engine sample a playing run is shown, in sim
+ * seconds. The engine samples every 0.1 s and the scene interpolates only
+ * *between* samples - it never extrapolates a position the engine has not
+ * reported - so a scene clock level with the newest sample has nothing to
+ * interpolate toward: the rover froze until the next sample, then jumped. A
+ * quarter of a second behind, there is always a pair to move between.
+ */
+const PLAYOUT_DELAY_S = 0.25;
+/** Past this the clock is resynchronised outright: a seek, a stalled tab. */
+const RESYNC_S = 1.0;
+
+/** Site markers are an inspection aid for Scene Lab; the mission view hides them. */
+const MISSION_SETTINGS = { showMarkers: false } as const;
 
 function ClockSync({
   t,
   duration,
   playing,
+  speed,
   enabled,
 }: {
   t: number;
   duration: number;
   playing: boolean;
+  /** The run's playback rate; the engine advances this many sim seconds per second. */
+  speed: number;
   /**
    * False while the scene is showing the Phase 1 preview, which drives its own
    * looping clock. This component still mounts, so that arriving at a run does
@@ -40,7 +57,7 @@ function ClockSync({
    */
   enabled: boolean;
 }) {
-  const { clock } = useSceneRuntime();
+  const { clock, source } = useSceneRuntime();
 
   useEffect(() => {
     if (!enabled) return;
@@ -56,22 +73,55 @@ function ClockSync({
   useEffect(() => {
     // While paused the timeline is being *scrubbed* - by someone dragging the
     // transport, or by the video harness stepping one frame at a time - and the
-    // scene has to sit exactly on the cursor.
-    //
-    // The tolerance below exists for live playback, where the clock free-runs at
-    // 60 fps and snapping it to every engine tick makes the vehicle stutter.
-    // Applying that same tolerance to a paused scrub was wrong in both places it
-    // showed up: scrubbing by hand moved the vehicle in visible jumps, and
-    // frame-stepped capture froze it for ten frames and then jumped it, which is
-    // what made the recorded footage judder.
-    if (!enabled) return;
-    if (!playing) {
-      clock.setTime(t, false);
-      return;
-    }
-    if (Math.abs(clock.time - t) > DRIFT_TOLERANCE_S) clock.setTime(t, false);
+    // scene has to sit exactly on the cursor. Frame-stepped capture depends on
+    // this being exact.
+    if (!enabled || playing) return;
+    clock.setTime(t, false);
   }, [clock, t, playing, enabled]);
 
+  useEffect(() => {
+    // While playing, the clock free-runs at frame rate and is *steered*, never
+    // snapped: its rate is trimmed by a few per cent toward a target a short
+    // playout delay behind the newest sample. Snapping it to each engine tick,
+    // which is what this used to do past a 0.35 s drift, is what made the rover
+    // stop and lurch.
+    if (!enabled || !playing) return undefined;
+    let frame = 0;
+    const follow = () => {
+      frame = requestAnimationFrame(follow);
+      const newest = source instanceof EngineSceneStateSource ? source.newest : null;
+      if (!newest) return;
+      const elapsed = (Math.max(0, performance.now() - newest.receivedAt) / 1000) * speed;
+      const target = Math.max(0, Math.min(newest.t, newest.t + elapsed - PLAYOUT_DELAY_S));
+      const error = target - clock.time;
+      if (Math.abs(error) > RESYNC_S) {
+        clock.setTime(target, false);
+        clock.setSpeed(speed, false);
+        return;
+      }
+      // Close the gap over a second or so, within 30 % of the run's own rate:
+      // fast enough to hold the playout delay, too gentle to see.
+      clock.setSpeed(speed * Math.min(1.3, Math.max(0.7, 1 + error * 1.5)), false);
+    };
+    frame = requestAnimationFrame(follow);
+    return () => {
+      cancelAnimationFrame(frame);
+      clock.setSpeed(speed, false);
+    };
+  }, [clock, source, playing, speed, enabled]);
+
+  return null;
+}
+
+/** The three cameras the run views offer; Scene Lab has the full set. */
+export type MissionCamera = 'follow' | 'overview' | 'closeup' | 'cinematic';
+
+/** Pushes the page's camera choice into the scene's settings store. */
+function CameraSync({ camera }: { camera: MissionCamera }) {
+  const setSettings = useSetSceneSettings();
+  useEffect(() => {
+    setSettings({ camera });
+  }, [camera, setSettings]);
   return null;
 }
 
@@ -89,13 +139,24 @@ export function MissionScene({
   playing,
   className,
   preview = false,
+  onSceneReady,
+  camera = 'follow',
+  speed = 1,
+  adaptive = true,
 }: {
   source: EngineSceneStateSource;
   t: number;
   duration: number;
   playing: boolean;
+  /** Playback rate of the run, from its state. */
+  speed?: number;
+  /** See `SceneStage`'s `adaptive`. */
+  adaptive?: boolean;
   className?: string;
   preview?: boolean;
+  /** The scene has loaded and drawn - see `SceneStage`'s `onReady`. */
+  onSceneReady?: () => void;
+  camera?: MissionCamera;
 }) {
   // One tree, whether or not a run has arrived yet. Returning a *different*
   // tree for preview put `SceneStage` at a different child index, so the moment
@@ -103,9 +164,10 @@ export function MissionScene({
   // context and a glTF reload for a change of data source. Swapping only the
   // `source` prop rebuilds the runtime and leaves everything below it alone.
   return (
-    <SceneRuntimeProvider source={preview ? previewSource : source}>
-      <ClockSync t={t} duration={duration} playing={playing} enabled={!preview} />
-      <SceneStage className={className} />
+    <SceneRuntimeProvider source={preview ? previewSource : source} initialSettings={MISSION_SETTINGS}>
+      <ClockSync t={t} duration={duration} playing={playing} speed={speed} enabled={!preview} />
+      <CameraSync camera={camera} />
+      <SceneStage className={className} onReady={onSceneReady} adaptive={adaptive} />
     </SceneRuntimeProvider>
   );
 }

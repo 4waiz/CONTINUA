@@ -16,6 +16,7 @@ import {
   ACCESS_NETWORKS,
   type AccessNetworkId,
   type Decision,
+  type HandoffMark,
   type LinkState,
   type LinkStatus,
   type SceneState,
@@ -61,6 +62,9 @@ export class EngineSceneStateSource implements SceneStateSource {
   private seen = new Set<number>();
   private listeners = new Set<(state: SceneState) => void>();
   private cachedIndex = 0;
+  private newestReceivedAt = 0;
+  /** Every change of carrying link, in time order - what a handoff animates. */
+  private switches: HandoffMark[] = [];
 
   constructor(runId = 'engine', duration: Seconds = 100) {
     this.runId = runId;
@@ -75,6 +79,12 @@ export class EngineSceneStateSource implements SceneStateSource {
     return this.events.length ? this.events[this.events.length - 1]! : null;
   }
 
+  /** Sim time of the newest sample, and the wall clock (ms) it arrived at. */
+  get newest(): { t: Seconds; receivedAt: number } | null {
+    const last = this.events[this.events.length - 1];
+    return last ? { t: last.t, receivedAt: this.newestReceivedAt } : null;
+  }
+
   /** Highest sequence number seen, so a reconnect can detect a gap. */
   get highestSeq(): number {
     return this.events.length ? this.events[this.events.length - 1]!.seq : 0;
@@ -84,6 +94,8 @@ export class EngineSceneStateSource implements SceneStateSource {
     this.events = [];
     this.seen.clear();
     this.cachedIndex = 0;
+    this.newestReceivedAt = 0;
+    this.switches = [];
     this.runId = runId;
     this.duration = Math.max(duration, 1);
   }
@@ -98,11 +110,44 @@ export class EngineSceneStateSource implements SceneStateSource {
       let index = this.events.length - 1;
       while (index >= 0 && this.events[index]!.t > event.t) index -= 1;
       this.events.splice(index + 1, 0, event);
+      this.rebuildSwitches();
     } else {
       this.events.push(event);
+      this.newestReceivedAt = typeof performance === 'undefined' ? 0 : performance.now();
+      const previous = this.events[this.events.length - 2];
+      this.noteSwitch(previous, event);
     }
     if (event.t > this.duration) this.duration = event.t;
     for (const listener of this.listeners) listener(this.sampleAt(event.t));
+  }
+
+  private noteSwitch(previous: EngineEvent | undefined, event: EngineEvent): void {
+    const from = (previous?.carrying ?? null) as AccessNetworkId | null;
+    const to = (event.carrying ?? null) as AccessNetworkId | null;
+    if (to && to !== from) this.switches.push({ at: event.t, from, to });
+  }
+
+  private rebuildSwitches(): void {
+    this.switches = [];
+    for (let i = 0; i < this.events.length; i += 1) this.noteSwitch(this.events[i - 1], this.events[i]!);
+  }
+
+  /** The latest change of carrying link at or before `t`. */
+  private handoffAt(t: Seconds): HandoffMark | null {
+    const switches = this.switches;
+    let low = 0;
+    let high = switches.length - 1;
+    let found = -1;
+    while (low <= high) {
+      const mid = (low + high) >> 1;
+      if (switches[mid]!.at <= t) {
+        found = mid;
+        low = mid + 1;
+      } else {
+        high = mid - 1;
+      }
+    }
+    return found >= 0 ? switches[found]! : null;
   }
 
   subscribe(listener: (state: SceneState) => void): () => void {
@@ -230,6 +275,7 @@ export class EngineSceneStateSource implements SceneStateSource {
       },
       links,
       active: (event.carrying ?? null) as AccessNetworkId | null,
+      handoff: this.handoffAt(t),
       warming,
       degraded,
       traffic: {

@@ -65,7 +65,8 @@ test.describe('CONTINUA dashboard', () => {
     page.on('response', async (response) => {
       if (!response.url().includes('/models/')) return;
       modelResponses.push({
-        url: response.url().split('/').pop() ?? '',
+        // Model URLs carry a content hash (`?v=`); the file name is what matters.
+        url: (response.url().split('/').pop() ?? '').split('?')[0] ?? '',
         status: response.status(),
         bytes: Number(response.headers()['content-length'] ?? 0),
       });

@@ -17,6 +17,8 @@ const isStaticExport = process.env.CONTINUA_STATIC === '1';
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  // The floating dev badge sits on top of the mission dock's transport.
+  devIndicators: false,
   // The scene packages ship TypeScript source, not a build artefact.
   transpilePackages: ['@continua/scene', '@continua/contracts'],
   // Workspace root, so tracing does not wander up past the monorepo.

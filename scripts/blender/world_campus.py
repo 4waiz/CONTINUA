@@ -326,9 +326,11 @@ def prop_gatehouse(m: dict) -> bpy.types.Object:
     """A canopy over the carriageway with a security booth and raised booms.
 
     Traffic runs along X through the canopy; the booth sits on the -y kerb.
+    The clear height leaves the follow camera (5.2 m above the road) a metre
+    of headroom, so it passes under the soffit rather than through it.
     """
     k = Kit("PROP_Gatehouse", m)
-    span, depth, clear = 17.0, 8.0, 5.6
+    span, depth, clear = 17.0, 8.0, 6.4
     for x in (-depth / 2 + 0.6, depth / 2 - 0.6):
         for y in (-span / 2, span / 2):
             box(k["graphite"], (x, y, clear / 2), (0.45, 0.45, clear))
@@ -342,16 +344,18 @@ def prop_gatehouse(m: dict) -> bpy.types.Object:
     for axis, off in (("+x", 2.1), ("-x", 2.1)):
         arch.ribbon_windows(k, axis, off, -span / 2 - 3.9, -span / 2 - 1.3, 1.0, 2.6, pane=1.3)
     box(k["graphite"], (0.0, -span / 2 - 2.6, 3.26), (4.6, 3.6, 0.15))
-    # Booms, raised - the rover is expected.
+    # Booms, raised - the rover is expected. Short enough that a raised arm
+    # stays under the canopy instead of spearing through its roof.
+    arm = 4.6
     for x, s in ((depth / 2 - 1.4, -1), (-depth / 2 + 1.4, 1)):
         y0 = s * (span / 2 - 0.8)
         box(k["panel_grey"], (x, y0, 0.55), (0.5, 0.5, 1.1))
         rot = Matrix.Rotation(math.radians(80), 4, "X") if s < 0 else Matrix.Rotation(math.radians(-80), 4, "X")
-        arm_c = Vector((x, y0, 1.1)) + (rot @ Vector((0.0, -s * 3.0, 0.0)))
-        box(k["paint_line"], arm_c, (0.08, 6.0, 0.10), rotation=rot)
+        arm_c = Vector((x, y0, 1.1)) + (rot @ Vector((0.0, -s * arm / 2, 0.0)))
+        box(k["paint_line"], arm_c, (0.08, arm, 0.10), rotation=rot)
         for i in range(3):
-            c = Vector((x, y0, 1.1)) + (rot @ Vector((0.0, -s * (1.0 + 2.0 * i), 0.0)))
-            box(k["signal_red"], c, (0.085, 0.6, 0.105), rotation=rot)
+            c = Vector((x, y0, 1.1)) + (rot @ Vector((0.0, -s * (0.8 + 1.5 * i), 0.0)))
+            box(k["signal_red"], c, (0.085, 0.5, 0.105), rotation=rot)
     # Kerbs and speed hump.
     for y in (-span / 2 - 0.4, span / 2 + 0.4):
         box(k["concrete"], (0.0, y, 0.1), (depth + 6.0, 0.4, 0.2))

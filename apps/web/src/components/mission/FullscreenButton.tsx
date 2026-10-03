@@ -55,7 +55,7 @@ export function FullscreenButton({ target }: { target: RefObject<HTMLElement | n
     <button
       type="button"
       onClick={toggle}
-      className="pointer-events-auto rounded-[10px] border border-[color:var(--color-line)] bg-white/90 p-2 backdrop-blur transition hover:border-[color:var(--color-line-strong)] hover:bg-white"
+      className="icon-btn pointer-events-auto shrink-0"
       title={active ? 'Exit full screen (Esc)' : 'Full screen'}
       aria-label={active ? 'Exit full screen' : 'Full screen'}
       aria-pressed={active}

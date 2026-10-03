@@ -16,7 +16,7 @@ import { installOverlayBridge } from '@/lib/captureOverlay';
 import { useEngineRun } from '@/lib/useEngineRun';
 import { LINK_IDS, LINK_LABEL } from '@continua/contracts/engine';
 import { NETWORK_COLOR } from '@continua/scene';
-import { useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { ModeBadge } from './AppShell';
 import { CaptureOverlays } from './capture/CaptureOverlays';
 import { MissionScene } from './mission/MissionScene';
@@ -25,9 +25,15 @@ export function CaptureView({ runId, fullBleed = false }: { runId: string | null
   // A short throttle so the overlay numbers belong to the frame being captured.
   const run = useEngineRun(runId, { throttleMs: 40 });
   const playing = run.state?.status === 'running';
+  // The scene reports when its models are loaded and drawn. Without this the
+  // frame could be "ready" while the loading overlay still covered it: the run
+  // data arrives over the socket long before a Draco decode and a shader
+  // compile finish on a software rasteriser.
+  const [sceneReady, setSceneReady] = useState(false);
+  const onSceneReady = useCallback(() => setSceneReady(true), []);
   // Derived, not stored: the capture harness polls `data-capture-ready`, and a
   // value that lags one render behind would let it start recording too early.
-  const ready = run.source.eventCount > 0 && run.connection === 'connected';
+  const ready = sceneReady && run.source.eventCount > 0 && run.connection === 'connected';
 
   // The harness pushes burned-in text through this bridge; see captureOverlay.ts.
   useEffect(installOverlayBridge, []);
@@ -73,6 +79,9 @@ export function CaptureView({ runId, fullBleed = false }: { runId: string | null
             duration={run.state?.duration_s ?? 100}
             playing={playing && !run.stale}
             className="!absolute inset-0 !rounded-none !border-0"
+            onSceneReady={onSceneReady}
+            speed={run.state?.speed ?? 1}
+            adaptive={false}
           />
         ) : (
           <div className="grid h-full place-items-center text-[13px] text-[color:var(--color-muted)]">

@@ -78,6 +78,17 @@ export const POLICY_LABEL: Record<string, { name: string; blurb: string }> = {
   'P2-reactiveMode': { name: 'P2 · reactive mode', blurb: 'Ablation: mode changes only after a measured violation' },
 };
 
+const POLICY_GROUPS: readonly { label: string; ids: readonly string[] }[] = [
+  { label: 'Baselines', ids: ['B0', 'B1', 'B2', 'B2-defer'] },
+  { label: 'CONTINUA', ids: ['P1', 'P2'] },
+  { label: 'Ablations', ids: ['P1-noPred', 'P1-noApp', 'P2-noSteer', 'P2-noMode', 'P2-reactiveMode'] },
+];
+
+/**
+ * Eleven policies as three short rows of ids - baselines, CONTINUA, the
+ * ablations that take it apart - and one line saying what the chosen one does.
+ * Eleven two-line buttons were most of the column.
+ */
 export function PolicySelector({
   policies,
   value,
@@ -87,45 +98,52 @@ export function PolicySelector({
   value: PolicyIdString;
   onChange: (id: PolicyIdString) => void;
 }) {
+  const known = new Set(policies.map((policy) => policy.id));
+  const grouped = new Set(POLICY_GROUPS.flatMap((group) => group.ids));
+  const groups = [
+    ...POLICY_GROUPS.map((group) => ({ ...group, ids: group.ids.filter((id) => known.has(id)) })),
+    { label: 'Other', ids: policies.map((policy) => policy.id).filter((id) => !grouped.has(id)) },
+  ].filter((group) => group.ids.length > 0);
+  const meta = POLICY_LABEL[value] ?? { name: value, blurb: '' };
+  const continua = value.startsWith('P');
+
   return (
-    <div className="flex flex-col gap-1.5">
-      {policies.map((policy) => {
-        const meta = POLICY_LABEL[policy.id] ?? { name: policy.id, blurb: '' };
-        const selected = policy.id === value;
-        return (
-          <button
-            key={policy.id}
-            type="button"
-            onClick={() => onChange(policy.id as PolicyIdString)}
-            aria-pressed={selected}
-            className={`flex items-center gap-2.5 rounded-[12px] border px-3 py-2 text-left transition ${
-              selected
-                ? 'border-[color:color-mix(in_srgb,var(--color-violet)_38%,transparent)] bg-[color:color-mix(in_srgb,var(--color-violet)_6%,white)]'
-                : 'border-[color:var(--color-line)] hover:border-[color:var(--color-line-strong)]'
-            }`}
-          >
-            <span
-              className="metric shrink-0 rounded-[7px] px-1.5 py-0.5 text-[11px] font-bold"
-              style={{
-                color: selected ? 'var(--color-violet)' : 'var(--color-faint)',
-                background: selected
-                  ? 'color-mix(in srgb, var(--color-violet) 12%, white)'
-                  : 'var(--color-surface-muted)',
-              }}
-            >
-              {policy.id}
-            </span>
-            <span className="min-w-0">
-              <span className="block text-[12.5px] font-semibold leading-tight">{meta.name}</span>
-              {meta.blurb && (
-                <span className="block truncate text-[11px] leading-snug text-[color:var(--color-muted)]">
-                  {meta.blurb}
-                </span>
-              )}
-            </span>
-          </button>
-        );
-      })}
+    <div className="flex flex-col gap-2">
+      {groups.map((group) => (
+        <div key={group.label} className="flex items-start gap-2">
+          <span className="w-[66px] shrink-0 pt-[5px] text-[11px] font-medium text-[color:var(--color-faint)]">{group.label}</span>
+          <div className="flex flex-wrap gap-1">
+            {group.ids.map((id) => {
+              const selected = id === value;
+              const label = POLICY_LABEL[id];
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => onChange(id as PolicyIdString)}
+                  aria-pressed={selected}
+                  title={label ? `${label.name} - ${label.blurb}` : id}
+                  className="metric rounded-[8px] border px-2 py-[3px] text-[11.5px] font-semibold transition-colors"
+                  style={{
+                    borderColor: selected ? 'color-mix(in srgb, var(--color-violet) 45%, transparent)' : 'var(--color-line)',
+                    background: selected ? 'color-mix(in srgb, var(--color-violet) 10%, white)' : 'var(--color-surface)',
+                    color: selected ? 'var(--color-violet)' : 'var(--color-muted)',
+                  }}
+                >
+                  {id}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+      <div
+        className="mt-0.5 rounded-[10px] px-3 py-2"
+        style={{ background: continua ? 'color-mix(in srgb, var(--color-violet) 6%, white)' : 'var(--color-surface-muted)' }}
+      >
+        <div className="text-[12.5px] font-semibold leading-tight">{meta.name}</div>
+        {meta.blurb && <div className="mt-0.5 text-[11.5px] leading-snug text-[color:var(--color-muted)]">{meta.blurb}</div>}
+      </div>
     </div>
   );
 }

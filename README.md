@@ -24,10 +24,10 @@ npm run build && npm start  # app on localhost:3000
 
 | URL | Section |
 | --- | --- |
-| <http://localhost:3000> | **Mission** - live run, 3D scene, link cards, application health |
+| <http://localhost:3000> | **Mission** - a run over the full-screen 3D scene: links, route map, application health, a timeline of every handoff |
 | <http://localhost:3000/scenario-lab> | Inject failures and congestion, change speed and workload |
 | <http://localhost:3000/experiments> | Paired policy comparison and the execution-capability report |
-| <http://localhost:3000/decision-log> | Every controller action with its observations and reason |
+| <http://localhost:3000/decision-log> | A timeline of every controller action, with its observations, reason and the run's recorded outcome |
 | <http://localhost:3000/capture?run=…> | Fixed 16:9 capture frame |
 | <http://localhost:3000/scene-lab> | Phase 1 scene inspector |
 
@@ -168,8 +168,11 @@ misses from 49 % to **31 %**.
 value is in *preparation* and *application-awareness*, not in prediction. Full
 numbers, including where CONTINUA loses, are in `docs/PROGRESS.md`.
 
-Rendering (kept separate from network metrics): 233.8 fps at 1920×1080 on Intel
-integrated graphics; 131 draw calls; 2.28 MB of runtime assets.
+Rendering (kept separate from network metrics): 146-175 fps uncapped at
+1920×1080 during a run, high tier with ambient occlusion on, on an RTX 4070
+Laptop GPU (`node scripts/perf-probe.mjs`); one render per frame; 2.07 MB of
+Draco-compressed models. On a slower GPU the scene steps its own quality tier
+down, and a software rasteriser starts on the low tier.
 
 ## Phases
 
@@ -178,5 +181,5 @@ integrated graphics; 131 draw calls; 2.28 MB of runtime assets.
 | 1 | Vehicle, world, route animation, scene components, design system, `/scene-lab` | **complete** |
 | 2 | Network engine, controller, dashboard, experiments | **complete** |
 | 3 | Demo video: claim ledger, deterministic capture, narration, edit | **complete** |
-| 4 | Per-class steering, control mode handover, honesty fixes, test2 comparison | **complete** |
 | 4 | Per-class steering, control mode handover, B2-defer baseline, test2 comparison | **complete** (see `docs/PHASE_4_RESULTS.md`) |
+| 7 | Visual overhaul: Mk2 rover, 48-prop world kit, procedural ground and daylight, immersive interface | **complete** (see `docs/PROGRESS.md`) |

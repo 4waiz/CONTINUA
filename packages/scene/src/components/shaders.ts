@@ -143,7 +143,7 @@ export function terrainMaterial(palette: {
 }): MeshStandardMaterial {
   const material = new MeshStandardMaterial({ color: '#ffffff', roughness: 0.96, metalness: 0 });
   return patchStandard(material, {
-    key: 'continua-terrain-v1',
+    key: 'continua-terrain-v2',
     uniforms: {
       uCampus: { value: new Color(palette.campus) },
       uSandLight: { value: new Color(palette.sandLight) },
@@ -175,11 +175,18 @@ export function terrainMaterial(palette: {
       float fine = ctNoise(p * 1.7);
       float fineFade = 1.0 - smoothstep(60.0, 220.0, vCtDist);
 
-      vec3 desert = mix(uSand, uSandLight, smoothstep(0.32, 0.72, broad));
+      vec3 desert = mix(uSand, uSandLight, smoothstep(0.30, 0.72, broad));
       desert = mix(desert, uSandDark, smoothstep(0.55, 0.85, mid) * 0.45);
-      // Remote sand is paler and carries ripples.
+      // Gravel plains: broad, darker, slightly cooler patches that break up the
+      // open desert at the scale the overview camera sees it.
+      float plains = smoothstep(0.52, 0.74, ctFbm(p * 0.0021 + vec2(3.7, -8.1)));
+      desert = mix(desert, uSandDark * vec3(0.97, 0.98, 1.0), plains * 0.32 * (1.0 - remote * 0.6));
+      // Remote sand is paler.
       desert = mix(desert, uSandLight, remote * 0.35);
-      desert *= 1.0 - remote * 0.05 * ctRipple(p) * fineFade;
+      // Wind ripples across all open sand, strongest in the remote sector, and
+      // still there in the middle distance where the eye looks for texture.
+      float rippleFade = 1.0 - smoothstep(180.0, 420.0, vCtDist);
+      desert *= 1.0 - (0.028 + remote * 0.035) * ctRipple(p) * rippleFade;
 
       vec3 graded = uCampus * (0.97 + 0.06 * mid);
       vec3 ground = mix(desert, graded, campus);

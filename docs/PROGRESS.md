@@ -7,6 +7,7 @@
 | 3 | Demo video: claim ledger, deterministic capture, narration, edit | **complete** |
 | 3.1 | UI/UX overhaul: fixed-viewport shell, 3D hero, redesigned pages | **complete** |
 | 4 | Per-class steering, control mode handover, B2-defer, honesty fixes, `test2` comparison | **complete** |
+| 7 | Visual overhaul: Mk2 rover, 48-prop world kit, procedural ground and daylight, immersive interface | **complete** |
 
 ---
 
@@ -488,3 +489,218 @@ links without MPTCP, and the adapter's status output says so.
 | `npm run test:engine` | **142 passed** on the final code (36 Phase 2, 25 regression guard, 81 Phase 4), 6.6 min |
 | `npm run test:phase2` | **11 passed**, against the production build and a live engine |
 | `npm run test:smoke` | **11 passed**, 10 skipped by project design (capture and rig tests run on the 1920 project only). Two runs made while the 1 760-run comparison occupied eight cores failed on frame count and a canvas screenshot timeout; both passed with the CPU free, and neither is a Phase 4 change |
+
+---
+
+# Phase 7 - visual overhaul
+
+The application was honest and complete, and it looked like it: a dashboard of
+bordered cards around a small 3D window, a rover that read as a kit model, and a
+world of thirteen primitives on a flat survey grid. This pass rebuilt the 3D
+assets in Blender and the interface around them. **No engine code, contract,
+metric definition or experiment result changed** - the overhaul moved numbers
+around the screen; it did not produce any.
+
+## 3D
+
+* **Rover Mk2** (`build_vehicle.py`, rewritten). The body is one lofted shell
+  from a ten-key filleted section, with paint, crease, accent stripe, cladding,
+  sill, glazing and roof assigned as face bands; swept arch flares; lofted
+  bumpers with skid plates and recovery hooks; a one-piece dark front face with
+  round LED lamps and DRL rings; vertical rear lamps, spare wheel and ladder;
+  helical coil springs; a sensor crown with LiDAR, mast camera, flat satcom
+  panel, MIMO domes and a segmented light bar; tapered-spoke beadlock wheels.
+  rear mud flaps and plate registration. 71,998 triangles (budget 30k-80k),
+  LOD1 23,266. A tread-lug rotation sign
+  error inherited from Mk1 was found and fixed on the way.
+* **World kit**, 48 props in three scripts on a shared architectural kit
+  (`continua_arch.py`): an operations campus, an industrial corridor and a
+  remote sector with a 7.2 m ground station, a pipeline and valve station, wind
+  turbines, palms, ghafs and scrub. 97,588 triangles in total.
+* **Baked AO** on every mesh (Cycles, into a vertex-colour attribute), so
+  contact shading costs nothing at runtime.
+* **Draco**: the three GLBs total 2.07 MB with the decoder served locally.
+  Model URLs carry content hashes, because `/models` is cached as immutable.
+* **Layout** (`world/layout.ts`): every building sits on a graded pad with a
+  service road; perimeter fence, palm avenue, light poles along the route,
+  pylons with catenary conductors, a pipe rack and a distant skyline.
+  `world.json` and every network site position are untouched.
+* **Ground and light.** Procedural terrain, asphalt and concrete shaders replace
+  the survey wireframe; a sky shader doubles as the environment map; the sun
+  shadow is texel-snapped so it does not crawl; Neutral tone mapping.
+* **Links.** The carrying beam fades from the rover to the site, with a soft
+  halo so a link to a tower 300 m away still reads, and carries small packets;
+  the wired tether hangs from the dock gantry.
+* **Handoffs you can see.** Each source now reports the latest change of
+  carrying link (`SceneState.handoff`). The new link reaches out from its site
+  to the rover over 0.7 s behind a bright head, the link it replaced lingers as
+  a fading ghost, the site and the rover's antenna ping, and the serving site
+  pings gently while it carries. All of it is a pure function of the clock, so
+  a scrubbed or captured frame is exact.
+* **Grounded props.** One instanced draw lays a soft occlusion footprint under
+  every solid prop, sized from its bounding box, so buildings and tanks sit in
+  the sand rather than on it. A lower, warmer sun (41° rather than 53°), a
+  deeper sky, gravel plains and wind ripples give the ground form.
+* **A cinematic camera.** A deterministic director - follow, side tracking,
+  high orbit, low lead, crane - with eased blends; the preview opens on it.
+* **Life in the world**: two vans and a car shuttle on service roads, clear
+  of the carriageway, as a pure function of the clock.
+
+## Interface
+
+* **Immersive run pages.** Mission, Scenario Lab and Scene Lab put the scene
+  edge to edge under a slim top bar, with legible glass panels floating over it
+  and a bottom dock. Mission's dock holds the run controls and a timeline
+  painted with the link that carried the session, with a tick per decision.
+* **Mission**: one links panel (all four links, the selected link's
+  measurements, telemetry and session), one application-health panel and a
+  collapsible camera tile, instead of a grid of cards. A toast names each
+  handoff as it happens.
+* **Experiments**: one header strip (what the page is, what is on disk, the
+  one action it offers) replaces a toolbar and four stat cards.
+* **Decision Log**: a timeline. Handoffs are listed by default with nodes in
+  the colour of the link they moved to; a ribbon above shows which link carried
+  the session over the whole run and jumps to the nearest decision; ↑ ↓ step
+  through decisions; a run-outcome panel shows the recorded metrics with the
+  raw file one click away.
+* **A route map** on Mission and Scenario Lab: the whole route, its zones,
+  every network site and the session gateway, the rover at the engine's
+  reported distance, and one line in the carrying link's colour to the site it
+  reaches. The road already driven is painted with the link that carried the
+  session along each stretch, with a dot at every handoff - where on the
+  ground the network changed - from recorded events. It draws no coverage:
+  the scene's coverage model does not know a scenario's injected faults and
+  would contradict the run beside it.
+* **A camera switch** on Mission (follow, overview, close-up). A camera
+  changes the picture, never the data.
+* **Replay from a decision.** Each decision in the log links to Mission, which
+  replays that recorded run from four seconds before it, so the handoff is
+  seen to happen. Local engine only; the public build has no engine to start a
+  replay.
+* **A first-visit card** on Mission saying what the scene is and offering the
+  one action that matters, only while no run exists.
+* **The end of a run, stated.** When a run completes, a card shows what the
+  session went through - reconnects, interruption, application health,
+  handovers (and how many were unnecessary), satellite bytes, overhead -
+  from the metrics file the engine wrote, with the decision log and a replay
+  one click away.
+* **The promise in the HUD**: `SESSION CONTINUOUS · 0 reconnects`, from the
+  receiver's application health, beside the carrying link and command mode.
+* **A loader worth looking at** for the first seconds: the wordmark, the
+  tagline, and the four links lighting up side by side as the world arrives.
+* Six components the redesign replaced were deleted rather than left behind.
+
+## Smoothness, measured
+
+On this machine (RTX 4070 Laptop GPU, Chromium on ANGLE / D3D11), Mission
+with a run in progress, 1920×1080, 8 s, uncapped frame rate
+(`node scripts/perf-probe.mjs`):
+
+| | before | after |
+| --- | --- | --- |
+| Frames per second | 277 | 323 |
+| Renders per displayed frame | 3.2 | 1.0 |
+| Frame time p99 / worst | 8.9 / 18.6 ms | 8.0 / 12.7 ms |
+| Rover frames with no movement (3 s, 60 fps) | 34 of 181 | 0 |
+| Largest per-frame jump in rover speed | 202 m/s (true ~12) | 20 m/s |
+| First load to a drawn scene | 7.2 s | 3.5 s |
+| Page switch to first scene frames | ~1.5 s | 0.4-0.7 s |
+| Long main-thread tasks | 0 | 0 |
+
+What it took:
+
+1. **The environment map was rebuilt about twenty times a second.** Every
+   engine update re-rendered the scene tree; the sky environment's children
+   changed identity, and drei re-captured the cube and re-ran the PMREM
+   filter - some 700 extra render passes a second. The scene stage is now
+   memoised and the environment's children are stable.
+2. **The rover stuttered.** Past the newest engine sample the scene holds
+   position, and the clock was snapped back whenever it drifted 0.35 s, so the
+   rover froze and lurched. The scene now plays a quarter of a simulated second
+   behind the newest sample and steers the clock's rate (within 30 %) instead
+   of snapping it. The run's playback speed, which never reached the clock,
+   now does.
+3. **Shaders compiled synchronously, then the scene rendered six more times.**
+   drei's `<Preload all />` compiled ~100 programs on the main thread and
+   warmed textures with a cube-camera render; the scene has no textures. A
+   `compileAsync` precompile with the render loop held replaces it.
+4. **A WebGL context leaked on every page switch** (the capability probe never
+   released its context; browsers drop the oldest context past about sixteen).
+5. **Settings reset when a run started**, because a new runtime brought a new
+   settings store: the chosen camera snapped back and a software-rendered
+   machine went back to the high tier. One store now lives for the page.
+
+## Known limitations of Phase 7
+
+* **Each scene page builds its own WebGL context.** Switching between Mission,
+  Scenario Lab and Scene Lab shows the loader for about half a second to a
+  second while the context, the models' GPU buffers and the sky environment
+  are rebuilt; one canvas shared across pages would remove that.
+* **Ambient occlusion costs about half the frame rate** on the development GPU
+  (still 146-175 fps there). A slower GPU steps itself down to the balanced
+  tier, which has none.
+* **The cinematic camera does not test for occlusion**: for a moment a palm or
+  a building can pass between it and the rover.
+* **The service-road traffic is decoration.** It is not part of the
+  simulation and nothing measures it.
+
+## Defects found and fixed in Phase 7
+
+1. **The follow camera drove through the dock gantry.** The camera rides
+   5.2 m above the road and the gantry beam sat at 4.6 m, so for the first
+   seconds of every run, as the rover pulled away, the beam filled the frame.
+   The portal is now 6.4 m clear and the camera passes under it; the gatehouse
+   canopy, at 5.6 m, got the same headroom, and its raised booms were
+   shortened because they speared through its roof.
+2. **Capture readiness ignored the scene.** `data-capture-ready` meant "run
+   data has arrived", so a capture could start while the loading overlay still
+   covered the frame - the Phase 2 evidence shot showed exactly that. It now
+   also requires the scene's own first-frame signal (models decoded, three
+   frames drawn).
+3. **Software rendering at a few frames a second.** Under SwiftShader - also
+   what a VM or a remote desktop without GPU acceleration gets - a screenshot
+   of Scene Lab took 15 s and two smoke tests timed out. Hiding parts of the
+   scene one at a time showed a fixed cost dominating: with nothing visible it
+   still drew at 3.5 fps, because the canvas was created with 4x MSAA at full
+   resolution, and multisampling can only be chosen when a context is created.
+   A throwaway context now identifies a software rasteriser (SwiftShader,
+   llvmpipe, softpipe, the Microsoft Basic Render Driver) *before* the canvas
+   exists; it is then created without MSAA at a 0.6 pixel ratio and starts on
+   the low tier. Same machine, same page: a screenshot 15.3 s → 4.4 s, an empty
+   frame 3.5 → 15.5 fps. The quality control still offers every tier.
+4. **A test that raced the dock dwell.** "The vehicle must actually travel"
+   sampled distance over a fixed 3.5 s window right after the first link was
+   assigned, which on a fast page landed inside the rover's 5 s dock dwell. It
+   now waits, bounded at 20 s, for the distance to grow.
+5. **A test that had stopped testing.** The offline check counted numbers in
+   `article.card` metric cards, which the redesign removed, so it passed by
+   counting nothing. It now targets the two measurement panels and asserts
+   they are present first.
+6. **Packet markers grew near the camera.** The markers on the carrying beam
+   were world-sized spheres, so one passing close to the camera became a large
+   disc in the frame. They are now a constant few pixels at any distance.
+7. **Duplicate "unavailable".** An unavailable link said so twice, and an
+   available link with no samples read "Available … unavailable". The row now
+   shows the phase alone, or names the missing measurement ("RTT
+   unavailable").
+8. **The final frame showed the rover back at the dock.** The scene clock
+   looped for every source, so a finished run's last timestamp wrapped to zero
+   while every panel said the rover had arrived. Only the preview loops now.
+9. **An invisible halo.** drei's `<Line>` spreads extra props onto its material
+   as well as the object, so a `visible={false}` prop hid the *material* for
+   good. Visibility is now set on the object, in the frame loop.
+
+## Verification
+
+| Suite | Result |
+| --- | --- |
+| `npm run lint` | clean, zero warnings |
+| `npm run typecheck` | clean |
+| `npm run build` | compiles, every route |
+| `npm run test:engine` | **145 passed** (no engine code changed in this phase) |
+| `npm run test:phase2` | **11 passed**, against the production build and a live engine |
+| `npm run test:smoke` | **11 passed**, 10 skipped by project design, at 1920, 1440 and 1280 |
+
+Looked at in a browser at 1920×1080, 1440×900, 1366×768 and 1280×720
+(`node scripts/ui-screenshots.mjs`): no page scrolls, nothing is unreachable,
+no text is smaller than 11 px.

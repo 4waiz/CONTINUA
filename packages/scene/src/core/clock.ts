@@ -100,11 +100,16 @@ export class SceneClock {
     this.emit();
   }
 
-  setSpeed(speed: number): void {
+  /**
+   * @param notify  false for the continuous, sub-percent rate trims a live run
+   *   applies every frame to stay locked to the engine - telling the transport
+   *   UI about each of those would re-render it sixty times a second.
+   */
+  setSpeed(speed: number, notify = true): void {
     const next = Math.min(Math.max(speed, 0.1), 8);
     if (next === this._speed) return;
     this._speed = next;
-    this.emit();
+    if (notify) this.emit();
   }
 
   setDuration(duration: Seconds): void {

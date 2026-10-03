@@ -32,10 +32,12 @@ const PAGES = [
   { id: 'scene-lab', path: '/scene-lab' },
 ];
 
+// The three sizes the definition of done names, plus the most common laptop.
 const VIEWPORTS = [
   { width: 1920, height: 1080 },
   { width: 1440, height: 900 },
   { width: 1366, height: 768 },
+  { width: 1280, height: 720 },
 ];
 
 const argv = process.argv.slice(2);
@@ -142,9 +144,16 @@ async function main() {
       });
 
       await page.goto(`${WEB}${target.path}`, { waitUntil: 'networkidle', timeout: 45000 });
-      // Give the canvas and any dynamic import a moment to settle.
+      // Give the canvas and any dynamic import a moment to settle, then - on a
+      // page with a scene - wait for the scene to have drawn, so a shot never
+      // shows the loader instead of the page.
       await page.evaluate(() => document.fonts.ready);
-      await page.waitForTimeout(3500);
+      await page.waitForTimeout(1500);
+      await page
+        .getByText('Loading mission scene')
+        .waitFor({ state: 'hidden', timeout: 30000 })
+        .catch(() => undefined);
+      await page.waitForTimeout(1200);
 
       // The empty state is easy to make look good. The populated state is the
       // one that has to hold up, so shoot that too when asked.
@@ -155,6 +164,15 @@ async function main() {
           await button.click();
           await page.waitForTimeout(runSeconds * 1000);
           suffix = '-running';
+        }
+      }
+
+      // A decision log with nothing selected hides half the page.
+      if (target.id === 'decision-log') {
+        const decision = page.getByText(/Moved the session/).first();
+        if (await decision.count()) {
+          await decision.click();
+          await page.waitForTimeout(400);
         }
       }
 

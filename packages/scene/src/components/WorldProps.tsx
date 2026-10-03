@@ -17,14 +17,20 @@ import { useGLTF } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
 import { useLayoutEffect, useMemo, useRef } from 'react';
 import {
+  Box3,
   BufferGeometry,
   Euler,
   Float32BufferAttribute,
+  InstancedBufferAttribute,
   InstancedMesh,
   Matrix4,
   Mesh,
   MeshStandardMaterial,
+  PlaneGeometry,
   Quaternion,
+  ShaderMaterial,
+  UniformsLib,
+  UniformsUtils,
   Vector3,
   type Material,
   type Object3D,
@@ -136,6 +142,153 @@ function tuneMaterial(material: Material): void {
 }
 
 // ---------------------------------------------------------------------------
+// Ground contact: a soft occlusion footprint under every solid prop
+// ---------------------------------------------------------------------------
+
+/**
+ * Open structures, compounds and things whose footprint is not their bounding
+ * box: a dark rectangle under a lattice tower or a fenced yard reads as a
+ * stain, not as contact.
+ */
+const NO_FOOTPRINT = new Set([
+  'PROP_Fence', 'PROP_Bund', 'PROP_Helipad', 'PROP_Skyline_A', 'PROP_Skyline_B', 'PROP_Skyline_C',
+  'PROP_WindTurbine_Rotor', 'PROP_RoadSign', 'PROP_Pylon', 'PROP_PipeRack', 'PROP_SatTerminal',
+  'PROP_Substation', 'PROP_ValveStation', 'PROP_DockStation', 'PROP_Gatehouse', 'PROP_Carport',
+  'PROP_WaterTower', 'PROP_SolarField', 'PROP_Flagpole', 'PROP_LightPole', 'PROP_Bollard',
+  'PROP_Pipeline', 'PROP_CellTower', 'PROP_WifiMast',
+]);
+
+const FOOTPRINT_VERTEX = /* glsl */ `
+  attribute vec2 aInner;
+  attribute float aStrength;
+  varying vec2 vUv;
+  varying vec2 vInner;
+  varying float vStrength;
+  #include <fog_pars_vertex>
+  void main() {
+    vUv = uv;
+    vInner = aInner;
+    vStrength = aStrength;
+    vec4 mvPosition = modelViewMatrix * instanceMatrix * vec4(position, 1.0);
+    gl_Position = projectionMatrix * mvPosition;
+    #include <fog_vertex>
+  }
+`;
+
+const FOOTPRINT_FRAGMENT = /* glsl */ `
+  varying vec2 vUv;
+  varying vec2 vInner;
+  varying float vStrength;
+  #include <fog_pars_fragment>
+  void main() {
+    // 0 inside the prop's own footprint, 1 at the edge of its soft skirt.
+    vec2 p = abs(vUv * 2.0 - 1.0);
+    vec2 d = max(p - vInner, 0.0) / max(1.0 - vInner, vec2(1e-3));
+    float r = length(d);
+    float a = (1.0 - smoothstep(0.0, 1.0, r));
+    a = a * a * vStrength;
+    gl_FragColor = vec4(0.16, 0.13, 0.10, a);
+    #include <fog_fragment>
+    #ifdef USE_FOG
+      gl_FragColor.a *= 1.0 - fogFactor;
+    #endif
+  }
+`;
+
+interface Footprint {
+  cx: number;
+  cz: number;
+  width: number;
+  depth: number;
+  height: number;
+}
+
+function footprintOf(primitives: Primitive[]): Footprint | null {
+  const box = new Box3();
+  const part = new Box3();
+  for (const primitive of primitives) {
+    if (!primitive.geometry.boundingBox) primitive.geometry.computeBoundingBox();
+    if (!primitive.geometry.boundingBox) continue;
+    part.copy(primitive.geometry.boundingBox).applyMatrix4(primitive.relative);
+    box.union(part);
+  }
+  if (box.isEmpty()) return null;
+  return {
+    cx: (box.min.x + box.max.x) / 2,
+    cz: (box.min.z + box.max.z) / 2,
+    width: box.max.x - box.min.x,
+    depth: box.max.z - box.min.z,
+    height: box.max.y - box.min.y,
+  };
+}
+
+/**
+ * Baked AO darkens a prop's own surfaces, but nothing darkened the ground
+ * under it, so buildings and tanks sat *on* the sand rather than in it. One
+ * instanced draw lays a soft rounded footprint under every solid prop, its
+ * skirt scaled to the prop's height, fading with the fog like everything else.
+ */
+function GroundContact({ entries }: { entries: { name: string; placements: Placement[]; primitives: Primitive[] }[] }) {
+  const mesh = useMemo(() => {
+    const items: { matrix: Matrix4; inner: [number, number]; strength: number }[] = [];
+    const position = new Vector3();
+    const rotation = new Quaternion();
+    const scale = new Vector3();
+    const euler = new Euler();
+    for (const entry of entries) {
+      if (NO_FOOTPRINT.has(entry.name)) continue;
+      const footprint = footprintOf(entry.primitives);
+      if (!footprint || footprint.width < 0.2 || footprint.depth < 0.2) continue;
+      for (const item of entry.placements) {
+        const s = item.scale ?? 1;
+        const skirt = Math.min(7, Math.max(0.5, footprint.height * s * 0.22));
+        const width = footprint.width * s + skirt * 2;
+        const depth = footprint.depth * s + skirt * 2;
+        const cos = Math.cos(item.yaw);
+        const sin = Math.sin(item.yaw);
+        const ox = footprint.cx * s;
+        const oz = footprint.cz * s;
+        const x = item.x + ox * cos + oz * sin;
+        const z = item.z - ox * sin + oz * cos;
+        position.set(x, terrain.height(x, z) + 0.05, z);
+        rotation.setFromEuler(euler.set(0, item.yaw, 0));
+        scale.set(width, 1, depth);
+        const area = footprint.width * footprint.depth * s * s;
+        items.push({
+          matrix: new Matrix4().compose(position, rotation, scale),
+          inner: [(footprint.width * s) / width, (footprint.depth * s) / depth],
+          // Big footprints get a lighter touch, or a hall reads as a hole.
+          strength: area > 600 ? 0.42 : area > 60 ? 0.5 : 0.46,
+        });
+      }
+    }
+    const geometry = new PlaneGeometry(1, 1).rotateX(-Math.PI / 2);
+    geometry.setAttribute('aInner', new InstancedBufferAttribute(Float32Array.from(items.flatMap((item) => item.inner)), 2));
+    geometry.setAttribute('aStrength', new InstancedBufferAttribute(Float32Array.from(items.map((item) => item.strength)), 1));
+    const material = new ShaderMaterial({
+      uniforms: UniformsUtils.clone(UniformsLib.fog),
+      vertexShader: FOOTPRINT_VERTEX,
+      fragmentShader: FOOTPRINT_FRAGMENT,
+      transparent: true,
+      depthWrite: false,
+      fog: true,
+      polygonOffset: true,
+      polygonOffsetFactor: -6,
+      polygonOffsetUnits: -6,
+    });
+    const instanced = new InstancedMesh(geometry, material, items.length);
+    items.forEach((item, index) => instanced.setMatrixAt(index, item.matrix));
+    instanced.instanceMatrix.needsUpdate = true;
+    instanced.computeBoundingSphere();
+    instanced.renderOrder = 1;
+    instanced.name = 'CONTINUA_GroundContact';
+    return instanced;
+  }, [entries]);
+
+  return <primitive object={mesh} />;
+}
+
+// ---------------------------------------------------------------------------
 // Wind turbines: rotors turn with the clock
 // ---------------------------------------------------------------------------
 
@@ -180,6 +333,85 @@ function TurbineRotors({ library, placements }: { library: Map<string, Object3D>
           frustumCulled={false}
         />
       ))}
+    </group>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Ambient traffic: a few vehicles about the campus and the corridor
+// ---------------------------------------------------------------------------
+
+/**
+ * Shuttles on the service roads, clear of the rover's carriageway: drive out,
+ * park, drive back, park. Position is a pure function of the clock, so a
+ * scrubbed frame puts every van where it was. Decoration only - nothing here
+ * is part of any measurement.
+ */
+const SHUTTLES: readonly { prop: string; from: [number, number]; to: [number, number]; period: number; offset: number }[] = [
+  { prop: 'PROP_Van', from: [40, 6], to: [40, 17], period: 24, offset: 0 },
+  { prop: 'PROP_Car_C', from: [100, -8], to: [100, 40], period: 30, offset: 9 },
+  { prop: 'PROP_Van', from: [392, -9], to: [392, 50], period: 34, offset: 17 },
+];
+
+function shuttleAt(time: number, period: number, offset: number): { along: number; outbound: boolean } {
+  const p = ((((time + offset) % period) + period) % period) / period;
+  const ease = (x: number) => x * x * (3 - 2 * x);
+  // 12 % parked at the start, 34 % driving out, 12 % parked, 34 % back, 8 % parked.
+  if (p < 0.12) return { along: 0, outbound: true };
+  if (p < 0.46) return { along: ease((p - 0.12) / 0.34), outbound: true };
+  if (p < 0.58) return { along: 1, outbound: true };
+  if (p < 0.92) return { along: 1 - ease((p - 0.58) / 0.34), outbound: false };
+  return { along: 0, outbound: false };
+}
+
+function AmbientTraffic({ library }: { library: Map<string, Object3D> }) {
+  const { clock } = useSceneRuntime();
+  const vehicles = useMemo(
+    () =>
+      SHUTTLES.flatMap((shuttle) => {
+        const node = library.get(shuttle.prop);
+        return node ? [{ shuttle, primitives: collectPrimitives(node) }] : [];
+      }),
+    [library],
+  );
+  const refs = useRef<(Mesh | null)[][]>([]);
+  const base = useMemo(() => new Matrix4(), []);
+
+  useFrame(() => {
+    vehicles.forEach(({ shuttle, primitives }, v) => {
+      const { along, outbound } = shuttleAt(clock.time, shuttle.period, shuttle.offset);
+      const [ax, az] = shuttle.from;
+      const [bx, bz] = shuttle.to;
+      const x = ax + (bx - ax) * along;
+      const z = az + (bz - az) * along;
+      const dx = (bx - ax) * (outbound ? 1 : -1);
+      const dz = (bz - az) * (outbound ? 1 : -1);
+      placementMatrix({ x, z, yaw: Math.atan2(-dz, dx) }, base);
+      primitives.forEach((primitive, index) => {
+        const mesh = refs.current[v]?.[index];
+        if (mesh) mesh.matrix.copy(base).multiply(primitive.relative);
+      });
+    });
+  });
+
+  return (
+    <group name="CONTINUA_Traffic">
+      {vehicles.map(({ primitives }, v) =>
+        primitives.map((primitive, index) => (
+          <mesh
+            key={`${v}-${index}`}
+            ref={(mesh) => {
+              (refs.current[v] ??= [])[index] = mesh;
+            }}
+            geometry={primitive.geometry}
+            material={primitive.material}
+            matrixAutoUpdate={false}
+            castShadow
+            receiveShadow
+            frustumCulled={false}
+          />
+        )),
+      )}
     </group>
   );
 }
@@ -357,6 +589,8 @@ export function WorldProps({
         )),
       )}
 
+      <GroundContact entries={instanced} />
+      <AmbientTraffic library={library} />
       <TurbineRotors library={library} placements={placements.get(TURBINE.tower) ?? []} />
       <PowerLines pylons={placements.get('PROP_Pylon') ?? []} />
 

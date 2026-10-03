@@ -88,6 +88,112 @@ function overviewShot(distance: number, time: number, out: Shot): Shot {
   return out;
 }
 
+// ---------------------------------------------------------------------------
+// Cinematic: a director that cuts between angles on the rover
+// ---------------------------------------------------------------------------
+
+/** Rover-relative placement: `ahead` along the heading, `left` across it. */
+function aroundRover(distance: number, ahead: number, left: number, up: number, out: Vector3): Vector3 {
+  const heading = route.smoothHeadingAt(distance, 20);
+  const cos = Math.cos(heading);
+  const sin = Math.sin(heading);
+  const anchor = route.at(distance);
+  // Heading 0 faces +X; "left" of travel is -Z rotated with it.
+  return out.set(
+    anchor.x + cos * ahead - sin * left,
+    roadSurfaceY(distance) + up,
+    anchor.z - sin * ahead - cos * left,
+  );
+}
+
+type ShotFn = (distance: number, time: number, out: Shot) => Shot;
+
+const CINEMATIC: readonly { seconds: number; shot: ShotFn }[] = [
+  // Behind and above: where the story starts.
+  { seconds: 10, shot: (d, _t, out) => followShot(d, out) },
+  // Tracking alongside, low: the rover as a vehicle, the world sliding past.
+  {
+    seconds: 9,
+    shot: (d, t, out) => {
+      aroundRover(d, 1.2 + Math.sin(t * 0.3) * 1.2, 10, 2.3, out.position);
+      aroundRover(d, 0.6, 0, 1.2, out.target);
+      out.fov = 38;
+      return out;
+    },
+  },
+  // A slow high orbit: the rover in its place, the network sites around it.
+  {
+    seconds: 11,
+    shot: (d, t, out) => {
+      const heading = route.smoothHeadingAt(d, 60);
+      const orbit = heading + 2.4 + t * 0.07;
+      const anchor = route.at(d);
+      const y = roadSurfaceY(d);
+      // High enough to look down past the palm avenue rather than through it.
+      out.position.set(anchor.x + Math.cos(orbit) * 42, y + 27, anchor.z - Math.sin(orbit) * 42);
+      out.target.set(anchor.x, y + 2, anchor.z);
+      out.fov = 40;
+      return out;
+    },
+  },
+  // Low and ahead, looking back down the road it is driving.
+  {
+    seconds: 8,
+    shot: (d, _t, out) => {
+      aroundRover(d, 17, -3.5, 1.7, out.position);
+      aroundRover(d, 0, 0, 1.35, out.target);
+      out.fov = 34;
+      return out;
+    },
+  },
+  // A crane pulling up and back: the route ahead opening out.
+  {
+    seconds: 10,
+    shot: (d, t, out) => {
+      aroundRover(d, -26, 6, 13 + Math.sin(t * 0.25) * 3, out.position);
+      aroundRover(d, 34, 0, 2, out.target);
+      out.fov = 42;
+      return out;
+    },
+  },
+];
+const CINEMATIC_CYCLE = CINEMATIC.reduce((sum, entry) => sum + entry.seconds, 0);
+const BLEND_S = 2.5;
+const _shotA: Shot = { position: new Vector3(), target: new Vector3(), fov: 40 };
+const _shotB: Shot = { position: new Vector3(), target: new Vector3(), fov: 40 };
+
+/**
+ * A pure function of time, like every rig here: the same `t` is always the
+ * same framing. Each shot holds, then eases into the next over the last
+ * seconds of its slot, so the camera never cuts and never stops.
+ */
+function cinematicShot(distance: number, time: number, out: Shot): Shot {
+  const local = ((time % CINEMATIC_CYCLE) + CINEMATIC_CYCLE) % CINEMATIC_CYCLE;
+  let start = 0;
+  let index = 0;
+  while (index < CINEMATIC.length - 1 && local >= start + CINEMATIC[index]!.seconds) {
+    start += CINEMATIC[index]!.seconds;
+    index += 1;
+  }
+  const current = CINEMATIC[index]!;
+  const next = CINEMATIC[(index + 1) % CINEMATIC.length]!;
+  current.shot(distance, time, _shotA);
+  const into = local - (start + current.seconds - BLEND_S);
+  if (into <= 0) {
+    out.position.copy(_shotA.position);
+    out.target.copy(_shotA.target);
+    out.fov = _shotA.fov;
+    return out;
+  }
+  next.shot(distance, time, _shotB);
+  const x = Math.min(1, into / BLEND_S);
+  const k = x * x * (3 - 2 * x);
+  out.position.lerpVectors(_shotA.position, _shotB.position, k);
+  out.target.lerpVectors(_shotA.target, _shotB.target, k);
+  out.fov = _shotA.fov + (_shotB.fov - _shotA.fov) * k;
+  return out;
+}
+
 function turntableShot(time: number, out: Shot): Shot {
   const anchor = route.at(0);
   const anchorY = roadSurfaceY(0);
@@ -126,6 +232,9 @@ export function SceneCameras({ mode }: { mode: CameraMode }) {
         break;
       case 'overview':
         overviewShot(distance, time, shot);
+        break;
+      case 'cinematic':
+        cinematicShot(distance, time, shot);
         break;
       case 'follow':
       default:

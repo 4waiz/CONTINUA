@@ -16,6 +16,7 @@ import {
   ACCESS_NETWORKS,
   type AccessNetworkId,
   type Decision,
+  type HandoffMark,
   type LinkState,
   type LinkStatus,
   type SceneState,
@@ -77,6 +78,7 @@ export class PreviewSceneStateSource implements SceneStateSource {
   private static readonly TIME_STEP = 0.05;
   private readonly handoffs: readonly Handoff[];
   private readonly decisions: readonly Decision[];
+  private readonly handoffMarks: readonly HandoffMark[];
 
   constructor(runId = 'CONTINUA-PREVIEW-01') {
     this.runId = runId;
@@ -105,6 +107,11 @@ export class PreviewSceneStateSource implements SceneStateSource {
       to: handoff.to,
       reason: handoff.reason,
       confidence: handoff.confidence,
+    }));
+    this.handoffMarks = this.handoffs.map((handoff) => ({
+      at: this.timeAtDistance(handoff.distance),
+      from: handoff.from,
+      to: handoff.to,
     }));
   }
 
@@ -269,6 +276,11 @@ export class PreviewSceneStateSource implements SceneStateSource {
     ).length;
     const latestDecision =
       [...this.decisions].reverse().find((decision) => decision.at <= time) ?? null;
+    let handoff: HandoffMark | null = null;
+    for (const mark of this.handoffMarks) {
+      if (mark.at > time) break;
+      handoff = mark;
+    }
 
     return {
       runId: this.runId,
@@ -299,6 +311,7 @@ export class PreviewSceneStateSource implements SceneStateSource {
         handoffCount,
       },
       latestDecision,
+      handoff,
     };
   }
 

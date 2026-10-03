@@ -3,7 +3,7 @@ CONTINUA world - the industrial corridor and the network infrastructure.
 
 Halls, a tank farm, a pipe rack, a substation, transmission pylons and a stack
 give the corridor the job the scenario says it has: industrial inspection.
-The access-network structures - the dock, the Wi-Fi masts, the 5G macro site -
+The access-network structures - the dock, the Wi-Fi masts, the cellular macro site -
 keep the node names the scene's site table and `world.json` already use, so a
 better model drops into the same place without moving any network site.
 
@@ -126,6 +126,49 @@ def prop_tanks(m: dict) -> list[bpy.types.Object]:
     return [_tank(m, "PROP_Tank_Large", 8.0, 11.0), _tank(m, "PROP_Tank_Small", 4.0, 7.0, "amber")]
 
 
+def prop_bund(m: dict) -> bpy.types.Object:
+    """The tank farm's containment bund: a 1.3 m concrete wall around the four
+    storage tanks, with a step-over stair where the service road arrives and a
+    pump plinth with a manifold inside. Real tank farms always have one; without
+    it four tanks stood on a pad read as props, not as a facility.
+
+    Authored around the bund's centre; the north wall (toward the corridor
+    road) is on -Y, where the access road meets it.
+    """
+    k = Kit("PROP_Bund", m)
+    hx, hy, h, wall = 27.0, 25.0, 1.3, 0.3
+    for x, y, sx, sy in ((0.0, -hy, 2 * hx + wall, wall), (0.0, hy, 2 * hx + wall, wall),
+                         (-hx, 0.0, wall, 2 * hy), (hx, 0.0, wall, 2 * hy)):
+        slab(k["concrete"], (x, y, h / 2), (sx, sy, h), cell=2.5)
+    # Coping, a hand's width proud of the wall on both faces.
+    for x, y, sx, sy in ((0.0, -hy, 2 * hx + 0.5, 0.42), (0.0, hy, 2 * hx + 0.5, 0.42),
+                         (-hx, 0.0, 0.42, 2 * hy), (hx, 0.0, 0.42, 2 * hy)):
+        box(k["concrete_warm"], (x, y, h + 0.04), (sx, sy, 0.08))
+    # Step-over at the access road: a flight up the outside, a platform, a flight down.
+    sx0 = 1.0
+    arch.stair_flight(k, (sx0, -hy - 2.2, 0.0), (0.0, 1.0, 0.0), h + 0.1, 6, width=1.1)
+    box(k["steel_dark"], (sx0, -hy, h + 0.12), (1.3, 0.9, 0.06))
+    arch.stair_flight(k, (sx0, -hy + 2.2, 0.0), (0.0, -1.0, 0.0), h + 0.1, 6, width=1.1)
+    arch.railing(k, [(sx0 - 0.65, -hy - 0.45, h + 0.15), (sx0 - 0.65, -hy + 0.45, h + 0.15)], height=1.0, post=0.9)
+    arch.railing(k, [(sx0 + 0.65, -hy - 0.45, h + 0.15), (sx0 + 0.65, -hy + 0.45, h + 0.15)], height=1.0, post=0.9)
+    # Pump plinth with two pumps and a manifold running to the wall.
+    px, py = 1.0, -hy + 5.0
+    slab(k["concrete_warm"], (px, py, 0.2), (6.0, 3.0, 0.4), cell=1.5)
+    for dx in (-1.4, 1.4):
+        cylinder(k["tank_white"], (px + dx, py, 0.85), 0.45, 0.9, 16)
+        cylinder(k["accent"], (px + dx, py, 1.32), 0.47, 0.06, 16)
+        box(k["steel_dark"], (px + dx, py + 0.9, 0.62), (0.5, 0.9, 0.45))
+    arch.pipe(k["steel"], (px - 2.6, py - 1.0, 0.9), (px + 2.6, py - 1.0, 0.9), 0.14, 12)
+    arch.pipe(k["steel"], (px + 2.6, py - 1.0, 0.9), (px + 2.6, -hy + 0.6, 0.9), 0.14, 12)
+    arch.pipe(k["steel"], (px + 2.6, -hy + 0.6, 0.9), (px + 2.6, -hy + 0.6, h + 0.6), 0.14, 12)
+    arch.pipe(k["steel"], (px + 2.6, -hy + 0.6, h + 0.6), (px + 2.6, -hy - 1.2, h + 0.6), 0.14, 12)
+    # Drain sump in a corner, and warning posts at the corners.
+    box(k["graphite"], (hx - 2.0, hy - 2.0, 0.03), (1.2, 1.2, 0.04))
+    for x, y in ((-hx - 0.5, -hy - 0.5), (hx + 0.5, -hy - 0.5), (-hx - 0.5, hy + 0.5), (hx + 0.5, hy + 0.5)):
+        cylinder(k["amber"], (x, y, 0.55), 0.09, 1.1, 10)
+    return k.finish(smooth_angle=40.0)
+
+
 def prop_sphere_tank(m: dict) -> bpy.types.Object:
     """A pressurised sphere on eight legs with a ring girder and a stair."""
     k = Kit("PROP_Tank_Sphere", m)
@@ -243,7 +286,7 @@ PYLON_CONDUCTORS = ((-6.3, 20.6), (6.3, 20.6), (-4.8, 26.1), (4.8, 26.1), (-3.4,
 
 
 def prop_cell_tower(m: dict) -> bpy.types.Object:
-    """5G macro site: a 26 m lattice with three sectors, microwave dishes, a
+    """Cellular macro site: a 26 m lattice with three sectors, microwave dishes, a
     cable ladder, equipment cabinets and a compound fence. Beam attaches at
     25.5 m (sites.ts linkHeight)."""
     k = Kit("PROP_CellTower", m)
@@ -322,19 +365,28 @@ def prop_dock_station(m: dict) -> bpy.types.Object:
         box(k["accent_cyan"], (cx, y, 0.105), (7.6, 0.12, 0.012))
     for x in (cx - 3.9, cx + 3.9):
         box(k["accent_cyan"], (x, cy, 0.105), (0.12, 4.5, 0.012))
-    # Portal gantry across the bay.
+    # Portal gantry across the bay. Tall on purpose: the follow camera rides
+    # 5.2 m above the road, and a beam at roof height filled the frame for the
+    # first seconds of every run as the rover drove out from under it. At
+    # 6.4 m clear the camera passes underneath, like driving through a wash
+    # gantry, and the beam only crosses the top of the frame.
     gx = cx + 0.4
+    beam_z = 6.6
     for y in (cy - 2.7, cy + 2.7):
-        slab(k["panel"], (gx, y, 2.25), (0.45, 0.45, 4.5), cell=1.5)
+        slab(k["panel"], (gx, y, beam_z / 2), (0.45, 0.45, beam_z), cell=1.5)
         box(k["accent_cyan"], (gx + 0.23, y, 2.6), (0.02, 0.2, 1.2))
-    slab(k["panel"], (gx, cy, 4.6), (0.6, 6.0, 0.4), cell=1.5)
+        cylinder(k["concrete"], (gx, y, 0.12), 0.42, 0.24, 16)                 # leg footing
+    slab(k["panel"], (gx, cy, beam_z), (0.6, 6.0, 0.4), cell=1.5)
     # Light strip under the beam. No canopy: the rover stands in daylight
     # while docked, which is when it is inspected.
-    box(k["lamp"], (gx, cy, 4.39), (0.3, 5.0, 0.02))
-    box(k["accent_cyan"], (gx + 0.31, cy, 4.6), (0.02, 5.2, 0.1))
-    # Tether head hanging over the rover's roof port.
+    box(k["lamp"], (gx, cy, beam_z - 0.21), (0.3, 5.0, 0.02))
+    box(k["accent_cyan"], (gx + 0.31, cy, beam_z), (0.02, 5.2, 0.1))
+    # Tether: a carriage under the beam, a drop tube with a strain relief, and
+    # the head over the rover's roof port.
     tx, ty, tz = DOCK_TETHER
-    geo.tube(k["galv"], [(tx, ty, 4.4), (tx, ty, tz + 0.25)], 0.05, 8)
+    slab(k["panel_grey"], (tx, ty, beam_z - 0.32), (0.5, 0.42, 0.22), cell=0.5)
+    geo.tube(k["galv"], [(tx, ty, beam_z - 0.43), (tx, ty, tz + 0.25)], 0.05, 8)
+    cylinder(k["graphite"], (tx, ty, tz + 0.42), 0.075, 0.3, 10)
     slab(k["panel_grey"], (tx, ty, tz + 0.12), (0.36, 0.36, 0.26), cell=0.5)
     cylinder(k["accent_cyan"], (tx, ty, tz - 0.03), 0.07, 0.06, 12)
     # Data/power pillar beside the bay, screen facing the bay.
@@ -435,7 +487,7 @@ def prop_skyline(m: dict) -> list[bpy.types.Object]:
 
 
 def build_all(m: dict) -> list[bpy.types.Object]:
-    out = [prop_warehouse(m), prop_sphere_tank(m), prop_pipe_rack(m), prop_stack(m),
+    out = [prop_warehouse(m), prop_bund(m), prop_sphere_tank(m), prop_pipe_rack(m), prop_stack(m),
            prop_substation(m), prop_pylon(m), prop_cell_tower(m), prop_wifi_mast(m),
            prop_dock_station(m), prop_container(m), prop_barrier(m), prop_road_sign(m)]
     out += prop_tanks(m)

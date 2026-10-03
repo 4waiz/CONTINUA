@@ -503,6 +503,14 @@ def build_rear(mats: dict, detail: str) -> list[bpy.types.Object]:
     lib.bm_box(red, (x_tail - 0.016, 0.0, 1.776), (0.012, 0.360, 0.020))
     # Number plate.
     lib.bm_box(plate, (-2.410, 0.0, 0.690), (0.010, 0.520, 0.110))
+    # Mud flaps behind the rear wheels, on a bracket under the flare end: the
+    # part of the arches a following camera actually sees, and what a vehicle
+    # that works off the tarmac carries.
+    for side in (-1, 1):
+        y = side * TRACK_Y
+        x = AXLE_R - WHEEL_R - 0.15
+        lib.bm_box(trim, (x, y, 0.335), (0.014, 0.380, 0.330))
+        lib.bm_box(trim, (x + 0.025, y, 0.505), (0.060, 0.400, 0.030))
 
     objs = [
         geo.to_object("CONTINUA_RearGlass", glass, [mats["glass"]]),
@@ -813,6 +821,9 @@ def build_identity(mats: dict) -> list[bpy.types.Object]:
              (half, 0.0, 0.0), 0.036, mats["trim"]),
         text("CONTINUA_Ident_Rear", "CONTINUA", (TAIL_X - 0.0035, 0.42, 1.330),
              (half, 0.0, -half), 0.080, mats["accent_blue"], 1.25),
+        # Registration on the rear plate, read the same way as the tail lettering.
+        text("CONTINUA_Plate_Rear", "CNT · 04", (-2.4165, 0.0, 0.688),
+             (half, 0.0, -half), 0.060, mats["trim"], 1.10),
         # Grille wordmark: faces +X and reads along +Y, which is the viewer's
         # right when looking at the nose.
         text("CONTINUA_Ident_Front", "CONTINUA", (NOSE_X + 0.042, 0.0, 0.962),
@@ -1115,6 +1126,7 @@ def main() -> None:
         bake(lod_objects, "lod1")
     lod_tris = report(lod_objects)
     export(lod_objects, lib.out_path("apps", "web", "public", "models", "continua_rover_lod1.glb"))
+    lib.write_model_versions()
 
     lib.banner("Summary")
     print(f"  hero triangles : {hero_tris:,}   (target 30,000 - 80,000)")

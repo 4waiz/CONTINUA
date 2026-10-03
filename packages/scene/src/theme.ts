@@ -27,10 +27,10 @@ export const COLOR = {
  * interface's cyan / blue / violet stay the only strong colours on screen.
  */
 export const SCENE_COLOR = {
-  sky: '#BFD6F0',
+  sky: '#A9CBEF',
   skyHorizon: '#EEF2F6',
-  fog: '#E9EDF1',
-  sun: '#FFF3DE',
+  fog: '#E6ECF3',
+  sun: '#FFEBD0',
   /** Graded campus ground: compacted, cooler, lighter than the open desert. */
   campus: '#CFCAC0',
   sandLight: '#ECE1CC',

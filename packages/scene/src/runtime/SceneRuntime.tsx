@@ -50,8 +50,12 @@ const DEFAULT_SETTINGS: SceneSettings = {
 };
 
 class SettingsStore {
-  private settings: SceneSettings = DEFAULT_SETTINGS;
+  private settings: SceneSettings;
   private readonly listeners = new Set<() => void>();
+
+  constructor(initial: Partial<SceneSettings> = {}) {
+    this.settings = { ...DEFAULT_SETTINGS, ...initial };
+  }
 
   get = (): SceneSettings => this.settings;
 
@@ -86,22 +90,43 @@ export interface SceneRuntime {
 
 const RuntimeContext = createContext<SceneRuntime | null>(null);
 
+/**
+ * The live renderer, published by the scene once its canvas exists. Held here
+ * rather than on the `__CONTINUA__` object so it survives that object being
+ * rebuilt when the source changes (a run starting replaces the runtime, not
+ * the canvas).
+ */
+let rendererHandle: Record<string, unknown> | null = null;
+
+export function publishRenderer(handle: Record<string, unknown> | null): void {
+  rendererHandle = handle;
+}
+
 export function SceneRuntimeProvider({
   children,
   source = previewSource,
+  initialSettings,
 }: {
   children: ReactNode;
   source?: SceneStateSource;
+  /** Starting settings for this runtime; the Mission view hides site markers. */
+  initialSettings?: Partial<SceneSettings>;
 }) {
+  // One store for the life of the page: a run starting swaps the source and
+  // rebuilds the runtime, and must not throw away the viewer's camera or the
+  // quality tier chosen for this device.
+  const [settings] = useState(() => new SettingsStore(initialSettings));
   const runtime = useMemo<SceneRuntime>(() => {
-    const clock = new SceneClock(source.duration, { loop: true });
+    // Only the preview loops. A run ends: wrapping its clock sent the rover back
+    // to the dock on the final frame while every panel said it had arrived.
+    const clock = new SceneClock(source.duration, { loop: source.kind === 'preview' });
     return {
       clock,
       source,
-      settings: new SettingsStore(),
+      settings,
       frame: { current: source.sampleAt(0) },
     };
-  }, [source]);
+  }, [source, settings]);
 
   // A stable handle for browser smoke tests and, in Phase 3, the offline
   // capture harness. Read-only preview data; nothing sensitive crosses here.
@@ -112,6 +137,9 @@ export function SceneRuntimeProvider({
       source: runtime.source,
       settings: runtime.settings,
       getFrame: () => runtime.frame.current,
+      get three() {
+        return rendererHandle ?? undefined;
+      },
       version: 'phase-1',
     };
     return () => {

@@ -19,7 +19,7 @@ structures keep the names `world.json` already uses:
     PROP_Facility_Hangar  the service hangar          (door +X)
     PROP_DockStation      the wired dock gantry       (bay authored at (2, -7))
     PROP_WifiMast         a yard Wi-Fi mast
-    PROP_CellTower        the 5G macro site
+    PROP_CellTower        the cellular macro site
     PROP_SatTerminal      the satellite ground station (dish faces +X)
 
 Every prop carries ambient occlusion baked against a ground plane into a colour
@@ -143,6 +143,7 @@ def main() -> None:
     # Export while every prop is still at the origin: the runtime instances the
     # nodes directly, so a baked-in layout offset would displace every copy.
     export(props, lib.out_path("apps", "web", "public", "models", "continua_props.glb"))
+    lib.write_model_versions()
 
     # Only now spread them on a grid, so the .blend is pleasant to hand-edit.
     geo.wire_ao_into_materials(bpy.data.materials)

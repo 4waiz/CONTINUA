@@ -35,6 +35,35 @@ export function Panel({
   );
 }
 
+/**
+ * A titled section inside a `.glass` surface. Sections in one surface are
+ * separated by hairlines rather than each getting a card of its own - nested
+ * cards were most of what made the old dashboard read as bloated.
+ */
+export function GlassSection({
+  title,
+  action,
+  children,
+  className = '',
+}: {
+  title?: string;
+  action?: ReactNode;
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <section className={`px-4 py-3.5 ${className}`}>
+      {(title || action) && (
+        <header className="mb-2.5 flex items-center justify-between gap-2">
+          {title && <h2 className="section-label">{title}</h2>}
+          {action}
+        </header>
+      )}
+      {children}
+    </section>
+  );
+}
+
 export function Chip({
   tone = 'muted',
   children,

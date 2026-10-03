@@ -18,9 +18,12 @@ import { SCENE_COLOR } from '../theme';
 import { useSceneRuntime } from '../runtime/SceneRuntime';
 
 /** Direction toward the sun: behind-left of a camera following the rover east,
- *  53 degrees up - building fronts facing the route and the rover's tail are lit,
- *  and shadows fall forward-right where the follow camera sees them. */
-export const SUN_DIRECTION = new Vector3(-70, 120, -55).normalize();
+ *  41 degrees up - mid-morning. High enough that the light stays clean and the
+ *  palette pale; low enough that every building, tank and palm throws a shadow
+ *  long enough to give the ground form. Fronts facing the route and the rover's
+ *  tail are lit, and shadows fall forward-right where the follow camera sees
+ *  them. */
+export const SUN_DIRECTION = new Vector3(-70, 78, -55).normalize();
 const SUN_DISTANCE = 160;
 
 const SKY_VERTEX = /* glsl */ `
@@ -89,15 +92,27 @@ function GradientSky() {
 function SkyEnvironment({ resolution }: { resolution: number }) {
   const material = useMemo(() => skyMaterial(), []);
   useEffect(() => () => material.dispose(), [material]);
+  // Stable children: drei re-captures the cube *and* re-runs the PMREM filter
+  // (hundreds of passes) whenever they change identity, which an unmemoised
+  // subtree does on every parent render - that was twenty times a second
+  // during a run.
+  const contents = useMemo(
+    () => (
+      <>
+        <mesh material={material} scale={100}>
+          <sphereGeometry args={[1, 32, 16]} />
+        </mesh>
+        <mesh rotation-x={-Math.PI / 2} position={[0, -2, 0]}>
+          <circleGeometry args={[90, 32]} />
+          <meshBasicMaterial color={SCENE_COLOR.sand} />
+        </mesh>
+      </>
+    ),
+    [material],
+  );
   return (
     <Environment resolution={resolution} frames={1}>
-      <mesh material={material} scale={100}>
-        <sphereGeometry args={[1, 32, 16]} />
-      </mesh>
-      <mesh rotation-x={-Math.PI / 2} position={[0, -2, 0]}>
-        <circleGeometry args={[90, 32]} />
-        <meshBasicMaterial color={SCENE_COLOR.sand} />
-      </mesh>
+      {contents}
     </Environment>
   );
 }
@@ -157,10 +172,10 @@ export function Lighting({ quality }: { quality: 'high' | 'balanced' | 'low' }) 
   return (
     <>
       <GradientSky />
-      <hemisphereLight args={[SCENE_COLOR.sky, SCENE_COLOR.sand, 0.5]} />
+      <hemisphereLight args={[SCENE_COLOR.sky, SCENE_COLOR.sand, 0.46]} />
       <directionalLight
         ref={lightRef}
-        intensity={2.75}
+        intensity={3.0}
         color={SCENE_COLOR.sun}
         castShadow={shadows}
         shadow-mapSize-width={SHADOW_SIZE[quality]}

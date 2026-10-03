@@ -99,9 +99,13 @@ test.describe('Mission dashboard', () => {
         return api ? api.getFrame().vehicle.distance : -1;
       });
     const first = await readDistance();
-    await page.waitForTimeout(3500);
-    const second = await readDistance();
-    expect(second, 'the vehicle must actually travel').toBeGreaterThan(first);
+    // Every run holds the rover at the dock for its first seconds
+    // (`vehicle.dockDwellS` in world.json), so a fixed 3.5 s window could fall
+    // entirely inside the dwell when the page loads quickly. Wait for movement
+    // instead - bounded, so a dashboard of constants still fails.
+    await expect
+      .poll(readDistance, { timeout: 20_000, message: 'the vehicle must actually travel' })
+      .toBeGreaterThan(first);
 
     await page.screenshot({ path: `${EVIDENCE}/p2-mission-${testInfo.project.name}.png` });
     expect(errors, errors.join(' | ')).toEqual([]);
@@ -322,11 +326,11 @@ test.describe('failure handling', () => {
     // sentence down a column of four cards.
     await expect(page.getByText('SCENE PREVIEW')).toBeVisible();
     await expect(page.getByLabel('Waiting for engine').first()).toBeVisible();
-    const numericMetrics = await page
-      .locator('article.card >> css=span.metric')
-      .filter({ hasText: /\d/ })
-      .count();
-    expect(numericMetrics, 'no metric card may show a number with no engine').toBe(0);
+    // Every measurement surface: the links panel and the application panel.
+    const surfaces = page.locator('section[aria-label="Access links"], section[aria-label="Application health"]');
+    await expect(surfaces).toHaveCount(2);
+    const numericMetrics = await surfaces.locator('.metric').filter({ hasText: /\d/ }).count();
+    expect(numericMetrics, 'no measurement panel may show a number with no engine').toBe(0);
 
     // The detail is reachable, and it names how to start the engine.
     await page.getByRole('button', { name: /Detail/ }).click();

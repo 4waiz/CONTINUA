@@ -67,48 +67,92 @@ properties in `apps/web/src/app/globals.css`.
 | `muted` | `#667593` | secondary labels |
 | `line` | `#E2E9F5` | hairline borders |
 | `cyan` | `#12B9E8` | wired and Wi-Fi |
-| `blue` | `#176BFF` | primary accent, 5G |
+| `blue` | `#176BFF` | primary accent, cellular |
 | `violet` | `#7C3CFF` | satellite |
 | `good` | `#12B981` | session continuity |
 | `warn` | `#F59E0B` | the preview badge |
 
 ### Colour - scene
 
-Deliberately desaturated and a step darker than the UI so the white vehicle
-stays the brightest object in frame.
+A pale desert at midday: warm, light and low in saturation, so the white rover
+stays the cleanest object in frame and the interface's cyan / blue / violet stay
+the only strong colours on screen. Values live in `SCENE_COLOR`
+(`packages/scene/src/theme.ts`).
 
 | Token | Value | Use |
 | --- | --- | --- |
-| `sky` / `skyHorizon` | `#EDF3FD` / `#FBFCFE` | vertical sky gradient |
-| `fog` | `#EEF3FB` | atmospheric depth, 320 m → 1750 m |
-| `groundNear` | `#BAC7DC` | engineered ground at the facility |
-| `groundFar` | `#CFC0A4` | sand out in the remote sector |
-| `groundHigh` | `#E3D9C6` | sunlit high ground |
-| `road` | `#7F8CA3` | carriageway |
-| `roadEdge` | `#B4BFD1` | shoulder |
-| `apron` | `#AEBBCE` | facility apron, terminus pad |
-| `grid` | `#7C93B6` | survey wireframe |
-| `ridge` / `ridgeFar` | `#BAC8DE` / `#D3DDEC` | distant silhouettes |
+| `sky` / `skyHorizon` | `#BFD6F0` / `#EEF2F6` | sky shader zenith and horizon |
+| `sun` | `#FFF3DE` | key light colour |
+| `fog` | `#E9EDF1` | atmospheric depth, 260 m → 1900 m |
+| `campus` | `#CFCAC0` | graded ground inside the campus |
+| `sandLight` / `sand` / `sandDark` | `#ECE1CC` / `#DDCDAF` / `#C7B391` | open desert, ripples, low ground |
+| `rockTint` | `#B9A280` | slopes |
+| `concrete` / `apron` | `#C9CDD2` / `#C6CBD1` | building pads, aprons, terminus |
+| `road` | `#4F5664` | asphalt carriageway |
+| `roadEdge` / `roadLine` / `roadCentre` | `#C9C1B1` / `#F4F2EC` / `#F2C14E` | gravel shoulder, edge lines, dashed centre line |
+| `ridge` / `ridgeFar` | `#CBD3DE` / `#DCE2EA` | distant silhouettes |
 
 ### Spacing, radius, type
 
 * Spacing scale: `4, 8, 12, 16, 24, 32`.
-* Radii: panel `18px`, control `10px`, pill `999px`.
+* Radii: panel and glass `18px`, control `10px`, row `12px`, pill `999px`.
 * Type: system sans stack (no webfont fetch, so the build works offline);
-  `ui-monospace` for identifiers and timestamps. Panel labels are 10.5 px, 600
-  weight, `0.09em` tracking, uppercase. Body 12–14 px. The header display size
-  is `clamp(30px, 4vw, 52px)`.
+  `ui-monospace` for identifiers and timestamps. Section labels are 11 px, 650
+  weight, `0.085em` tracking, uppercase. Body 12–14 px. **Nothing on screen is
+  smaller than 11 px** at any of the target viewports - `scripts/ui-screenshots.mjs`
+  measures it.
 * Numerals use `font-variant-numeric: tabular-nums` so readouts do not jitter.
 * Shadows: `0 1px 2px rgb(20 33 61 / .04), 0 8px 24px -12px rgb(20 33 61 / .12)`.
 
-## 4. Scene art direction
+## 4. Interface layout
 
-* **Soft daylight.** One directional key at intensity 0.95 whose shadow frustum
-  follows the rover, a hemisphere fill at 0.30, ambient at 0.05, and a locally
-  generated environment map built from three `Lightformer`s - no HDR download,
-  so the scene renders identically offline. Tone mapping ACES at exposure 0.88.
-* **Pale terrain** with a subtle triangulated survey wireframe laid exactly on
-  the surface, and low-poly ridge silhouettes far beyond the playable bounds.
+One screen, no page scroll, at 1920×1080, 1440×900, 1366×768 and 1280×720.
+
+* **Top bar** (60 px, 52 px under 800 px tall): the CONTINUA lockup, a
+  segmented page switcher, and on run pages a compact run status (mode,
+  connection, run id).
+* **Immersive pages** (Mission, Scenario Lab, Scene Lab) put the 3D scene edge
+  to edge under the bar. Everything else floats over it on `.glass` surfaces -
+  90 % white behind the text, so contrast never depends on what the scene shows
+  underneath:
+  * a left column (links, or scenario set-up), a right column (application
+    health and camera, or the run summary), each scrolling on its own;
+  * a bottom **dock** with the run controls and a timeline painted with the
+    link that carried the session over time, with decision ticks;
+  * small HUD chips top-centre: what the scene is (run, replay or preview), the
+    zone, the carrying link; a toast when a handoff happens.
+* **Document pages** (Experiments, Decision Log) keep white panels on the page
+  ground, one header strip each instead of a toolbar plus a row of stat cards.
+* Sections inside one surface are separated by hairlines, not nested cards.
+  Nested cards were most of what made the earlier dashboard read as bloated.
+
+## 5. Scene art direction
+
+* **Hard, warm daylight.** A sun key at intensity 3.0, 41° up in the south
+  west - mid-morning, so every building, tank and palm throws a shadow long
+  enough to give the ground form - a hemisphere fill at 0.46 (sky above, sand
+  bounce below), and an
+  environment map rendered at runtime from the same procedural sky shader the
+  background uses (`scene.environmentIntensity` 0.38) - no HDR download, so the
+  scene renders identically offline. Neutral tone mapping at exposure 0.92.
+* **Stable shadows.** The 4096 / 2048 / 1024 shadow map (by quality tier)
+  follows the rover with its frustum snapped to whole texels in light space, so
+  shadow edges do not crawl as the camera moves. The rover also carries a soft
+  procedural contact shadow.
+* **Ground that reads as a place.** Terrain, road and concrete are procedural
+  shaders: campus ground blending into sand with ripples and slope tint, an
+  asphalt road with edge lines, a dashed centre line and wheel-path wear over a
+  gravel shoulder, jointed concrete pads under every building, and service
+  roads to each one. Low ridge silhouettes sit far beyond the playable bounds.
+* **Grounded, not pasted.** Ground-truth ambient occlusion on the high tier
+  darkens wherever one object meets another, and a soft occlusion footprint
+  under every solid prop darkens the sand around it; baked AO already shades
+  each object's own creases.
+* **A world with a job.** An operations campus (operations centre, gateway
+  hall, hangar, response station, gatehouse, carports), an industrial corridor
+  (halls, tank farm, pipe rack, stack, substation, pylons), and a remote sector
+  (ground station, pipeline and valve station, solar, wind turbines), dressed
+  with palms, ghafs and scrub. The full list is in `ASSET_MANIFEST.md`.
 * **Restraint.** No bloom, no god rays, no particles, no floating labels over
   the vehicle. Infrastructure is marked with a thin ground ring that only grows
   a vertical stem when selected.
@@ -126,10 +170,25 @@ to make a network diagram meaningless:
 | **Coverage** - where a network is available | Translucent ground footprints, off by default, toggled per session |
 | **Active link** - what carries the session | One bright arced beam from the rover's roof mast to the serving site |
 
-Pre-warming links use the same beam form, dashed and at 40 % opacity. The wired
+The carrying beam fades from full colour at the rover to a pale tint at the
+site, with a faint wide halo, so a beam to a distant tower reads as a link
+rather than a line slashed across the frame. A handoff is drawn, not swapped:
+the new link reaches out from its site to the rover behind a bright head, the
+link it replaced fades out as a ghost, and the site and the rover's antenna
+ping - all as a pure function of the clock and the recorded handoff time. Small packets travel along it toward the rover as a pure
+function of the scene clock - they show direction, not a measured rate.
+Pre-warming links use the same beam form, dashed and at 45 % opacity. The wired
 tether sags *downward* like a cable; radio links bow *upward*.
 
-## 5. Rules this project will not break
+### Cameras
+
+Follow, overview and close-up for working; a **cinematic** director for
+showing - follow, side tracking, a high orbit, a low lead shot looking back up
+the road, and a crane - eased into one another, and still a pure function of
+time. The preview opens on it; a run switches to follow, which keeps the link
+beams in frame.
+
+## 6. Rules this project will not break
 
 * No dark cyberpunk treatment.
 * No heavy bloom, no neon spaghetti, no random particles.

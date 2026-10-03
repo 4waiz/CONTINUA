@@ -15,6 +15,8 @@ const config = [
       '**/node_modules/**',
       '**/dist/**',
       '**/next-env.d.ts',
+      // Vendored, minified Draco decoder (Google, Apache-2.0) - see its README.
+      'apps/web/public/draco/**',
       '.checkpoint/**',
       'assets/**',
       'tests/output/**',

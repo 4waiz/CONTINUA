@@ -442,7 +442,8 @@ def verify_remote(branch: str, expected_sha: str) -> tuple[bool, str]:
     return False, "branch not found on remote"
 
 
-def do_checkpoint(branch: str, message: str | None, push: bool, owner: str = "supervisor") -> str:
+def do_checkpoint(branch: str, message: str | None, push: bool, owner: str = "supervisor",
+                  trailers: Sequence[str] = ()) -> str:
     """One checkpoint attempt. Returns a short result token."""
     state = load_state()
     state["attempts"] += 1
@@ -528,7 +529,9 @@ def do_checkpoint(branch: str, message: str | None, push: bool, owner: str = "su
             f"Marked ready: {len(marked)} path(s)\n"
             f"Time: {now_iso()}\n"
         )
-        commit = git("commit", "-m", subject, "-m", body)
+        # Trailers (e.g. Co-Authored-By) go last, where git and hosts look for them.
+        trailer_args = ["-m", "\n".join(trailers)] if trailers else []
+        commit = git("commit", "-m", subject, "-m", body, *trailer_args)
         if commit.returncode != 0:
             if "nothing to commit" in (commit.stdout + commit.stderr).lower():
                 state["skipped"] += 1
@@ -707,7 +710,8 @@ def cmd_stop(_args: argparse.Namespace) -> int:
 
 
 def cmd_once(args: argparse.Namespace) -> int:
-    result = do_checkpoint(args.branch, args.message, not args.no_push, owner="agent")
+    result = do_checkpoint(args.branch, args.message, not args.no_push, owner="agent",
+                           trailers=args.trailer or ())
     return 0 if result in {"pushed", "committed", "skipped"} else 1
 
 
@@ -804,6 +808,8 @@ def main() -> int:
 
     p_once = sub.add_parser("once", help="run a single checkpoint now")
     p_once.add_argument("--message", "-m", default=None)
+    p_once.add_argument("--trailer", action="append", default=None,
+                        help="a trailer line placed after the footer, e.g. 'Co-Authored-By: ...' (repeatable)")
     p_once.add_argument("--no-push", action="store_true")
     p_once.set_defaults(func=cmd_once)
 

@@ -34,7 +34,8 @@ import { useMemo } from 'react';
 import { AppShell } from './AppShell';
 import { ScenePerformance } from './ScenePerformance';
 import { SceneStage } from './SceneStage';
-import { ButtonGroup, Chip, Dot, Panel, PreviewBadge, Stat, Toggle } from './ui/primitives';
+import { ButtonGroup, Chip, GlassSection, PreviewBadge, Stat, Toggle } from './ui/primitives';
+import { NetworkIcon, PauseIcon, PlayIcon, ResetIcon } from './ui/icons';
 
 // ---------------------------------------------------------------------------
 
@@ -42,6 +43,7 @@ const CAMERA_OPTIONS: readonly { value: CameraMode; label: string; title: string
   { value: 'follow', label: 'Follow', title: 'Chase camera, locked to the smoothed road tangent' },
   { value: 'overview', label: 'Overview', title: 'High wide shot showing route and infrastructure' },
   { value: 'closeup', label: 'Close-up', title: 'Low orbit near the rover' },
+  { value: 'cinematic', label: 'Cinematic', title: 'A director cutting between angles on the rover - tracking, orbit, low lead, crane' },
 ];
 
 const SPEED_OPTIONS = [0.25, 0.5, 1, 2, 4] as const;
@@ -74,45 +76,38 @@ function Transport() {
   const progress = playback.simTime / clock.duration;
 
   return (
-    <Panel
-      title="Playback"
-      action={
-        <span className="metric font-[family-name:var(--font-mono)] text-[11.5px] text-[color:var(--color-muted)]">
-          {formatClock(playback.simTime)} / {formatClock(clock.duration)}
-        </span>
-      }
-    >
-      <div className="flex items-center gap-2">
-        <button
-          type="button"
-          className="control"
-          data-active={playback.playing}
-          onClick={() => clock.toggle()}
-          aria-label={playback.playing ? 'Pause' : 'Play'}
-        >
-          {playback.playing ? '❙❙ Pause' : '▶ Play'}
-        </button>
-        <button type="button" className="control" onClick={() => clock.reset()}>
-          ↺ Reset
-        </button>
-        <div className="ml-auto flex items-center gap-1.5">
-          <span className="panel-label">Speed</span>
-          <select
-            className="control px-2"
-            value={playback.speed}
-            onChange={(event) => clock.setSpeed(Number(event.target.value))}
-            aria-label="Preview speed"
-          >
-            {SPEED_OPTIONS.map((speed) => (
-              <option key={speed} value={speed}>
-                {speed}×
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
+    <section className="glass flex items-center gap-3 px-3 py-2.5" aria-label="Playback">
+      <button
+        type="button"
+        className="control w-[100px] shrink-0"
+        data-active={playback.playing}
+        onClick={() => clock.toggle()}
+        aria-label={playback.playing ? 'Pause' : 'Play'}
+      >
+        {playback.playing ? <PauseIcon size={14} /> : <PlayIcon size={14} />}
+        {playback.playing ? 'Pause' : 'Play'}
+      </button>
+      <button type="button" className="control shrink-0" onClick={() => clock.reset()}>
+        <ResetIcon size={15} /> Reset
+      </button>
+      <select
+        className="control w-[70px] shrink-0 px-2.5"
+        value={playback.speed}
+        onChange={(event) => clock.setSpeed(Number(event.target.value))}
+        aria-label="Preview speed"
+      >
+        {SPEED_OPTIONS.map((speed) => (
+          <option key={speed} value={speed}>
+            {speed}×
+          </option>
+        ))}
+      </select>
+      <span className="metric w-[104px] shrink-0 text-center font-[family-name:var(--font-mono)] text-[12.5px] font-semibold">
+        {formatClock(playback.simTime)}
+        <span className="text-[color:var(--color-faint)]"> / {formatClock(clock.duration)}</span>
+      </span>
 
-      <div className="relative mt-3">
+      <div className="relative min-w-[200px] flex-1">
         <input
           type="range"
           className="scrub"
@@ -143,16 +138,13 @@ function Transport() {
         </div>
       </div>
 
-      <div className="mt-1.5 flex items-center justify-between text-[11px] text-[color:var(--color-muted)]">
-        <span>
-          Zone ·{' '}
-          <strong className="font-semibold text-[color:var(--color-ink)]">
-            {MISSION_ZONES.find((zone) => zone.id === state.zone)?.label ?? state.zone}
-          </strong>
-        </span>
-        <span className="metric">{state.vehicle.distance.toFixed(0)} m travelled</span>
-      </div>
-    </Panel>
+      <span className="hidden shrink-0 text-[12px] text-[color:var(--color-muted)] xl:inline">
+        <strong className="font-semibold text-[color:var(--color-ink)]">
+          {MISSION_ZONES.find((zone) => zone.id === state.zone)?.label ?? state.zone}
+        </strong>
+        <span className="metric ml-2">{state.vehicle.distance.toFixed(0)} m</span>
+      </span>
+    </section>
   );
 }
 
@@ -160,11 +152,11 @@ function LinkPanel() {
   const state = useThrottledSceneState(200);
 
   return (
-    <Panel title="Access networks" action={<PreviewBadge source={state.source} />}>
-      <p className="mb-3 text-[11.5px] leading-snug text-[color:var(--color-muted)]">
+    <GlassSection title="Access networks" action={<PreviewBadge source={state.source} />}>
+      <p className="mb-2.5 text-[11.5px] leading-snug text-[color:var(--color-muted)]">
         Four alternative links to one gateway - not a chain. At most one carries the session.
       </p>
-      <ul className="space-y-1.5">
+      <ul className="space-y-1">
         {ACCESS_NETWORKS.map((id: AccessNetworkId) => {
           const link = state.links[id];
           const meta = ACCESS_NETWORK_META[id];
@@ -172,16 +164,21 @@ function LinkPanel() {
           return (
             <li
               key={id}
-              className="flex items-center gap-2.5 rounded-[10px] border px-2.5 py-2 transition-colors"
+              className="flex items-center gap-2.5 rounded-[12px] px-2.5 py-2 transition-colors"
               style={{
-                borderColor: isActive ? NETWORK_COLOR[id] : 'var(--color-line)',
-                background: isActive
-                  ? `color-mix(in srgb, ${NETWORK_COLOR[id]} 7%, white)`
-                  : 'var(--color-surface)',
+                background: isActive ? `color-mix(in srgb, ${NETWORK_COLOR[id]} 9%, white)` : 'transparent',
                 opacity: link.state === 'unavailable' ? 0.5 : 1,
               }}
             >
-              <Dot color={NETWORK_COLOR[id]} pulse={link.state === 'warming'} />
+              <span
+                className={`grid h-8 w-8 shrink-0 place-items-center rounded-full ${link.state === 'warming' ? 'breathe' : ''}`}
+                style={{
+                  background: isActive ? NETWORK_COLOR[id] : `color-mix(in srgb, ${NETWORK_COLOR[id]} 12%, white)`,
+                  color: isActive ? 'white' : NETWORK_COLOR[id],
+                }}
+              >
+                <NetworkIcon link={id} size={16} />
+              </span>
               <div className="min-w-0 flex-1">
                 <div className="flex items-baseline gap-1.5">
                   <span className="text-[13px] font-semibold">{meta.label}</span>
@@ -208,7 +205,7 @@ function LinkPanel() {
           );
         })}
       </ul>
-    </Panel>
+    </GlassSection>
   );
 }
 
@@ -217,7 +214,7 @@ function RunPanel() {
   const activeMeta = state.active ? ACCESS_NETWORK_META[state.active] : null;
 
   return (
-    <Panel title="Mission run">
+    <GlassSection title="Mission run">
       <div className="grid grid-cols-2 gap-3">
         <Stat
           label="Speed"
@@ -254,8 +251,8 @@ function RunPanel() {
       </dl>
 
       {state.latestDecision && (
-        <div className="mt-3 rounded-[10px] border border-[color:var(--color-line)] bg-[color:var(--color-surface-muted)] p-2.5">
-          <div className="panel-label mb-1">Latest decision</div>
+        <div className="mt-3 rounded-[12px] bg-[color:var(--color-surface-muted)] p-2.5">
+          <div className="section-label mb-1">Latest decision</div>
           <p className="text-[12px] leading-snug">{state.latestDecision.reason}</p>
           {/* The preview source used to print "Model confidence 99% - illustrative"
               here. There is no model in the Phase 1 preview and nothing produced
@@ -267,7 +264,7 @@ function RunPanel() {
           </p>
         </div>
       )}
-    </Panel>
+    </GlassSection>
   );
 }
 
@@ -277,10 +274,13 @@ function ViewPanel() {
   const selected = SITES.find((site) => site.id === settings.selectedSiteId) ?? null;
 
   return (
-    <Panel title="View">
+    <GlassSection title="View">
+      <p className="mb-3 text-[11.5px] leading-snug text-[color:var(--color-muted)]">
+        Visualisation and inspection - a deterministic geometric preview, not measured network performance.
+      </p>
       <div className="space-y-2.5">
         <div>
-          <div className="panel-label mb-1.5">Mode</div>
+          <div className="section-label mb-1.5">Mode</div>
           <ButtonGroup<SceneMode>
             label="Scene mode"
             value={settings.mode}
@@ -293,7 +293,7 @@ function ViewPanel() {
         </div>
 
         <div>
-          <div className="panel-label mb-1.5">Camera</div>
+          <div className="section-label mb-1.5">Camera</div>
           <ButtonGroup<CameraMode>
             label="Camera"
             value={settings.camera}
@@ -308,7 +308,7 @@ function ViewPanel() {
         </div>
 
         <div>
-          <div className="panel-label mb-1.5">Quality</div>
+          <div className="section-label mb-1.5">Quality</div>
           <ButtonGroup<QualityTier>
             label="Quality"
             value={settings.quality}
@@ -331,7 +331,7 @@ function ViewPanel() {
         </div>
 
         {selected && (
-          <div className="rounded-[10px] border border-[color:var(--color-line)] bg-[color:var(--color-surface-muted)] p-2.5">
+          <div className="rounded-[12px] bg-[color:var(--color-surface-muted)] p-2.5">
             <div className="mb-1 flex items-center justify-between gap-2">
               <span className="text-[12.5px] font-semibold">{selected.label}</span>
               {selected.network && (
@@ -363,7 +363,7 @@ function ViewPanel() {
           Space play/pause · ← → scrub · Shift+← → 10 s · C coverage · R reset
         </p>
       </div>
-    </Panel>
+    </GlassSection>
   );
 }
 
@@ -376,36 +376,25 @@ export function SceneLab() {
     // Scene Lab used to carry its own header and a "← Dashboard" link, which made
     // it feel like a separate tool. It is a page of the same product, so it gets
     // the same shell and the same navigation.
-    <AppShell
-      bar={
-        <div className="panel flex flex-wrap items-center justify-between gap-x-6 gap-y-2 px-5 py-3">
-          <div className="flex items-center gap-3">
-            <Chip tone="muted">SCENE PREVIEW</Chip>
-            <div className="leading-tight">
-              <p className="text-[13.5px] font-semibold">Scene Lab</p>
-              <p className="text-[11.5px] text-[color:var(--color-muted)]">
-                Phase 1 visualisation and inspection - a deterministic geometric preview, not
-                measured network performance.
-              </p>
-            </div>
+    <AppShell variant="immersive" bar={<ScenePerformance />}>
+      <div className="absolute inset-0 overflow-hidden" style={{ ['--dock-h' as string]: '58px' }}>
+        <SceneStage className="scene-shell-bleed absolute inset-0 h-full w-full" />
+
+        <aside className="mission-side mission-left scroll-y">
+          <div className="glass">
+            <ViewPanel />
           </div>
-          <ScenePerformance />
-        </div>
-      }
-    >
-      <div className="grid h-full min-h-0 grid-cols-1 grid-rows-[minmax(0,1fr)] gap-3 xl:grid-cols-[300px_minmax(0,1fr)_320px]">
-        <div className="scroll-y order-2 flex flex-col gap-3 pr-0.5 xl:order-1">
-          <ViewPanel />
-        </div>
+        </aside>
 
-        <div className="order-1 flex min-h-0 flex-col gap-3 xl:order-2">
-          <SceneStage className="min-h-0 flex-1" />
+        <aside className="mission-side mission-right scroll-y">
+          <div className="glass divide-y divide-[color:var(--color-line)]">
+            <LinkPanel />
+            <RunPanel />
+          </div>
+        </aside>
+
+        <div className="mission-dock">
           <Transport />
-        </div>
-
-        <div className="scroll-y order-3 flex flex-col gap-3 pr-0.5">
-          <LinkPanel />
-          <RunPanel />
         </div>
       </div>
     </AppShell>

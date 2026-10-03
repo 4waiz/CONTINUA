@@ -72,13 +72,13 @@ export function ScenePerformance() {
   ];
 
   return (
-    <dl className="flex items-center gap-5">
+    <dl className="flex items-center gap-4" aria-label="Renderer performance">
       {items.map(([label, value]) => (
-        <div key={label} className="leading-tight">
-          <dt className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[color:var(--color-faint)]">
+        <div key={label} className="flex items-baseline gap-1.5 leading-none">
+          <dt className="text-[11px] font-semibold uppercase tracking-[0.07em] text-[color:var(--color-faint)]">
             {label}
           </dt>
-          <dd className="metric text-[13px] font-semibold">{value}</dd>
+          <dd className="metric text-[12.5px] font-semibold">{value}</dd>
         </div>
       ))}
     </dl>
