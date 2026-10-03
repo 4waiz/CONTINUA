@@ -60,7 +60,9 @@ def prop_warehouse(m: dict) -> bpy.types.Object:
         bm.faces.new((a, c, c2, a2))                     # sloped roof plane
         bm.faces.new((a, b, c))
         bm.faces.new((a2, c2, b2))
-        g = k["glass"]
+        # The roof glazing is plain dark glass; the office annex's windows
+        # are the glass the runtime draws rooms behind.
+        g = k["glass_dark"]
         box(g, (x0 + tooth - 0.06, 0.0, H + 1.6), (0.1, L - 0.4, 3.0))
         for y in [-L / 2 + 2.0 * j for j in range(1, 24)]:
             box(k["graphite"], (x0 + tooth - 0.02, y, H + 1.6), (0.08, 0.08, 3.1))

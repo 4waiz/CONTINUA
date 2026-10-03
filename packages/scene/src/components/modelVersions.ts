@@ -6,5 +6,5 @@
 export const MODEL_VERSIONS = {
   rover: 'ae48ad0cac03',
   roverLod1: '7fbd74f1e7a9',
-  props: '104ed725f61f',
+  props: '9ec898d25a5d',
 } as const;

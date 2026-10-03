@@ -298,8 +298,11 @@ def louvres(kit: Kit, axis: str, offset: float, u0: float, u1: float, z0: float,
 
 def ribbon_windows(kit: Kit, axis: str, offset: float, u0: float, u1: float, z0: float, z1: float,
                    pane: float = 1.4, glass: str = "glass", frame: str = "graphite") -> None:
+    """A band of windows in a solid wall. The glass stands just proud of the
+    wall's face: set back into it, as a curtain wall is, it was inside the
+    solid volume and only the mullions showed - outlines on a blank wall."""
     curtain_wall(kit, axis, offset, u0, u1, z0, z1, mullion=pane, glass=glass, frame=frame,
-                 recess=0.10, mullion_depth=0.12, mullion_w=0.06)
+                 recess=-0.04, mullion_depth=0.12, mullion_w=0.06)
 
 
 def door(kit: Kit, axis: str, offset: float, u: float, width: float, height: float,

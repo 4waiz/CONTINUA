@@ -67,7 +67,7 @@ def prop_hq(m: dict) -> bpy.types.Object:
     core_y = L / 2 - 3.2
     slab(k["graphite"], (1.0, core_y, (top + 4.2) / 2), (8.0, 6.4, top + 4.2), cell=3.0)
     arch.curtain_wall(k, "+x", 5.0, core_y - 1.0, core_y + 1.0, 1.0, top + 3.4, mullion=2.0,
-                      transom=1.4, glass="glass", frame="graphite")
+                      transom=1.4, glass="glass", frame="graphite", recess=-0.04)
     box(k["panel"], (1.0, core_y, top + 4.35), (8.3, 6.7, 0.3))
     # --- entrance: projecting glass lobby + canopy --------------------------
     lob_x = D / 2 + 1.6
@@ -286,7 +286,7 @@ def prop_response_station(m: dict) -> bpy.types.Object:
     # Drill / lookout tower at the back corner.
     slab(k["panel"], (-5.0, 15.0, 8.5), (4.0, 4.0, 17.0), cell=3.0)
     for z in (5.0, 9.0, 13.0):
-        box(k["glass_dark"], (-2.98, 15.0, z), (0.06, 1.2, 1.8))
+        box(k["glass"], (-2.98, 15.0, z), (0.06, 1.2, 1.8))
     box(k["accent"], (-5.0, 15.0, 16.4), (4.1, 4.1, 0.4))
     box(k["graphite"], (-5.0, 15.0, 17.1), (4.6, 4.6, 0.2))
     # Forecourt.

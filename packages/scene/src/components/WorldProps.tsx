@@ -43,6 +43,7 @@ import { PYLON_CONDUCTORS, TURBINE, WORLD_LAYOUT, type Placement } from '../worl
 import { SITES, type SiteMarker } from '../world/sites';
 import { SEA_LEVEL, terrain } from '../world/terrain';
 import { PROPS_MODEL_URL } from './assets';
+import { plainGlazing, windowMaterial, type RoomSpec } from './windows';
 
 export { PROPS_MODEL_URL };
 
@@ -97,7 +98,9 @@ function placementMatrix(item: Placement, target: Matrix4): Matrix4 {
  */
 const LOW_CARD_MATERIALS = new WeakMap<Material, Material>();
 
-function lowTierMaterial(material: Material): Material {
+function lowTierMaterial(source: Material): Material {
+  // Glazing on the low tier is the plain tinted glass, without rooms.
+  const material = plainGlazing(source);
   if (!(material instanceof MeshStandardMaterial) || !material.name.includes('Card')) return material;
   let low = LOW_CARD_MATERIALS.get(material);
   if (!low) {
@@ -163,14 +166,20 @@ function InstancedPrimitive({
   );
 }
 
-/** Material adjustments the exporter cannot express. Applied once per material. */
+/**
+ * Material adjustments the exporter cannot express. Applied once per material.
+ *
+ * (The envMapIntensity values here do not reach the screen: three replaces a
+ * material's envMapIntensity with the scene's environmentIntensity whenever
+ * the scene's environment lights it, as it lights all of these. The buildings'
+ * glazing raises its reflection in its own shader instead - windows.ts.)
+ */
 function tuneMaterial(material: Material): void {
   if (!(material instanceof MeshStandardMaterial)) return;
   if (material.userData.continuaTuned) return;
   material.userData.continuaTuned = true;
   const name = material.name;
   if (name.includes('Glass')) {
-    // Glazing should mirror the sky; it is what makes a facade read as glass.
     material.envMapIntensity = 2.6;
   } else if (name.includes('Fence_Mesh')) {
     material.transparent = true;
@@ -217,6 +226,50 @@ function tuneMaterial(material: Material): void {
   } else {
     material.envMapIntensity = 0.75;
   }
+}
+
+// ---------------------------------------------------------------------------
+// Rooms behind the glazing (windows.ts)
+// ---------------------------------------------------------------------------
+
+/**
+ * The rooms behind each building's glazing, in its own frame (glTF: y up, the
+ * front +X). Storeys and floor lines follow the slab edges authored in
+ * scripts/blender/world_campus.py and world_coast.py, so a floor never crosses
+ * a window. Only buildings: a car's or a lighthouse's glass has no office
+ * behind it.
+ */
+const ROOMS: Record<string, Record<string, RoomSpec>> = {
+  // Two upper floors from 4.6 m, 4.1 m apart; the ground floor's colonnade
+  // glazing and doors are the dark glass, one 4.6 m storey.
+  PROP_Facility_Main: {
+    W_Glass: { width: 3.0, storey: 4.1, depth: 6.5, floor: 0.5 },
+    W_Glass_Dark: { width: 3.0, storey: 4.6, depth: 8.0, floor: 0 },
+  },
+  // Three appliance bays 7 m apart behind glazed doors, the crew block's two
+  // 4.2 m storeys beside them.
+  PROP_ResponseStation: {
+    W_Glass_Dark: { width: 7.0, storey: 8.0, depth: 14.0, floor: 0, shift: -0.5, kind: 'garage' },
+    W_Glass: { width: 3.0, storey: 4.2, depth: 6.0, floor: 0 },
+  },
+  // The workshop lean-to's ribbon windows (the crown skylight is horizontal
+  // and keeps the plain glass).
+  PROP_Facility_Hangar: { W_Glass: { width: 3.2, storey: 4.0, depth: 5.0, floor: 0 } },
+  // The gate's security booth, and the warehouse's two-storey office annex
+  // (its roof glazing is the dark glass and stays plain).
+  PROP_Gatehouse: { W_Glass: { width: 2.6, storey: 3.2, depth: 3.0, floor: 0 } },
+  PROP_Warehouse: { W_Glass: { width: 3.0, storey: 3.3, depth: 6.0, floor: 0 } },
+  PROP_Skyline_A: { W_Tower_Glass: { width: 3.4, storey: 3.6, depth: 7.0, floor: 0 } },
+  PROP_Skyline_B: { W_Tower_Glass: { width: 3.4, storey: 3.6, depth: 7.0, floor: 0 } },
+  PROP_Skyline_C: { W_Tower_Glass: { width: 3.4, storey: 3.6, depth: 7.0, floor: 0 } },
+};
+
+function withRooms(prop: string, primitive: Primitive): Primitive {
+  const material = primitive.material;
+  if (Array.isArray(material) || !(material instanceof MeshStandardMaterial)) return primitive;
+  const room = ROOMS[prop]?.[material.name];
+  if (!room) return primitive;
+  return { ...primitive, material: windowMaterial(material, room, `${prop}/${material.name}`) };
 }
 
 // ---------------------------------------------------------------------------
@@ -806,7 +859,7 @@ export function WorldProps({
         console.warn(`[CONTINUA] prop "${name}" not found in ${PROPS_MODEL_URL}`);
         continue;
       }
-      out.push({ name, placements: list, primitives: collectPrimitives(node) });
+      out.push({ name, placements: list, primitives: collectPrimitives(node).map((primitive) => withRooms(name, primitive)) });
     }
     return out;
   }, [placements, library]);

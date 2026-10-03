@@ -162,6 +162,14 @@ One screen, no page scroll, at 1920×1080, 1440×900, 1366×768 and 1280×720.
   breathes at the waterline and waves that are a function of the scene clock.
   Mountain ranges across the water are solid, sunlit bands - woods and rock
   near, haze-blue far - and the south is left open to the horizon.
+* **Glass you can see into.** Office glazing mirrors the sky, more toward a
+  grazing angle, and behind it each pane shows a room found by interior
+  mapping (`windows.ts`): floor, ceiling light, a back wall with desks and
+  screens, blinds part-drawn, a few rooms dark; the response station's bays
+  hold their appliances. Rooms are laid out in each building's own frame with
+  its storey heights, so a floor never crosses a window; they fade to an
+  average before they are small enough to shimmer. No geometry, no texture;
+  the low tier draws the plain tinted glass.
 * **Grounded, not pasted.** Ground-truth ambient occlusion on the high tier
   darkens wherever one object meets another, and a soft occlusion footprint
   under every solid building darkens the ground around it; baked AO already
