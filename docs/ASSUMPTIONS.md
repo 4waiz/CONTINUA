@@ -162,7 +162,9 @@ to treat it as a measurement.
 
 ## 8. Emulation status on the development host
 
-Probed, not assumed (`data/emulation_capability.json`):
+Probed, not assumed, twice:
+
+**2026-09-08** (`data/emulation_capability_2026-09-08.json`):
 
 * Kernel: `6.18.33.2-microsoft-standard-WSL2`
 * `CONFIG_MPTCP` **is not set** → `ip mptcp` fails → **MPTCP is impossible here**
@@ -170,7 +172,19 @@ Probed, not assumed (`data/emulation_capability.json`):
 * Passwordless `sudo` - **not available**, so namespaces cannot be created
   non-interactively
 
+**2026-10-03, Phase 4** (`data/emulation_capability.json`): the plan was to run
+the topology through `wsl -u root`, which needs no sudo. On the day, WSL 2 was
+installed but **had no Linux distribution** (`wsl --list` returns none and the
+registry lists none), so no Linux command could run at all. Nothing was
+executed: not `setup.sh`, not `verify.sh`, not `cleanup.sh`. The probe
+previously mistook WSL's own error text for a kernel release and listed every
+tool as missing; it now reports the one true blocker, and the adapter gained a
+`wsl -u root` route to root (used instead of `sudo -n` when the probe finds
+it) that has been tested only against a stubbed shell, never on a real
+distribution.
+
 **Verdict: emulation is NOT VERIFIED HERE.** The adapter, the topology scripts
 and the verification script exist and parse cleanly, but writing them is not the
 same as having run an experiment, and no result in this repository comes from
-emulation.
+emulation. If a run is ever made on this topology it is netem emulation of
+shaped links without MPTCP, and must be described that way.

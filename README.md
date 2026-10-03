@@ -51,7 +51,9 @@ visualises the experiment; it is not the networking engine.
 mobile-network test. The execution mode is stamped on every event, on the
 dashboard and in the capture frame. Emulation and MPTCP are **not verified on
 this machine** - the reasons were probed, not assumed, and are recorded in
-`data/emulation_capability.json`.
+`data/emulation_capability.json` (the September probe is kept as
+`data/emulation_capability_2026-09-08.json`; in October WSL had no
+distribution at all, and nothing was executed).
 
 ![Rover close-up](assets/previews/browser/view-02-vehicle-closeup.png)
 

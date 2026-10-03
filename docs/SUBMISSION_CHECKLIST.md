@@ -100,7 +100,7 @@ These require the user's decision, and none of them has been taken:
 
 Also not done, because this host cannot:
 
-- [ ] **Emulation run** - `data/emulation_capability.json` records `sudo_nopasswd` missing; the scripts exist and are unverified here
+- [ ] **Emulation run** - `data/emulation_capability_2026-09-08.json` records `sudo_nopasswd` missing and `data/emulation_capability.json` (2026-10-03) records WSL with no distribution; the scripts exist, a `wsl -u root` route was added, and nothing has been executed here
 - [ ] **MPTCP** - `CONFIG_MPTCP` unset on this kernel; no run may be described as multipath TCP
 - [ ] **Hardware, radio or field trial** - future work, spoken in the future tense in the video
 

@@ -16,10 +16,13 @@ what the kernel actually did. It is deliberately conservative:
 * It never touches the host default route or firewall - that is enforced in the
   shell scripts, and this module only ever invokes those scripts.
 
-**Status on the development host: NOT VERIFIED HERE.** The WSL2 kernel has
-`CONFIG_MPTCP` unset and passwordless sudo is unavailable, so no emulation run
-has been executed. Writing this adapter is not the same as having run an
-experiment, and nothing in the project reports otherwise.
+**Status on the development host: NOT VERIFIED HERE.** In September the WSL2
+kernel had `CONFIG_MPTCP` unset and passwordless sudo was unavailable; in
+October (Phase 4) WSL had no Linux distribution installed at all. No emulation
+run has been executed. Writing this adapter is not the same as having run an
+experiment, and nothing in the project reports otherwise. The `wsl -u root`
+route added in Phase 4 removes the sudo blocker on a host that has a
+distribution; it has not been exercised on one.
 """
 
 from __future__ import annotations
@@ -66,13 +69,12 @@ class TopologyState:
     shaping: dict[str, str]
 
 
-def _shell(command: str, timeout: int = 40) -> tuple[int, str]:
+def _shell(command: str, timeout: int = 40, as_root: bool = False) -> tuple[int, str]:
     if platform.system() == "Linux":
         result = subprocess.run(["bash", "-lc", command], capture_output=True, text=True, timeout=timeout)
     elif shutil.which("wsl.exe"):
-        result = subprocess.run(
-            ["wsl.exe", "--", "bash", "-lc", command], capture_output=True, text=True, timeout=timeout
-        )
+        argv = ["wsl.exe"] + (["-u", "root"] if as_root else []) + ["--", "bash", "-lc", command]
+        result = subprocess.run(argv, capture_output=True, text=True, timeout=timeout)
     else:
         return 127, "no Linux shell available"
     return result.returncode, (result.stdout + result.stderr).replace("\x00", "").strip()
@@ -83,6 +85,24 @@ class LinuxEmulationAdapter:
 
     def __init__(self, report: CapabilityReport | None = None) -> None:
         self.report = report or probe()
+
+    # -- privilege -------------------------------------------------------------
+
+    @property
+    def _root_route(self) -> str:
+        """How this host reaches root: `sudo -n`, `wsl -u root`, or nothing."""
+        for check in self.report.checks:
+            if check.name == "privilege":
+                return check.value or "none"
+        return "none"
+
+    def _privileged(self, command: str, timeout: int = 40) -> tuple[int, str]:
+        route = self._root_route
+        if route == "wsl -u root":
+            return _shell(command, timeout=timeout, as_root=True)
+        if route == "sudo -n":
+            return _shell(f"sudo -n {command}", timeout=timeout)
+        return 1, "no route to root on this host"
 
     # -- gating --------------------------------------------------------------
 
@@ -103,24 +123,24 @@ class LinuxEmulationAdapter:
     def setup(self) -> TopologyState:
         """Create the topology. Requires privilege; refuses if unsupported."""
         self.require_supported()
-        code, output = _shell(f"sudo -n bash {SCRIPT_DIR.as_posix()}/setup.sh", timeout=180)
+        code, output = self._privileged(f"bash {SCRIPT_DIR.as_posix()}/setup.sh", timeout=180)
         if code != 0:
             raise EmulationUnavailable(f"setup.sh failed (exit {code}):\n{output}")
         return self.inspect()
 
     def cleanup(self) -> str:
         """Idempotent teardown. Safe to call when nothing exists."""
-        _code, output = _shell(f"sudo -n bash {SCRIPT_DIR.as_posix()}/cleanup.sh", timeout=90)
+        _code, output = self._privileged(f"bash {SCRIPT_DIR.as_posix()}/cleanup.sh", timeout=90)
         return output
 
     def inspect(self) -> TopologyState:
         _c, namespaces = _shell("ip netns list 2>/dev/null | awk '{print $1}'")
-        _c, addresses = _shell(f"sudo -n ip netns exec {ROVER_NS} ip -brief addr show 2>/dev/null")
+        _c, addresses = self._privileged(f"ip netns exec {ROVER_NS} ip -brief addr show 2>/dev/null")
         shaping: dict[str, str] = {}
         for link in LINK_SUBNETS:
             device = f"cnt-{link}-r"
-            _c, qdisc = _shell(
-                f"sudo -n ip netns exec {ROVER_NS} tc qdisc show dev {device} 2>/dev/null"
+            _c, qdisc = self._privileged(
+                f"ip netns exec {ROVER_NS} tc qdisc show dev {device} 2>/dev/null"
             )
             if qdisc:
                 shaping[link] = qdisc
@@ -142,17 +162,17 @@ class LinuxEmulationAdapter:
         """Inspect what the kernel negotiated. Never optimistic."""
         evidence: list[str] = []
 
-        code, endpoints = _shell(f"sudo -n ip netns exec {ROVER_NS} ip mptcp endpoint show 2>&1")
+        code, endpoints = self._privileged(f"ip netns exec {ROVER_NS} ip mptcp endpoint show 2>&1")
         endpoints_ok = code == 0 and "Error" not in endpoints and bool(endpoints.strip())
         evidence.append(f"ip mptcp endpoint show -> exit {code}: {endpoints[:200] or '(empty)'}")
 
         # `ss -tanM` lists MPTCP sockets specifically. No output means no MPTCP.
-        code, sockets = _shell(f"sudo -n ip netns exec {ROVER_NS} ss -tanM 2>&1")
+        code, sockets = self._privileged(f"ip netns exec {ROVER_NS} ss -tanM 2>&1")
         subflow_lines = [line for line in sockets.splitlines() if re.search(r"\d+\.\d+\.\d+\.\d+", line)]
         subflows = len(subflow_lines)
         evidence.append(f"ss -tanM -> exit {code}, {subflows} socket line(s)")
 
-        code, tcp_sockets = _shell(f"sudo -n ip netns exec {ROVER_NS} ss -tan 2>&1")
+        code, tcp_sockets = self._privileged(f"ip netns exec {ROVER_NS} ss -tan 2>&1")
         tcp_lines = [line for line in tcp_sockets.splitlines() if "ESTAB" in line]
         evidence.append(f"ss -tan -> {len(tcp_lines)} established TCP socket(s)")
 
@@ -208,7 +228,10 @@ class LinuxEmulationAdapter:
                 "Shaping is netem delay/jitter/loss plus a token bucket rate limit, applied in "
                 "both directions.",
                 "MPTCP is only claimed when `ss` shows multiple subflows on a live socket.",
+                "Anything measured on this topology is netem emulation of shaped links; it is "
+                "not a live network and, without kernel MPTCP, not multipath transport.",
             ],
+            "root_route": self._root_route,
         }
         if not self.report.emulation_supported:
             payload["status"] = "NOT VERIFIED HERE"

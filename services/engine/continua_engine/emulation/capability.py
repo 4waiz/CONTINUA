@@ -14,11 +14,17 @@ from __future__ import annotations
 import json
 import os
 import platform
+import re
 import shutil
 import subprocess
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
+
+#: What a Linux kernel release looks like. WSL prints its own error text on
+#: stdout when no distribution is installed, and that text must never be
+#: mistaken for a kernel.
+_KERNEL_RELEASE = re.compile(r"^\d+\.\d+\.\d+")
 
 
 @dataclass
@@ -60,15 +66,30 @@ def _wsl_available() -> bool:
     return platform.system() == "Windows" and shutil.which("wsl.exe") is not None
 
 
-def _shell(command: str, timeout: int = 25) -> tuple[int, str]:
-    """Run a shell command on Linux, or inside WSL when the host is Windows."""
+def _shell(command: str, timeout: int = 25, as_root: bool = False) -> tuple[int, str]:
+    """Run a shell command on Linux, or inside WSL when the host is Windows.
+
+    `as_root` asks WSL for a root shell (`wsl -u root`), which needs no sudo
+    and no password; on native Linux it is the caller's responsibility to
+    already be root.
+    """
     if platform.system() == "Linux":
         return _run(["bash", "-lc", command], timeout=timeout)
     if _wsl_available():
-        code, out = _run(["wsl.exe", "--", "bash", "-lc", command], timeout=timeout)
+        argv = ["wsl.exe"] + (["-u", "root"] if as_root else []) + ["--", "bash", "-lc", command]
+        code, out = _run(argv, timeout=timeout)
         # WSL sometimes returns UTF-16-ish output through the Windows console.
         return code, out.replace("\x00", "")
     return 127, "no Linux shell available on this host"
+
+
+def _wsl_has_distribution() -> tuple[bool, str]:
+    """Whether WSL can actually run anything. `wsl.exe` existing is not enough."""
+    code, out = _shell("uname -r")
+    first = out.strip().splitlines()[0] if out.strip() else ""
+    if code == 0 and _KERNEL_RELEASE.match(first):
+        return True, first
+    return False, first or f"exit {code}"
 
 
 def probe() -> CapabilityReport:
@@ -97,8 +118,25 @@ def probe() -> CapabilityReport:
         return report
 
     # --- kernel ------------------------------------------------------------
-    _, kernel = _shell("uname -r")
-    report.checks.append(Check("kernel", "all emulation", bool(kernel), "Linux kernel release", kernel))
+    has_kernel, kernel = _wsl_has_distribution()
+    report.checks.append(Check("kernel", "all emulation", has_kernel, "Linux kernel release", kernel))
+    if not has_kernel:
+        # Nothing below can run. Say the one true reason rather than listing
+        # every tool as missing, which is what the raw checks would do.
+        reason = (
+            "WSL is installed but has no Linux distribution, so no Linux command can run"
+            if target == "wsl"
+            else "no working Linux kernel"
+        )
+        report.blocking_reasons.append(reason)
+        report.blocking_reasons.append(
+            "kernel MPTCP is unavailable, so no run on this host may be described as verified MPTCP"
+        )
+        report.summary = (
+            f"Emulation NOT VERIFIED HERE. {reason}: `{kernel}`. "
+            "Nothing was executed. Simulation mode is fully operational and unaffected."
+        )
+        return report
 
     # --- MPTCP -------------------------------------------------------------
     code, mptcp_sysctl = _shell("sysctl -n net.mptcp.enabled 2>/dev/null")
@@ -153,6 +191,33 @@ def probe() -> CapabilityReport:
             "available" if passwordless else "password required",
         )
     )
+    # `wsl -u root` gives a root shell with no sudo at all. Either route to
+    # root satisfies the namespace requirement; the adapter uses whichever the
+    # probe found.
+    root_uid = ""
+    if target == "wsl":
+        code, root_uid = _shell("id -u", as_root=True)
+        wsl_root = code == 0 and root_uid.strip() == "0"
+    else:
+        wsl_root = False
+    report.checks.append(
+        Check(
+            "wsl_root",
+            "namespace creation",
+            wsl_root,
+            "Root shell through `wsl -u root` (no sudo needed)",
+            "uid 0" if wsl_root else (root_uid.strip()[:80] or "not available"),
+        )
+    )
+    report.checks.append(
+        Check(
+            "privilege",
+            "namespace creation",
+            passwordless or wsl_root,
+            "Some route to root for namespaces and qdiscs",
+            "sudo -n" if passwordless else ("wsl -u root" if wsl_root else "none"),
+        )
+    )
 
     code, _ = _shell("test -w /var/run/netns 2>/dev/null || test -d /var/run/netns")
     report.checks.append(
@@ -166,7 +231,7 @@ def probe() -> CapabilityReport:
     )
 
     # --- verdict ------------------------------------------------------------
-    required = {"iproute2", "tc", "sch_netem", "python3", "sudo_nopasswd"}
+    required = {"iproute2", "tc", "sch_netem", "python3", "privilege"}
     failed = [c.name for c in report.checks if c.name in required and not c.ok]
     report.emulation_supported = not failed
     if failed:

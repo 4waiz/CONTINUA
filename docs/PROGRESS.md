@@ -53,7 +53,7 @@ npm run build && npm start  # app on http://localhost:3000
 | Capture view: 16:9, ready signal, deterministic seek, no invented LIVE badge | Browser test asserts the ratio and the signal |
 | Unavailable measurements render as unavailable, never zero; RSSI only for Wi-Fi | Engine + browser tests |
 | 20 paired trials × 6 policies × 6 core scenarios | `data/experiments/` |
-| Emulation **capability probe** | `data/emulation_capability.json` |
+| Emulation **capability probe** | `data/emulation_capability.json` (current) and `data/emulation_capability_2026-09-08.json` |
 
 ## Implemented but unverified on this host
 
@@ -439,6 +439,30 @@ Headline, `wifi-degradation`, means over 20 trials:
    had been used; fixed, tested, and the corrected ablation compared on the
    fresh `test3` block rather than by re-using `test2`. The `test2` tables are
    left as run and say so.
+
+## Phase 6: emulation, not executed
+
+The plan was to run `scripts/emulation/{setup,verify,cleanup}.sh` through
+`wsl -u root`, which removes the sudo blocker the September probe recorded.
+On 2026-10-03 WSL 2 was installed on the development host but **no Linux
+distribution was** (the September probe had seen a 6.18 WSL2 kernel; it is
+gone). No script was executed and no emulated measurement exists. What was
+done instead:
+
+* The capability probe was re-run and `data/emulation_capability.json`
+  rewritten; the September report is kept as
+  `data/emulation_capability_2026-09-08.json`.
+* The probe had a defect: with no distribution, `uname -r` returns WSL's error
+  text on stdout, which the probe read as a kernel release and then reported
+  `iproute2`, `tc`, `sch_netem` and `python3` as missing. It now validates the
+  kernel string, names the single true blocker and states that nothing ran.
+* The adapter and probe gained a `wsl -u root` route to root, satisfying the
+  namespace requirement without passwordless sudo on a host that has a
+  distribution. Three tests exercise the probe and adapter against a stubbed
+  shell; the route has not been exercised on a real distribution.
+
+Anything measured on that topology in future is netem emulation of shaped
+links without MPTCP, and the adapter's status output says so.
 
 ## Known limitations added in Phase 4
 
