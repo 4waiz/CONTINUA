@@ -231,14 +231,12 @@ export class PreviewSceneStateSource implements SceneStateSource {
     const sample = route.at(distance);
 
     const roadY = terrain.elevationAtDistance(distance);
-    const normal = terrain.normalAt(sample.x, sample.z);
-    // Project the surface normal into the vehicle's frame to get pitch / roll.
-    const cos = Math.cos(sample.heading);
-    const sin = Math.sin(sample.heading);
-    const forwardSlope = normal[0] * cos - normal[2] * sin;
-    const lateralSlope = normal[0] * sin + normal[2] * cos;
-    const pitch = Math.asin(clamp(-forwardSlope, -0.6, 0.6));
-    const roll = Math.asin(clamp(lateralSlope, -0.6, 0.6));
+    // The rover stands on the road, not on the land beside it: it pitches with
+    // the road's grade between its axles, and the road is level across, so the
+    // ground gives it no roll. (The terrain normal under its centre, read here
+    // before, stepped every metre and shook the body on every hill.)
+    const pitch = Math.atan(terrain.gradeAtDistance(distance, VEHICLE.wheelbase));
+    const roll = 0;
 
     const speed = time < VEHICLE.dockDwell ? 0 : speedAtDistance(distance);
     const steerAngle = Math.atan(VEHICLE.wheelbase * sample.curvature);

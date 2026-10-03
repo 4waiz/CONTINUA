@@ -136,6 +136,9 @@ class RunSession:
         self._stop = asyncio.Event()
         self._written = 0
         self.last_event: EngineEvent | None = None
+        #: Where the run's clock says the simulation should be. Kept apart from
+        #: `sim.t`, which overshoots it by up to a step on every tick - see `_loop`.
+        self._target_t = 0.0
 
         self.store.begin_run(
             run_id=self.run_id,
@@ -207,9 +210,16 @@ class RunSession:
                 if self.status is not RunStatus.RUNNING:
                     continue
                 if self.speed <= 0:
-                    self._advance_to(self.sim.trace.duration_s)
+                    self._target_t = self.sim.trace.duration_s
                 else:
-                    self._advance_to(self.sim.t + delta * self.speed)
+                    # Accumulate the wall-clock target itself. Advancing from
+                    # `sim.t` - which ends every tick up to one step (20 ms)
+                    # past where it was asked to be - carried that overshoot
+                    # into the next tick, and a "1x" run ran about a quarter
+                    # faster than real time. The steps, events and results are
+                    # the same either way; only their pacing changes.
+                    self._target_t = min(self._target_t + delta * self.speed, self.sim.trace.duration_s)
+                self._advance_to(self._target_t)
                 self._flush()
                 self.broadcaster.publish({"type": "tick", "state": self.state().to_dict()})
         finally:
@@ -265,6 +275,7 @@ class RunSession:
             )
             self._written = 0
         self._advance_to(target)
+        self._target_t = target
         self.broadcaster.publish(
             {
                 "type": "seek",

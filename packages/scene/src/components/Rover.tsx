@@ -192,8 +192,10 @@ export function Rover({
     const acceleration = (ahead.vehicle.speedMps - behind.vehicle.speedMps) / 0.7;
     const lateral = pose.speedMps * pose.speedMps * Math.tan(pose.steerAngle) / VEHICLE.wheelbase;
 
-    const pitchTrim = clamp(-acceleration * 0.010, -0.030, 0.030);
-    const rollTrim = clamp(-lateral * 0.0022, -0.045, 0.045);
+    // The body squats (nose up) as it accelerates and dives as it brakes, and
+    // leans to the outside of a turn; `lateral` is positive turning left.
+    const pitchTrim = clamp(acceleration * 0.010, -0.030, 0.030);
+    const rollTrim = clamp(lateral * 0.0022, -0.045, 0.045);
     const bob =
       0.011 * Math.sin(pose.distance * 0.53) + 0.006 * Math.sin(pose.distance * 1.37 + 1.1);
 
@@ -202,10 +204,12 @@ export function Rover({
       pose.position.y + ROAD_SURFACE_OFFSET,
       pose.position.z,
     );
-    group.rotation.set(pose.pitch, pose.heading, pose.roll, 'YXZ');
+    // Forward is +X, so pitch turns about the lateral Z axis and roll about X.
+    // (These were swapped: a climbing rover leaned sideways instead of nosing up.)
+    group.rotation.set(pose.roll, pose.heading, pose.pitch, 'YXZ');
 
     rig.body.position.y = bob;
-    rig.body.rotation.set(pitchTrim, 0, rollTrim, 'YXZ');
+    rig.body.rotation.set(rollTrim, 0, pitchTrim, 'YXZ');
 
     for (const wheel of rig.wheels) wheel.rotation.z = -pose.wheelAngle;
     for (const pivot of rig.steer) pivot.rotation.y = pose.steerAngle;

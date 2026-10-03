@@ -38,10 +38,33 @@ const INSPECT_TIME = 2.5;
  * Advances the clock and publishes this frame's state before anything else
  * reads it. Registered at priority -1 so it always runs first.
  */
+/**
+ * Seconds since the previous frame, by the frames' own timestamps.
+ *
+ * R3F's `delta` reads the wall clock when its loop happens to run, and on a
+ * frame that also commits a React update (a link change re-renders every
+ * panel) the loop runs late: that frame advanced the clock 30 ms, the next
+ * 10 ms, and the rover lurched although every frame was presented on time.
+ * `document.timeline.currentTime` is the frame's vsync-aligned start time,
+ * the same for every callback in it.
+ */
+function frameDelta(last: { current: number | null }, fallback: number): number {
+  const stamp = typeof document === 'undefined' ? null : document.timeline?.currentTime;
+  if (typeof stamp !== 'number') return fallback;
+  const previous = last.current;
+  last.current = stamp;
+  if (previous === null) return fallback;
+  const seconds = (stamp - previous) / 1000;
+  // A longer gap is the loop having been held (another page had the canvas),
+  // not a slow frame: carry on from where it stopped.
+  return seconds > 0.25 ? 1 / 60 : Math.max(0, seconds);
+}
+
 function SceneDriver({ frozen }: { frozen: boolean }) {
   const { clock, source, frame } = useSceneRuntime();
+  const lastFrame = useRef<number | null>(null);
   useFrame((_, delta) => {
-    clock.advance(delta);
+    clock.advance(frameDelta(lastFrame, delta));
     frame.current = source.sampleAt(frozen ? INSPECT_TIME : clock.time);
   }, -1);
   return null;

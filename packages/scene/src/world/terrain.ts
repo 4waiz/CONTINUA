@@ -165,13 +165,23 @@ export class Terrain {
     return lerp(a, b, t);
   }
 
+  /**
+   * The road's grade (rise over run) at an arc-length distance, measured
+   * between two contact points `span` metres apart - for the rover, its axles.
+   * Continuous in `distance`, so a body pitched by it never twitches.
+   */
+  gradeAtDistance(distance: number, span: number): number {
+    const half = span / 2;
+    return (this.elevationAtDistance(distance + half) - this.elevationAtDistance(distance - half)) / span;
+  }
+
   /** Ground height at any world XZ. This is the authority. */
   height(x: number, z: number): number {
     const base = baseHeight(x, z);
-    const { distSq, sample } = this.routeRef.distanceToRouteSq(x, z);
+    const { distSq, along } = this.routeRef.projectOnRoute(x, z);
     const distance = Math.sqrt(distSq);
     if (distance > TERRAIN.flatOuter) return base;
-    const roadY = this.elevationAtDistance(sample.distance);
+    const roadY = this.elevationAtDistance(along);
     // 1 on the road, easing out to the natural surface at flatOuter.
     const blend = 1 - smoothstep(TERRAIN.flatInner, TERRAIN.flatOuter, distance);
     return lerp(base, roadY, blend);
@@ -182,7 +192,7 @@ export class Terrain {
     return Math.max(this.height(x, z), SEA_LEVEL);
   }
 
-  /** Surface normal by central differences - used for body pitch and roll. */
+  /** Surface normal by central differences. */
   normalAt(x: number, z: number, epsilon = 1.5): [number, number, number] {
     const hx = this.height(x + epsilon, z) - this.height(x - epsilon, z);
     const hz = this.height(x, z + epsilon) - this.height(x, z - epsilon);

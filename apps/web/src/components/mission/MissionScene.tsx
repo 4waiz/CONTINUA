@@ -35,6 +35,8 @@ import { SceneStage } from '../SceneStage';
 const PLAYOUT_DELAY_S = 0.25;
 /** Past this the clock is resynchronised outright: a seek, a stalled tab. */
 const RESYNC_S = 1.0;
+/** How long an arrival keeps a say in where the engine is - see `ClockSync`. */
+const ANCHOR_WINDOW_MS = 3000;
 
 /** Site markers are an inspection aid for Scene Lab; the mission view hides them. */
 const MISSION_SETTINGS = { showMarkers: false } as const;
@@ -88,26 +90,48 @@ function ClockSync({
   useEffect(() => {
     // While playing, the clock free-runs at frame rate and is *steered*, never
     // snapped: its rate is trimmed by a few per cent toward a target a short
-    // playout delay behind the newest sample. Snapping it to each engine tick,
-    // which is what this used to do past a 0.35 s drift, is what made the rover
-    // stop and lurch.
+    // playout delay behind the engine. Snapping it to each engine tick, which
+    // is what this used to do past a 0.35 s drift, is what made the rover stop
+    // and lurch.
+    //
+    // The target follows where the engine *is*, not when its newest sample
+    // happened to arrive. Samples are 0.1 s apart and reach the browser in
+    // ticks of a sixteenth of a second, each a little late, so "newest sample
+    // plus the time since it arrived" jumps back and forth by tens of
+    // milliseconds at every arrival - and the clock, chasing it, sped up and
+    // slowed down several times a second. Each arrival instead gives an
+    // estimate of the engine's sim time at a wall time; a late one
+    // underestimates it, never overestimates, so the best estimate is the
+    // highest of the last few seconds' - a line that only ever moves when the
+    // engine itself changes pace.
     if (!enabled || !playing) return undefined;
     let frame = 0;
+    const arrivals: { at: number; offset: number }[] = [];
+    let lastArrival = -1;
     const follow = () => {
       frame = requestAnimationFrame(follow);
       const newest = source instanceof EngineSceneStateSource ? source.newest : null;
       if (!newest) return;
-      const elapsed = (Math.max(0, performance.now() - newest.receivedAt) / 1000) * speed;
-      const target = Math.max(0, Math.min(newest.t, newest.t + elapsed - PLAYOUT_DELAY_S));
+      const now = performance.now();
+      if (newest.receivedAt !== lastArrival) {
+        lastArrival = newest.receivedAt;
+        arrivals.push({ at: newest.receivedAt, offset: newest.t - (newest.receivedAt / 1000) * speed });
+      }
+      while (arrivals.length > 1 && now - arrivals[0]!.at > ANCHOR_WINDOW_MS) arrivals.shift();
+      let anchor = -Infinity;
+      for (const arrival of arrivals) anchor = Math.max(anchor, arrival.offset);
+      const engineNow = (now / 1000) * speed + anchor;
+      // Never ahead of the newest sample: past it there is nothing to show.
+      const target = Math.max(0, Math.min(newest.t, engineNow - PLAYOUT_DELAY_S));
       const error = target - clock.time;
       if (Math.abs(error) > RESYNC_S) {
         clock.setTime(target, false);
         clock.setSpeed(speed, false);
         return;
       }
-      // Close the gap over a second or so, within 30 % of the run's own rate:
-      // fast enough to hold the playout delay, too gentle to see.
-      clock.setSpeed(speed * Math.min(1.3, Math.max(0.7, 1 + error * 1.5)), false);
+      // Close the gap over a second or so, within a quarter of the run's own
+      // rate: fast enough to hold the playout delay, too gentle to see.
+      clock.setSpeed(speed * Math.min(1.25, Math.max(0.75, 1 + error * 1.2)), false);
     };
     frame = requestAnimationFrame(follow);
     return () => {

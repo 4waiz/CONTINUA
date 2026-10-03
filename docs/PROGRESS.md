@@ -906,3 +906,62 @@ scene is drawn about 1.5 s sooner.
 Looked at in a browser at 1920×1080, 1440×900, 1366×768 and 1280×720, idle and
 during a run (`node scripts/ui-screenshots.mjs`, with and without `--run`): no
 page scrolls, nothing is unreachable, no text is smaller than 11 px.
+
+---
+
+# Phase 9 - smooth motion
+
+The owner saw the rover stutter and move erratically around the satellite
+handover. A live run recorded frame by frame - clock, pose, camera and frame
+times (`video/work/diag/diag-handoff.mjs`, analysed by `analyze-handoff.mjs`)
+- found three separate defects. None of them was the frame rate: every frame
+was presented on time, before and after.
+
+1. **The rover's tilt came from a staircase.** Pitch and roll were read from
+   the terrain's normal under the rover's centre, and on the road the terrain
+   took its height from the nearest one-metre route sample - a staircase. On
+   the hills of the remote sector, where the satellite takes over, the body's
+   attitude jumped by up to 1.7° from one frame to the next, about eighteen
+   times a second. The rover now pitches with the road's own grade between
+   its axles, which is continuous, and since the road is level across, the
+   ground gives it no roll. The ground under and beside the road reads the
+   road's elevation at each point's continuous foot on the route, so the
+   ground there, and a camera's clamp above it, no longer step either.
+2. **Pitch and roll were applied about each other's axes.** The rover faces
+   +X, so it pitches about Z and rolls about X; they were set the other way
+   round. A climbing rover leaned sideways instead of nosing up, and the
+   suspension trims - squat under acceleration, lean out of a turn - did the
+   same. Fixed for the body, the trims and the rover camera: on the steepest
+   climb (4.2°) the nose now rises 4.2° and the body does not lean.
+3. **A "1x" run ran about a quarter faster than real time.** The live session
+   advanced the simulation to `sim.t` plus the wall time since its last tick,
+   and `sim.t` ends every tick up to one 20 ms step past where it was asked to
+   be, so the overshoot compounded - about 1.24x. The scene clock, which
+   follows the engine within 30 % of the run's rate, ran near that limit the
+   whole time and swung between 0.5x and 2.1x around the handovers. The
+   session now accumulates its wall-clock target; the steps, the events and
+   every result are unchanged, only their pacing. Two smaller causes went with
+   it: the scene clock advances by the frames' own timestamps rather than by
+   when its callback happened to run (one frame advanced 29 ms, the next 9 ms,
+   both presented on time), and it follows the engine's estimated position -
+   the highest sim-time-at-wall-time estimate among the last 3 s of arrivals -
+   instead of "newest sample plus the time since it arrived", which jumped at
+   every arrival.
+
+Measured on the same run before and after (Gradual Wi-Fi degradation, P1,
+seed 1; 1920×1080, RTX 4070 Laptop GPU, vsync-capped at 60 fps):
+
+| | Before | After |
+| --- | --- | --- |
+| Scene clock rate per frame, min / max over 5 s windows | 0.49 / 2.14 | 0.97 / 1.03 |
+| Rover speed on screen, 65-80 s, min / max | 4.9 / 25.3 m/s | 9.8 / 12.0 m/s |
+| Pitch jerk, RMS, worst 5 s window | 0.96 °/frame² | 0.002 °/frame² |
+| Roll jerk, RMS, worst 5 s window | 1.30 °/frame² | 0 |
+| Follow camera jerk, RMS, horizontal | 0.020-0.037 m/frame² | 0.0013-0.0017 m/frame² |
+| Wall time for 86 s of a 1x run | about 70 s | 86 s |
+| Frame time p95 | 16.7 ms | 16.7 ms |
+
+The rover's speed on screen now varies only as the engine's own speed profile
+does. The handover at 68.5-73.1 s in this run is a real flap - satellite,
+cellular again for 0.6 s, satellite - recorded by the engine and shown as it
+happened; nothing here changes it.

@@ -177,9 +177,21 @@ Each is pre-warmed 55 m ahead, which is what the dashed beam and the
 * **One render per frame.** Engine updates re-render React, never the canvas:
   the scene stage is memoised, and the sky environment is captured once.
 * **Playout delay.** A live run is shown a quarter of a simulated second behind
-  the newest engine sample, so vehicle motion always interpolates between two
-  real samples and never extrapolates one; the scene clock's rate is trimmed
-  toward that target rather than snapped (`MissionScene`'s `ClockSync`).
+  the engine, so vehicle motion always interpolates between two real samples
+  and never extrapolates one; the scene clock's rate is trimmed toward that
+  target rather than snapped (`MissionScene`'s `ClockSync`). Where the engine
+  *is* comes from the highest sim-time-at-wall-time estimate among the last
+  3 s of arrivals (a late arrival only ever underestimates), and the clock
+  advances by the frames' own timestamps (`document.timeline.currentTime`),
+  so neither arrival jitter nor a late frame callback reaches the rover's
+  speed.
+* **Real-time pacing.** The live session accumulates its wall-clock target
+  and steps the simulation up to it; advancing from `sim.t`, which overshoots
+  each tick by up to a step, ran a "1x" run about 1.24x.
+* **The rover stands on the road.** Its pitch is the road's grade between its
+  axles and it takes no roll from the ground (the road is level across); the
+  ground under and beside the road reads the road's elevation at each point's
+  continuous foot on the route, never at the nearest one-metre sample.
 * **Asynchronous shader compilation.** The scene compiles every program with
   `compileAsync` while its render loop is held, so the first frame does not
   stall the page.

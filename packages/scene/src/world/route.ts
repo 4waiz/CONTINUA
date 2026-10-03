@@ -209,15 +209,52 @@ export class Route {
     return Math.atan2(sinSum, cosSum);
   }
 
+  /**
+   * The point's foot on the route polyline: squared distance to it and the
+   * arc length there. Unlike `distanceToRouteSq`, whose nearest *sample* moves
+   * a metre at a time, `along` is continuous - anything that reads the road's
+   * elevation through it (the ground under the road, a camera's ground clamp)
+   * is smooth instead of a one-metre staircase.
+   */
+  projectOnRoute(x: number, z: number): { distSq: number; along: number } {
+    const { distSq, index } = this.nearestSample(x, z);
+    let bestSq = distSq;
+    let along = this.samples[index]!.distance;
+    for (let i = index - 1; i <= index; i += 1) {
+      const a = this.samples[i];
+      const b = this.samples[i + 1];
+      if (!a || !b) continue;
+      const ex = b.x - a.x;
+      const ez = b.z - a.z;
+      const lengthSq = ex * ex + ez * ez;
+      if (lengthSq < 1e-9) continue;
+      const t = clamp(((x - a.x) * ex + (z - a.z) * ez) / lengthSq, 0, 1);
+      const dx = a.x + ex * t - x;
+      const dz = a.z + ez * t - z;
+      const footSq = dx * dx + dz * dz;
+      if (footSq <= bestSq) {
+        bestSq = footSq;
+        along = lerp(a.distance, b.distance, t);
+      }
+    }
+    return { distSq: bestSq, along };
+  }
+
   /** Squared distance from a world XZ point to the route polyline. */
   distanceToRouteSq(x: number, z: number): { distSq: number; sample: RouteSample } {
+    const { distSq, index } = this.nearestSample(x, z);
+    return { distSq, sample: this.samples[index]! };
+  }
+
+  /** The nearest resampled point to a world XZ, by index. */
+  private nearestSample(x: number, z: number): { distSq: number; index: number } {
     const bucket = clamp(
       Math.floor((x - this.minX) / this.bucketSize),
       0,
       this.buckets.length - 1,
     );
     let best = Infinity;
-    let bestSample = this.samples[0]!;
+    let bestIndex = 0;
     // Neighbouring buckets cover routes that double back within one bucket width.
     for (let b = bucket - 2; b <= bucket + 2; b += 1) {
       const list = this.buckets[b];
@@ -229,7 +266,7 @@ export class Route {
         const distSq = dx * dx + dz * dz;
         if (distSq < best) {
           best = distSq;
-          bestSample = sample;
+          bestIndex = index;
         }
       }
     }
@@ -240,11 +277,11 @@ export class Route {
         const distSq = (sample.x - x) ** 2 + (sample.z - z) ** 2;
         if (distSq < best) {
           best = distSq;
-          bestSample = sample;
+          bestIndex = i;
         }
       }
     }
-    return { distSq: best, sample: bestSample };
+    return { distSq: best, index: bestIndex };
   }
 }
 

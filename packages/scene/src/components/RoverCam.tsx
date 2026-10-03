@@ -106,7 +106,7 @@ export function RoverCam({ quality }: { quality: QualityTier }) {
     const { camera, linear, output, pass, mount, aim, pixels } = parts;
     const pose = frame.current.vehicle;
     mount.position.set(pose.position.x, pose.position.y + ROAD_SURFACE_OFFSET, pose.position.z);
-    mount.rotation.set(pose.pitch, pose.heading, pose.roll, 'YXZ');
+    mount.rotation.set(pose.roll, pose.heading, pose.pitch, 'YXZ');
     mount.updateMatrix();
     camera.position.copy(LENS).applyMatrix4(mount.matrix);
     camera.lookAt(aim.copy(AIM).applyMatrix4(mount.matrix));

@@ -201,11 +201,12 @@ export class EngineSceneStateSource implements SceneStateSource {
 
     const sample = route.at(distance);
     const roadY = terrain.elevationAtDistance(distance);
-    const normal = terrain.normalAt(sample.x, sample.z);
-    const cos = Math.cos(sample.heading);
-    const sin = Math.sin(sample.heading);
-    const pitch = Math.asin(clamp(-(normal[0] * cos - normal[2] * sin), -0.6, 0.6));
-    const roll = Math.asin(clamp(normal[0] * sin + normal[2] * cos, -0.6, 0.6));
+    // The rover stands on the road, not on the land beside it: it pitches with
+    // the road's grade between its axles, and the road is level across, so the
+    // ground gives it no roll. (The terrain normal under its centre, read here
+    // before, stepped every metre and shook the body on every hill.)
+    const pitch = Math.atan(terrain.gradeAtDistance(distance, VEHICLE.wheelbase));
+    const roll = 0;
 
     const links = {} as Record<AccessNetworkId, LinkStatus>;
     const warming: AccessNetworkId[] = [];
