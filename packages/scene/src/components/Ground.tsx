@@ -12,6 +12,7 @@
  * with painted markings, saw-cut concrete. No texture is downloaded.
  */
 
+import { useFrame } from '@react-three/fiber';
 import { useEffect, useMemo } from 'react';
 import {
   BufferAttribute,
@@ -20,6 +21,7 @@ import {
   Float32BufferAttribute,
   MeshStandardMaterial,
 } from 'three';
+import { useSceneRuntime } from '../runtime/SceneRuntime';
 import { SCENE_COLOR } from '../theme';
 import { buildRouteRibbon, ROAD_HALF_WIDTH, ROAD_SURFACE_OFFSET } from '../world/road';
 import { CAMPUS, PADS, SERVICE_ROADS, type ServiceRoad } from '../world/layout';
@@ -210,6 +212,11 @@ export function Ground({ quality }: { quality: 'high' | 'balanced' | 'low' }) {
 
   // The ground's own shader has a lighter variant for the low tier.
   const lite = quality === 'low';
+  const { clock } = useSceneRuntime();
+  const time = useMemo(() => ({ value: 0 }), []);
+  useFrame(() => {
+    time.value = clock.time;
+  });
   const terrainShading = useMemo(
     () =>
       terrainMaterial({
@@ -223,8 +230,9 @@ export function Ground({ quality }: { quality: 'high' | 'balanced' | 'low' }) {
         flowers: [SCENE_COLOR.flowerA, SCENE_COLOR.flowerB, SCENE_COLOR.flowerC, SCENE_COLOR.flowerD],
         seaLevel: SEA_LEVEL,
         campusRect: [CAMPUS.minX, CAMPUS.maxX, CAMPUS.minZ, CAMPUS.maxZ],
+        time,
       }, lite),
-    [lite],
+    [lite, time],
   );
   useEffect(() => () => terrainShading.dispose(), [terrainShading]);
 

@@ -833,6 +833,20 @@ the engine's own count.
   instead of jumping to deep water at its edge (a visible seam); the power line
   south of the corridor moved inland off the beach.
 
+## The opening
+
+* **The introduction was a still.** Mission opens on the director's cut, but
+  nothing ever started the preview's clock, so the cut sat on its first frame -
+  a follow shot of the rover parked at the dock - for as long as the page was
+  open. The preview now plays its own loop behind the introduction, badged
+  SCENE PREVIEW as before, until a run takes the clock.
+* **An aerial opens the cut**: high over the island's north-west shore,
+  looking across the rover to the coast, the sea, the wind farm and the
+  mountains, then a long descent to the rover; the crane at the end of the
+  cycle climbs back into it. Every shot is still a pure function of time.
+* **Cloud shadows** drift over the land and the sea on the breeze, a function
+  of the scene clock; the low tier skips them.
+
 ## Measured
 
 On this machine (RTX 4070 Laptop GPU, Chromium on ANGLE / D3D11), 1920×1080,

@@ -176,6 +176,10 @@ One screen, no page scroll, at 1920×1080, 1440×900, 1366×768 and 1280×720.
   broadleaf woods, scarlet flame trees, violet jacarandas, bougainvillea in
   four colours and bedding along the campus road. The full list is in
   `ASSET_MANIFEST.md`.
+* **An opening worth staying for.** With no run, Mission plays the preview
+  behind its introduction under a director's cut that begins with an aerial of
+  the whole island and descends to the rover; soft cloud shadows drift over
+  land and sea.
 * **Restraint.** No bloom, no god rays, no particles, no floating labels over
   the vehicle. Infrastructure is marked with a thin ground ring that only grows
   a vertical stem when selected.

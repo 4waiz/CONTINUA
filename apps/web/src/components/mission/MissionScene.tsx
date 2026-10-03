@@ -66,7 +66,12 @@ function ClockSync({
   }, [clock, duration, enabled]);
 
   useEffect(() => {
-    if (!enabled) return;
+    // The preview plays on its own loop - the rover touring the island behind
+    // the introduction, badged SCENE PREVIEW - until a run takes the clock.
+    if (!enabled) {
+      clock.play();
+      return;
+    }
     if (playing) clock.play();
     else clock.pause();
   }, [clock, playing, enabled]);

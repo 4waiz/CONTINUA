@@ -246,7 +246,7 @@ function seaMaterial(shore: DataTexture, time: { value: number }, lite: boolean)
   material.envMapIntensity = 1.1;
   const { minX, maxX, minZ, maxZ } = TERRAIN;
   return patchStandard(material, {
-    key: 'continua-sea-v2',
+    key: 'continua-sea-v3',
     lite,
     uniforms: {
       uShore: { value: shore },
@@ -292,6 +292,10 @@ function seaMaterial(shore: DataTexture, time: { value: number }, lite: boolean)
       float foam = (1.0 - smoothstep(0.0, 0.5 + 0.35 * swell, depth)) * smoothstep(0.25, 0.7, lace + 0.35 * swell);
       foam += (1.0 - smoothstep(0.0, 0.12, depth)) * 0.6;
       foam = clamp(foam, 0.0, 1.0);
+      #ifndef CT_LITE
+        float cloudShade = smoothstep(0.5, 0.74, ctFbm2(p * 0.0055 + vec2(uTime * 0.03, uTime * 0.011)));
+        water *= 1.0 - 0.1 * cloudShade;
+      #endif
       diffuseColor.rgb = mix(water, vec3(1.0), foam * 0.88);
       // The sand shows through the shallows; deep water is opaque.
       diffuseColor.a = clamp(mix(0.5, 0.97, smoothstep(0.2, 6.0, depth)) + foam * 0.45, 0.0, 1.0);

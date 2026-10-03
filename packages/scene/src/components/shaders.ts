@@ -160,10 +160,12 @@ export function terrainMaterial(palette: {
   flowers: readonly [string, string, string, string];
   seaLevel: number;
   campusRect: [number, number, number, number];
+  /** Scene time, for the cloud shadows; the caller keeps it current. */
+  time: { value: number };
 }, lite = false): MeshStandardMaterial {
   const material = new MeshStandardMaterial({ color: '#ffffff', roughness: 0.94, metalness: 0 });
   return patchStandard(material, {
-    key: 'continua-terrain-v4',
+    key: 'continua-terrain-v5',
     lite,
     uniforms: {
       uCampus: { value: new Color(palette.campus) },
@@ -179,6 +181,7 @@ export function terrainMaterial(palette: {
       uFlowerD: { value: new Color(palette.flowers[3]) },
       uSeaLevel: { value: palette.seaLevel },
       uCampusRect: { value: palette.campusRect },
+      uTime: palette.time,
     },
     header: /* glsl */ `
       float ctCampusMask(vec2 p) {
@@ -250,6 +253,12 @@ export function terrainMaterial(palette: {
       ground = mix(ground, uBeach * (0.95 + 0.08 * mid), beach * (1.0 - smoothstep(0.3, 0.5, slope)));
       float wet = 1.0 - smoothstep(uSeaLevel - 0.15, uSeaLevel + 0.35, y);
       ground = mix(ground, uBeach * vec3(0.80, 0.80, 0.78), wet * 0.7);
+      #ifndef CT_LITE
+        // Cloud shadows drifting over the island on the breeze - a function of
+        // the scene clock alone, so a captured frame is still exact.
+        float cloudShade = smoothstep(0.5, 0.74, ctFbm2(p * 0.0055 + vec2(uTime * 0.03, uTime * 0.011)));
+        ground *= 1.0 - 0.15 * cloudShade;
+      #endif
       diffuseColor.rgb *= ground;
     `,
     normal: /* glsl */ `

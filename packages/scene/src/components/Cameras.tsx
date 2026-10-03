@@ -108,7 +108,22 @@ function aroundRover(distance: number, ahead: number, left: number, up: number, 
 
 type ShotFn = (distance: number, time: number, out: Shot) => Shot;
 
-const CINEMATIC: readonly { seconds: number; shot: ShotFn }[] = [
+const CINEMATIC: readonly { seconds: number; shot: ShotFn; blend?: number }[] = [
+  // The island from the air: high over its north-west shore, looking down
+  // across the rover to the coast, the sea and the mountains beyond - then a
+  // long descent to the rover.
+  {
+    seconds: 12,
+    blend: 4.5,
+    shot: (d, t, out) => {
+      const anchor = route.at(d);
+      const y = roadSurfaceY(d);
+      out.position.set(anchor.x - 250 + Math.sin(t * 0.05) * 30, y + 135, anchor.z + 115);
+      out.target.set(anchor.x + 230, y - 12, anchor.z - 135);
+      out.fov = 50;
+      return out;
+    },
+  },
   // Behind and above: where the story starts.
   { seconds: 10, shot: (d, _t, out) => followShot(d, out) },
   // Tracking alongside, low: the rover as a vehicle, the world sliding past.
@@ -146,9 +161,11 @@ const CINEMATIC: readonly { seconds: number; shot: ShotFn }[] = [
       return out;
     },
   },
-  // A crane pulling up and back: the route ahead opening out.
+  // A crane pulling up and back: the route ahead opening out - and on up,
+  // into the aerial that begins the cycle again.
   {
     seconds: 10,
+    blend: 4.5,
     shot: (d, t, out) => {
       aroundRover(d, -26, 6, 13 + Math.sin(t * 0.25) * 3, out.position);
       aroundRover(d, 34, 0, 2, out.target);
@@ -178,7 +195,8 @@ function cinematicShot(distance: number, time: number, out: Shot): Shot {
   const current = CINEMATIC[index]!;
   const next = CINEMATIC[(index + 1) % CINEMATIC.length]!;
   current.shot(distance, time, _shotA);
-  const into = local - (start + current.seconds - BLEND_S);
+  const blend = current.blend ?? BLEND_S;
+  const into = local - (start + current.seconds - blend);
   if (into <= 0) {
     out.position.copy(_shotA.position);
     out.target.copy(_shotA.target);
@@ -186,7 +204,7 @@ function cinematicShot(distance: number, time: number, out: Shot): Shot {
     return out;
   }
   next.shot(distance, time, _shotB);
-  const x = Math.min(1, into / BLEND_S);
+  const x = Math.min(1, into / blend);
   const k = x * x * (3 - 2 * x);
   out.position.lerpVectors(_shotA.position, _shotB.position, k);
   out.target.lerpVectors(_shotA.target, _shotB.target, k);
