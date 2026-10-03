@@ -28,9 +28,9 @@ OUTPUT = ROOT / "apps" / "web" / "public" / "video" / "cards.json"
 
 # The runs and experiments the video draws on. Named here so the set is visible
 # and so `docs/VIDEO_CLAIMS.md` can be checked against it.
-RUN_BASELINE = "run-7d8750c2b7"      # wifi-degradation, B0, seed 70009
-RUN_CONTINUA = "run-d2819d215c"      # wifi-degradation, P1, seed 70009 (same trace)
-RUN_SATELLITE = "run-3c69f9615f"     # satellite-fallback, P1, seed 70013
+RUN_BASELINE = "run-8901ec90e1"      # wifi-degradation, B0, seed 70009
+RUN_CONTINUA = "run-7b5cdb51fa"      # wifi-degradation, P1, seed 70009 (same trace)
+RUN_SATELLITE = "run-1df257cba0"     # satellite-fallback, P1, seed 70013
 
 EXP_WIFI = "exp-26f132d5d7"          # wifi-degradation, 20 trials, heuristic
 EXP_CONGESTION = "exp-64931cf540"    # cellular-congestion, 20 trials, heuristic

@@ -56,7 +56,7 @@ the timeline was not.
 > The reactive baseline waits for its link to fail. The session goes dark four
 > times: seven point three two seconds.
 
-*`run-7d8750c2b7`, `continuity.total_interruption_s` = 7.32, `interruptions` =
+*`run-8901ec90e1`, `continuity.total_interruption_s` = 7.32, `interruptions` =
 4, `session_reconnects` = 1.*
 
 ### N4 · 20.9 → 30.0 - the application
@@ -81,7 +81,7 @@ the timeline was not.
 > Prepare: it warms cellular while Wi-Fi still carries. Steer: six tenths of a
 > second later.
 
-*`run-d2819d215c`: `start_duplication` at t = 28.76 s, `switch` at t = 29.42 s.*
+*`run-7b5cdb51fa`: `start_duplication` at t = 28.76 s, `switch` at t = 29.42 s.*
 
 These were two cues in the first cut, and they could not be. The two events are
 0.66 s apart in the run; giving each its own line would have meant playing that

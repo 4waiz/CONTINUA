@@ -41,6 +41,23 @@ Every dashboard shot carries the execution-mode chip in frame. The 3D opening
 and closing shots are Blender renders of the project's own asset and are
 labelled **rendered scene**, not captured telemetry.
 
+### Re-recorded runs (Phase 9)
+
+The video was first cut from runs `run-7d8750c2b7` (B0), `run-d2819d215c` (P1)
+and `run-3c69f9615f` (P1, satellite fallback). A run's events live in the
+engine's local store, outside the repository, and those three no longer exist
+anywhere, so a re-cut on the Phase 9 world could not replay them. The
+simulation is deterministic, so they were recorded again from the same
+scenario, seed, policy, predictor and horizon by `scripts/record-video-runs.mjs`,
+which compares **every metric the original runs published**
+(`data/evidence/video/<old id>/metrics.json`, kept in the repository) with the
+new run's and fails on any difference other than the run's identity (its id).
+All three matched - 0 differences in 98 published values each; 23 values have
+been added by later engine versions - and are cited below by their new ids:
+`run-8901ec90e1` (was `run-7d8750c2b7`), `run-7b5cdb51fa` (was
+`run-d2819d215c`), `run-1df257cba0` (was `run-3c69f9615f`). Their evidence is
+in `data/evidence/video/<new id>/`.
+
 ### Playback rate
 
 One stretch - the five-step sequence, shot S4 - is played at **0.36x** so that
@@ -78,12 +95,12 @@ sentence nobody says.
 | C1 | "A response vehicle drives out of coverage." (N1) | route + coverage model, 24 control points, 917 m | simulation | `packages/contracts/world.json`, `packages/scene/src/world/route.ts` | implemented |
 | C2 | "Everything here is a software simulation. No radios, no satellite, no hardware." (N2) | - | - | `docs/ASSUMPTIONS.md` §1 | implemented |
 | C3 | "The reactive baseline waits for its link to fail." (N3) | policy `B0` = switch only on measured unusability | simulation | `services/engine/continua_engine/controller/controller.py` → `POLICY_LIBRARY['B0']` | implemented |
-| C4 | "The session goes dark four times: seven point three two seconds." (N3) | `run-7d8750c2b7` | simulation | `data/runs/run-7d8750c2b7/metrics.json` → `continuity` | **measured** |
+| C4 | "The session goes dark four times: seven point three two seconds." (N3) | `run-8901ec90e1` | simulation | `data/runs/run-8901ec90e1/metrics.json` → `continuity` | **measured** |
 | C5 | "Five steps." plus the five step captions (N5–N8) | controller state machine | simulation | `services/engine/continua_engine/controller/controller.py` | implemented |
 | C6 | "Observe: receiver side facts only. The controller never sees the world's script." (N5) | trace isolation | simulation | `tests/engine/test_engine.py::test_controller_cannot_reach_trace` | **measured** (asserted by test) |
-| C7 | "Prepare: it warms cellular while Wi-Fi still carries." Caption: "t+28.76 s · duplicate onto cellular while Wi-Fi still carries" | `run-d2819d215c`, action `start_duplication` @ 28.76 s | simulation | `data/evidence/video/run-d2819d215c/`, `data/runs/run-d2819d215c/events.jsonl` | **measured** |
-| C8 | "Steer: six tenths of a second later." / "Explain: it records why, at the moment it decided." Caption: "t+29.42 s · session moved on a measured violation" | same run, action `switch` @ 29.42 s, reason recorded at decision time | simulation | `data/evidence/video/run-d2819d215c/`, `data/runs/run-d2819d215c/events.jsonl` | **measured** |
-| C9 | "Same seed, same trace, only the policy changed. Seven point three two seconds becomes zero point one six." (N9) | `run-7d8750c2b7` vs `run-d2819d215c` | simulation | both `metrics.json` | **measured** |
+| C7 | "Prepare: it warms cellular while Wi-Fi still carries." Caption: "t+28.76 s · duplicate onto cellular while Wi-Fi still carries" | `run-7b5cdb51fa`, action `start_duplication` @ 28.76 s | simulation | `data/evidence/video/run-7b5cdb51fa/`, `data/runs/run-7b5cdb51fa/events.jsonl` | **measured** |
+| C8 | "Steer: six tenths of a second later." / "Explain: it records why, at the moment it decided." Caption: "t+29.42 s · session moved on a measured violation" | same run, action `switch` @ 29.42 s, reason recorded at decision time | simulation | `data/evidence/video/run-7b5cdb51fa/`, `data/runs/run-7b5cdb51fa/events.jsonl` | **measured** |
+| C9 | "Same seed, same trace, only the policy changed. Seven point three two seconds becomes zero point one six." (N9) | `run-8901ec90e1` vs `run-7b5cdb51fa` | simulation | both `metrics.json` | **measured** |
 | C10 | "…and that remainder is the session starting up." (N9), plus the card footnote | outage window 0.00–0.20 s, present in every policy including the baselines | simulation | `data/runs/*/events.jsonl` → `app.in_outage` | **measured** |
 | C11 | "Twenty paired trials say something we did not expect. Preparation is what removes the interruption." (N11) | `exp-26f132d5d7`, policies B2 and P1 | simulation | `data/experiments/exp-26f132d5d7.json` → `aggregate` | **measured** |
 | C12 | "What CONTINUA adds is the price: the same continuity at a third of the cost, a twelfth of the satellite data." (N12), with the exact figures on the results card | `exp-26f132d5d7`, P1 vs B2 | simulation | same | **measured** |
@@ -116,7 +133,7 @@ Any number rendered as a caption card. Same rule: it exists on disk first.
 | Satellite bytes | 47.59 MB | 4.79 MB | `links.satellite_bytes` |
 | Cost units | 3.44 | 1.19 | `links.cost_units` |
 
-Runs: `run-7d8750c2b7` (B0) and `run-d2819d215c` (P1). Files:
+Runs: `run-8901ec90e1` (B0) and `run-7b5cdb51fa` (P1). Files:
 `data/runs/<run_id>/metrics.json`.
 
 **Shown alongside, not hidden:** P1 performed **5** handovers to B0's 3, and
@@ -219,7 +236,7 @@ Not optional, and each has a caption card as well as narration:
 
 ```bash
 node scripts/check-claims.mjs          # banned phrases + every claim ID resolves
-python scripts/analyse_run.py run-d2819d215c run-7d8750c2b7 run-3c69f9615f
+python scripts/analyse_run.py run-7b5cdb51fa run-8901ec90e1 run-1df257cba0
 python scripts/select_representative.py
 ```
 

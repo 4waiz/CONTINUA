@@ -1,9 +1,9 @@
 {
   "generated_from": {
     "runs": [
-      "run-7d8750c2b7",
-      "run-d2819d215c",
-      "run-3c69f9615f"
+      "run-8901ec90e1",
+      "run-7b5cdb51fa",
+      "run-1df257cba0"
     ],
     "experiments": [
       "exp-26f132d5d7",
@@ -88,7 +88,7 @@
           "continua": 5,
           "format": "int",
           "better_is": "lower",
-          "note": "more, not fewer \u2014 preparing a path costs transitions"
+          "note": "more, not fewer - preparing a path costs transitions"
         },
         {
           "label": "Bulk transfer completed",
@@ -101,11 +101,11 @@
       ],
       "footnote": "The 0.16 s that remains is the session establishing at t = 0, before any link is carrying. Every policy, including both baselines, records it.",
       "sources": {
-        "baseline_run": "run-7d8750c2b7",
-        "continua_run": "run-d2819d215c",
+        "baseline_run": "run-8901ec90e1",
+        "continua_run": "run-7b5cdb51fa",
         "files": [
-          "data/runs/run-7d8750c2b7/metrics.json",
-          "data/runs/run-d2819d215c/metrics.json"
+          "data/runs/run-8901ec90e1/metrics.json",
+          "data/runs/run-7b5cdb51fa/metrics.json"
         ],
         "mode": "simulation"
       }
@@ -150,7 +150,7 @@
         }
       ],
       "reading": [
-        "Preparation removes the interruption \u2014 the always-multipath baseline reaches the same 0.16 s.",
+        "Preparation removes the interruption - the always-multipath baseline reaches the same 0.16 s.",
         "Prediction is not what removed it. Ablating the predictor changes nothing we can measure.",
         "Application-awareness is what makes it affordable, and under congestion it is what holds the control channel."
       ],
@@ -557,7 +557,7 @@
         },
         {
           "head": "Emulation is implemented but not verified here",
-          "body": "Emulation NOT VERIFIED HERE. missing capability: sudo_nopasswd; kernel MPTCP is unavailable, so no run on this host may be described as verified MPTCP. Simulation mode is fully operational and unaffected.",
+          "body": "Emulation NOT VERIFIED HERE. WSL is installed but has no Linux distribution, so no Linux command can run: `Windows Subsystem for Linux has no installed distributions.`. Nothing was executed. Simulation mode is fully operational and unaffected.",
           "source": "data/emulation_capability.json"
         },
         {
@@ -576,7 +576,7 @@
           "source": "packages/contracts/world.json"
         }
       ],
-      "next": "Hardware in the loop, a real radio, and a field trial are the next step \u2014 not a result.",
+      "next": "Hardware in the loop, a real radio, and a field trial are the next step - not a result.",
       "sources": {
         "files": [
           "data/emulation_capability.json",

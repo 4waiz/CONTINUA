@@ -1,0 +1,161 @@
+{
+  "run_id": "run-7b5cdb51fa",
+  "scenario_id": "wifi-degradation",
+  "policy_id": "P1",
+  "seed": 70009,
+  "policy_overrides": {},
+  "duration_s": 105,
+  "continuity": {
+    "session_reconnects": 0,
+    "interruptions": 1,
+    "total_interruption_s": 0.16,
+    "longest_interruption_s": 0.16,
+    "outage_s": 0.16,
+    "safe_stop_entered": false
+  },
+  "application": {
+    "control": {
+      "sent": 2100,
+      "delivered": 2057,
+      "duplicates_suppressed": 248,
+      "goodput_bytes": 452540,
+      "deadline_eligible": 2061,
+      "deadline_misses": 659,
+      "deadline_miss_pct": 31.9748,
+      "mean_latency_ms": 135.959,
+      "p50_latency_ms": 20.64,
+      "p95_latency_ms": 461.264,
+      "p99_latency_ms": 509.364
+    },
+    "telemetry": {
+      "sent": 1050,
+      "delivered": 1011,
+      "duplicates_suppressed": 0,
+      "goodput_bytes": 424620,
+      "deadline_eligible": 1013,
+      "deadline_misses": 178,
+      "deadline_miss_pct": 17.5716,
+      "mean_latency_ms": 142.651,
+      "p50_latency_ms": 20.741,
+      "p95_latency_ms": 466.849,
+      "p99_latency_ms": 518.88,
+      "final_freshness_ms": 64.2
+    },
+    "video": {
+      "sent": 15526,
+      "delivered": 15106,
+      "duplicates_suppressed": 0,
+      "goodput_bytes": 13119840,
+      "deadline_eligible": 15124,
+      "deadline_misses": 3261,
+      "deadline_miss_pct": 21.5618,
+      "mean_latency_ms": 118.7,
+      "p50_latency_ms": 19.885,
+      "p95_latency_ms": 456.856,
+      "p99_latency_ms": 512.427,
+      "frames_expected": 3150,
+      "frames_delivered": 2142,
+      "frame_delivery_pct": 68,
+      "stall_ms": 11880
+    },
+    "voice": {
+      "sent": 5251,
+      "delivered": 5053,
+      "duplicates_suppressed": 0,
+      "goodput_bytes": 808480,
+      "deadline_eligible": 5063,
+      "deadline_misses": 1703,
+      "deadline_miss_pct": 33.6362,
+      "mean_latency_ms": 143.738,
+      "p50_latency_ms": 22.467,
+      "p95_latency_ms": 466.66,
+      "p99_latency_ms": 519.034
+    },
+    "bulk": {
+      "sent": 0,
+      "delivered": 0,
+      "duplicates_suppressed": 0,
+      "goodput_bytes": 73437456,
+      "bytes_completed": 73437786,
+      "completion_pct": 40.7988
+    }
+  },
+  "app_health_score": 68.9,
+  "links": {
+    "bytes": {
+      "wired": 13427036,
+      "wifi": 29392388,
+      "cellular": 45314296,
+      "satellite": 4791508
+    },
+    "activations": {
+      "wired": 1,
+      "wifi": 1,
+      "cellular": 1,
+      "satellite": 2
+    },
+    "bulk_bytes": {
+      "wired": 11400000,
+      "wifi": 25050000,
+      "cellular": 37530000,
+      "satellite": 0
+    },
+    "satellite_bytes": 4791508,
+    "satellite_bytes_excl_bulk": 4791508,
+    "total_bytes": 92925228,
+    "goodput_bytes": 88242936,
+    "overhead_pct": 5.039,
+    "cost_units": 1.1887
+  },
+  "control_plane": {
+    "handovers": 5,
+    "unnecessary_handovers": 0,
+    "backup_activations": 4,
+    "duplication_windows": 4,
+    "control_timeouts": 109,
+    "control_retransmits": 25
+  },
+  "prediction": {
+    "predictor": "heuristic-trend-1.1",
+    "horizon_s": 3,
+    "evaluated": 467,
+    "skipped_already_violating": 535,
+    "scoring_rule": "Predictions are scored only while the carrying path is not already in violation; a forecast of an ongoing condition is not a forecast.",
+    "true_positives": 42,
+    "false_positives": 4,
+    "false_negatives": 222,
+    "true_negatives": 199,
+    "precision": 0.913,
+    "recall": 0.1591,
+    "f1": 0.271,
+    "calibrated": false
+  },
+  "control_mode": {
+    "mode_time_s": {
+      "teleop": 105.02,
+      "waypoint": 0,
+      "safe_hold": 0
+    },
+    "mode_changes": 0,
+    "anticipated_mode_changes": 0,
+    "late_mode_changes": 0,
+    "unsupported_mode_s": 48.96,
+    "mode_unknown_s": 0.04,
+    "conservative_mode_s": 0,
+    "teleop_supported_s": 56.02,
+    "teleop_availability_pct": 53.342,
+    "control_by_mode": {
+      "teleop": {
+        "sent": 2100,
+        "delivered": 2057,
+        "deadline_eligible": 2061,
+        "deadline_misses": 659
+      }
+    },
+    "support_definition": "A path supports a control mode when it is ready to carry traffic (active or carrying), its windowed RTT from acknowledgements is at or below the mode's deadline, and its windowed loss is at or below the mode's loss limit. Control is acknowledged and retransmitted, so where the path's RTT plus the retransmit floor still fits inside the deadline the mode's recovered loss limit applies instead: one lost packet is resent and still arrives in time. A ready path with too few samples supports nothing *yet* (unknown). A path that is unavailable, idle, activating or validating supports nothing: packets placed on it would not arrive. safe_hold has no deadline and is always supported."
+  },
+  "steering": {
+    "class_steers": 0,
+    "control_off_primary_s": 0
+  }
+}

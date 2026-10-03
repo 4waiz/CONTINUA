@@ -98,7 +98,9 @@ function TitleCard({ overlay }: { overlay: CaptureOverlay }) {
 function Banner({ overlay }: { overlay: CaptureOverlay }) {
   return (
     <div className="absolute left-1/2 top-[8.5%] -translate-x-1/2">
-      <div className="rounded-[12px] border-2 border-[color:var(--color-warn)] bg-[color:var(--color-warn)]/[0.12] px-[1.6vw] py-[0.7vw] text-[1.35vw] font-semibold uppercase tracking-[0.12em] text-[#8a5200]">
+      {/* Opaque enough to read over a busy landscape, and on one line: absolutely
+          positioned at the centre, it would otherwise wrap at half the frame. */}
+      <div className="whitespace-nowrap rounded-[12px] border-2 border-[color:var(--color-warn)] bg-[#FFF7E8]/95 px-[1.6vw] py-[0.7vw] text-[1.35vw] font-semibold uppercase tracking-[0.12em] text-[#8a5200] shadow-[var(--shadow-panel)] backdrop-blur">
         {overlay.text}
       </div>
     </div>
@@ -139,7 +141,7 @@ function Callout({ overlay }: { overlay: CaptureOverlay }) {
 
 function Stat({ overlay }: { overlay: CaptureOverlay }) {
   return (
-    <div className="absolute right-[3.4%] top-[26%] text-right">
+    <div className="absolute right-[3.4%] top-[26%] rounded-[16px] border border-[color:var(--color-line-strong)] bg-white/92 px-[1.4vw] py-[1vw] text-right shadow-[var(--shadow-raised)] backdrop-blur">
       <div className="metric text-[6.2vw] font-semibold leading-none tracking-[-0.045em] text-[color:var(--color-bad)]">
         {overlay.text}
       </div>

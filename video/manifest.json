@@ -1,17 +1,17 @@
 {
   "title": "CONTINUA - Predictive Network Continuity",
   "team": "Team Kanban",
-  "built_at": "2026-09-09T09:43:43.978Z",
-  "code_commit": "8048a1f800c365ed302abd5035e0d5fa4b2a7e9c",
+  "built_at": "2026-10-03T18:40:57.799Z",
+  "code_commit": "2b97229e61704453a8ae33fbdb22444a7423e5f9",
   "execution_mode": "simulation",
   "evidence": {
     "claims": "docs/VIDEO_CLAIMS.md",
     "cards": "apps/web/public/video/cards.json",
     "representative_selection": "video/representative.json",
     "runs": [
-      "run-7d8750c2b7",
-      "run-d2819d215c",
-      "run-3c69f9615f"
+      "run-8901ec90e1",
+      "run-7b5cdb51fa",
+      "run-1df257cba0"
     ],
     "run_metrics": "data/evidence/video/<run_id>/metrics.json",
     "experiments": [
@@ -28,13 +28,14 @@
       "device_scale_factor": 1
     },
     "fps": 30,
-    "captured_at": "2026-09-09T09:43:07.859Z",
+    "captured_at": "2026-10-03T17:26:08.892Z",
     "source": "replay of recorded runs (mode chip reads REPLAY · SIMULATION)",
     "renderer": "Chromium via Playwright, --use-gl=angle"
   },
   "narration": {
     "voice": "Microsoft Mark",
-    "synthesiser": "Windows System.Speech (local)",
+    "synthesiser": "Windows.Media.SpeechSynthesis (OneCore, local)",
+    "prosody": "SSML: sentence and clause breaks, percentage rate, ceiling +18%",
     "total_s": 117,
     "cues": [
       {
@@ -278,7 +279,7 @@
     "format": {
       "format_name": "mov,mp4,m4a,3gp,3g2,mj2",
       "duration": "117.000000",
-      "size": "20873046"
+      "size": "38160106"
     }
   },
   "build": [
