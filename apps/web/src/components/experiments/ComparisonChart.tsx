@@ -32,6 +32,7 @@ const POLICY_COLOR: Record<string, string> = {
   'P2-noSteer': '#b394f0',
   'P2-noMode': '#c9b4f5',
   'P2-reactiveMode': '#d7c6f7',
+  P3: '#0f9f8f',
 };
 
 export function ComparisonChart({

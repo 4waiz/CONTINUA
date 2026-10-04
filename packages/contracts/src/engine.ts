@@ -53,7 +53,9 @@ export type PolicyIdString =
   | 'P2'
   | 'P2-noSteer'
   | 'P2-noMode'
-  | 'P2-reactiveMode';
+  | 'P2-reactiveMode'
+  // Phase 5
+  | 'P3';
 
 /**
  * Operating mode of the control class (Phase 4). `teleop` is the Phase 2
@@ -401,4 +403,5 @@ export const POLICY_NAME: Record<PolicyIdString, string> = {
   'P2-noSteer': 'P2, no per-class steering',
   'P2-noMode': 'P2, no mode handover',
   'P2-reactiveMode': 'P2, reactive mode only',
+  P3: 'CONTINUA P3, route-aware',
 };

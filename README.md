@@ -95,6 +95,10 @@ renders these from fixed points.
 | `python scripts/phase4_tune.py` | Phase 4 hysteresis grid on the tune block, selection rule declared in the script |
 | `python scripts/phase4_experiment.py` | The Phase 4 comparison on `test2`, run once; refuses to run twice |
 | `python scripts/phase4_results.py` | Renders `docs/PHASE_4_RESULTS.md` from the recorded experiments |
+| `python scripts/phase5_headroom.py` | Phase 5: how much any earlier switch could have saved, on the tune block |
+| `python scripts/build_radio_map.py` | Phase 5: the radio maps, from survey drives on the train block |
+| `python scripts/phase5_experiment.py` | The Phase 5 comparison on `test4`, run once; refuses to run twice |
+| `python scripts/phase5_results.py` | Renders `docs/PHASE_5_RESULTS.md` from the recorded experiments |
 | `npm run train:predictor` | Retrain the learned predictor |
 | `npm run emulation:status` | Honest capability report for this host |
 | `npm run blender:all` | Regenerate every 3D asset |
@@ -169,6 +173,7 @@ tests/               Engine (pytest) and browser (Playwright) suites
 | [`docs/METRICS.md`](docs/METRICS.md) | Every metric, unit and measurement window |
 | [`docs/EXPERIMENT_METHOD.md`](docs/EXPERIMENT_METHOD.md) | Pairing, seed blocks, and how not to fool yourself |
 | [`docs/PHASE_4_RESULTS.md`](docs/PHASE_4_RESULTS.md) | Phase 4: steering and mode handover, every scenario, with the losses |
+| [`docs/PHASE_5_RESULTS.md`](docs/PHASE_5_RESULTS.md) | Phase 5: route-aware preparation (P3), the ceiling on trend prediction, the shadowed route |
 | [`docs/MODEL_CARD.md`](docs/MODEL_CARD.md) | The learned predictor, including its calibration failure |
 | [`docs/SECURITY.md`](docs/SECURITY.md) | Threat model and known weaknesses |
 | [`docs/AI_USE.md`](docs/AI_USE.md) | Where ML is used, and why no LLM is in the routing loop |
@@ -186,16 +191,31 @@ instead of 61.2 MB (−92 %)**, **1.25 cost units instead of 4.31 (−71 %)** an
 **37 % less video stall**. Under cellular congestion it cuts control deadline
 misses from 49 % to **31 %**.
 
-**And an honest negative result:** prediction does not pay for itself. The
-`P1 − P1-noPred` ablation is a wash at both predictor qualities tested - the
-value is in *preparation* and *application-awareness*, not in prediction. Full
-numbers, including where CONTINUA loses, are in `docs/PROGRESS.md`.
+**And an honest negative result:** a forecast of a link's own trend does not
+pay for itself. The `P1 − P1-noPred` ablation is a wash at both predictor
+qualities tested - the value is in *preparation* and *application-awareness*.
+Full numbers, including where CONTINUA loses, are in `docs/PROGRESS.md`.
 
-Rendering (kept separate from network metrics): 191 fps uncapped at
-1920×1080 during a run beside its reactive baseline, frame time p95 7.9 ms,
+**Where prediction does pay (Phase 5).** Measured first: with a warm backup
+always ready, the steps an earlier switch could improve hold under 0.4 % of
+any class's losses, so no better trend forecast can help. What a forecast can
+still buy is a path prepared *before* it is needed, when the backup fails at
+the same place as the carrying link - and only a map of the route can see
+that. **P3** looks the next 8 s of its route up in a radio map built from
+earlier survey drives and, where the carrying path and its warm backup are
+both lost ahead, brings up a third in time. On a shadowed route where P1 loses
+the session for 4.5 s at a cutting in **every one of 20 trials** (reconnect,
+safe stop), **P3 never does**, at the same cost as P1 or less and about
+0.3 MB more satellite traffic; against always-on redundancy, the same
+continuity for about a quarter of the cost. It is **not cheaper than
+B2-defer**, and an out-of-date map costs 0.40 units for nothing. Everywhere
+else P3 is P1, trial for trial. `docs/PHASE_5_RESULTS.md`.
+
+Rendering (kept separate from network metrics): 188 fps uncapped at
+1920×1080 during a run beside its reactive baseline, frame time p95 7.8 ms,
 high tier with ambient occlusion on, on an RTX 4070 Laptop GPU
 (`node scripts/perf-probe.mjs`); one shared canvas for every scene page, so
-switching pages builds nothing; 2.56 MB of Draco-compressed models.
+switching pages builds nothing; 2.66 MB of Draco-compressed models.
 On a slower GPU the scene steps its own quality tier down, and a software
 rasteriser starts on the low tier.
 
@@ -207,6 +227,7 @@ rasteriser starts on the low tier.
 | 2 | Network engine, controller, dashboard, experiments | **complete** |
 | 3 | Demo video: claim ledger, deterministic capture, narration, edit | **complete** |
 | 4 | Per-class steering, control mode handover, B2-defer baseline, test2 comparison | **complete** (see `docs/PHASE_4_RESULTS.md`) |
+| 5 | Route-aware preparation: radio map from survey drives, P3, the shadowed route, test4 comparison | **complete** (see `docs/PHASE_5_RESULTS.md`) |
 | 7 | Visual overhaul: Mk2 rover, 48-prop world kit, procedural ground and daylight, immersive interface | **complete** (see `docs/PROGRESS.md`) |
 | 8 | A green coastal island (sea, beaches, mountains, clouds, flowering trees), one shared canvas across pages, a live rover camera | **complete** (see `docs/PROGRESS.md`) |
 | 9 | Smooth motion; lush island ranges, leaf-card trees and woods; the satellite link in the sky; CONTINUA run beside a reactive baseline | **complete** (see `docs/PROGRESS.md`) |

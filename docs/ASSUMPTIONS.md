@@ -145,6 +145,22 @@ terrain masking, no antenna pattern and no interference. It is labelled
 `modelled_coverage` everywhere it appears, and the controller is never allowed
 to treat it as a measurement.
 
+### Route-anchored shadows and the radio map (Phase 5)
+
+* A `shadow` fault (`sim/exogenous.py`) scales a link's coverage down over a
+  stretch of route coordinates, easing in and out over `ramp_m`. It stands for
+  terrain - a cutting, a hillside - so it is at the same place on every run,
+  at any speed and in either direction. Only the five `shadow-*` scenarios
+  have one; every earlier scenario's trace is unchanged.
+* The radio map is a table of survey observations, binned every 5 m. Because
+  coverage here is a function of position alone, a map of the same world is
+  **exact**. A real survey map is noisy and goes out of date; `shadow-stale`
+  is the only measure of that in this repository.
+* The vehicle is told its mission - route length and direction - and its
+  progress along it (`VehicleObservation.distance_m`). It is not told its
+  future speed or when it will reach anything; the lookahead uses its current
+  speed.
+
 ## 7. Where the honesty rules are enforced
 
 * A measurement that does not exist is `None`/`null` and renders as

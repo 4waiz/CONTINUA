@@ -76,16 +76,17 @@ export const POLICY_LABEL: Record<string, { name: string; blurb: string }> = {
   'P2-noSteer': { name: 'P2 · no steering', blurb: 'Ablation: mode handover without per-class steering' },
   'P2-noMode': { name: 'P2 · no mode handover', blurb: 'Ablation: per-class steering, control always teleop' },
   'P2-reactiveMode': { name: 'P2 · reactive mode', blurb: 'Ablation: mode changes only after a measured violation' },
+  P3: { name: 'CONTINUA P3 · route-aware', blurb: 'P1 plus a map of the route: prepares a path before a known gap' },
 };
 
 const POLICY_GROUPS: readonly { label: string; ids: readonly string[] }[] = [
   { label: 'Baselines', ids: ['B0', 'B1', 'B2', 'B2-defer'] },
-  { label: 'CONTINUA', ids: ['P1', 'P2'] },
+  { label: 'CONTINUA', ids: ['P1', 'P2', 'P3'] },
   { label: 'Ablations', ids: ['P1-noPred', 'P1-noApp', 'P2-noSteer', 'P2-noMode', 'P2-reactiveMode'] },
 ];
 
 /**
- * Eleven policies as three short rows of ids - baselines, CONTINUA, the
+ * Twelve policies as three short rows of ids - baselines, CONTINUA, the
  * ablations that take it apart - and one line saying what the chosen one does.
  * Eleven two-line buttons were most of the column.
  */

@@ -1305,3 +1305,45 @@ Known limitations:
   close to white. No camera in the app looks from there - the follow
   camera rides 5.2 m up, the low cinematic shot looks back down the
   asphalt - but a camera placed there would see it.
+
+---
+
+# Phase 5 - prediction that pays
+
+The owner asked for the prediction part to actually work. Phase 2 had found
+the trend predictor a wash, Phase 4 the same for anticipating mode changes.
+Before building another predictor, `scripts/phase5_headroom.py` measured the
+ceiling on the tune block: in every original scenario, the steps in which an
+earlier switch could have put traffic on a cleaner ready path hold **at most
+0.34 %** of any class's deadline misses or video stall. The warm backup
+already catches every transition; what is lost is lost on satellite, where
+there is no other path. No better forecast of a link's own trend could help,
+so none was built.
+
+What a forecast can still buy is a path prepared before it is needed - when
+the backup fails at the same place as the carrying link. Satellite takes 4.5 s
+to activate; a trend cannot see a cutting coming, a map of the route can.
+
+* **P3** = P1 + `route_prepare` (`controller/radio_map.py`): look up the next
+  8 s of route in a radio map; where the carrying path and the warm backup are
+  both lost ahead, prepare the path that stays up. The decision log says why.
+* **The radio map** is built from survey drives on the train block, from
+  observations only (`scripts/build_radio_map.py`).
+* **A shadowed route** - five new scenarios with a cutting that takes Wi-Fi and
+  the cell together - and route-anchored faults in the simulator. The method,
+  the scenarios and the expected results were committed before the test block
+  was touched (`docs/EXPERIMENT_METHOD.md` section 9, commit b54b28e).
+
+Measured on `test4`, 20 paired trials, 1 820 runs, 0 failures
+(`docs/PHASE_5_RESULTS.md`): on the shadowed route P1 and P1-noPred lose the
+session at the cutting in every trial (4.5 s, a reconnect, a safe stop); P3 in
+none, at the same cost as P1 or less and 0.31-0.35 MB more satellite traffic.
+Against always-on redundancy, the same continuity for 3.35-3.44 fewer cost
+units. **Not cheaper than B2-defer** (+0.43 units on two of the four shadow
+scenarios), which keeps every path active and pays the satellite activation
+once. An out-of-date map: P1's continuity, +0.40 units. The eight original
+scenarios: P3 identical to P1 in every trial.
+
+test:engine 156 passed (11 new, `tests/engine/test_phase5.py`); the regression
+guard holds every earlier policy byte for byte.
+

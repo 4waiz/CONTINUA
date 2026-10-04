@@ -437,7 +437,13 @@ export function MissionDock({
           {policies.map((entry) => (
             <option key={entry.id} value={entry.id}>
               {entry.id}
-              {entry.id === 'P1' ? ' · CONTINUA' : entry.id === 'P2' ? ' · CONTINUA P2' : ''}
+              {entry.id === 'P1'
+                ? ' · CONTINUA'
+                : entry.id === 'P2'
+                  ? ' · CONTINUA P2'
+                  : entry.id === 'P3'
+                    ? ' · route-aware'
+                    : ''}
             </option>
           ))}
         </select>

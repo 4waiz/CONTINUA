@@ -154,3 +154,27 @@ PYTHONPATH=services/engine python -m continua_engine.controller.train_predictor 
 Deterministic: the simulator is seeded, the split is by seed block, and
 `scikit-learn`'s solver is deterministic for this configuration. Re-running
 produces the same artefact apart from the timestamp in `version`.
+
+---
+
+## 10. The radio map (Phase 5)
+
+Not a learned model in the statistical sense - a lookup table - but it is the
+thing that makes P3's prediction, so it gets the same card.
+
+* **What it says:** for each link and each 5 m of the planned route, the share
+  of survey samples in which the link was unavailable, and its mean reported
+  coverage (`models/radio_map-<survey>.json`).
+* **Data:** survey drives of one scenario per world (`baseline-journey`,
+  `shadow-survey`) on train-block seeds 10000-10009, recorded from what the
+  controller observed each 20 ms step: each link's phase and reported
+  coverage, with the vehicle's progress along its route. Never the trace.
+* **Use:** `route_prepare` looks up the stretch the vehicle covers in the next
+  8 s at its current speed. A bin counts as unavailable at a share of 0.5.
+* **Must not be used** as a measurement of the network: it says where a link
+  *was* lost on earlier drives, not what it is doing now.
+* **Limitations:** exact in this simulator, because coverage is a function of
+  position; a real map is noisy and ages. Wrong both ways in `shadow-stale`,
+  where it cost 0.40 units and saved nothing (`docs/PHASE_5_RESULTS.md`).
+* **Reproducing:** `python scripts/build_radio_map.py` (deterministic).
+

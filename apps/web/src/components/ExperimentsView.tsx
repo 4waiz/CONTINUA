@@ -28,6 +28,7 @@ const POLICY_NOTE: Record<string, string> = {
   'P2-noSteer': 'Ablation: P2 without per-class steering.',
   'P2-noMode': 'Ablation: P2 without mode handover; control stays in teleop.',
   'P2-reactiveMode': 'Ablation: P2 whose mode changes only after a measured violation, never ahead of one.',
+  P3: 'CONTINUA P3. P1 plus a radio map of the route from earlier drives: where the kept paths will both be lost ahead, it prepares a third in time.',
 };
 
 const HEADLINE_METRICS: { key: string; label: string; unit: string; lowerIsBetter: boolean }[] = [
@@ -127,6 +128,19 @@ export function ExperimentsView() {
       })
       .catch(() => undefined);
   }, [loadStored]);
+
+  // Choosing a scenario also shows its largest stored comparison, if there is
+  // one, so the selector browses results as well as setting up a new run.
+  const chooseScenario = useCallback(
+    (id: string) => {
+      setScenarioId(id);
+      const latest = stored
+        .filter((row) => row.scenario_id === id && Number(row.completed ?? 0) > 0)
+        .sort((a, b) => Number(b.completed ?? 0) - Number(a.completed ?? 0))[0];
+      if (latest) void loadStored(String(latest.experiment_id));
+    },
+    [stored, loadStored],
+  );
 
   const poll = useCallback((id: string) => {
     if (pollRef.current) clearInterval(pollRef.current);
@@ -234,7 +248,7 @@ export function ExperimentsView() {
           <div className="flex shrink-0 items-end gap-2.5">
             <label className="flex flex-col gap-1" hidden={IS_PUBLIC_PREVIEW}>
               <span className="section-label">Scenario</span>
-              <select className="control min-w-[220px]" value={scenarioId} onChange={(e) => setScenarioId(e.target.value)}>
+              <select className="control min-w-[220px]" value={scenarioId} onChange={(e) => chooseScenario(e.target.value)}>
                 {scenarios.map((s) => (
                   <option key={s.id} value={s.id}>
                     {s.title}

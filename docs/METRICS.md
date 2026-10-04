@@ -162,6 +162,8 @@ load is a capacity reduction applied by the exogenous trace and never appears in
 | `control_timeouts` / `control_retransmits` | Acknowledgement timeouts and resulting retransmissions |
 | `class_steers` | Phase 4. Times a class was moved onto a path other than the one it was on (`STEER_CLASS` actions). Counted for every class, so churn is visible |
 | `control_off_primary_s` | Phase 4. Simulated seconds during which control rode a path other than the session's primary path |
+| `route_prearms` | Phase 5. Gaps the radio map showed ahead for which a path was prepared (activated, or kept from release). One per gap, however the ranking of paths flickers on the approach. Counted for every policy (0 unless `route_prepare`); one prepared for a gap that is not there is still paid for in activation cost |
+| `safe_stop_runs` | Phase 5. `safe_stop_entered` as 0 or 1, so the share of runs with a safe stop can be averaged and paired |
 
 ---
 
