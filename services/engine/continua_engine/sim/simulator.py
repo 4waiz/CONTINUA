@@ -42,6 +42,8 @@ from ..contracts import (
 )
 from ..controller.controller import POLICY_LIBRARY, ContinuaController
 from ..controller.modes import DEADLINE_MODES, highest_supported, mode_supported
+from ..controller.radio_map import MissionPlan, RadioMap
+from ..world import Route
 from .exogenous import ExogenousTrace, build_trace, link_profiles
 from .network import ClassReceiver, LinkPath, OutstandingAck, Packet, TrafficPlant, VideoReceiver
 
@@ -151,7 +153,14 @@ class Simulation:
             if not hasattr(self.config, name):
                 raise ValueError(f"unknown PolicyConfig field '{name}'")
             setattr(self.config, name, value)
-        self.controller = ContinuaController(self.config)
+        # Phase 5: a route-aware policy is told the mission (route length and
+        # direction) and given the radio map surveyed for this route. Neither
+        # is the trace; every other policy gets neither.
+        mission = radio_map = None
+        if self.config.route_prepare:
+            mission = MissionPlan(length_m=Route().length, reverse=bool(scenario.get("reverse", False)))
+            radio_map = RadioMap.load(str(scenario.get("radio_map", "baseline-journey")))
+        self.controller = ContinuaController(self.config, mission=mission, radio_map=radio_map)
 
         self.paths: dict[LinkId, LinkPath] = {link: LinkPath(link, self.trace) for link in ALL_LINKS}
         self.plant = TrafficPlant(scenario["workload"], dt)

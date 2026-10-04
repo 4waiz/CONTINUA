@@ -208,3 +208,89 @@ The manifest (`data/runs/<run_id>/manifest.json`) records the scenario spec,
 seed, policy, predictor, horizon, engine version, code commit and environment.
 `tests/engine/test_engine.py::test_same_seed_reproduces_identical_run` asserts
 that two runs with the same seed produce identical event streams.
+
+---
+
+## 9. Phase 5: route-aware preparation (declared before the comparison ran)
+
+Written before `test4` was touched. Everything below is fixed; the comparison
+runs once (`scripts/phase5_experiment.py`, which refuses a second run).
+
+### Why another predictor
+
+Phase 2 found the trend predictor does not pay for itself; Phase 4 found the
+same for anticipating mode changes. `scripts/phase5_headroom.py` measures the
+ceiling before building anything: on the tune block it labels every step in
+which the carrying path was already in its lossy tail (modelled quality below
+0.95) while another path was activated, validated and clean. Only in those
+steps could an earlier switch - what a better forecast buys - have moved
+traffic to a better path. In the original scenarios they hold **under 0.4 % of the
+deadline misses and video stall** (`data/experiments/phase5_headroom.json`):
+the warm backup already catches every transition, and the losses are on the
+satellite segment, where no other path exists. No forecast of the carrying
+path's own trend can improve on that, so none is attempted.
+
+What a forecast can still buy is **a path prepared before it is needed** - and
+that only matters when the path a policy keeps warm anyway is lost at the same
+place as the carrying one. Satellite takes 4.5 s to activate; a stretch of
+road that shadows Wi-Fi and the cell together, met while the session is on
+one with the other warm, leaves a reactive policy (and P1, which keeps one
+backup warm) without a path for 4-5 s - a session reconnect and a safe stop.
+A trend cannot see that coming: neither path degrades before the shadow. A
+map of where each network was lost on earlier drives can.
+
+### P3
+
+`P3` is P1 plus `route_prepare` (`controller.py`, `radio_map.py`). Each step
+it looks up the stretch of route the vehicle will cover in the next
+`route_horizon_s` at its current speed; if the radio map has the carrying path
+**and** the warm backup unavailable somewhere on it, it activates (or keeps)
+the path the map says stays available. Nothing else differs from P1, so
+`P3 - P1` is the map alone.
+
+* **The map** (`models/radio_map-<survey>.json`) is built by
+  `scripts/build_radio_map.py` from survey drives in the **train** block
+  (seeds 10000-10009) of one survey scenario per world - `baseline-journey`
+  for the open route, `shadow-survey` for the shadowed one - from what the
+  controller observed: each link's phase and reported coverage, binned every
+  5 m along the planned route. It never reads the trace.
+* **The controller is told its mission**: the route's length and direction.
+  `VehicleObservation.distance_m` is its progress along it. It is not told its
+  future speed or when it will reach anything.
+* **Constants were fixed by arithmetic, not tuned.** `route_horizon_s = 8 s`:
+  satellite activation (4.5 s) plus validation (1.2 s), with 2 s to spare.
+  A map bin counts as unavailable at a survey share of 0.5. The tune block
+  (3 seeds) was used only to check that the mechanism does what it says; it
+  found two counting defects in `route_prearms` (one gap was counted more
+  than once while the ranking of paths flickered), fixed before this was
+  written. No constant was changed by it.
+* **The costs are counted**: `route_prearms` (gaps prepared for), activation
+  cost and satellite bytes in the same tables as continuity.
+
+### Honest limitation, stated in advance
+
+Modelled coverage in this simulator is a deterministic function of position,
+so a survey map of the same world is exact. A real map is noisy and ages.
+`shadow-stale` is in the comparison for that reason: there the map is wrong
+both ways, and P3 should be **no better than P1** at the obstruction it does
+not know about, while paying for preparing at the one that is gone.
+
+### The comparison
+
+* Block `test4` (seeds 160000-160019), 20 paired trials, run once.
+* Policies: B0, B1, B2, B2-defer, P1, P1-noPred, P3.
+* Scenarios: the five of the new `shadow` family, and the eight Phase 4
+  scenarios (where P3 uses the open-route map).
+
+| Scenario | What it tests | Expectation, written before the run |
+| --- | --- | --- |
+| `shadow-survey` | A 40 m cutting shadows Wi-Fi and the cell together while satellite is cold | P1, P1-noPred, B0, B1 lose the session for 4-5 s at the cutting (reconnect, safe stop). B2 and P3 do not. P3 at a fraction of B2's cost |
+| `shadow-degradation` | The same, with Wi-Fi also degrading around it | As above |
+| `shadow-fast` | The same at 1.8x | As above; the horizon in metres grows with speed |
+| `shadow-reverse` | The same, met from the far side | As above, plus the 4.5 s satellite start-up every policy pays when a reverse run begins |
+| `shadow-stale` | The map is out of date | P3 no better than P1 on continuity, and more expensive |
+| The eight Phase 4 scenarios | No gap where both kept paths fail | **P3 identical to P1.** Any difference is a defect |
+
+What would count against P3: a cost above P1's in the shadow scenarios it
+helps in; any open-route difference from P1; a stale-map result worse than
+P1's on continuity.

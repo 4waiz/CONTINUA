@@ -1,6 +1,6 @@
 {
   "$comment": "Immutable scenario specifications. A scenario fixes the exogenous world: route speed, which links exist, what faults occur and when, and what background demand competes for capacity. It says NOTHING about policy. Every policy under test is run against the identical exogenous trace for a given seed - that is what makes the comparison paired and fair.",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "scenarios": [
     {
       "id": "baseline-journey",
@@ -153,6 +153,97 @@
       "workload": ["control", "telemetry", "video", "voice", "bulk"],
       "faults": [],
       "background": []
+    },
+    {
+      "id": "shadow-survey",
+      "title": "Shadowed route",
+      "family": "shadow",
+      "description": "The route through a cutting that shadows Wi-Fi and the cell together for 40 m, and past a stretch of the corridor where the cell alone is shadowed. No other fault. Drives of this scenario in the train block are the survey the radio map is built from.",
+      "duration_s": 105,
+      "speed_scale": 1.0,
+      "reverse": false,
+      "links": ["wired", "wifi", "cellular", "satellite"],
+      "workload": ["control", "telemetry", "video", "voice", "bulk"],
+      "faults": [
+        { "link": "wifi", "kind": "shadow", "from_m": 235.0, "to_m": 275.0, "ramp_m": 8.0, "severity": 1.0 },
+        { "link": "cellular", "kind": "shadow", "from_m": 235.0, "to_m": 275.0, "ramp_m": 8.0, "severity": 1.0 },
+        { "link": "cellular", "kind": "shadow", "from_m": 445.0, "to_m": 470.0, "ramp_m": 6.0, "severity": 1.0 }
+      ],
+      "background": [],
+      "radio_map": "shadow-survey"
+    },
+    {
+      "id": "shadow-degradation",
+      "title": "Shadowed route, Wi-Fi degrading",
+      "family": "shadow",
+      "description": "The shadowed route with the wifi-degradation fault on top: Wi-Fi decays over 22 s from 26 s, around the cutting.",
+      "duration_s": 105,
+      "speed_scale": 1.0,
+      "reverse": false,
+      "links": ["wired", "wifi", "cellular", "satellite"],
+      "workload": ["control", "telemetry", "video", "voice", "bulk"],
+      "faults": [
+        { "link": "wifi", "kind": "shadow", "from_m": 235.0, "to_m": 275.0, "ramp_m": 8.0, "severity": 1.0 },
+        { "link": "cellular", "kind": "shadow", "from_m": 235.0, "to_m": 275.0, "ramp_m": 8.0, "severity": 1.0 },
+        { "link": "cellular", "kind": "shadow", "from_m": 445.0, "to_m": 470.0, "ramp_m": 6.0, "severity": 1.0 },
+        { "link": "wifi", "kind": "degrade", "start_s": 26.0, "ramp_s": 22.0, "duration_s": 34.0, "severity": 0.94 }
+      ],
+      "background": [],
+      "radio_map": "shadow-survey"
+    },
+    {
+      "id": "shadow-fast",
+      "title": "Shadowed route at speed",
+      "family": "shadow",
+      "description": "The shadowed route at 1.8x speed: the shadows are where they were, the vehicle reaches them sooner and crosses them faster.",
+      "duration_s": 70,
+      "speed_scale": 1.8,
+      "reverse": false,
+      "links": ["wired", "wifi", "cellular", "satellite"],
+      "workload": ["control", "telemetry", "video", "voice", "bulk"],
+      "faults": [
+        { "link": "wifi", "kind": "shadow", "from_m": 235.0, "to_m": 275.0, "ramp_m": 8.0, "severity": 1.0 },
+        { "link": "cellular", "kind": "shadow", "from_m": 235.0, "to_m": 275.0, "ramp_m": 8.0, "severity": 1.0 },
+        { "link": "cellular", "kind": "shadow", "from_m": 445.0, "to_m": 470.0, "ramp_m": 6.0, "severity": 1.0 }
+      ],
+      "background": [],
+      "radio_map": "shadow-survey"
+    },
+    {
+      "id": "shadow-reverse",
+      "title": "Shadowed route, reversed",
+      "family": "shadow",
+      "description": "The shadowed route driven from the remote sector back to the dock, so the shadows are met from the other side and in the other order.",
+      "duration_s": 105,
+      "speed_scale": 1.0,
+      "reverse": true,
+      "links": ["wired", "wifi", "cellular", "satellite"],
+      "workload": ["control", "telemetry", "video", "voice", "bulk"],
+      "faults": [
+        { "link": "wifi", "kind": "shadow", "from_m": 235.0, "to_m": 275.0, "ramp_m": 8.0, "severity": 1.0 },
+        { "link": "cellular", "kind": "shadow", "from_m": 235.0, "to_m": 275.0, "ramp_m": 8.0, "severity": 1.0 },
+        { "link": "cellular", "kind": "shadow", "from_m": 445.0, "to_m": 470.0, "ramp_m": 6.0, "severity": 1.0 }
+      ],
+      "background": [],
+      "radio_map": "shadow-survey"
+    },
+    {
+      "id": "shadow-stale",
+      "title": "Shadowed route, map out of date",
+      "family": "shadow",
+      "description": "The map is wrong both ways: the cutting it remembers at 235-275 m is gone, and a new one shadows Wi-Fi and the cell at 285-315 m, where the map shows nothing - still inside the stretch where satellite is not the warm backup. The corridor shadow is where the map has it. Measures what an out-of-date map costs.",
+      "duration_s": 105,
+      "speed_scale": 1.0,
+      "reverse": false,
+      "links": ["wired", "wifi", "cellular", "satellite"],
+      "workload": ["control", "telemetry", "video", "voice", "bulk"],
+      "faults": [
+        { "link": "wifi", "kind": "shadow", "from_m": 285.0, "to_m": 315.0, "ramp_m": 8.0, "severity": 1.0 },
+        { "link": "cellular", "kind": "shadow", "from_m": 285.0, "to_m": 315.0, "ramp_m": 8.0, "severity": 1.0 },
+        { "link": "cellular", "kind": "shadow", "from_m": 445.0, "to_m": 470.0, "ramp_m": 6.0, "severity": 1.0 }
+      ],
+      "background": [],
+      "radio_map": "shadow-survey"
     }
   ]
 }

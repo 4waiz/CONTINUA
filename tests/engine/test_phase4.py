@@ -471,7 +471,9 @@ def test_prediction_features_stay_on_the_allow_list_with_mode_and_steering():
 def test_seed_blocks_include_test2_and_stay_disjoint():
     assert SEED_BLOCKS["test2"] == 100_000
     assert SEED_BLOCKS["test3"] == 130_000
-    assert len(SEED_BLOCKS) == 5
+    # Phase 5 added one more fresh block for its comparison.
+    assert SEED_BLOCKS["test4"] == 160_000
+    assert len(SEED_BLOCKS) == 6
     blocks = {name: {seed_for(name, i) for i in range(200)} for name in SEED_BLOCKS}
     names = list(blocks)
     for i, left in enumerate(names):

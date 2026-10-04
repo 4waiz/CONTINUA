@@ -67,6 +67,7 @@ from .predictors import (
     NullPredictor,
     make_predictor,
 )
+from .radio_map import MissionPlan, RadioMap
 
 #: Preference when several links are usable. Lower is better.
 LINK_PREFERENCE: dict[LinkId, int] = {
@@ -143,6 +144,20 @@ class PolicyConfig:
     #: long for the condition to persist. A path that cannot carry at all, or
     #: a path control is about to be moved onto, is judged at once.
     mode_down_debounce_s: float = 0.3
+
+    # -- Phase 5: route-aware preparation (radio_map.py). Off by default, so
+    # -- every earlier policy is unchanged (regression guard).
+    #: Look up the route ahead in the radio map and, where the carrying path
+    #: and its warm backup will both be unavailable, prepare a third path.
+    route_prepare: bool = False
+    #: How far ahead to look, in seconds at the current speed. The slowest
+    #: path (satellite) takes 4.5 s to activate and 1.2 s to validate; 8 s
+    #: covers that with two seconds to spare. Fixed from that arithmetic, not
+    #: tuned.
+    route_horizon_s: float = 8.0
+    #: A map bin counts as unavailable when at least this share of the survey
+    #: samples in it found the link unavailable.
+    route_unusable_at: float = 0.5
 
 
 POLICY_LIBRARY: dict[PolicyId, PolicyConfig] = {
@@ -262,6 +277,18 @@ POLICY_LIBRARY: dict[PolicyId, PolicyConfig] = {
         mode_handover=True,
         anticipate_mode=False,
     ),
+    # ---- Phase 5 -----------------------------------------------------------
+    # P1 plus route-aware preparation: the ablation P3 - P1 is the map alone.
+    PolicyId.P3_ROUTE: PolicyConfig(
+        policy_id=PolicyId.P3_ROUTE,
+        multipath=True,
+        proactive_warm=True,
+        use_prediction=True,
+        app_aware=True,
+        min_dwell_s=4.0,
+        predictor_kind="heuristic",
+        route_prepare=True,
+    ),
 }
 
 
@@ -286,11 +313,24 @@ class ControllerDecision:
 
 
 class ContinuaController:
-    def __init__(self, config: PolicyConfig, predictor: BasePredictor | None = None) -> None:
+    def __init__(
+        self,
+        config: PolicyConfig,
+        predictor: BasePredictor | None = None,
+        mission: MissionPlan | None = None,
+        radio_map: RadioMap | None = None,
+    ) -> None:
         self.config = config
         self.predictor = predictor or make_predictor(config.predictor_kind)
         if not config.use_prediction:
             self.predictor = NullPredictor()
+        # Phase 5: the planned route and the survey map, held only by a policy
+        # that uses them. Neither is the exogenous trace: one is the mission,
+        # the other is what earlier drives observed.
+        self.mission = mission if config.route_prepare else None
+        self.radio_map = radio_map if config.route_prepare else None
+        self.route_prearms = 0
+        self._prepared_gaps: set[tuple[LinkId, int]] = set()
 
         self.state = ControllerState.STABLE
         self.carrying: LinkId | None = None
@@ -522,6 +562,10 @@ class ContinuaController:
             if cfg.proactive_warm or at_risk:
                 want_active.add(backup)
 
+        route_note = ""
+        if self.radio_map is not None and self.mission is not None and vehicle is not None:
+            route_note = self._prepare_from_route(vehicle, usable, backup, want_active)
+
         newly_warm = want_active - {self.carrying}
         if newly_warm and observations[self.carrying].phase is not LinkPhase.UNAVAILABLE:
             # Preference order, not set order: set iteration is hash-randomised
@@ -598,6 +642,8 @@ class ContinuaController:
             reason = f"Recovering on {self.carrying.value} after a switch."
         else:
             state = ControllerState.STABLE
+        if route_note and not session_switched:
+            reason = route_note
 
         # --- Phase 4: per-class steering, then the control operating mode ----
         steer_actions = self._steer_classes(t, observations, usable, prediction, vehicle, session_switched)
@@ -691,6 +737,67 @@ class ContinuaController:
             bulk_paused=bool(bulk_paused),
             class_paths=dict(self.class_paths),
             control_mode=self.control_mode,
+        )
+
+    # -- Phase 5: route-aware preparation ---------------------------------------
+
+    def _prepare_from_route(
+        self,
+        vehicle: VehicleObservation,
+        usable: dict[LinkId, LinkObservation],
+        backup: LinkId | None,
+        want_active: set[LinkId],
+    ) -> str:
+        """Look up the stretch of route the vehicle will cover within the
+        horizon. If the radio map says the carrying path and the warm backup
+        are both lost somewhere on it, prepare the path the map says stays up -
+        early enough for it to activate, which no measurement of a path that
+        has not failed yet could tell. Returns the reason when it acts.
+
+        Every gap prepared for is counted once (`route_prearms`), whether the
+        path had to be activated or was only kept from being released: one
+        that turns out to be unneeded is paid for in activation cost and probe
+        bytes, and the experiment reports that alongside what it buys.
+        """
+        assert self.radio_map is not None and self.mission is not None and self.carrying is not None
+        cfg = self.config
+        reach = max(vehicle.speed_mps, 0.0) * cfg.route_horizon_s
+        if reach <= 0.0:
+            return ""
+        lo, hi = self.mission.ahead(vehicle.distance_m, reach)
+        outlook = self.radio_map.outlook(lo, hi, cfg.route_unusable_at)
+
+        def lost(link: LinkId) -> bool:
+            return outlook[link].lost_from_m is not None
+
+        if not lost(self.carrying) or (backup is not None and not lost(backup)):
+            return ""
+        candidates = [
+            link for link in usable
+            if link is not self.carrying and link is not backup and not lost(link)
+        ]
+        if not candidates:
+            return ""
+        pick = max(candidates, key=lambda link: (outlook[link].mean_coverage, -LINK_PREFERENCE[link]))
+        want_active.add(pick)
+        here = self.mission.route_coordinate(vehicle.distance_m)
+        seen = outlook[self.carrying]
+        # The first lost bin met in the direction of travel, then the whole gap
+        # it belongs to: one gap is one preparation, however often the ranking
+        # of the paths flickers while the vehicle approaches it.
+        near = (seen.lost_to_m - self.radio_map.bin_m) if self.mission.reverse else seen.lost_from_m
+        span = self.radio_map.lost_span(self.carrying, near if near is not None else here, cfg.route_unusable_at)
+        start, end = span if span is not None else (here, here)
+        key = (pick, round(start))
+        if key in self._prepared_gaps:
+            return ""
+        self._prepared_gaps.add(key)
+        self.route_prearms += 1
+        ahead_m = max(here - end, 0.0) if self.mission.reverse else max(start - here, 0.0)
+        lost_names = self.carrying.value + (f" and {backup.value}" if backup is not None else "")
+        return (
+            f"Preparing {pick.value} ahead of a known gap: the route map shows {lost_names} "
+            f"unavailable {ahead_m:.0f} m ahead."
         )
 
     # -- Phase 4: per-class steering ------------------------------------------

@@ -1,0 +1,576 @@
+{
+  "generated_at": "2026-10-04T18:10:36.335222+00:00",
+  "seed_block": "tune",
+  "seeds": [
+    40000,
+    40001,
+    40002,
+    40003,
+    40004
+  ],
+  "lossy_below": 0.95,
+  "definition": "a step is avoidable when the carrying path's modelled quality is below 0.95 while another path is activated, validated and at or above 0.95",
+  "code_commit": "41c2e7795513fb887496e60b4cd7934543e9edf3",
+  "scenarios": {
+    "baseline-journey": {
+      "P1-noPred": {
+        "avoidable_s": 2.576,
+        "total_interruption_s": 0.16,
+        "session_reconnects": 0.0,
+        "classes": {
+          "control": {
+            "total": 643.8,
+            "avoidable": 0.6,
+            "avoidable_share_pct": 0.09
+          },
+          "telemetry": {
+            "total": 164.4,
+            "avoidable": 0.0,
+            "avoidable_share_pct": 0.0
+          },
+          "video_stall_ms": {
+            "total": 12208.0,
+            "avoidable": 16.0,
+            "avoidable_share_pct": 0.13
+          },
+          "voice": {
+            "total": 1664.2,
+            "avoidable": 0.0,
+            "avoidable_share_pct": 0.0
+          }
+        }
+      },
+      "P1": {
+        "avoidable_s": 2.016,
+        "total_interruption_s": 0.16,
+        "session_reconnects": 0.0,
+        "classes": {
+          "control": {
+            "total": 644.0,
+            "avoidable": 0.0,
+            "avoidable_share_pct": 0.0
+          },
+          "telemetry": {
+            "total": 166.8,
+            "avoidable": 0.0,
+            "avoidable_share_pct": 0.0
+          },
+          "video_stall_ms": {
+            "total": 12476.0,
+            "avoidable": 16.0,
+            "avoidable_share_pct": 0.13
+          },
+          "voice": {
+            "total": 1698.8,
+            "avoidable": 0.0,
+            "avoidable_share_pct": 0.0
+          }
+        }
+      }
+    },
+    "wifi-degradation": {
+      "P1-noPred": {
+        "avoidable_s": 5.368,
+        "total_interruption_s": 0.16,
+        "session_reconnects": 0.0,
+        "classes": {
+          "control": {
+            "total": 644.8,
+            "avoidable": 1.2,
+            "avoidable_share_pct": 0.19
+          },
+          "telemetry": {
+            "total": 166.2,
+            "avoidable": 0.0,
+            "avoidable_share_pct": 0.0
+          },
+          "video_stall_ms": {
+            "total": 12696.0,
+            "avoidable": 16.0,
+            "avoidable_share_pct": 0.13
+          },
+          "voice": {
+            "total": 1653.6,
+            "avoidable": 0.0,
+            "avoidable_share_pct": 0.0
+          }
+        }
+      },
+      "P1": {
+        "avoidable_s": 5.976,
+        "total_interruption_s": 0.16,
+        "session_reconnects": 0.0,
+        "classes": {
+          "control": {
+            "total": 650.2,
+            "avoidable": 0.4,
+            "avoidable_share_pct": 0.06
+          },
+          "telemetry": {
+            "total": 167.6,
+            "avoidable": 0.0,
+            "avoidable_share_pct": 0.0
+          },
+          "video_stall_ms": {
+            "total": 12684.0,
+            "avoidable": 68.0,
+            "avoidable_share_pct": 0.54
+          },
+          "voice": {
+            "total": 1694.2,
+            "avoidable": 0.0,
+            "avoidable_share_pct": 0.0
+          }
+        }
+      }
+    },
+    "sudden-failure": {
+      "P1-noPred": {
+        "avoidable_s": 0.8,
+        "total_interruption_s": 0.16,
+        "session_reconnects": 0.0,
+        "classes": {
+          "control": {
+            "total": 647.2,
+            "avoidable": 0.0,
+            "avoidable_share_pct": 0.0
+          },
+          "telemetry": {
+            "total": 162.6,
+            "avoidable": 0.0,
+            "avoidable_share_pct": 0.0
+          },
+          "video_stall_ms": {
+            "total": 12316.0,
+            "avoidable": 16.0,
+            "avoidable_share_pct": 0.13
+          },
+          "voice": {
+            "total": 1638.6,
+            "avoidable": 0.0,
+            "avoidable_share_pct": 0.0
+          }
+        }
+      },
+      "P1": {
+        "avoidable_s": 0.8,
+        "total_interruption_s": 0.16,
+        "session_reconnects": 0.0,
+        "classes": {
+          "control": {
+            "total": 646.6,
+            "avoidable": 0.0,
+            "avoidable_share_pct": 0.0
+          },
+          "telemetry": {
+            "total": 167.2,
+            "avoidable": 0.0,
+            "avoidable_share_pct": 0.0
+          },
+          "video_stall_ms": {
+            "total": 12260.0,
+            "avoidable": 16.0,
+            "avoidable_share_pct": 0.13
+          },
+          "voice": {
+            "total": 1658.4,
+            "avoidable": 0.0,
+            "avoidable_share_pct": 0.0
+          }
+        }
+      }
+    },
+    "cellular-congestion": {
+      "P1-noPred": {
+        "avoidable_s": 2.576,
+        "total_interruption_s": 0.16,
+        "session_reconnects": 0.0,
+        "classes": {
+          "control": {
+            "total": 644.6,
+            "avoidable": 0.6,
+            "avoidable_share_pct": 0.09
+          },
+          "telemetry": {
+            "total": 165.8,
+            "avoidable": 0.0,
+            "avoidable_share_pct": 0.0
+          },
+          "video_stall_ms": {
+            "total": 11620.0,
+            "avoidable": 16.0,
+            "avoidable_share_pct": 0.14
+          },
+          "voice": {
+            "total": 1656.8,
+            "avoidable": 0.0,
+            "avoidable_share_pct": 0.0
+          }
+        }
+      },
+      "P1": {
+        "avoidable_s": 2.016,
+        "total_interruption_s": 0.16,
+        "session_reconnects": 0.0,
+        "classes": {
+          "control": {
+            "total": 644.8,
+            "avoidable": 0.0,
+            "avoidable_share_pct": 0.0
+          },
+          "telemetry": {
+            "total": 162.8,
+            "avoidable": 0.0,
+            "avoidable_share_pct": 0.0
+          },
+          "video_stall_ms": {
+            "total": 11956.0,
+            "avoidable": 16.0,
+            "avoidable_share_pct": 0.13
+          },
+          "voice": {
+            "total": 1656.4,
+            "avoidable": 0.0,
+            "avoidable_share_pct": 0.0
+          }
+        }
+      }
+    },
+    "satellite-fallback": {
+      "P1-noPred": {
+        "avoidable_s": 2.576,
+        "total_interruption_s": 0.16,
+        "session_reconnects": 0.0,
+        "classes": {
+          "control": {
+            "total": 877.8,
+            "avoidable": 0.6,
+            "avoidable_share_pct": 0.07
+          },
+          "telemetry": {
+            "total": 239.6,
+            "avoidable": 0.0,
+            "avoidable_share_pct": 0.0
+          },
+          "video_stall_ms": {
+            "total": 19876.0,
+            "avoidable": 16.0,
+            "avoidable_share_pct": 0.08
+          },
+          "voice": {
+            "total": 2153.6,
+            "avoidable": 0.0,
+            "avoidable_share_pct": 0.0
+          }
+        }
+      },
+      "P1": {
+        "avoidable_s": 2.016,
+        "total_interruption_s": 0.16,
+        "session_reconnects": 0.0,
+        "classes": {
+          "control": {
+            "total": 883.8,
+            "avoidable": 0.0,
+            "avoidable_share_pct": 0.0
+          },
+          "telemetry": {
+            "total": 241.0,
+            "avoidable": 0.0,
+            "avoidable_share_pct": 0.0
+          },
+          "video_stall_ms": {
+            "total": 20120.0,
+            "avoidable": 16.0,
+            "avoidable_share_pct": 0.08
+          },
+          "voice": {
+            "total": 2155.2,
+            "avoidable": 0.0,
+            "avoidable_share_pct": 0.0
+          }
+        }
+      }
+    },
+    "flapping": {
+      "P1-noPred": {
+        "avoidable_s": 0.844,
+        "total_interruption_s": 0.16,
+        "session_reconnects": 0.0,
+        "classes": {
+          "control": {
+            "total": 643.8,
+            "avoidable": 0.0,
+            "avoidable_share_pct": 0.0
+          },
+          "telemetry": {
+            "total": 162.6,
+            "avoidable": 0.0,
+            "avoidable_share_pct": 0.0
+          },
+          "video_stall_ms": {
+            "total": 12544.0,
+            "avoidable": 16.0,
+            "avoidable_share_pct": 0.13
+          },
+          "voice": {
+            "total": 1663.2,
+            "avoidable": 0.0,
+            "avoidable_share_pct": 0.0
+          }
+        }
+      },
+      "P1": {
+        "avoidable_s": 1.456,
+        "total_interruption_s": 0.16,
+        "session_reconnects": 0.0,
+        "classes": {
+          "control": {
+            "total": 647.6,
+            "avoidable": 0.0,
+            "avoidable_share_pct": 0.0
+          },
+          "telemetry": {
+            "total": 163.2,
+            "avoidable": 0.0,
+            "avoidable_share_pct": 0.0
+          },
+          "video_stall_ms": {
+            "total": 12420.0,
+            "avoidable": 16.0,
+            "avoidable_share_pct": 0.13
+          },
+          "voice": {
+            "total": 1627.6,
+            "avoidable": 0.0,
+            "avoidable_share_pct": 0.0
+          }
+        }
+      }
+    },
+    "total-loss": {
+      "P1-noPred": {
+        "avoidable_s": 2.576,
+        "total_interruption_s": 10.78,
+        "session_reconnects": 1.0,
+        "classes": {
+          "control": {
+            "total": 843.4,
+            "avoidable": 0.6,
+            "avoidable_share_pct": 0.07
+          },
+          "telemetry": {
+            "total": 270.2,
+            "avoidable": 0.0,
+            "avoidable_share_pct": 0.0
+          },
+          "video_stall_ms": {
+            "total": 22828.0,
+            "avoidable": 16.0,
+            "avoidable_share_pct": 0.07
+          },
+          "voice": {
+            "total": 2199.2,
+            "avoidable": 0.0,
+            "avoidable_share_pct": 0.0
+          }
+        }
+      },
+      "P1": {
+        "avoidable_s": 2.016,
+        "total_interruption_s": 10.78,
+        "session_reconnects": 1.0,
+        "classes": {
+          "control": {
+            "total": 846.8,
+            "avoidable": 0.0,
+            "avoidable_share_pct": 0.0
+          },
+          "telemetry": {
+            "total": 270.2,
+            "avoidable": 0.0,
+            "avoidable_share_pct": 0.0
+          },
+          "video_stall_ms": {
+            "total": 22376.0,
+            "avoidable": 16.0,
+            "avoidable_share_pct": 0.07
+          },
+          "voice": {
+            "total": 2190.8,
+            "avoidable": 0.0,
+            "avoidable_share_pct": 0.0
+          }
+        }
+      }
+    },
+    "fast-run": {
+      "P1-noPred": {
+        "avoidable_s": 2.912,
+        "total_interruption_s": 0.16,
+        "session_reconnects": 0.0,
+        "classes": {
+          "control": {
+            "total": 533.8,
+            "avoidable": 0.6,
+            "avoidable_share_pct": 0.11
+          },
+          "telemetry": {
+            "total": 136.6,
+            "avoidable": 0.0,
+            "avoidable_share_pct": 0.0
+          },
+          "video_stall_ms": {
+            "total": 9652.0,
+            "avoidable": 4.0,
+            "avoidable_share_pct": 0.04
+          },
+          "voice": {
+            "total": 1359.0,
+            "avoidable": 0.0,
+            "avoidable_share_pct": 0.0
+          }
+        }
+      },
+      "P1": {
+        "avoidable_s": 2.736,
+        "total_interruption_s": 0.16,
+        "session_reconnects": 0.0,
+        "classes": {
+          "control": {
+            "total": 542.4,
+            "avoidable": 0.2,
+            "avoidable_share_pct": 0.04
+          },
+          "telemetry": {
+            "total": 137.4,
+            "avoidable": 0.0,
+            "avoidable_share_pct": 0.0
+          },
+          "video_stall_ms": {
+            "total": 9388.0,
+            "avoidable": 32.0,
+            "avoidable_share_pct": 0.34
+          },
+          "voice": {
+            "total": 1358.2,
+            "avoidable": 0.0,
+            "avoidable_share_pct": 0.0
+          }
+        }
+      }
+    },
+    "reverse-run": {
+      "P1-noPred": {
+        "avoidable_s": 3.144,
+        "total_interruption_s": 4.5,
+        "session_reconnects": 1.0,
+        "classes": {
+          "control": {
+            "total": 660.6,
+            "avoidable": 0.8,
+            "avoidable_share_pct": 0.12
+          },
+          "telemetry": {
+            "total": 185.6,
+            "avoidable": 0.0,
+            "avoidable_share_pct": 0.0
+          },
+          "video_stall_ms": {
+            "total": 14556.0,
+            "avoidable": 0.0,
+            "avoidable_share_pct": 0.0
+          },
+          "voice": {
+            "total": 1635.8,
+            "avoidable": 0.0,
+            "avoidable_share_pct": 0.0
+          }
+        }
+      },
+      "P1": {
+        "avoidable_s": 2.808,
+        "total_interruption_s": 4.5,
+        "session_reconnects": 1.0,
+        "classes": {
+          "control": {
+            "total": 659.4,
+            "avoidable": 0.4,
+            "avoidable_share_pct": 0.06
+          },
+          "telemetry": {
+            "total": 185.6,
+            "avoidable": 0.0,
+            "avoidable_share_pct": 0.0
+          },
+          "video_stall_ms": {
+            "total": 14564.0,
+            "avoidable": 40.0,
+            "avoidable_share_pct": 0.27
+          },
+          "voice": {
+            "total": 1635.8,
+            "avoidable": 0.0,
+            "avoidable_share_pct": 0.0
+          }
+        }
+      }
+    },
+    "shadow-survey": {
+      "P1-noPred": {
+        "avoidable_s": 2.22,
+        "total_interruption_s": 4.66,
+        "session_reconnects": 1.0,
+        "classes": {
+          "control": {
+            "total": 833.2,
+            "avoidable": 0.6,
+            "avoidable_share_pct": 0.07
+          },
+          "telemetry": {
+            "total": 256.8,
+            "avoidable": 0.0,
+            "avoidable_share_pct": 0.0
+          },
+          "video_stall_ms": {
+            "total": 22808.0,
+            "avoidable": 28.0,
+            "avoidable_share_pct": 0.12
+          },
+          "voice": {
+            "total": 2115.6,
+            "avoidable": 0.0,
+            "avoidable_share_pct": 0.0
+          }
+        }
+      },
+      "P1": {
+        "avoidable_s": 2.22,
+        "total_interruption_s": 4.66,
+        "session_reconnects": 1.0,
+        "classes": {
+          "control": {
+            "total": 831.4,
+            "avoidable": 0.2,
+            "avoidable_share_pct": 0.02
+          },
+          "telemetry": {
+            "total": 259.6,
+            "avoidable": 0.0,
+            "avoidable_share_pct": 0.0
+          },
+          "video_stall_ms": {
+            "total": 22128.0,
+            "avoidable": 16.0,
+            "avoidable_share_pct": 0.07
+          },
+          "voice": {
+            "total": 2147.2,
+            "avoidable": 0.0,
+            "avoidable_share_pct": 0.0
+          }
+        }
+      }
+    }
+  }
+}

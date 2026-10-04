@@ -141,6 +141,8 @@ def compute_metrics(sim: "Simulation") -> dict:
             "longest_interruption_s": longest,
             "outage_s": round(sim.outage_s, 3),
             "safe_stop_entered": bool(sim.safe_stop or any(d >= 3.0 for d in interruptions)),
+            # Phase 5: the same fact as a number, so it can be averaged over trials.
+            "safe_stop_runs": int(bool(sim.safe_stop or any(d >= 3.0 for d in interruptions))),
         },
         "application": per_class,
         "app_health_score": (sim._app_health().health_score),
@@ -164,6 +166,8 @@ def compute_metrics(sim: "Simulation") -> dict:
             "duplication_windows": sim.controller.duplication_windows,
             "control_timeouts": plant.control_timeouts,
             "control_retransmits": plant.control_retransmits,
+            # Phase 5: paths prepared ahead of a gap the radio map showed.
+            "route_prearms": getattr(sim.controller, "route_prearms", 0),
         },
         "prediction": prediction,
         "control_mode": control_mode,
@@ -322,6 +326,9 @@ def aggregate(runs: list[dict]) -> dict:
         "late_mode_changes": ["control_mode", "late_mode_changes"],
         "class_steers": ["steering", "class_steers"],
         "control_off_primary_s": ["steering", "control_off_primary_s"],
+        # Phase 5
+        "safe_stop_runs": ["continuity", "safe_stop_runs"],
+        "route_prearms": ["control_plane", "route_prearms"],
     }
 
     out: dict[str, dict] = {}

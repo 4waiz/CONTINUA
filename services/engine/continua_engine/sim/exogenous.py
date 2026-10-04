@@ -100,6 +100,27 @@ def _fault_multiplier(spec: dict, t: float) -> float:
     return 1.0 - severity * progress
 
 
+def _shadow_multiplier(spec: dict, along_m: float) -> float:
+    """A fault anchored to the route, not to the clock: terrain that shadows a
+    link over a stretch of road. Full strength between `from_m` and `to_m`
+    (route coordinates from the forward start), easing in and out over
+    `ramp_m` either side - the same place on every run, at any speed, in
+    either direction."""
+    start = float(spec["from_m"])
+    end = float(spec["to_m"])
+    ramp = max(float(spec.get("ramp_m", 0.0)), 1e-6)
+    severity = float(spec.get("severity", 1.0))
+    if along_m <= start - ramp or along_m >= end + ramp:
+        return 1.0
+    if along_m < start:
+        weight = (along_m - (start - ramp)) / ramp
+    elif along_m > end:
+        weight = ((end + ramp) - along_m) / ramp
+    else:
+        weight = 1.0
+    return 1.0 - severity * weight
+
+
 def _background_load(spec: dict, t: float) -> float:
     start = float(spec["start_s"])
     ramp = max(float(spec.get("ramp_s", 0.0)), 1e-6)
@@ -140,6 +161,8 @@ def build_trace(
 
     # --- vehicle motion -----------------------------------------------------
     distance = np.zeros(steps)
+    #: Route coordinate from the forward start, where route-anchored faults live.
+    along = np.zeros(steps)
     speed = np.zeros(steps)
     pos_x = np.zeros(steps)
     pos_z = np.zeros(steps)
@@ -149,6 +172,7 @@ def build_trace(
         t = i * dt
         sample, v = motion.sample_at(t)
         distance[i] = motion.distance_at(t)
+        along[i] = route.length - distance[i] if motion.reverse else distance[i]
         speed[i] = v
         pos_x[i] = sample.x
         pos_z[i] = sample.z
@@ -170,6 +194,10 @@ def build_trace(
         q = geometric[link].copy() if link in links else np.zeros(steps)
         for fault in scenario.get("faults", []):
             if LinkId(fault["link"]) is not link:
+                continue
+            if fault.get("kind") == "shadow":
+                for i in range(steps):
+                    q[i] *= _shadow_multiplier(fault, float(along[i]))
                 continue
             for i in range(steps):
                 q[i] *= _fault_multiplier(fault, i * dt)

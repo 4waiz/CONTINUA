@@ -134,6 +134,8 @@ class PolicyId(str, Enum):
     P2_NO_STEER = "P2-noSteer"
     P2_NO_MODE = "P2-noMode"
     P2_REACTIVE_MODE = "P2-reactiveMode"
+    # Phase 5
+    P3_ROUTE = "P3"
 
 
 # ---------------------------------------------------------------------------

@@ -39,6 +39,9 @@ SEED_BLOCKS = {
     #: after test2 had been used, so the corrected ablation was compared on a
     #: fresh block rather than by re-using test2.
     "test3": 130_000,
+    #: Phase 5: the route-aware comparison (scripts/phase5_experiment.py), run
+    #: once on a block no earlier phase touched.
+    "test4": 160_000,
 }
 
 #: The Phase 2 comparison set, kept so earlier results stay reproducible.
@@ -187,6 +190,8 @@ def run_comparison(
         "paired_deltas": _paired_deltas(per_policy, PolicyId.P1_CONTINUA),
         #: Phase 4: the same pairing with P2 as the treatment.
         "paired_deltas_p2": _paired_deltas(per_policy, PolicyId.P2_CONTINUA),
+        #: Phase 5: and with P3, the route-aware policy, as the treatment.
+        "paired_deltas_p3": _paired_deltas(per_policy, PolicyId.P3_ROUTE),
         "raw": per_policy,
     }
 
@@ -225,6 +230,9 @@ PAIRED_METRICS: list[tuple[list[str], str]] = [
     (["application", "voice", "deadline_miss_pct"], "voice_deadline_miss_pct"),
     (["application", "telemetry", "deadline_miss_pct"], "telemetry_deadline_miss_pct"),
     (["application", "bulk", "completion_pct"], "bulk_completion_pct"),
+    # Phase 5
+    (["continuity", "safe_stop_runs"], "safe_stop_runs"),
+    (["control_plane", "route_prearms"], "route_prearms"),
 ]
 
 

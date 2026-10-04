@@ -289,7 +289,7 @@ def test_seed_blocks_are_disjoint():
     for index, left in enumerate(names):
         for right in names[index + 1:]:
             assert not (blocks[left] & blocks[right]), f"{left} and {right} overlap"
-    assert set(SEED_BLOCKS) == {"train", "tune", "test", "test2", "test3"}
+    assert set(SEED_BLOCKS) == {"train", "tune", "test", "test2", "test3", "test4"}
 
 
 def test_aggregate_reports_uncertainty():
