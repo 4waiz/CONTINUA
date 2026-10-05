@@ -24,13 +24,11 @@ const PROOF_ORDER: readonly PolicyIdString[] = ['P3', 'P1', 'B0', 'B2', 'B2-defe
 export function StoryLanding({
   onWatch,
   onDrive,
-  canWatch,
   busy,
 }: {
+  /** Opens the story film, which plays whether or not the runs can be reached. */
   onWatch: () => void;
   onDrive: () => void;
-  /** The story's two runs can be started (the engine is up, or they were recorded). */
-  canWatch: boolean;
   busy: boolean;
 }) {
   return (
@@ -45,7 +43,7 @@ export function StoryLanding({
         switches network after the one it is on has failed.
       </p>
       <div className="mt-4 flex flex-wrap items-center gap-2.5">
-        <button type="button" className="control control-primary h-[42px] px-5 text-[14.5px]" onClick={onWatch} disabled={!canWatch || busy}>
+        <button type="button" className="control control-primary h-[42px] px-5 text-[14.5px]" onClick={onWatch} disabled={busy}>
           <PlayIcon size={15} /> Watch the story · 1 min
         </button>
         <button type="button" className="control h-[42px] px-5 text-[14.5px]" onClick={onDrive}>

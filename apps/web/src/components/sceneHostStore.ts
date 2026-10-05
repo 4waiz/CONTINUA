@@ -28,9 +28,11 @@ export interface SceneHostSnapshot {
   readonly last: SceneRuntime | null;
   /** The shared canvas has drawn its first frames. */
   readonly drawn: boolean;
+  /** Something is playing over the scene (the story film): hold it on its last frame. */
+  readonly held: boolean;
 }
 
-const EMPTY: SceneHostSnapshot = { active: null, last: null, drawn: false };
+const EMPTY: SceneHostSnapshot = { active: null, last: null, drawn: false, held: false };
 
 let snapshot: SceneHostSnapshot = EMPTY;
 let slotOwner: HTMLElement | null = null;
@@ -91,4 +93,24 @@ export function showSceneRuntime(slot: HTMLElement, runtime: SceneRuntime): void
 
 export function markSceneDrawn(): void {
   if (!snapshot.drawn) publish({ drawn: true });
+}
+
+let holds = 0;
+
+/**
+ * Freeze the shared canvas on its last frame while something plays over it -
+ * the story film - so the world does not drive on behind the picture, and the
+ * GPU is free for the video. Returns the release; the scene carries on from
+ * where it stopped.
+ */
+export function holdScene(): () => void {
+  holds += 1;
+  if (holds === 1) publish({ held: true });
+  let released = false;
+  return () => {
+    if (released) return;
+    released = true;
+    holds -= 1;
+    if (holds === 0) publish({ held: false });
+  };
 }

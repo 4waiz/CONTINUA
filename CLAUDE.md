@@ -108,6 +108,8 @@ packages/contracts/  Shared types (TypeScript + Python) and world.json
 scripts/blender/     Reproducible Blender generation + export
 scripts/emulation/   Linux namespace / netem topology scripts (setup, verify, cleanup)
 scripts/             checkpoint.py, run-blender.mjs, engine_cli.py
+edge/                Cloudflare Worker: byte ranges for /video/* (the rest is static assets)
+brag-output/         The story film: plan, claim ledger, composition, capture and audio scripts
 assets/              .blend sources, reference imagery, renders, browser evidence
 data/                Experiment results and capability report (run logs git-ignored)
 docs/                Ten documents

@@ -781,6 +781,72 @@ button:focus-visible {
   font-variant-numeric: tabular-nums;
 }
 
+/* The story film: a dialog over the scene, sized to fit the viewport. */
+.story-film-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+}
+
+.story-film-scrim {
+  position: absolute;
+  inset: 0;
+  background: rgb(17 29 58 / 0.5);
+  backdrop-filter: blur(6px);
+}
+
+.story-film {
+  position: relative;
+  width: min(1280px, 100%, calc((100dvh - 128px) * 16 / 9));
+  padding: 12px;
+  border-radius: var(--radius-hero);
+}
+
+.story-film-frame {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 16 / 9;
+  border-radius: 14px;
+  background: var(--color-ink);
+}
+
+.story-film-frame video {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* Under the film's closing card (wordmark, tagline, address), not over it. */
+.story-film-end {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: end center;
+  padding-bottom: 15%;
+  background: rgb(246 249 255 / 0.35);
+}
+
+.story-film-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 0 2px 0 6px;
+}
+
+.story-film-bar p {
+  flex: 1;
+  min-width: 220px;
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: var(--color-muted);
+}
+
 .story-landing-kicker {
   font-size: 11px;
   font-weight: 700;

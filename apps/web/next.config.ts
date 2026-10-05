@@ -28,6 +28,11 @@ const nextConfig: NextConfig = {
   ...(isStaticExport
     ? {
         output: 'export' as const,
+        // A static export has no engine behind it, so it is the public
+        // preview unless a build explicitly says otherwise. Without this a
+        // build missing the second flag shipped a site that looked for an
+        // engine on 127.0.0.1 and disabled the story.
+        env: { NEXT_PUBLIC_PUBLIC_PREVIEW: process.env.NEXT_PUBLIC_PUBLIC_PREVIEW ?? '1' },
         // Static hosting serves `/path/index.html`, so emit directories.
         trailingSlash: true,
         // There is no image optimiser without a server.

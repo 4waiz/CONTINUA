@@ -333,8 +333,14 @@ test.describe('failure handling', () => {
     // placeholder's accessible name - the dashboard does not repeat the same
     // sentence down a column of four cards.
     await expect(page.getByText('SCENE PREVIEW')).toBeVisible();
-    // The story needs the engine's runs; driving shows the panels, waiting.
-    await expect(page.getByRole('button', { name: /Watch the story/ })).toBeDisabled();
+    // The story film is a file and plays without the engine; replaying the
+    // story in 3D needs the engine's runs. Driving shows the panels, waiting.
+    await page.getByRole('button', { name: /Watch the story/ }).click();
+    const film = page.getByRole('dialog', { name: /one-minute film/ });
+    await expect(film).toBeVisible();
+    await expect(film.getByRole('button', { name: 'Replay it in 3D' })).toBeDisabled();
+    await page.keyboard.press('Escape');
+    await expect(film).toHaveCount(0);
     await openDrive(page);
     await expect(page.getByText('Waiting for a run').first()).toBeVisible();
     // Every measurement surface on screen. With no run only the links panel

@@ -1471,3 +1471,37 @@ collector's view (`gc.freeze`).
 
 **Checks.** lint, typecheck, build; test:engine 161 passed; test:phase2 11/11;
 test:smoke 11 passed / 10 skipped (behaviour and evidence run at 1920 only).
+
+## The story film, and a broken public build
+
+**The public site was looking for an engine.** A redeploy built the static
+export with `CONTINUA_STATIC=1` but without `NEXT_PUBLIC_PUBLIC_PREVIEW=1`, so
+continua.kanbanstudios.ae shipped the local-engine build: "CONTINUA engine
+offline", a request to 127.0.0.1:8000 and a disabled "Watch the story". Fixed
+twice over: a static export now implies public preview (`next.config.ts`), and
+`npm run deploy` (`scripts/deploy-public.mjs`) builds, refuses an export that
+still carries the local-engine badge or is missing a recording, and only then
+publishes - to the account pinned in `wrangler.jsonc`. It also writes the
+dotted names Next 16's export forgets for segment prefetches, which had made
+every client-side navigation log a 404.
+
+**Watch the story is a film now.** One minute, made with /brag: the public
+build replaying `run-2172746704` (P3) and `run-0cc2022cf4` (B0) on the shadowed
+route, captured frame by frame - the page on Playwright's fake clock, its
+animation frames run once per film frame, so the rover moves at a steady 1.02x
+(the app's own playout steering) and the cutting at the story's labelled 0.5x.
+Captions are the app's, read off the frames; the proof is the app's card from
+`phase5-test4-shadow-survey`, zoomed from a 2x capture. Narration is Kokoro
+(af_heart) through `hyperframes tts`, local; every line fits its shot and every
+figure it speaks is in the ledger (`brag-output/brag-plan.md`). The film plays
+in a dialog over the scene, which holds on its last frame while it plays
+(`holdScene`); "Replay it in 3D" runs the original story. `?story` opens the
+film.
+
+**Byte ranges.** The asset store answers `Range` with the whole file, and
+Safari will not play an MP4 without 206 responses. `edge/worker.js` runs first
+for `/video/*` only and slices the asset (`run_worker_first`).
+
+**Checks.** lint, typecheck, build; test:engine 161 passed; test:phase2 11/11
+(the offline test now opens the film and finds "Replay it in 3D" disabled);
+test:smoke 11 passed / 10 skipped (1920-only by design).

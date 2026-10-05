@@ -4,20 +4,51 @@
     {
       "name": "engine",
       "runtimeExecutable": "python",
-      "runtimeArgs": ["-m", "uvicorn", "continua_engine.api.app:app", "--host", "127.0.0.1", "--port", "8000", "--app-dir", "services/engine"],
+      "runtimeArgs": [
+        "-m",
+        "uvicorn",
+        "continua_engine.api.app:app",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "8000",
+        "--app-dir",
+        "services/engine"
+      ],
       "port": 8000
     },
     {
       "name": "web",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
       "port": 3000
     },
     {
       "name": "static-export",
       "runtimeExecutable": "python",
-      "runtimeArgs": ["-m", "http.server", "4321", "--directory", "apps/web/out"],
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "4321",
+        "--directory",
+        "apps/web/out"
+      ],
       "port": 4321
+    },
+    {
+      "name": "edge",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "wrangler",
+        "dev",
+        "--port",
+        "8788",
+        "--local"
+      ],
+      "port": 8788
     }
   ]
 }

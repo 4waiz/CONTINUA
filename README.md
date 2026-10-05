@@ -151,8 +151,15 @@ workload overrides are hidden there, and the page says so.
 | --- | --- |
 | `python scripts/build_demo_data.py` | Run the matrix through the engine and export it to `apps/web/public/demo/` (~3 min, 40 runs, 43 MB, about 4 MB on the wire) |
 | `node scripts/build-brand-logo.mjs` | Un-matte `logo.png` to a transparent wordmark |
-| `CONTINUA_STATIC=1 NEXT_PUBLIC_PUBLIC_PREVIEW=1 npm run build` | Static export into `apps/web/out/` |
-| `npx wrangler deploy` | Publish to Cloudflare |
+| `npm run deploy` | Static export into `apps/web/out/` in public-preview mode, checked, then published to Cloudflare (`-- --dry` stops before publishing) |
+
+The landing's "Watch the story · 1 min" plays a one-minute film
+(`apps/web/public/video/story.mp4`): the app itself replaying the two story
+runs, captured frame by frame, with narration and captions. Its storyboard and
+claim ledger are in `brag-output/brag-plan.md`; the capture, edit, music and
+voice scripts are in `brag-output/work/`. The asset store does not answer byte
+ranges, which Safari needs to play video at all, so `edge/worker.js` serves
+`/video/*` with 206 responses; everything else is plain static assets.
 
 Run files are columnar: one array per field path rather than one object per
 event, which is the same data at a third of the size. `decodeRun` in
