@@ -207,7 +207,7 @@ both lost ahead, brings up a third in time. On a shadowed route where P1 loses
 the session for 4.5 s at a cutting in **every one of 20 trials** (reconnect,
 safe stop), **P3 never does**, at the same cost as P1 or less and about
 0.3 MB more satellite traffic; against always-on redundancy, the same
-continuity for about a quarter of the cost. It is **not cheaper than
+continuity for a third of the cost or less. It is **not cheaper than
 B2-defer**, and an out-of-date map costs 0.40 units for nothing. Everywhere
 else P3 is P1, trial for trial. `docs/PHASE_5_RESULTS.md`.
 

@@ -350,11 +350,11 @@ gap is cheaper than re-establishing a lost session. It carries 0.31-0.35 MB more
 per run, from the path it activates early. One gap was prepared for per run (1.65 on
 `shadow-fast`, where at speed the corridor shadow also arrives while a fading Wi-Fi is the backup).
 
-**4. Against always-on redundancy, the same continuity for about a quarter of the cost.** B2 keeps
-the session through the cutting too. Against it P3 saves 3.35-3.44 cost units and 55-68 MB of
-satellite traffic per run, and stalls video 3.7-7.0 s less; B2 misses fewer control deadlines on
-`shadow-degradation` (+0.78 points against P3) and `shadow-fast` (+2.95), because it duplicates
-control on every path all the time.
+**4. Against always-on redundancy, the same continuity for a third of the cost or less.** B2 keeps
+the session through the cutting too. Against it P3 saves 3.35-3.44 cost units - P3 costs 17-32 % of
+what B2 does - and 55-68 MB of satellite traffic per run, and stalls video 3.7-7.0 s less; B2 misses
+fewer control deadlines on `shadow-degradation` (+0.78 points against P3) and `shadow-fast` (+2.95),
+because it duplicates control on every path all the time.
 
 **5. Against B2-defer, P3 is not cheaper.** B2-defer - every path active, bulk paused by the
 app-aware rule - also keeps the session through the cutting. Against it P3 uses about half the
