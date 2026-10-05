@@ -28,7 +28,7 @@ Design rules (see CLAUDE.md "Checkpoint policy"):
 
 Usage
 -----
-    python scripts/checkpoint.py start [--interval 300] [--branch continua/build]
+    python scripts/checkpoint.py start [--interval 300] [--branch main]
     python scripts/checkpoint.py once  [--message "..."]
     python scripts/checkpoint.py status
     python scripts/checkpoint.py stop
@@ -66,8 +66,8 @@ GIT_LOCK = STATE_DIR / "git.lock"
 PAUSE_FILE = STATE_DIR / "paused"
 
 DEFAULT_INTERVAL = 300
-DEFAULT_BRANCH = "continua/build"
-PROTECTED_BRANCHES = {"main", "master"}
+DEFAULT_BRANCH = "main"
+PROTECTED_BRANCHES = {"master"}
 
 # Bounded backoff for transient network trouble.
 PUSH_RETRIES = 4
