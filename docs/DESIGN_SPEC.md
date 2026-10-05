@@ -138,18 +138,33 @@ One screen, no page scroll, at 1920×1080, 1440×900, 1366×768 and 1280×720.
 * **Landing.** No panels: the island under the director's cut, and one card -
   what this is in three sentences, **Watch the story** and **Drive it
   yourself**. With the engine offline it stays, the story disabled.
-* **Story.** A guided minute (`mission/story.tsx`). Top centre: two status
-  cards, one per rover - "Connected / Connection lost", what carries it, how
-  long it has been offline in all - the question the demonstration is about.
-  Left: what CONTINUA decided, in sentences. Right: what each operator sees.
-  Bottom: the caption (a 20 px headline, the chapter, where its numbers came
-  from) over the story's bar - six chapters, the playback rate always shown
-  ("0.40× slow motion"), Pause, Next chapter, leave - and the road strip.
+* **Story.** A guided minute (`mission/story.tsx`), with as little on the
+  picture as it can take. Top centre: two status cards, one per rover -
+  "Connected / Connection lost" and the network carrying it - the question the
+  demonstration is about. Right: what each operator sees, CONTINUA on the left
+  half as in the cards. Bottom: one bar - five chapters as a progress line,
+  one caption of one or two short sentences, Pause, Next, leave. The run plays
+  in real time but for the cutting, which plays at half speed under a
+  "Slow motion · ½×" label. An earlier cut - six chapters, a two-line caption
+  card over a bar carrying the road strip, a decision feed down the left, and
+  a rate that slowed for each caption and hurried up to 6× between them - hid
+  the rover on a laptop screen and made it surge for no visible reason.
 * **Drive.** The dock (scenario, strategy, the normal rover beside it, Start
-  run), the road strip, the transport and a timeline with **key moments** -
-  each change of network and the road map's warning, buttons that jump the run.
-  Plain words by default; **Details** brings back the access-link figures, the
-  application-health card, the control-mode chips and the pipeline.
+  run), the road strip where it has something to show (a scenario with a
+  cutting, or the road-map strategy), the transport and a timeline with **key
+  moments** - each change of network and the road map's warning, buttons that
+  jump the run. Plain words by default; **Details** brings back the
+  access-link figures, the application-health card, the control-mode chips,
+  the pipeline, the timeline's colour key and each rover's total time offline.
+* **The picture clears the panels.** The page measures how much of the stage
+  its top cards and its dock cover and hands that to the scene, whose cameras
+  shift the lens (`setViewOffset`) so what they frame sits in the middle of
+  what is left - the same shot, not a different one. The follow and approach
+  rigs aim a few metres ahead of the rover rather than far up the road, so it
+  stands in the clear band at 1280 x 720 as at 1920 x 1080.
+* **A paused video is not a lost link.** In the operator views a stream that
+  has stalled while its link holds is amber, "VIDEO PAUSED"; a rover with no
+  link is red, "LINK LOST" ("STALLED · n ms" and "SESSION DOWN" in Details).
 
 ### Plain words
 
@@ -164,9 +179,10 @@ is in each line's tooltip and in the Decision log.
 
 The route as one strip: where the radio map the policy uses expects Wi-Fi,
 cellular and satellite (`GET /api/radio-maps/{id}`, available where under half
-of survey samples were unusable), the scenario's cuttings hatched, the zones
-beneath, the rover, and - for the route-aware policy - its 8 s look-ahead,
-violet with "Gap ahead: getting satellite ready" while it is preparing.
+of survey samples were unusable), the scenario's cuttings hatched, the rover,
+and - for the route-aware policy - its 8 s look-ahead, violet with "Gap ahead:
+getting satellite ready" while it is preparing. The zones are named on the
+route card, not again beneath the strip.
 
 ## 5. Scene art direction
 

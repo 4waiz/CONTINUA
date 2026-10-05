@@ -391,10 +391,19 @@ def summarise(files: Sequence[str]) -> str:
 def stage_ready(paths: Sequence[str]) -> list[str]:
     """Stage only ready paths. Returns the staged path list."""
     usable = [p for p in paths if not is_excluded(p)]
+    # Missing paths are dropped so a removed file cannot wedge the supervisor:
+    # one pathspec git cannot match - a deletion already committed - fails the
+    # whole `git add`, which then staged nothing and committed only whatever
+    # happened to be staged already. A path git still tracks stays: its
+    # removal is a change to stage.
+    usable = [
+        p
+        for p in usable
+        if (REPO_ROOT / p).exists() or git("ls-files", "--error-unmatch", "--", p).returncode == 0
+    ]
     if not usable:
         return []
-    # `--` guards against a path that looks like a flag. Missing paths are
-    # tolerated so a removed file cannot wedge the supervisor.
+    # `--` guards against a path that looks like a flag.
     add = git("add", "--all", "--", *usable)
     if add.returncode != 0:
         log("WARN", f"git add reported: {add.stderr.strip()}")

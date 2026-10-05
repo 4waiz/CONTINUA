@@ -40,10 +40,15 @@ function travelHeading(distance: number, dir: number, window: number, lag = 0): 
   return dir < 0 ? heading + Math.PI : heading;
 }
 
+/**
+ * Behind and above, aimed a few metres ahead of the rover. Aimed 16 m up the
+ * road, as it was, the rover sat low in the frame - under the dock, on a
+ * laptop screen. The road ahead still fills the upper half.
+ */
 function followShot(distance: number, dir: number, out: Shot): Shot {
   const back = 14.5;
-  const height = 5.2;
-  const lead = 16;
+  const height = 5.6;
+  const lead = 5;
 
   const heading = travelHeading(distance, dir, 30, 4);
   const cos = Math.cos(heading);
@@ -53,7 +58,7 @@ function followShot(distance: number, dir: number, out: Shot): Shot {
 
   out.position.set(anchor.x - cos * back, anchorY + height, anchor.z + sin * back);
   const ahead = route.at(distance + lead * dir);
-  out.target.set(ahead.x, roadSurfaceY(distance + lead * dir) + 1.4, ahead.z);
+  out.target.set(ahead.x, roadSurfaceY(distance + lead * dir) + 1.1, ahead.z);
   out.fov = 42;
   return out;
 }
@@ -259,10 +264,13 @@ const STORY_SHOTS: Record<StoryShotId, (d: number, dir: number, t: number, out: 
     out.fov = 40;
     return out;
   },
-  // High behind and to one side, looking a long way up the road: what is coming.
+  // High behind and to one side, looking up the road: what is coming. Aimed
+  // 18 m ahead, the rover sits about half-way down the lower half of the
+  // frame with the road and the cutting beyond it; aimed 46 m ahead it sat at
+  // the frame's foot, under the story's bar.
   crane: (d, dir, _t, out) => {
-    aroundRover(d, dir, -22, -15, 17, out.position);
-    aroundRover(d, dir, 46, 0, 0.5, out.target);
+    aroundRover(d, dir, -20, -12, 15, out.position);
+    aroundRover(d, dir, 18, 0, 0, out.target);
     out.fov = 46;
     return out;
   },
@@ -323,9 +331,22 @@ function turntableShot(time: number, out: Shot): Shot {
   return out;
 }
 
-export function SceneCameras({ mode, story }: { mode: CameraMode; story?: StoryShot }) {
+/** Degrees to radians and back. */
+const DEG = Math.PI / 180;
+
+export function SceneCameras({
+  mode,
+  story,
+  inset,
+}: {
+  mode: CameraMode;
+  story?: StoryShot;
+  /** The page's panels over the canvas, top and bottom, in CSS pixels. */
+  inset?: { top: number; bottom: number };
+}) {
   const { clock, frame } = useSceneRuntime();
   const camera = useThree((state) => state.camera) as PerspectiveCamera;
+  const size = useThree((state) => state.size);
   const shot = useMemo<Shot>(
     () => ({ position: new Vector3(), target: new Vector3(), fov: 40 }),
     [],
@@ -368,9 +389,23 @@ export function SceneCameras({ mode, story }: { mode: CameraMode; story?: StoryS
     camera.position.copy(shot.position);
     lookTarget.current.copy(shot.target);
     camera.lookAt(lookTarget.current);
-    if (camera.fov !== shot.fov) {
+
+    // A lens shift, not a different shot: with panels over part of the
+    // canvas, the picture is moved so the framed subject sits in the middle of
+    // the part that shows. The full frustum is the visible one plus the shift,
+    // widened so the visible part keeps the shot's own field of view.
+    const width = size.width;
+    const height = size.height;
+    const shift = inset ? (inset.bottom - inset.top) / 2 : 0;
+    if (Math.abs(shift) >= 1 && width > 0 && height > 0) {
+      const fullHeight = height + 2 * Math.abs(shift);
+      camera.setViewOffset(width, fullHeight, 0, shift > 0 ? 2 * Math.abs(shift) : 0, width, height);
+      camera.aspect = width / fullHeight;
+      camera.fov = (2 * Math.atan(Math.tan((shot.fov * DEG) / 2) * (fullHeight / height))) / DEG;
+    } else {
+      if (camera.view?.enabled) camera.clearViewOffset();
+      if (height > 0) camera.aspect = width / height;
       camera.fov = shot.fov;
-      camera.updateProjectionMatrix();
     }
     camera.near = clamp(shot.position.distanceTo(shot.target) * 0.01, 0.1, 2);
     camera.far = 2600;

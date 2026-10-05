@@ -15,6 +15,7 @@ import type { PolicyIdString } from '@continua/contracts/engine';
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { PlayIcon, ReplayIcon } from '../ui/icons';
+import { CHAPTERS } from './story';
 
 /** The pre-registered comparison on the shadowed route (docs/PHASE_5_RESULTS.md). */
 export const PROOF_EXPERIMENT = 'phase5-test4-shadow-survey';
@@ -87,12 +88,14 @@ export function StoryProof({ onReplay, onDrive }: { onReplay: () => void; onDriv
 
   return (
     <section className="story-proof glass enter" aria-label="The proof">
-      <div className="story-landing-kicker">Chapter 6 · The proof</div>
+      <div className="story-landing-kicker">
+        Chapter {CHAPTERS.length} · {CHAPTERS[CHAPTERS.length - 1]}
+      </div>
       <h2 className="story-proof-title">The same road, driven {trials} times by every strategy</h2>
       <p className="story-proof-body">
-        Same road, same signal, same random draws for every strategy - only the strategy changes. Each rover below is one
-        drive: <span className="font-semibold text-[color:var(--color-good)]">green</span> if the operator never lost the
-        link, <span className="font-semibold text-[color:var(--color-bad)]">red</span> if they did.
+        Same signal every time; only the strategy changes. Each rover is one drive:{' '}
+        <span className="font-semibold text-[color:var(--color-good)]">green</span> if the operator never lost the link,{' '}
+        <span className="font-semibold text-[color:var(--color-bad)]">red</span> if they did.
       </p>
       {rows.length > 0 ? (
         <AtAGlance rows={rows} highlight="P3" />
@@ -109,14 +112,10 @@ export function StoryProof({ onReplay, onDrive }: { onReplay: () => void; onDriv
             </strong>
             ; without it, in {kept(noMap)} of {trials}.
           </li>
-          {always && ratio !== null && (
-            <li>
-              Keeping every network on all the time also kept it - at about {ratio.toFixed(1)}× the cost.
-            </li>
-          )}
           <li>
-            Honest about the rest: every network on with big uploads held back kept it too, for less cost. A road map
-            that is out of date costs extra and saves nothing.
+            {always && ratio !== null ? `Every network on, all the time, kept it too - at about ${ratio.toFixed(1)}× the cost. ` : ''}
+            With big uploads held back it kept it for less than CONTINUA; an out-of-date road map costs extra and saves
+            nothing.
           </li>
         </ul>
       )}

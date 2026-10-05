@@ -171,6 +171,15 @@ function DeadZoneSync({ zones }: { zones: readonly DeadZone[] }) {
   return null;
 }
 
+/** Pushes how much of the canvas the page's panels cover into the scene's cameras. */
+function InsetSync({ top, bottom }: { top: number; bottom: number }) {
+  const setSettings = useSetSceneSettings();
+  useEffect(() => {
+    setSettings({ viewInset: { top, bottom } });
+  }, [top, bottom, setSettings]);
+  return null;
+}
+
 /** Pushes the story's framing into the scene; the camera eases into it from the last. */
 function StoryShotSync({ shot }: { shot: StoryShot | null }) {
   const setSettings = useSetSceneSettings();
@@ -201,6 +210,7 @@ export function MissionScene({
   inline = false,
   deadZones = NO_DEAD_ZONES,
   storyShot = null,
+  inset,
 }: {
   source: EngineSceneStateSource;
   t: number;
@@ -221,6 +231,11 @@ export function MissionScene({
   deadZones?: readonly DeadZone[];
   /** The story mode's framing, used with `camera` 'story'. */
   storyShot?: StoryShot | null;
+  /**
+   * How much of the canvas the page's own panels cover, top and bottom, in CSS
+   * pixels: the cameras centre what they frame in the part that shows.
+   */
+  inset?: { top: number; bottom: number };
 }) {
   // The device's known ceiling from the first frame: a software rasteriser
   // starts on the low tier instead of compiling the high one and switching.
@@ -236,6 +251,7 @@ export function MissionScene({
       <CameraSync camera={camera} />
       <DeadZoneSync zones={deadZones} />
       <StoryShotSync shot={storyShot} />
+      <InsetSync top={inset?.top ?? 0} bottom={inset?.bottom ?? 0} />
       <SceneStage className={className} onReady={onSceneReady} adaptive={adaptive} inline={inline} />
     </SceneRuntimeProvider>
   );

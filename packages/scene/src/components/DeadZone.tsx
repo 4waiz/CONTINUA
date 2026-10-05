@@ -24,6 +24,7 @@ import { useLayoutEffect, useMemo, useRef } from 'react';
 import {
   BufferGeometry,
   Color,
+  DoubleSide,
   Float32BufferAttribute,
   InstancedBufferAttribute,
   Matrix4,
@@ -319,31 +320,47 @@ export function DeadZoneWalls({ zones, lite = false }: { zones: readonly DeadZon
   useFrame(() => {
     time.value = clock.time;
   });
-  const bankMaterial = useMemo(
-    () =>
-      terrainMaterial(
-        {
-          campus: SCENE_COLOR.campus,
-          grass: SCENE_COLOR.grass,
-          grassLush: SCENE_COLOR.grassLush,
-          grassDry: SCENE_COLOR.grassDry,
-          heath: SCENE_COLOR.heath,
-          beach: SCENE_COLOR.beach,
-          rock: SCENE_COLOR.rockTint,
-          flowers: [SCENE_COLOR.flowerA, SCENE_COLOR.flowerB, SCENE_COLOR.flowerC, SCENE_COLOR.flowerD],
-          seaLevel: SEA_LEVEL,
-          campusRect: [CAMPUS.minX, CAMPUS.maxX, CAMPUS.minZ, CAMPUS.maxZ],
-          time,
-        },
-        lite,
-      ),
-    [lite, time],
-  );
+  const bankMaterial = useMemo(() => {
+    const material = terrainMaterial(
+      {
+        campus: SCENE_COLOR.campus,
+        grass: SCENE_COLOR.grass,
+        grassLush: SCENE_COLOR.grassLush,
+        grassDry: SCENE_COLOR.grassDry,
+        heath: SCENE_COLOR.heath,
+        beach: SCENE_COLOR.beach,
+        rock: SCENE_COLOR.rockTint,
+        flowers: [SCENE_COLOR.flowerA, SCENE_COLOR.flowerB, SCENE_COLOR.flowerC, SCENE_COLOR.flowerD],
+        seaLevel: SEA_LEVEL,
+        campusRect: [CAMPUS.minX, CAMPUS.maxX, CAMPUS.minZ, CAMPUS.maxZ],
+        time,
+      },
+      lite,
+    );
+    // The banks arrive with a shadowed scenario, after the load-time warm-up,
+    // and their back-face shadow program was the last one the story still
+    // compiled mid-run (measured): a tenth of a second, the moment they first
+    // came into the sun's shadow frustum. Cast from both faces - an open slope
+    // either way - they share a program the scene already has.
+    material.shadowSide = DoubleSide;
+    return material;
+  }, [lite, time]);
   const mesh = useRef<InstancedMesh>(null);
 
   useLayoutEffect(() => {
     const instanced = mesh.current;
     if (!instanced) return;
+    if (panels.length === 0) {
+      // No cutting in this scenario: one panel of zero size, so the walls'
+      // programs - colour, shadow depth, the AO pass's normals - are compiled
+      // with the rest of the scene at load. Compiled the moment a shadowed
+      // scenario first stood them, they stalled the frame for a quarter of a
+      // second, and again for the shadow pass two seconds later.
+      instanced.setMatrixAt(0, _matrix.makeScale(0, 0, 0));
+      geometry.setAttribute('aPanel', new InstancedBufferAttribute(new Float32Array(2), 2));
+      instanced.instanceMatrix.needsUpdate = true;
+      return;
+    }
     const seeds = new Float32Array(panels.length * 2);
     panels.forEach((panel, index) => {
       const sample = route.at(panel.distance);
@@ -372,17 +389,17 @@ export function DeadZoneWalls({ zones, lite = false }: { zones: readonly DeadZon
   useLayoutEffect(() => () => banks?.dispose(), [banks]);
   useLayoutEffect(() => () => bankMaterial.dispose(), [bankMaterial]);
 
-  if (panels.length === 0) return null;
   return (
     <group name="CONTINUA_DeadZone">
       <instancedMesh
         key={panels.length}
         ref={mesh}
         name="CONTINUA_DeadZone_Walls"
-        args={[geometry, material, panels.length]}
+        args={[geometry, material, Math.max(1, panels.length)]}
         castShadow
         receiveShadow
-        frustumCulled
+        // The zero-size stand-in is drawn every frame, so its programs exist.
+        frustumCulled={panels.length > 0}
       />
       {banks && <mesh name="CONTINUA_DeadZone_Banks" geometry={banks} material={bankMaterial} castShadow receiveShadow />}
     </group>

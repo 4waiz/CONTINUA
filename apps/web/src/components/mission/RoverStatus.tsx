@@ -16,7 +16,7 @@ import { NetworkIcon } from '../ui/icons';
 import { InfoTip } from '../ui/InfoTip';
 import { connectionState, NETWORK, seconds } from './plain';
 
-function Card({ name, event, ours }: { name: string; event: EngineEvent | null; ours: boolean }) {
+function Card({ name, event, ours, totals }: { name: string; event: EngineEvent | null; ours: boolean; totals: boolean }) {
   const state = connectionState(event);
   const tone = state.up === null ? 'var(--color-faint)' : state.up ? 'var(--color-good)' : 'var(--color-bad)';
   const carrying = (event?.carrying ?? null) as EngineLinkId | null;
@@ -35,11 +35,9 @@ function Card({ name, event, ours }: { name: string; event: EngineEvent | null; 
         </div>
         <div className="rover-status-state">{state.label}</div>
         <div className="rover-status-detail">
-          {state.up === false
-            ? `${state.detail}${lostFor > 0 ? ` · ${seconds(lostFor)} offline in all` : ''}`
-            : state.up
-              ? `${state.detail}${lostFor >= 0.05 ? ` · ${seconds(lostFor)} offline in all` : ' · never cut off'}`
-              : state.detail}
+          {totals && state.up !== null
+            ? `${state.detail}${lostFor >= 0.05 ? ` · ${seconds(lostFor)} offline in all` : ' · never cut off'}`
+            : state.detail}
         </div>
       </div>
       {carrying && state.up && (
@@ -60,20 +58,31 @@ export function RoverStatus({
   mainName,
   baseline,
   baselineName = 'Normal rover',
+  totals = false,
 }: {
   main: EngineEvent | null;
   mainName: string;
   /** The normal rover's event at the same moment; undefined when it is not running. */
   baseline?: EngineEvent | null;
   baselineName?: string;
+  /**
+   * Add each rover's running total offline. Details only: it counts the
+   * session's first fifth of a second, before the cable path is up - the same
+   * for every rover - and on its own that read as a fault at the dock.
+   */
+  totals?: boolean;
 }) {
   return (
     <div className="pointer-events-none flex items-stretch gap-2.5" aria-label="Can each operator reach their rover?">
-      <Card name={mainName} event={main} ours />
-      {baseline !== undefined && <Card name={baselineName} event={baseline} ours={false} />}
+      <Card name={mainName} event={main} ours totals={totals} />
+      {baseline !== undefined && <Card name={baselineName} event={baseline} ours={false} totals={totals} />}
       <span className="pointer-events-auto self-center">
         <InfoTip
-          text="Can each operator reach their rover right now? From the receiver's own report. 'Offline in all' adds up every moment the rover was out of reach this run."
+          text={
+            totals
+              ? "Can each operator reach their rover right now? From the receiver's own report. 'Offline in all' adds up every moment the rover was out of reach this run, the session's start included."
+              : "Can each operator reach their rover right now? From the receiver's own report, and which network is carrying the link. Details adds each rover's total time offline."
+          }
         />
       </span>
     </div>

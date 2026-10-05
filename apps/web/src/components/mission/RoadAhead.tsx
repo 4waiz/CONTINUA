@@ -179,8 +179,9 @@ export function RoadAhead({
           </div>
         ))}
 
-        {/* Zones along the bottom, for bearings. */}
-        <div className="absolute inset-x-0 bottom-0 h-[12px]" aria-hidden>
+        {/* Zones along the bottom, for bearings - the compact strip leaves
+            them to the route card, which names the one the rover is in. */}
+        <div className="absolute inset-x-0 bottom-0 h-[12px]" aria-hidden hidden={compact}>
           {MISSION_ZONES.map((zone) => (
             <span
               key={zone.id}

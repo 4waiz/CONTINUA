@@ -11,7 +11,18 @@
 import { AdaptiveDpr, AdaptiveEvents, BakeShadows, PerformanceMonitor } from '@react-three/drei';
 import { Canvas } from '@react-three/fiber';
 import { Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { HalfFloatType, NeutralToneMapping, PCFShadowMap, SRGBColorSpace, WebGLRenderTarget, type Object3D } from 'three';
+import {
+  HalfFloatType,
+  NeutralToneMapping,
+  PCFShadowMap,
+  SRGBColorSpace,
+  WebGLRenderTarget,
+  type Camera,
+  type DirectionalLight,
+  type Object3D,
+  type Scene,
+  type WebGLRenderer,
+} from 'three';
 import type { QualityTier } from '@continua/contracts';
 import { useFrame, useThree } from '@react-three/fiber';
 import { SCENE_COLOR } from '../theme';
@@ -128,6 +139,60 @@ function DebugBridge() {
 }
 
 /**
+ * Draws everything once, off screen, before the first frame.
+ *
+ * `compileAsync` builds every program, but on ANGLE over Direct3D a program's
+ * first draw still costs the main thread about a tenth of a second - measured
+ * during the story - and that first draw used to be whenever its object first
+ * showed: a link's ping at the first handoff, a building first caught by the
+ * sun's shadow map as the rover drove up to it. Those were the story's
+ * stutters. One draw of the whole scene - everything shown, nothing culled,
+ * the shadow frustum stretched over the island - moves all of them here,
+ * behind the loading overlay.
+ */
+function warmUp(gl: WebGLRenderer, scene: Scene, camera: Camera, toScreen: boolean): void {
+  const undo: (() => void)[] = [];
+  scene.traverse((object) => {
+    if (!object.visible) {
+      object.visible = true;
+      undo.push(() => {
+        object.visible = false;
+      });
+    }
+    if (object.frustumCulled) {
+      object.frustumCulled = false;
+      undo.push(() => {
+        object.frustumCulled = true;
+      });
+    }
+    const light = object as DirectionalLight;
+    if (light.isDirectionalLight && light.castShadow) {
+      const shadow = light.shadow.camera;
+      const { left, right, top, bottom, near, far } = shadow;
+      Object.assign(shadow, { left: -2000, right: 2000, top: 2000, bottom: -2000, near: -3000, far: 3000 });
+      shadow.updateProjectionMatrix();
+      undo.push(() => {
+        Object.assign(shadow, { left, right, top, bottom, near, far });
+        shadow.updateProjectionMatrix();
+      });
+    }
+  });
+  const offscreen = new WebGLRenderTarget(1, 1, { type: HalfFloatType });
+  const previous = gl.getRenderTarget();
+  gl.shadowMap.needsUpdate = true;
+  gl.setRenderTarget(offscreen);
+  gl.render(scene, camera);
+  if (toScreen) {
+    gl.setRenderTarget(null);
+    gl.render(scene, camera);
+  }
+  gl.setRenderTarget(previous);
+  offscreen.dispose();
+  for (const step of undo.reverse()) step();
+  gl.shadowMap.needsUpdate = true;
+}
+
+/**
  * Compiles every shader the scene needs before its first frame, without
  * blocking the page. The render loop is held (see `ContinuaScene`'s
  * `frameloop`) while the driver compiles in parallel
@@ -174,7 +239,10 @@ function Precompile({ onCompiled, toScreen }: { onCompiled: () => void; toScreen
       if (settled) return;
       settled = true;
       performance.mark('continua:compile-end');
-      if (!cancelled) onCompiled();
+      if (cancelled) return;
+      warmUp(gl, scene, camera, toScreen);
+      performance.mark('continua:warm-end');
+      onCompiled();
     };
     Promise.all(pending).then(release, release);
     // compileAsync polls each program from a timer and never settles if one of
@@ -254,7 +322,7 @@ function SceneContents({
       <Rover lod={quality === 'low'} />
       <CoverageOverlay visible={settings.showCoverage && !inspect} />
       {!inspect && <LinkBeams />}
-      <SceneCameras mode={inspect ? 'turntable' : settings.camera} story={settings.storyShot} />
+      <SceneCameras mode={inspect ? 'turntable' : settings.camera} story={settings.storyShot} inset={settings.viewInset} />
       {quality === 'low' && <BakeShadows />}
       {quality === 'high' && <PostEffects />}
       {adaptive && <QualityGovernor />}

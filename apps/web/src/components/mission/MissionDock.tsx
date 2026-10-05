@@ -711,7 +711,7 @@ export function MissionDock({
           onSeek={onSeek}
           deadZoneTimes={deadZoneTimes}
         />
-        <TimelineLegend />
+        {!simple && <TimelineLegend />}
         {extra}
       </div>
     </section>

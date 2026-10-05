@@ -60,7 +60,7 @@ distribution at all, and nothing was executed).
 
 ### The story
 
-**Watch the story** plays the one run that shows what CONTINUA is for, in six
+**Watch the story** plays the one run that shows what CONTINUA is for, in five
 chapters: two identical rovers on the shadowed route, same seed - CONTINUA
 with its road map, and the normal rover that only switches network once the
 one it is on has failed. A cutting ahead blocks Wi-Fi and cellular together;
@@ -73,8 +73,9 @@ cheaper than CONTINUA.
 Nothing in it is scripted. Each chapter begins when the run reaches it - the
 rover's place on the route, or a decision the engine logged - and every
 number in a caption is read from the two runs' events at that moment. What
-the story chooses is presentation: the framing, and the playback rate,
-slowed while a caption is read; the rate is always on screen. It plays from
+the story chooses is presentation: the framing, one short caption at a time,
+and the playback rate - real time, but for the cutting, which plays at half
+speed under a label saying so. It plays from
 the engine locally and from the recorded runs on the public site
 (`apps/web/src/components/mission/story.tsx`).
 

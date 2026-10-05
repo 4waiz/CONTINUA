@@ -15,6 +15,7 @@ Security posture (see `docs/SECURITY.md`):
 from __future__ import annotations
 
 import asyncio
+import gc
 import json
 import os
 import uuid
@@ -45,15 +46,38 @@ from ..sim.exogenous import link_profiles, scenario_catalogue
 from ..store.store import RunStore, default_store
 from .sessions import ReplaySession, RunSession
 
+#: Sessions kept at once - runs and replays alike. The page plays two at a
+#: time (a run and the normal rover beside it); the oldest beyond this is
+#: stopped and dropped.
 MAX_LIVE_SESSIONS = 4
 
 _sessions: dict[str, RunSession | ReplaySession] = {}
 _experiments: dict[str, dict] = {}
 
 
+async def _make_room() -> None:
+    """Stop and drop the oldest sessions until one more fits.
+
+    Replays used to be exempt from the cap, and a replay - or a run whose page
+    was closed - otherwise stays for the life of the process with its whole
+    event history. An engine left up for hours was measured going silent on
+    every live stream for 1.3 s at a time; a fresh one, on the same runs, never
+    did.
+    """
+    while len(_sessions) >= MAX_LIVE_SESSIONS:
+        oldest = _sessions.pop(next(iter(_sessions)))
+        await oldest.stop()
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Everything imported to get here - the framework, the models, the
+    # scenario catalogue - lives as long as the process. Frozen out of the
+    # collector's view, a full collection walks only what the runs allocate.
+    gc.collect()
+    gc.freeze()
     yield
+    gc.unfreeze()
     for session in list(_sessions.values()):
         await session.stop()
     _sessions.clear()
@@ -215,11 +239,7 @@ async def start_run(request: StartRunRequest) -> dict:
         )
     if request.control.scenario_id not in scenario_catalogue():
         raise HTTPException(status_code=404, detail="unknown scenario")
-    live = [s for s in _sessions.values() if isinstance(s, RunSession)]
-    if len(live) >= MAX_LIVE_SESSIONS:
-        oldest = live[0]
-        await oldest.stop()
-        _sessions.pop(oldest.run_id, None)
+    await _make_room()
 
     session = RunSession(request.control, request.overrides, store())
     _sessions[session.run_id] = session
@@ -324,6 +344,12 @@ async def start_replay(run_id: str) -> dict:
     if not events:
         raise HTTPException(status_code=409, detail="that run has no recorded events to replay")
     session = ReplaySession(row, events, store())
+    # A second replay of the same run takes the first one's id; the first is
+    # stopped, not left playing to no one.
+    previous = _sessions.pop(session.run_id, None)
+    if previous is not None:
+        await previous.stop()
+    await _make_room()
     _sessions[session.run_id] = session
     session.start()
     return {"run_id": session.run_id, "state": session.state().to_dict()}

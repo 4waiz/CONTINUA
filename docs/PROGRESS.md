@@ -1400,3 +1400,74 @@ p95 7.8 ms before the forest; sixteen culled sectors brought it back from
 the introduction, Details and an exact connection-badge locator);
 test:smoke 11 passed / 10 skipped.
 
+# Calmer screens, a rover you can see, no stutter
+
+The owner, after watching the story on a laptop (1706 x 800 at 150 %): too
+much text, especially at the bottom; the rover hidden behind the panels, in
+the story and when driving; lag, and the rover speeding up at random.
+
+**The rover was behind the panels.** In the story a two-line caption card sat
+over a bar that also carried the road strip; when driving, the dock was 226 px
+of an 800 px window - and the cameras framed the rover low, for the whole
+canvas. Now the page measures what its top cards and dock cover and the
+cameras shift the lens so their subject sits in the middle of the rest
+(`SceneSettings.viewInset`, `SceneCameras`); the follow rig aims 5 m ahead
+instead of 16, the story's approach shot 18 m instead of 46. Checked by
+projecting the rover into the screenshot against each panel's box: clear of
+the bar, the top cards and the side columns in every story shot and in drive,
+simple and Details, at 1706 x 800 @1.5, 1920 x 1080, 1440 x 900 and 1280 x 720
+(`video/work/diag/story/story_walk2.mjs`, `drive_shots2.mjs`).
+
+**Less to read.** The story is five chapters and one bar: a progress line, one
+caption of one or two short sentences, the transport. The decision feed and
+the road strip left the story; the camera tile lost its frame counts; the
+status cards say the state and the network, with running totals in Details -
+the totals counted the session's first 0.2 s, before the cable path is up,
+which read as a fault at the dock. Driving: the road strip only where there is
+a cutting or a road map, without the zone names; the handoff toast one line;
+the timeline's colour key and the links panel's footer sentence, which
+repeated its own "?", gone from the simple view. The captions now say where
+the second rover is (the scene draws one - the two share every metre), what
+the handoff off the cable cost at the handoff itself, and why CONTINUA's video
+pauses on satellite while its link holds - shown amber, "VIDEO PAUSED", beside
+the other rover's red "LINK LOST", where both had been the same red.
+
+**Random speed-ups.** Two causes. The story set the rate from 0.35x to 6x and
+back for every caption; it now plays in real time but for the cutting, at
+half speed and labelled, and ends on the proof 60 m past the cutting instead of
+fast-forwarding the remote stretch to get there. And every stall below was
+followed by the clock catching up at up to 1.25x for a second or two.
+
+**Lag.** Three main-thread stalls of 106-116 ms in a story run, at 5.4 s and
+9.7 s, traced by wrapping `renderBufferDirect` and `getProgramInfoLog`:
+1. Two programs compiled at load but first drawn at the first handoff (a
+   link's ping). On ANGLE over Direct3D the first draw still costs the main
+   thread; `Precompile` now draws everything once off screen at load -
+   shown, unculled, the shadow frustum stretched over the island (108 ms, once,
+   behind the loading overlay).
+2. The cutting's banks, which arrive with the scenario after that warm-up:
+   their back-face shadow program compiled the moment they entered the sun's
+   shadow frustum. They cast from both faces now and share a program the scene
+   has. (The walls' programs were moved to load earlier in this pass.)
+
+After: no long tasks in a 50 s story; no frame over 34 ms; no clock jump.
+Mission at 1706 x 800 @1.5 (2559 x 1122): 113 fps, p50 / p95 / p99 8.4 / 15.1 /
+24.8 ms; at 1920 x 1080: 140 fps, p95 10.8 ms; no long tasks in either probe.
+
+**The engine went quiet.** An engine left up for three hours (912 MB) stopped
+streaming for 1.26 s in the middle of a drive; the rover slowed to 0.75x, then
+caught up. A fresh engine, on the same sequence of runs, never did (longest
+gaps 0.18-0.27 s in three traces, the longest at half speed), so the cause is
+not pinned down: per-tick disk appends
+(under 11 ms in a 60 s probe), the metrics at a run's end (15 ms) and a
+garbage collection in a fresh process (23 ms) were each measured and ruled
+out. What was found and fixed: replays were exempt from the session cap - a
+replay, or a run whose page closed, played on and stayed in memory for the
+life of the process, and replaying the same run twice left the first copy
+running. All sessions now count toward the cap of four
+(`tests/engine/test_api_story.py`); the page stops the pair it replaces when
+it starts a new one or a replay; the start-up heap is frozen out of the
+collector's view (`gc.freeze`).
+
+**Checks.** lint, typecheck, build; test:engine 161 passed; test:phase2 11/11;
+test:smoke 11 passed / 10 skipped (behaviour and evidence run at 1920 only).

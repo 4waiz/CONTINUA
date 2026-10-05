@@ -6,12 +6,15 @@ The API the story mode and the road-ahead strip read.
   unchanged - so the strip on screen is the policy's own knowledge.
 * A map id is a name, not a path.
 * `play` honours the rate it carries: the Mission dock sends its speed that way.
+* Replays count toward the session cap, like runs: a session nobody stopped
+  used to stay for the life of the process.
 """
 
 from __future__ import annotations
 
 import json
 import sys
+import time
 from pathlib import Path
 
 ENGINE_ROOT = Path(__file__).resolve().parents[2] / "services" / "engine"
@@ -66,3 +69,37 @@ def test_play_carries_its_rate() -> None:
             assert played.json()["state"]["speed"] == 4
         finally:
             live.post(f"/api/runs/{run_id}/control", json={"action": "stop"})
+
+
+def test_replays_count_toward_the_session_cap() -> None:
+    def start(live: TestClient, seed: int) -> str:
+        response = live.post(
+            "/api/runs",
+            json={"control": {"scenario_id": "baseline-journey", "policy_id": "B0", "seed": seed, "speed": 64}},
+        )
+        assert response.status_code == 200
+        return response.json()["run_id"]
+
+    with TestClient(app) as live:
+        first = start(live, 11)
+        # A replay needs recorded events; at 64x the run has some within ticks.
+        deadline = time.monotonic() + 20
+        while time.monotonic() < deadline:
+            replayed = live.post(f"/api/runs/{first}/replay")
+            if replayed.status_code == 200:
+                break
+            time.sleep(0.1)
+        assert replayed.status_code == 200
+        # Replaying the same run again replaces the first replay.
+        assert live.post(f"/api/runs/{first}/replay").status_code == 200
+        others = [start(live, seed) for seed in (12, 13, 14)]
+        ids = [state["run_id"] for state in live.get("/api/runs?limit=1").json()["live"]]
+        try:
+            # Four at most; the oldest - the first run - made room for the last.
+            assert len(ids) == 4
+            assert first not in ids
+            assert f"replay-{first}" in ids
+            assert set(others) <= set(ids)
+        finally:
+            for run_id in ids:
+                live.post(f"/api/runs/{run_id}/control", json={"action": "stop"})

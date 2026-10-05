@@ -47,6 +47,13 @@ export interface SceneSettings {
   deadZones: readonly DeadZone[];
   /** The story mode's current framing; used while `camera` is 'story'. */
   storyShot: StoryShot;
+  /**
+   * How much of the canvas, in CSS pixels from its top and bottom edges, the
+   * page covers with its own panels. The cameras shift the picture so what
+   * they frame sits in the middle of what is left - the rover is never
+   * framed behind the dock.
+   */
+  viewInset: { readonly top: number; readonly bottom: number };
 }
 
 const DEFAULT_SETTINGS: SceneSettings = {
@@ -59,6 +66,7 @@ const DEFAULT_SETTINGS: SceneSettings = {
   selectedSiteId: null,
   deadZones: NO_DEAD_ZONES,
   storyShot: { id: 'follow', at: 0, from: null },
+  viewInset: { top: 0, bottom: 0 },
 };
 
 class SettingsStore {

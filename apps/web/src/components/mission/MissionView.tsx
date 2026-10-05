@@ -39,12 +39,11 @@ import {
   type PolicyIdString,
 } from '@continua/contracts/engine';
 import { deadZonesFromFaults, MISSION_ZONES, NETWORK_COLOR, route } from '@continua/scene';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { AppShell, RunStatusBar } from '../AppShell';
 import { CinematicIcon, CloseupIcon, FollowIcon, NetworkIcon, OverviewIcon } from '../ui/icons';
 import { ApplicationPanel } from './ApplicationPanel';
 import { CameraFeed } from './CameraFeed';
-import { DecisionFeed } from './DecisionFeed';
 import { FullscreenButton } from './FullscreenButton';
 import { LinkStack } from './LinkStack';
 import { MissionDock } from './MissionDock';
@@ -54,7 +53,7 @@ import { RoadAhead, useRadioMap } from './RoadAhead';
 import { RouteMap } from './RouteMap';
 import { RoverStatus } from './RoverStatus';
 import { RunSummary } from './RunSummary';
-import { StoryBar, StoryCaptionCard, STORY_POLICY, STORY_SCENARIO, useStoryDirector } from './story';
+import { StoryBar, STORY_POLICY, STORY_SCENARIO, useStoryDirector } from './story';
 import { StoryLanding, StoryProof } from './StoryCards';
 
 const ZONE_LABEL: Record<string, string> = Object.fromEntries(MISSION_ZONES.map((zone) => [zone.id, zone.label]));
@@ -253,6 +252,17 @@ export function MissionView() {
       .catch((cause: unknown) => setNotice(cause instanceof Error ? cause.message : String(cause)));
   }, []);
 
+  /**
+   * Stop runs the page has moved on from. A pair replaced by a new one, or by
+   * its replay, used to play on to its end with nobody watching - its stream,
+   * its writes and its memory all competing with the pair on screen.
+   */
+  const retire = useCallback((ids: (string | null)[], keep: (string | null)[]) => {
+    for (const id of ids) {
+      if (id && !keep.includes(id)) void api.controlRun(id, { action: 'stop' }).catch(() => undefined);
+    }
+  }, []);
+
   /** Start a run - and the normal rover beside it, when comparing - on the engine. */
   const startWith = useCallback(
     (options: { scenario: string; policy: PolicyIdString; seed: number; compare: boolean }, message?: string) =>
@@ -275,8 +285,9 @@ export function MissionView() {
         setStartedRunId(response.run_id);
         setStartedBaselineId(baselineResponse?.run_id ?? null);
         setPinned(false);
+        retire([startedRunId, startedBaselineId], [response.run_id, baselineResponse?.run_id ?? null]);
       }, message),
-    [act, predictor],
+    [act, predictor, retire, startedRunId, startedBaselineId],
   );
 
   const start = useCallback(() => {
@@ -311,8 +322,9 @@ export function MissionView() {
         ]);
         setStartedRunId(response.run_id);
         setStartedBaselineId(baselineResponse?.run_id ?? null);
+        retire([runId, baselineId], [response.run_id, baselineResponse?.run_id ?? null]);
       }, 'Replaying the recorded run.'),
-    [act, runId, baselineId],
+    [act, runId, baselineId, retire],
   );
 
   const seek = useCallback(
@@ -527,7 +539,7 @@ export function MissionView() {
       lookahead={runPolicy === 'P3'}
       preparing={preparing}
       deadZones={deadZones}
-      compact={view === 'story'}
+      compact
     />
   );
   // When the rover was in each cutting, from its own distances, for the timeline.
@@ -555,6 +567,36 @@ export function MissionView() {
 
   const mainName = STRATEGY[runPolicy]?.who ?? runPolicy;
   const landing = view === 'landing' && !runId;
+  // The road strip says something only where there is a cutting to point at
+  // or a road map steering the run; elsewhere it was one more band of text.
+  const showRoad = deadZones.length > 0 || runPolicy === 'P3';
+
+  // How much of the stage the panels cover, top and bottom, so the cameras
+  // centre the rover in what is left. Framed for the whole canvas, it sat
+  // behind the dock on a laptop screen. Measured, not assumed: the dock's
+  // height depends on the view, the run and the screen.
+  const topRef = useRef<HTMLDivElement>(null);
+  const bottomRef = useRef<HTMLDivElement>(null);
+  const [inset, setInset] = useState({ top: 0, bottom: 0 });
+  const storyBar = view === 'story' && Boolean(runId) && !story.finished;
+  useLayoutEffect(() => {
+    const stage = stageRef.current;
+    if (!stage) return undefined;
+    const observer = new ResizeObserver(() => {
+      const box = stage.getBoundingClientRect();
+      const top = topRef.current ? Math.max(0, topRef.current.getBoundingClientRect().bottom - box.top) : 0;
+      const bottom = bottomRef.current ? Math.max(0, box.bottom - bottomRef.current.getBoundingClientRect().top) : 0;
+      setInset((previous) =>
+        Math.abs(previous.top - top) < 2 && Math.abs(previous.bottom - bottom) < 2
+          ? previous
+          : { top: Math.round(top), bottom: Math.round(bottom) },
+      );
+    });
+    observer.observe(stage);
+    if (topRef.current) observer.observe(topRef.current);
+    if (bottomRef.current) observer.observe(bottomRef.current);
+    return () => observer.disconnect();
+  }, [view, runId, storyBar, showRoad, detail]);
 
   return (
     <AppShell
@@ -565,6 +607,8 @@ export function MissionView() {
         ref={stageRef}
         className="mission-root absolute inset-0 overflow-hidden bg-[color:var(--color-bg)]"
         data-view={landing ? 'landing' : view}
+        // The side columns stop where the dock begins, whatever its height.
+        style={inset.bottom > 0 && !landing ? { ['--dock-h' as string]: `calc(${inset.bottom}px - var(--edge))` } : undefined}
       >
         <MissionScene
           source={run.source}
@@ -577,10 +621,12 @@ export function MissionView() {
           storyShot={story.shot}
           speed={run.state?.speed ?? 1}
           deadZones={deadZones}
+          inset={landing ? undefined : inset}
         />
 
         {/* --- top centre: can each operator reach their rover? --------------- */}
         <div className="pointer-events-none absolute top-3 left-1/2 z-10 flex -translate-x-1/2 flex-col items-center gap-2">
+          <div ref={topRef} className="flex flex-col items-center gap-2">
           {!runId ? (
             <div className="flex items-center gap-2">
               <span
@@ -593,7 +639,12 @@ export function MissionView() {
               {zone && <span className="hud-chip text-[color:var(--color-muted)]">{zone}</span>}
             </div>
           ) : (
-            <RoverStatus main={run.latest} mainName={mainName} baseline={baselineId ? baselineEvent : undefined} />
+            <RoverStatus
+              main={run.latest}
+              mainName={mainName}
+              baseline={baselineId ? baselineEvent : undefined}
+              totals={view === 'drive' && detail}
+            />
           )}
           {runId && run.latest && view === 'drive' && detail && (
             <div className="flex items-center gap-2">
@@ -614,10 +665,11 @@ export function MissionView() {
               )}
             </div>
           )}
+          </div>
 
           {/* A handoff, announced for a few seconds - the story says it in its caption. */}
           {handoff && view === 'drive' && (
-            <div className="w-[min(560px,46vw)]" role="status">
+            <div className={detail ? 'w-[min(560px,46vw)]' : ''} role="status">
               <div className="glass drop-in relative flex items-center gap-3 overflow-hidden px-4 py-2.5" key={handoff.seq}>
                 <span
                   aria-hidden
@@ -639,13 +691,17 @@ export function MissionView() {
                   </span>
                 </span>
                 <div className="min-w-0">
-                  <div className="text-[12.5px] font-semibold">
+                  <div className="text-[12.5px] font-semibold" title={handoff.event.reason}>
                     Moved to {NETWORK[handoff.to].name}
                     <span className="ml-1.5 font-normal text-[color:var(--color-faint)]">t+{handoff.at.toFixed(1)}s</span>
                   </div>
-                  <div className="truncate text-[11.5px] text-[color:var(--color-muted)]" title={handoff.event.reason}>
-                    {detail ? handoff.event.reason : (plainDecision(handoff.event, handoff.from) ?? handoff.event.reason)}
-                  </div>
+                  {/* The why, in Details; in the simple view the dock's last
+                      decision already says it, in the same words. */}
+                  {detail && (
+                    <div className="truncate text-[11.5px] text-[color:var(--color-muted)]" title={handoff.event.reason}>
+                      {handoff.event.reason}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -727,11 +783,6 @@ export function MissionView() {
             )}
           </aside>
         )}
-        {view === 'story' && runId && !story.finished && (
-          <aside className="mission-side mission-left scroll-y enter">
-            <DecisionFeed decisions={run.decisions} carryingBefore={carryingBefore} />
-          </aside>
-        )}
 
         {/* --- right: route, camera, and (Details) application health ----------------- */}
         {/* Before a run only the route is shown - it says what is coming. The
@@ -754,6 +805,7 @@ export function MissionView() {
                     baselineLabel="Normal rover"
                     mainLabel={mainName}
                     defaultOpen={view === 'story' || !detail}
+                    compact={!detail}
                   />
                 </div>
               </>
@@ -762,26 +814,21 @@ export function MissionView() {
         )}
 
         {/* --- bottom: the story's bar, or the run's dock --------------------------------- */}
-        {view === 'story' && runId && !story.finished && (
-          <div className="mission-dock flex flex-col items-center gap-2.5">
-            {story.caption && !story.finished && <StoryCaptionCard caption={story.caption} />}
-            <div className="w-full">
-              <StoryBar
-                chapter={story.caption?.chapter ?? 1}
-                paused={storyPaused}
-                speed={storySpeed}
-                finished={story.finished}
-                onToggle={toggleStory}
-                onNext={() => setSkippingFrom(story.beat)}
-                onExit={exitStory}
-              >
-                {roadAhead}
-              </StoryBar>
-            </div>
+        {storyBar && (
+          <div className="mission-dock" ref={bottomRef}>
+            <StoryBar
+              caption={story.caption}
+              chapter={story.caption?.chapter ?? 1}
+              paused={storyPaused}
+              speed={storySpeed}
+              onToggle={toggleStory}
+              onNext={() => setSkippingFrom(story.beat)}
+              onExit={exitStory}
+            />
           </div>
         )}
         {view === 'drive' && (
-          <div className="mission-dock">
+          <div className="mission-dock" ref={bottomRef}>
             <MissionDock
               scenarios={scenarios}
               policies={policies}
@@ -819,7 +866,7 @@ export function MissionView() {
               simple={!detail}
               detail={detail}
               onDetail={setDetail}
-              roadAhead={roadAhead}
+              roadAhead={showRoad ? roadAhead : undefined}
               deadZoneTimes={deadZoneTimes}
               lastDecision={lastDecision}
               lastDecisionFrom={lastDecision ? carryingBefore(lastDecision.t - 0.05) : null}

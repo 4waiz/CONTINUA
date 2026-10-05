@@ -159,12 +159,14 @@ export function LinkStack({
           {simple ? 'Networks' : 'Access links'}
           <InfoTip align="start" text="Four ways to reach the rover. Only one carries the link at a time; CONTINUA readies the next one before it is needed. Details shows each network's measurements." />
         </h2>
-        <span
-          className="flex cursor-help items-center gap-1.5 text-[11px] font-medium text-[color:var(--color-faint)]"
-          title="Four alternative paths to one session gateway - not a chain traffic passes through in sequence. At most one carries the session."
-        >
-          <GatewayIcon size={13} /> 4 paths · 1 gateway
-        </span>
+        {!simple && (
+          <span
+            className="flex cursor-help items-center gap-1.5 text-[11px] font-medium text-[color:var(--color-faint)]"
+            title="Four alternative paths to one session gateway - not a chain traffic passes through in sequence. At most one carries the session."
+          >
+            <GatewayIcon size={13} /> 4 paths · 1 gateway
+          </span>
+        )}
       </header>
 
       <ul className="flex flex-col gap-1 px-2">
@@ -253,10 +255,10 @@ export function LinkStack({
         })}
       </ul>
 
+      {/* The simple view says what the four are in its "?"; a sentence under
+          them said it again. */}
       {simple ? (
-        <p className="mx-4 mt-1 mb-3.5 text-[12px] leading-snug text-[color:var(--color-muted)]">
-          Four ways to reach the rover. One carries the link; the next is readied before it is needed.
-        </p>
+        <div className="h-2" aria-hidden />
       ) : !event ? (
         // Before a run there is nothing to measure: one line saying what will
         // be here, not three cards of "unavailable" and an empty chart.
