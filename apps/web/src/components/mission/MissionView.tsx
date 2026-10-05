@@ -1,23 +1,27 @@
 'use client';
 
 /**
- * The Mission dashboard - the flagship view.
+ * The Mission page - the flagship view, in three moods.
  *
- * The world is the interface: the 3D scene runs edge to edge under a slim top
- * bar, and everything else floats over it on four surfaces - the access links
- * on the left, application health on the right, the camera under it, and one
- * dock along the bottom that holds the run itself (what to run, the transport,
- * the timeline, the controller's pipeline). Nothing scrolls the page.
+ * * **Landing.** What this is, in three sentences, over the island; two ways in.
+ * * **Story.** A guided minute through the one run that shows what CONTINUA is
+ *   for (`story.tsx`): two rovers on the shadowed route, captions in plain
+ *   words built from the runs' own events, the framing chosen for each
+ *   chapter, and the stored twenty-trial comparison at the end.
+ * * **Drive.** The run, yours to choose and scrub - in plain words by default,
+ *   with every measurement one toggle away (Details).
  *
- * Two rules the redesign had to keep:
+ * The world is the interface in all three: the 3D scene runs edge to edge
+ * under a slim top bar, and everything else floats over it.
  *
- * 1. **Every control does something.** There are no decorative buttons, no
- *    placeholder tables and no hard-coded counters.
+ * Two rules the redesigns have kept:
+ *
+ * 1. **Every control does something.** No decorative buttons, no placeholder
+ *    tables, no hard-coded counters.
  * 2. **A value that does not exist is not a zero.** With no run, or with the
- *    engine down, the panels show a placeholder rule and say what they are
- *    waiting for. The scene still renders - from the Phase 1 preview source,
- *    badged `SCENE PREVIEW` - because an empty rectangle is a worse answer
- *    than an honest one.
+ *    engine down, panels say what they are waiting for. The scene still renders
+ *    - from the Phase 1 preview source, badged `SCENE PREVIEW` - because an
+ *    empty rectangle is a worse answer than an honest one.
  */
 
 import { api, EngineApiError, type PolicySpec, type ScenarioSpec } from '@/lib/api';
@@ -34,23 +38,34 @@ import {
   type EngineLinkId,
   type PolicyIdString,
 } from '@continua/contracts/engine';
-import { MISSION_ZONES, NETWORK_COLOR } from '@continua/scene';
+import { deadZonesFromFaults, MISSION_ZONES, NETWORK_COLOR, route } from '@continua/scene';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AppShell, RunStatusBar } from '../AppShell';
-import { CinematicIcon, CloseIcon, CloseupIcon, FollowIcon, NetworkIcon, OverviewIcon, PlayIcon } from '../ui/icons';
+import { CinematicIcon, CloseupIcon, FollowIcon, NetworkIcon, OverviewIcon } from '../ui/icons';
 import { ApplicationPanel } from './ApplicationPanel';
 import { CameraFeed } from './CameraFeed';
+import { DecisionFeed } from './DecisionFeed';
 import { FullscreenButton } from './FullscreenButton';
 import { LinkStack } from './LinkStack';
 import { MissionDock } from './MissionDock';
 import { MissionScene, type MissionCamera } from './MissionScene';
+import { NETWORK, plainDecision, STRATEGY } from './plain';
+import { RoadAhead, useRadioMap } from './RoadAhead';
 import { RouteMap } from './RouteMap';
+import { RoverStatus } from './RoverStatus';
 import { RunSummary } from './RunSummary';
+import { StoryBar, StoryCaptionCard, STORY_POLICY, STORY_SCENARIO, useStoryDirector } from './story';
+import { StoryLanding, StoryProof } from './StoryCards';
 
 const ZONE_LABEL: Record<string, string> = Object.fromEntries(MISSION_ZONES.map((zone) => [zone.id, zone.label]));
 
 /** How long a handoff stays announced, in run seconds. */
 const HANDOFF_VISIBLE_S = 5;
+
+/** The story's seed: any would do; this one is the one the story was written against. */
+const STORY_SEED = 1;
+
+type View = 'landing' | 'story' | 'drive';
 
 /**
  * The most recent path switch, if it happened within the last few run
@@ -67,7 +82,7 @@ function recentHandoff(decisions: EngineEvent[], latest: EngineEvent | null) {
     if (!switched?.link) continue;
     const from = decisions[i - 1]?.carrying ?? null;
     if (from === switched.link) continue;
-    return { at: event.t, from, to: switched.link, reason: event.reason, seq: event.seq };
+    return { at: event.t, from, to: switched.link, event, seq: event.seq };
   }
   return null;
 }
@@ -77,37 +92,18 @@ const REPLAY_LEAD_S = 4;
 
 /**
  * The policy a run is compared against: B0, a single link switched only after
- * it fails - what a session does without CONTINUA. Same scenario, route and
- * seed, so the exogenous trace is identical and the comparison is paired.
+ * it fails - what a session does without CONTINUA, "the normal rover". Same
+ * scenario, route and seed, so the exogenous trace is identical and the
+ * comparison is paired.
  */
 const BASELINE_POLICY: PolicyIdString = 'B0';
 
-type AppState = NonNullable<EngineEvent['app']>;
-
-/** One run's session, as the receiver measures it: up or down, reconnects, time lost. */
-function SessionChip({ label, app, tone }: { label: string; app: AppState; tone: string }) {
-  return (
-    <span
-      className="hud-chip"
-      style={{ color: app.in_outage ? 'var(--color-bad)' : 'var(--color-good)' }}
-      title="Session state from the receiver: whether traffic is getting through now, how often the session has had to be re-established, and the time it has been down."
-    >
-      <span className="font-bold" style={{ color: tone }}>
-        {label}
-      </span>
-      <span
-        className={`h-2 w-2 rounded-full ${app.in_outage ? '' : 'breathe'}`}
-        style={{ background: app.in_outage ? 'var(--color-bad)' : 'var(--color-good)' }}
-      />
-      {app.in_outage ? 'SESSION DOWN' : 'SESSION UP'}
-      <span className="font-medium text-[color:var(--color-muted)]">
-        <span className="hidden min-[1700px]:inline">
-          · {app.session_reconnects} reconnect{app.session_reconnects === 1 ? '' : 's'}
-        </span>{' '}
-        · {app.outage_s.toFixed(1)} s down
-      </span>
-    </span>
-  );
+/** Where the run starts: `?story` plays the story, `?drive` opens the controls. */
+function initialView(): View {
+  if (typeof window === 'undefined') return 'landing';
+  const params = new URLSearchParams(window.location.search);
+  if (params.has('drive') || params.has('replay')) return 'drive';
+  return 'landing';
 }
 
 export function MissionView() {
@@ -119,10 +115,11 @@ export function MissionView() {
   const [predictor] = useState<'heuristic' | 'learned' | 'none'>('heuristic');
   const [startedRunId, setStartedRunId] = useState<string | null>(null);
   const [selectedLink, setSelectedLink] = useState<EngineLinkId>('wifi');
-  // The preview opens on the director's cut; a run starts on the follow camera,
+  // The landing opens on the director's cut; a run starts on the follow camera,
   // which keeps the link beams in frame - unless the viewer has chosen one.
   const [camera, setCamera] = useState<MissionCamera>('cinematic');
-  const [introDismissed, setIntroDismissed] = useState(false);
+  const [view, setView] = useState<View>(initialView);
+  const [detail, setDetail] = useState(false);
   const [summary, setSummary] = useState<{ runId: string; metrics: Record<string, unknown> } | null>(null);
   const [summaryClosedFor, setSummaryClosedFor] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -130,26 +127,36 @@ export function MissionView() {
   const [bootError, setBootError] = useState<string | null>(null);
   const [bootAttempt, setBootAttempt] = useState(0);
   const [demoRuns, setDemoRuns] = useState<DemoRunSummary[]>([]);
-  // Side by side with the reactive baseline, by default: the comparison is the
+  // Side by side with the normal rover, by default: the comparison is the
   // point. (A B0 run has nothing to be compared with.)
   const [compare, setCompare] = useState(true);
   const [startedBaselineId, setStartedBaselineId] = useState<string | null>(null);
   const [baselineSummary, setBaselineSummary] = useState<{ runId: string; metrics: Record<string, unknown> } | null>(null);
+  // The story's own transport: paused by the viewer, or hurrying to the next chapter.
+  const [storyPaused, setStoryPaused] = useState(false);
+  const [skippingFrom, setSkippingFrom] = useState<string | null>(null);
+  const [storyTake, setStoryTake] = useState(0);
 
   /**
    * Which run is on screen. Locally that is whichever one the operator started.
    * On the public build every scenario-and-policy pair was recorded ahead of
-   * time, so the selection *is* the run: derived here rather than pushed
-   * through an effect, which would render one frame of the previous run first.
+   * time, so the selection *is* the run - once the viewer has chosen to watch
+   * or drive: the landing shows the world, not a recording already under way.
    */
-  const runId = IS_PUBLIC_PREVIEW ? (findDemoRun(demoRuns, scenarioId, policyId)?.run_id ?? null) : startedRunId;
+  const runId = IS_PUBLIC_PREVIEW
+    ? view === 'landing'
+      ? null
+      : (findDemoRun(demoRuns, scenarioId, policyId)?.run_id ?? null)
+    : startedRunId;
 
   const run = useEngineRun(runId);
   const comparing = compare && policyId !== BASELINE_POLICY;
   const baselineId = !comparing
     ? null
     : IS_PUBLIC_PREVIEW
-      ? (findDemoRun(demoRuns, scenarioId, BASELINE_POLICY)?.run_id ?? null)
+      ? view === 'landing'
+        ? null
+        : (findDemoRun(demoRuns, scenarioId, BASELINE_POLICY)?.run_id ?? null)
       : startedBaselineId;
   const baseline = useEngineRun(baselineId);
   const playing = run.state?.status === 'running';
@@ -239,32 +246,51 @@ export function MissionView() {
         setStartedRunId(response.run_id);
         setStartedBaselineId(null);
         setPinned(false);
+        setCamera('follow');
         if (at > 0) await api.controlRun(response.run_id, { action: 'seek', t: at });
         setNotice(`Replaying ${source} from t+${at.toFixed(0)}s.`);
       })
       .catch((cause: unknown) => setNotice(cause instanceof Error ? cause.message : String(cause)));
   }, []);
 
-  const start = useCallback(
-    () =>
+  /** Start a run - and the normal rover beside it, when comparing - on the engine. */
+  const startWith = useCallback(
+    (options: { scenario: string; policy: PolicyIdString; seed: number; compare: boolean }, message?: string) =>
       act(async () => {
-        const control = { scenario_id: scenarioId, policy_id: policyId, seed, speed: 1, predictor, horizon_s: 3 };
+        const control = {
+          scenario_id: options.scenario,
+          policy_id: options.policy,
+          seed: options.seed,
+          speed: 1,
+          predictor,
+          horizon_s: 3,
+        };
         // Started together, so the two runs' clocks stay level.
         const [response, baselineResponse] = await Promise.all([
           api.startRun({ control }),
-          comparing ? api.startRun({ control: { ...control, policy_id: BASELINE_POLICY } }) : Promise.resolve(null),
+          options.compare && options.policy !== BASELINE_POLICY
+            ? api.startRun({ control: { ...control, policy_id: BASELINE_POLICY } })
+            : Promise.resolve(null),
         ]);
         setStartedRunId(response.run_id);
         setStartedBaselineId(baselineResponse?.run_id ?? null);
         setPinned(false);
-        setCamera((current) => (current === 'cinematic' ? 'follow' : current));
-      }, comparing ? 'Run started, with the reactive baseline beside it.' : 'Run started.'),
-    [act, scenarioId, policyId, seed, predictor, comparing],
+      }, message),
+    [act, predictor],
   );
+
+  const start = useCallback(() => {
+    setView('drive');
+    setCamera((current) => (current === 'cinematic' || current === 'story' ? 'follow' : current));
+    return startWith(
+      { scenario: scenarioId, policy: policyId, seed, compare: comparing },
+      comparing ? 'Run started, with the normal rover beside it.' : 'Run started.',
+    );
+  }, [startWith, scenarioId, policyId, seed, comparing]);
 
   // Transport acts on both runs, so they stay at the same moment.
   const control = useCallback(
-    (action: 'play' | 'pause' | 'reset' | 'stop', extra?: Record<string, number>) =>
+    (action: 'play' | 'pause' | 'reset' | 'stop' | 'speed', extra?: Record<string, number>) =>
       act(async () => {
         if (!runId) return;
         await Promise.all([
@@ -290,16 +316,71 @@ export function MissionView() {
   );
 
   const seek = useCallback(
-    (t: number) =>
+    (to: number) =>
       act(async () => {
         if (!runId) return;
         await Promise.all([
-          api.controlRun(runId, { action: 'seek', t }),
-          baselineId ? api.controlRun(baselineId, { action: 'seek', t }) : Promise.resolve(null),
+          api.controlRun(runId, { action: 'seek', t: to }),
+          baselineId ? api.controlRun(baselineId, { action: 'seek', t: to }) : Promise.resolve(null),
         ]);
       }),
     [act, runId, baselineId],
   );
+
+  // --- the story ----------------------------------------------------------------
+
+  const startStory = useCallback(() => {
+    setScenarioId(STORY_SCENARIO);
+    setPolicyId(STORY_POLICY);
+    setCompare(true);
+    setSeed(STORY_SEED);
+    setView('story');
+    setStoryPaused(false);
+    setSkippingFrom(null);
+    setPinned(false);
+    setStoryTake((take) => take + 1);
+    // On the public build the selection is the recording; the effect below
+    // winds it back to the start. Locally the two runs are started fresh.
+    if (!IS_PUBLIC_PREVIEW) {
+      void startWith({ scenario: STORY_SCENARIO, policy: STORY_POLICY, seed: STORY_SEED, compare: true });
+    }
+  }, [startWith]);
+
+  useEffect(() => {
+    if (!IS_PUBLIC_PREVIEW || view !== 'story' || !runId) return;
+    const ids = [runId, baselineId].filter((id): id is string => Boolean(id));
+    void Promise.all(
+      ids.map(async (id) => {
+        await api.controlRun(id, { action: 'reset' });
+        await api.controlRun(id, { action: 'play', speed: 1 });
+      }),
+    ).catch(() => undefined);
+  }, [view, runId, baselineId, storyTake]);
+
+  // `?story` opens straight into it - the link to send someone.
+  const storyLinkHandled = useRef(false);
+  useEffect(() => {
+    if (storyLinkHandled.current) return undefined;
+    if (typeof window === 'undefined' || !new URLSearchParams(window.location.search).has('story')) return undefined;
+    if (!IS_PUBLIC_PREVIEW && scenarios.length === 0) return undefined;
+    if (IS_PUBLIC_PREVIEW && demoRuns.length === 0) return undefined;
+    // Started from a timer, once: the effect only notices that it is time.
+    const timer = setTimeout(() => {
+      if (storyLinkHandled.current) return;
+      storyLinkHandled.current = true;
+      window.history.replaceState(null, '', window.location.pathname);
+      startStory();
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [scenarios.length, demoRuns.length, startStory]);
+
+  const exitStory = useCallback(() => {
+    setView('drive');
+    setCamera('follow');
+    setStoryPaused(false);
+    setSkippingFrom(null);
+    if (runId && run.state?.status !== 'completed') void control('play', { speed: 1 });
+  }, [runId, run.state?.status, control]);
 
   // When a run finishes, fetch the metrics file the engine wrote for it - the
   // end-of-run card shows that, and only that.
@@ -317,7 +398,8 @@ export function MissionView() {
       cancelled = true;
     };
   }, [runId, completed]);
-  const showSummary = summary !== null && summary.runId === runId && completed && summaryClosedFor !== runId;
+  const showSummary =
+    view === 'drive' && summary !== null && summary.runId === runId && completed && summaryClosedFor !== runId;
 
   // The baseline's metrics too, once it has finished, for the side-by-side card.
   const baselineCompleted = baseline.state?.status === 'completed';
@@ -359,18 +441,131 @@ export function MissionView() {
     [scenarios, run.state?.scenario_id, scenarioId],
   );
 
+  // Where this scenario shadows the links: the scene stands walls there.
+  const deadZones = useMemo(() => deadZonesFromFaults(scenario?.faults), [scenario]);
+  // A reversed scenario drives the route from its far end; the recorded
+  // distances are distances travelled, so the scene has to be told.
+  const reverse = Boolean(scenario?.reverse);
+  useEffect(() => {
+    run.source.setReverse(reverse);
+    baseline.source.setReverse(reverse);
+  }, [run.source, baseline.source, reverse]);
+
+  const story = useStoryDirector({
+    active: view === 'story' && Boolean(runId),
+    main: run.latest,
+    mainTimeline: run.source.timeline,
+    baseline: baselineEvent,
+    baselineTimeline: baseline.source.timeline,
+    completed,
+    zones: deadZones,
+    reverse,
+  });
+  // "Next chapter" hurries the run along until the chapter changes.
+  const skipping = skippingFrom !== null && skippingFrom === story.beat;
+  const storySpeed = skipping ? 8 : story.speed;
+
+  // The story sets the pace: slow while a caption is read, quicker between.
+  useEffect(() => {
+    if (view !== 'story' || storyPaused || !runId || completed) return;
+    const ids = [runId, baselineId].filter((id): id is string => Boolean(id));
+    void Promise.all(ids.map((id) => api.controlRun(id, { action: 'speed', speed: storySpeed }))).catch(() => undefined);
+  }, [view, storyPaused, runId, baselineId, storySpeed, completed]);
+
+  const toggleStory = useCallback(() => {
+    if (storyPaused) {
+      setStoryPaused(false);
+      void control('play', { speed: storySpeed });
+    } else {
+      setStoryPaused(true);
+      void control('pause');
+    }
+  }, [storyPaused, control, storySpeed]);
+
+  // --- what the panels read ------------------------------------------------------
+
   const duration = run.state?.duration_s ?? scenario?.duration_s ?? 100;
   const t = run.state?.t ?? 0;
   const controlMode = controlModeOf(run.latest);
   const zone = run.latest?.vehicle?.zone ? (ZONE_LABEL[run.latest.vehicle.zone] ?? run.latest.vehicle.zone) : null;
   const handoff = useMemo(() => recentHandoff(run.decisions, run.latest), [run.decisions, run.latest]);
+  const runPolicy = (run.state?.policy_id ?? policyId) as PolicyIdString;
+
+  const carryingBefore = useCallback(
+    (at: number) => (run.source.eventAt(at)?.carrying ?? null) as EngineLinkId | null,
+    [run.source],
+  );
+  const lastDecision = useMemo(() => {
+    for (let i = run.decisions.length - 1; i >= 0; i -= 1) {
+      const event = run.decisions[i]!;
+      if (plainDecision(event, null)) return event;
+    }
+    return null;
+  }, [run.decisions]);
+
+  // The road strip: the policy's road map, the rover on it, and its horizon.
+  const radioMap = useRadioMap(runId || view !== 'landing' ? (scenario?.radio_map ?? 'baseline-journey') : null);
+  const travelled = run.latest?.vehicle?.distance_m ?? null;
+  const position = travelled === null ? null : reverse ? route.length - travelled : travelled;
+  const preparedAt = useMemo(() => {
+    for (let i = run.decisions.length - 1; i >= 0; i -= 1) {
+      if (/^Preparing /.test(run.decisions[i]!.reason ?? '')) return run.decisions[i]!.t;
+    }
+    return null;
+  }, [run.decisions]);
+  const preparing =
+    preparedAt !== null &&
+    run.latest !== null &&
+    run.latest.t - preparedAt < 10 &&
+    run.latest.carrying !== 'satellite';
+  const roadAhead = (
+    <RoadAhead
+      map={radioMap}
+      position={position}
+      direction={reverse ? -1 : 1}
+      speedMps={run.latest?.vehicle?.speed_mps ?? 0}
+      lookahead={runPolicy === 'P3'}
+      preparing={preparing}
+      deadZones={deadZones}
+      compact={view === 'story'}
+    />
+  );
+  // When the rover was in each cutting, from its own distances, for the timeline.
+  const deadZoneTimes = useMemo(() => {
+    if (deadZones.length === 0 || !runTrack) return [];
+    const spans: { from: number; to: number }[] = [];
+    for (const deadZone of deadZones) {
+      const lo = deadZone.from - deadZone.ramp / 2;
+      const hi = deadZone.to + deadZone.ramp / 2;
+      let from: number | null = null;
+      let to: number | null = null;
+      for (const event of runTrack.events) {
+        const d = event.vehicle?.distance_m;
+        if (d === undefined) continue;
+        const along = reverse ? route.length - d : d;
+        if (along >= lo && along <= hi) {
+          from ??= event.t;
+          to = event.t;
+        }
+      }
+      if (from !== null && to !== null) spans.push({ from, to });
+    }
+    return spans;
+  }, [deadZones, runTrack, reverse]);
+
+  const mainName = STRATEGY[runPolicy]?.who ?? runPolicy;
+  const landing = view === 'landing' && !runId;
 
   return (
     <AppShell
       variant="immersive"
       bar={<RunStatusBar state={run.state} connection={run.connection} stale={run.stale} dropped={run.droppedSequences} />}
     >
-      <div ref={stageRef} className="absolute inset-0 overflow-hidden bg-[color:var(--color-bg)]">
+      <div
+        ref={stageRef}
+        className="mission-root absolute inset-0 overflow-hidden bg-[color:var(--color-bg)]"
+        data-view={landing ? 'landing' : view}
+      >
         <MissionScene
           source={run.source}
           t={t}
@@ -378,142 +573,111 @@ export function MissionView() {
           playing={playing && !run.stale}
           className="scene-shell-bleed absolute inset-0 h-full w-full"
           preview={!runId}
-          camera={camera}
+          camera={view === 'story' && runId ? 'story' : camera}
+          storyShot={story.shot}
           speed={run.state?.speed ?? 1}
+          deadZones={deadZones}
         />
 
-        {/* --- HUD: what the scene is showing, top centre ----------------------- */}
-        <div className="pointer-events-none absolute top-3 left-1/2 z-10 flex -translate-x-1/2 items-center gap-2">
-          {runId && !baselineId ? (
-            <span className="hud-chip" title="The scene is driven by engine events for this run.">
-              <span className="h-2 w-2 rounded-full" style={{ background: 'var(--color-blue)' }} />
-              PREDICTIVE HANDOFF
-            </span>
-          ) : runId ? null : (
-            <span
-              className="hud-chip text-[color:var(--color-warn)]"
-              title="No run yet: the scene plays the deterministic Phase 1 preview. Nothing on screen is a measurement."
-            >
-              <span className="h-2 w-2 rounded-full" style={{ background: 'var(--color-warn)' }} />
-              SCENE PREVIEW
-            </span>
-          )}
-          {/* The zone is on the route map; without a run there is no map position, so say it here. */}
-          {zone && !runId && <span className="hud-chip text-[color:var(--color-muted)]">{zone}</span>}
-          {runId && run.latest && (
-            <span
-              className="hud-chip"
-              style={{
-                color: controlMode === 'teleop' ? 'var(--color-good)' : controlMode === 'waypoint' ? 'var(--color-warn)' : 'var(--color-bad)',
-              }}
-              title="Operating mode of the control class, chosen by the controller from receiver-side measurements. Policies without mode handover stay in teleop."
-            >
-              {CONTROL_MODE_LABEL[controlMode].toUpperCase()}
-            </span>
-          )}
-          {carrying && (
-            <span
-              className={`hud-chip ${baselineId ? 'max-[1599px]:hidden!' : ''}`}
-              style={{ color: NETWORK_COLOR[carrying] }}
-            >
-              <NetworkIcon link={carrying} size={14} />
-              {LINK_LABEL[carrying].label} carrying
-            </span>
-          )}
-          {/* Beside the baseline: both sessions, as their receivers measure them. */}
-          {runId && baselineId && run.latest?.app && <SessionChip label="CONTINUA" app={run.latest.app} tone="var(--color-blue)" />}
-          {runId && baselineId && baselineEvent?.app && (
-            <SessionChip label="REACTIVE" app={baselineEvent.app} tone="var(--color-muted)" />
-          )}
-          {/* The promise, as the receiver measures it: is the session up, and
-              has it ever had to reconnect? */}
-          {runId && !baselineId && run.latest?.app && (
-            <span
-              className="hud-chip"
-              style={{ color: run.latest.app.in_outage ? 'var(--color-bad)' : 'var(--color-good)' }}
-              title="Session state from the receiver: whether traffic is getting through now, and how often the session has had to be re-established."
-            >
+        {/* --- top centre: can each operator reach their rover? --------------- */}
+        <div className="pointer-events-none absolute top-3 left-1/2 z-10 flex -translate-x-1/2 flex-col items-center gap-2">
+          {!runId ? (
+            <div className="flex items-center gap-2">
               <span
-                className={`h-2 w-2 rounded-full ${run.latest.app.in_outage ? '' : 'breathe'}`}
-                style={{ background: run.latest.app.in_outage ? 'var(--color-bad)' : 'var(--color-good)' }}
-              />
-              {run.latest.app.in_outage ? 'SESSION INTERRUPTED' : 'SESSION CONTINUOUS'}
-              <span className="font-medium text-[color:var(--color-muted)]">
-                · {run.latest.app.session_reconnects} reconnect{run.latest.app.session_reconnects === 1 ? '' : 's'}
+                className="hud-chip text-[color:var(--color-warn)]"
+                title="No run yet: the scene plays the deterministic Phase 1 preview. Nothing on screen is a measurement."
+              >
+                <span className="h-2 w-2 rounded-full" style={{ background: 'var(--color-warn)' }} />
+                SCENE PREVIEW
               </span>
-            </span>
+              {zone && <span className="hud-chip text-[color:var(--color-muted)]">{zone}</span>}
+            </div>
+          ) : (
+            <RoverStatus main={run.latest} mainName={mainName} baseline={baselineId ? baselineEvent : undefined} />
+          )}
+          {runId && run.latest && view === 'drive' && detail && (
+            <div className="flex items-center gap-2">
+              <span
+                className="hud-chip"
+                style={{
+                  color: controlMode === 'teleop' ? 'var(--color-good)' : controlMode === 'waypoint' ? 'var(--color-warn)' : 'var(--color-bad)',
+                }}
+                title="Operating mode of the control class, chosen by the controller from receiver-side measurements. Policies without mode handover stay in teleop."
+              >
+                {CONTROL_MODE_LABEL[controlMode].toUpperCase()}
+              </span>
+              {carrying && (
+                <span className="hud-chip" style={{ color: NETWORK_COLOR[carrying] }}>
+                  <NetworkIcon link={carrying} size={14} />
+                  {LINK_LABEL[carrying].label} carrying
+                </span>
+              )}
+            </div>
+          )}
+
+          {/* A handoff, announced for a few seconds - the story says it in its caption. */}
+          {handoff && view === 'drive' && (
+            <div className="w-[min(560px,46vw)]" role="status">
+              <div className="glass drop-in relative flex items-center gap-3 overflow-hidden px-4 py-2.5" key={handoff.seq}>
+                <span
+                  aria-hidden
+                  className="countdown absolute bottom-0 left-0 h-[2px] w-full"
+                  style={{ background: NETWORK_COLOR[handoff.to], animationDuration: `${HANDOFF_VISIBLE_S}s` }}
+                />
+                <span className="flex shrink-0 items-center gap-1.5">
+                  {handoff.from && (
+                    <span
+                      className="grid h-7 w-7 place-items-center rounded-full"
+                      style={{ background: `color-mix(in srgb, ${NETWORK_COLOR[handoff.from]} 14%, white)`, color: NETWORK_COLOR[handoff.from] }}
+                    >
+                      <NetworkIcon link={handoff.from} size={15} />
+                    </span>
+                  )}
+                  <span className="text-[13px] text-[color:var(--color-faint)]">→</span>
+                  <span className="grid h-7 w-7 place-items-center rounded-full text-white" style={{ background: NETWORK_COLOR[handoff.to] }}>
+                    <NetworkIcon link={handoff.to} size={15} />
+                  </span>
+                </span>
+                <div className="min-w-0">
+                  <div className="text-[12.5px] font-semibold">
+                    Moved to {NETWORK[handoff.to].name}
+                    <span className="ml-1.5 font-normal text-[color:var(--color-faint)]">t+{handoff.at.toFixed(1)}s</span>
+                  </div>
+                  <div className="truncate text-[11.5px] text-[color:var(--color-muted)]" title={handoff.event.reason}>
+                    {detail ? handoff.event.reason : (plainDecision(handoff.event, handoff.from) ?? handoff.event.reason)}
+                  </div>
+                </div>
+              </div>
+            </div>
           )}
         </div>
 
-        {/* --- handoff announcement ------------------------------------------------ */}
-        {handoff && (
-          <div className="pointer-events-none absolute top-[54px] left-1/2 z-10 w-[min(560px,46vw)] -translate-x-1/2" role="status">
-            <div className="glass drop-in relative flex items-center gap-3 overflow-hidden px-4 py-2.5" key={handoff.seq}>
-              <span
-                aria-hidden
-                className="countdown absolute bottom-0 left-0 h-[2px] w-full"
-                style={{ background: NETWORK_COLOR[handoff.to], animationDuration: `${HANDOFF_VISIBLE_S}s` }}
-              />
-              <span className="flex shrink-0 items-center gap-1.5">
-                {handoff.from && (
-                  <span className="grid h-7 w-7 place-items-center rounded-full" style={{ background: `color-mix(in srgb, ${NETWORK_COLOR[handoff.from]} 14%, white)`, color: NETWORK_COLOR[handoff.from] }}>
-                    <NetworkIcon link={handoff.from} size={15} />
-                  </span>
-                )}
-                <span className="text-[13px] text-[color:var(--color-faint)]">→</span>
-                <span className="grid h-7 w-7 place-items-center rounded-full text-white" style={{ background: NETWORK_COLOR[handoff.to] }}>
-                  <NetworkIcon link={handoff.to} size={15} />
-                </span>
-              </span>
-              <div className="min-w-0">
-                <div className="text-[12.5px] font-semibold">
-                  Session moved{handoff.from ? ` from ${LINK_LABEL[handoff.from].label}` : ''} to {LINK_LABEL[handoff.to].label}
-                  <span className="ml-1.5 font-normal text-[color:var(--color-faint)]">t+{handoff.at.toFixed(1)}s</span>
-                </div>
-                <div className="truncate text-[11.5px] text-[color:var(--color-muted)]">{handoff.reason}</div>
-              </div>
-            </div>
+        {/* --- the landing: what this is, and the two ways in ------------------------ */}
+        {landing && (
+          <div className={`absolute inset-x-0 z-10 flex justify-center px-3 ${bootError ? 'top-[30%]' : 'top-[14%]'}`}>
+            <StoryLanding
+              onWatch={startStory}
+              onDrive={() => {
+                setView('drive');
+                setCamera('follow');
+              }}
+              canWatch={IS_PUBLIC_PREVIEW ? demoRuns.length > 0 : scenarios.some((entry) => entry.id === STORY_SCENARIO)}
+              busy={busy}
+            />
           </div>
         )}
 
-        {/* --- first visit: what this is, and the one thing to do ---------------------- */}
-        {!IS_PUBLIC_PREVIEW && !runId && !bootError && scenarios.length > 0 && !introDismissed && (
-          <section
-            className="glass absolute top-[56px] left-1/2 z-10 w-[min(560px,44vw)] -translate-x-1/2 px-5 py-4"
-            aria-label="Introduction"
-          >
-            <button
-              type="button"
-              className="absolute top-2.5 right-2.5 grid h-7 w-7 place-items-center rounded-full text-[color:var(--color-faint)] hover:bg-[color:var(--color-surface-muted)] hover:text-[color:var(--color-ink)]"
-              aria-label="Dismiss introduction"
-              onClick={() => setIntroDismissed(true)}
-            >
-              <CloseIcon size={14} />
-            </button>
-            <h2 className="pr-8 text-[17px] font-semibold tracking-[-0.015em]">
-              The network changes. <span className="text-[color:var(--color-blue)]">The session doesn&apos;t.</span>
-            </h2>
-            <p className="mt-1.5 text-[12.5px] leading-relaxed text-[color:var(--color-muted)]">
-              A response rover leaves a wired dock and drives through Wi-Fi and cellular coverage into a
-              satellite-served sector. The CONTINUA controller moves the session between the four links before each
-              one fails; every decision is logged with the measurements it was based on.
-              {comparing && (
-                <>
-                  {' '}
-                  A reactive controller, which switches only after a link has failed, drives the same route and seed
-                  beside it - watch the two camera halves at each handover.
-                </>
-              )}
-            </p>
-            <div className="mt-3 flex flex-wrap items-center gap-2.5">
-              <button type="button" className="control control-primary" onClick={start} disabled={busy}>
-                <PlayIcon size={14} /> Start the mission
-              </button>
-              <span className="text-[11.5px] text-[color:var(--color-faint)]">
-                {scenario?.title ?? scenarioId} · {policyId} · seed {seed} - change them in the bar below
-              </span>
-            </div>
-          </section>
+        {view === 'story' && !runId && !bootError && (
+          <div className="absolute inset-x-0 top-[40%] z-10 flex justify-center" role="status">
+            <span className="hud-chip loading-sweep relative overflow-hidden px-4 text-[13px]">Starting the two rovers…</span>
+          </div>
+        )}
+
+        {/* --- the story's end: the same road, twenty times --------------------------- */}
+        {view === 'story' && story.finished && (
+          <div className="absolute inset-x-0 top-[112px] bottom-[var(--edge)] z-20 flex items-start justify-center px-3 max-[800px]:top-[96px]">
+            <StoryProof onReplay={startStory} onDrive={exitStory} />
+          </div>
         )}
 
         {showSummary && runId && (
@@ -538,94 +702,139 @@ export function MissionView() {
           </div>
         )}
 
-        {/* --- left: access links ---------------------------------------------------- */}
-        <aside className="mission-side mission-left scroll-y enter">
-          <LinkStack
-            event={run.latest}
-            history={run.history}
-            selected={activeLink}
-            onSelect={(link) => {
-              setSelectedLink(link);
-              setPinned(true);
-            }}
-          />
-          {pinned && (
-            <button
-              type="button"
-              className="control mt-2 w-full"
-              onClick={() => setPinned(false)}
-              title="Return to automatically following whichever link is carrying the session"
-            >
-              Pinned to {LINK_LABEL[activeLink].label} · follow carrying link
-            </button>
-          )}
-        </aside>
+        {/* --- left: the networks, or (in the story) what CONTINUA decided ------------ */}
+        {view === 'drive' && (
+          <aside className="mission-side mission-left scroll-y enter">
+            <LinkStack
+              event={run.latest}
+              history={run.history}
+              selected={activeLink}
+              simple={!detail}
+              onSelect={(link) => {
+                setSelectedLink(link);
+                setPinned(true);
+              }}
+            />
+            {pinned && detail && (
+              <button
+                type="button"
+                className="control mt-2 w-full"
+                onClick={() => setPinned(false)}
+                title="Return to automatically following whichever link is carrying the session"
+              >
+                Pinned to {LINK_LABEL[activeLink].label} · follow carrying link
+              </button>
+            )}
+          </aside>
+        )}
+        {view === 'story' && runId && !story.finished && (
+          <aside className="mission-side mission-left scroll-y enter">
+            <DecisionFeed decisions={run.decisions} carryingBefore={carryingBefore} />
+          </aside>
+        )}
 
-        {/* --- right: route, application health, camera ---------------------------------- */}
+        {/* --- right: route, camera, and (Details) application health ----------------- */}
         {/* Before a run only the route is shown - it says what is coming. The
             health and camera cards had nothing to say yet but an empty gauge
             and "no stream"; they enter with the run's first event. */}
-        <aside className="mission-side mission-right scroll-y enter-late flex flex-col gap-3 *:shrink-0">
-          <RouteMap event={run.latest} events={run.decisions} />
-          {run.latest && (
-            <>
-              <div className="enter">
-                <ApplicationPanel event={run.latest} />
-              </div>
-              <div className="enter-late">
-                <CameraFeed event={run.latest} baseline={baselineId ? baselineEvent : undefined} />
-              </div>
-            </>
-          )}
-        </aside>
-
-        {/* --- bottom: the run ---------------------------------------------------------- */}
-        <div className="mission-dock">
-          <MissionDock
-            scenarios={scenarios}
-            policies={policies}
-            scenarioId={scenarioId}
-            policyId={policyId}
-            seed={seed}
-            onScenario={(id) => {
-              setScenarioId(id);
-              setPinned(false);
-            }}
-            onPolicy={(id) => {
-              setPolicyId(id);
-              setPinned(false);
-            }}
-            onSeed={setSeed}
-            runId={runId}
-            playing={playing}
-            busy={busy}
-            speed={run.state?.speed ?? 1}
-            t={t}
-            duration={duration}
-            latest={run.latest}
-            decisions={run.decisions}
-            history={run.history}
-            onStart={start}
-            onToggle={() => control(playing ? 'pause' : 'play')}
-            onReset={() => control('reset')}
-            onReplay={replay}
-            onSpeed={(speed) => control('play', { speed })}
-            onSeek={seek}
-            compare={comparing}
-            onCompare={setCompare}
-            track={runTrack}
-            baseline={baselineTrack}
-            extra={
+        {(view === 'drive' || (view === 'story' && runId && !story.finished)) && (
+          <aside className="mission-side mission-right scroll-y enter-late flex flex-col gap-3 *:shrink-0">
+            {view === 'drive' && <RouteMap event={run.latest} events={run.decisions} reverse={reverse} />}
+            {run.latest && (
               <>
-                <CameraSwitch value={camera} onChange={setCamera} />
-                <FullscreenButton target={stageRef} />
+                {view === 'drive' && detail && (
+                  <div className="enter">
+                    <ApplicationPanel event={run.latest} />
+                  </div>
+                )}
+                <div className="enter-late">
+                  <CameraFeed
+                    event={run.latest}
+                    baseline={baselineId ? baselineEvent : undefined}
+                    baselineLabel="Normal rover"
+                    mainLabel={mainName}
+                    defaultOpen={view === 'story' || !detail}
+                  />
+                </div>
               </>
-            }
-          />
-        </div>
+            )}
+          </aside>
+        )}
+
+        {/* --- bottom: the story's bar, or the run's dock --------------------------------- */}
+        {view === 'story' && runId && !story.finished && (
+          <div className="mission-dock flex flex-col items-center gap-2.5">
+            {story.caption && !story.finished && <StoryCaptionCard caption={story.caption} />}
+            <div className="w-full">
+              <StoryBar
+                chapter={story.caption?.chapter ?? 1}
+                paused={storyPaused}
+                speed={storySpeed}
+                finished={story.finished}
+                onToggle={toggleStory}
+                onNext={() => setSkippingFrom(story.beat)}
+                onExit={exitStory}
+              >
+                {roadAhead}
+              </StoryBar>
+            </div>
+          </div>
+        )}
+        {view === 'drive' && (
+          <div className="mission-dock">
+            <MissionDock
+              scenarios={scenarios}
+              policies={policies}
+              scenarioId={scenarioId}
+              policyId={policyId}
+              seed={seed}
+              onScenario={(id) => {
+                setScenarioId(id);
+                setPinned(false);
+              }}
+              onPolicy={(id) => {
+                setPolicyId(id);
+                setPinned(false);
+              }}
+              onSeed={setSeed}
+              runId={runId}
+              playing={playing}
+              busy={busy}
+              speed={run.state?.speed ?? 1}
+              t={t}
+              duration={duration}
+              latest={run.latest}
+              decisions={run.decisions}
+              history={run.history}
+              onStart={start}
+              onToggle={() => control(playing ? 'pause' : 'play')}
+              onReset={() => control('reset')}
+              onReplay={replay}
+              onSpeed={(speed) => control('speed', { speed })}
+              onSeek={seek}
+              compare={comparing}
+              onCompare={setCompare}
+              track={runTrack}
+              baseline={baselineTrack}
+              simple={!detail}
+              detail={detail}
+              onDetail={setDetail}
+              roadAhead={roadAhead}
+              deadZoneTimes={deadZoneTimes}
+              lastDecision={lastDecision}
+              lastDecisionFrom={lastDecision ? carryingBefore(lastDecision.t - 0.05) : null}
+              extra={
+                <>
+                  <CameraSwitch value={camera} onChange={setCamera} />
+                  <FullscreenButton target={stageRef} />
+                </>
+              }
+            />
+          </div>
+        )}
 
         {(notice || (run.connection === 'disconnected' && runId)) && (
-          <div className="pointer-events-none absolute bottom-[148px] left-1/2 z-20 -translate-x-1/2" role="status">
+          <div className="pointer-events-none absolute bottom-[calc(var(--dock-h)+var(--edge)*2+8px)] left-1/2 z-20 -translate-x-1/2" role="status">
             <p className="glass px-4 py-2 text-[12.5px]">
               {run.connection === 'disconnected' && runId ? (
                 <>
@@ -650,7 +859,7 @@ const CAMERAS: { id: MissionCamera; label: string; Icon: typeof FollowIcon }[] =
   { id: 'closeup', label: 'Close-up camera', Icon: CloseupIcon },
 ];
 
-/** Three viewpoints on the same run. A camera changes the picture, never the data. */
+/** Four viewpoints on the same run. A camera changes the picture, never the data. */
 function CameraSwitch({ value, onChange }: { value: MissionCamera; onChange: (camera: MissionCamera) => void }) {
   return (
     <div

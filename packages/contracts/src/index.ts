@@ -94,8 +94,14 @@ export interface VehiclePose {
   readonly heading: Radians;
   readonly pitch: Radians;
   readonly roll: Radians;
-  /** Distance travelled along the route from the start of the run. */
+  /**
+   * Where the vehicle is on the route: metres from the route's forward start.
+   * On a forward run that is the distance travelled; a reversed run starts at
+   * the far end and counts down.
+   */
   readonly distance: Metres;
+  /** Which way along the route it drives: 1 forward (the default), -1 reversed. */
+  readonly direction?: 1 | -1;
   readonly speedMps: number;
   /** Front-wheel steering angle, positive = left. */
   readonly steerAngle: Radians;
@@ -213,7 +219,21 @@ export interface SceneStateSource {
 // Camera and playback contracts (shared with the Phase 3 capture pipeline)
 // ---------------------------------------------------------------------------
 
-export type CameraMode = 'follow' | 'overview' | 'closeup' | 'turntable' | 'cinematic';
+export type CameraMode = 'follow' | 'overview' | 'closeup' | 'turntable' | 'cinematic' | 'story';
+
+/**
+ * The story mode's framings, each a pure function of where the rover is and
+ * of the scene clock (`Cameras.tsx`). A story names the shot and the scene time
+ * it began at; the camera eases from the previous one.
+ */
+export type StoryShotId = 'dock' | 'follow' | 'alongside' | 'crane' | 'inside' | 'aerial' | 'lead';
+export interface StoryShot {
+  readonly id: StoryShotId;
+  /** Scene time the shot began, seconds. */
+  readonly at: number;
+  /** The shot it eases from, if any. */
+  readonly from: StoryShotId | null;
+}
 export type SceneMode = 'inspect' | 'mission';
 export type QualityTier = 'high' | 'balanced' | 'low';
 

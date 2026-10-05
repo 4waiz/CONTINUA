@@ -40,7 +40,9 @@ import {
 } from 'three';
 import { NETWORK_COLOR } from '../theme';
 import { useSceneRuntime } from '../runtime/SceneRuntime';
+import { NO_DEAD_ZONES, withinDeadZone, type DeadZone } from '../world/deadZones';
 import { PYLON_CONDUCTORS, TURBINE, WORLD_LAYOUT, type Placement } from '../world/layout';
+import { route } from '../world/route';
 import { SITES, type SiteMarker } from '../world/sites';
 import { SEA_LEVEL, terrain } from '../world/terrain';
 import { PROPS_MODEL_URL } from './assets';
@@ -220,9 +222,19 @@ function tuneMaterial(material: Material): void {
              }
            #endif
            #include <alphatest_fragment>`,
+        )
+        // Leaves are thin: daylight comes through them as well as off them.
+        // A crown's shaded side was drawn near-black, so every broadleaf tree
+        // read as a dark blob from any distance. A little of the leaf colour
+        // is returned as light scattered through the canopy - unshadowed, the
+        // way a lit crown glows from inside.
+        .replace(
+          '#include <emissivemap_fragment>',
+          `#include <emissivemap_fragment>
+           totalEmissiveRadiance += diffuseColor.rgb * vec3(0.17, 0.2, 0.13);`,
         );
     };
-    material.customProgramCacheKey = () => 'continua-foliage-card-v3';
+    material.customProgramCacheKey = () => 'continua-foliage-card-v4';
     material.needsUpdate = true;
   } else {
     material.envMapIntensity = 0.75;
@@ -852,6 +864,9 @@ function allPlacements(): Map<string, Placement[]> {
   return byProp;
 }
 
+/** The raised beds along the campus road. */
+const BED = 'PROP_FlowerBed';
+
 /** Small, numerous dressing that is not worth a shadow-map pass. */
 const NO_SHADOW = new Set([
   'PROP_Fence', 'PROP_Shrub_A', 'PROP_Shrub_B', 'PROP_Bollard', 'PROP_Skyline_A', 'PROP_Skyline_B', 'PROP_Skyline_C',
@@ -863,12 +878,15 @@ export function WorldProps({
   selectedSiteId,
   onSelectSite,
   lite = false,
+  deadZones = NO_DEAD_ZONES,
 }: {
   showMarkers: boolean;
   selectedSiteId: string | null;
   onSelectSite: (id: string) => void;
   /** The low tier: fewer trees. */
   lite?: boolean;
+  /** A walled lane stands here: the roadside beds it would cut through are left out. */
+  deadZones?: readonly DeadZone[];
 }) {
   const { scene } = useGLTF(PROPS_MODEL_URL);
 
@@ -919,6 +937,18 @@ export function WorldProps({
     return out;
   }, [placements, library, status]);
 
+  // The bedding along the campus road sits where a lane's walls stand; the
+  // walls replace it rather than cut through it. Only the beds are filtered,
+  // so no other prop's instances are rebuilt when the scenario changes.
+  const beds = useMemo(() => {
+    const list = placements.get(BED) ?? [];
+    if (deadZones.length === 0) return list;
+    return list.filter((item) => {
+      const { distSq, along } = route.projectOnRoute(item.x, item.z);
+      return distSq > 12 * 12 || !withinDeadZone(along, deadZones, 2);
+    });
+  }, [placements, deadZones]);
+
   return (
     <group name="CONTINUA_World">
       {instanced.map((entry) =>
@@ -926,7 +956,7 @@ export function WorldProps({
           <InstancedPrimitive
             key={`${entry.name}-${index}`}
             primitive={primitive}
-            placements={entry.placements}
+            placements={entry.name === BED ? beds : entry.placements}
             castShadow={!NO_SHADOW.has(entry.name)}
             count={lite && THINNED_ON_LOW.has(entry.name) ? keeperCount(entry.placements.length, THINNED_ON_LOW.get(entry.name)!) : undefined}
             lite={lite}

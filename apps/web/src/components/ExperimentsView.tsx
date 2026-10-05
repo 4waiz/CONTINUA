@@ -10,6 +10,8 @@
 
 import { api, EngineApiError, type CapabilityReport, type ScenarioSpec } from '@/lib/api';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { AtAGlance, glanceRows } from './experiments/AtAGlance';
+import type { PolicyIdString } from '@continua/contracts/engine';
 import { AppShell } from './AppShell';
 import { CompareIcon } from './ui/icons';
 import { IS_PUBLIC_PREVIEW, REPO_URL } from '@/lib/deployment';
@@ -30,6 +32,11 @@ const POLICY_NOTE: Record<string, string> = {
   'P2-reactiveMode': 'Ablation: P2 whose mode changes only after a measured violation, never ahead of one.',
   P3: 'CONTINUA P3. P1 plus a radio map of the route from earlier drives: where the kept paths will both be lost ahead, it prepares a third in time.',
 };
+
+/** The at-a-glance rows: CONTINUA first, then the baselines, then the ablations. */
+const GLANCE_ORDER: readonly PolicyIdString[] = [
+  'P3', 'P2', 'P1', 'B0', 'B1', 'B2', 'B2-defer', 'P1-noPred', 'P1-noApp', 'P2-noSteer', 'P2-noMode', 'P2-reactiveMode',
+];
 
 const HEADLINE_METRICS: { key: string; label: string; unit: string; lowerIsBetter: boolean }[] = [
   { key: 'session_reconnects', label: 'Session reconnects', unit: '', lowerIsBetter: true },
@@ -197,6 +204,9 @@ export function ExperimentsView() {
    * a goal, and nothing here is estimated.
    */
   const totalRuns = stored.reduce((sum, row) => sum + Number(row.completed ?? 0), 0);
+  // Every drive of every strategy, one icon each, from the per-trial records.
+  const glance = glanceRows(results, GLANCE_ORDER);
+  const scenarioTitle = (id: string) => scenarios.find((entry) => entry.id === id)?.title ?? id;
   const scenariosTested = new Set(stored.map((row) => String(row.scenario_id))).size;
   const selectedTrials = completed ? Object.values(completed).reduce((a, b) => a + b, 0) : 0;
 
@@ -312,8 +322,9 @@ export function ExperimentsView() {
                             <span
                               className="truncate text-[12.5px] font-semibold"
                               style={{ color: active ? 'var(--color-blue)' : undefined }}
+                              title={String(row.scenario_id)}
                             >
-                              {String(row.scenario_id)}
+                              {scenarioTitle(String(row.scenario_id))}
                             </span>
                             <span className="metric shrink-0 text-[11px] text-[color:var(--color-muted)]">
                               {String(row.trials)} x {String(row.completed)}
@@ -368,6 +379,21 @@ export function ExperimentsView() {
               <div className="panel border-[color:var(--color-bad)] px-4 py-2.5 text-[12.5px] text-[color:var(--color-bad)]">
                 {error}
               </div>
+            )}
+
+            {glance.length > 0 && (
+              <section className="panel px-4 py-3.5" aria-label="At a glance">
+                <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+                  <h2 className="panel-label">
+                    At a glance · {scenarioTitle(String(results?.scenario_id ?? ''))} · {glance[0]!.trials.length} paired drives each
+                  </h2>
+                  <span className="text-[11.5px] text-[color:var(--color-muted)]">
+                    One rover per drive: <span className="font-semibold text-[color:var(--color-good)]">green</span> if the operator never
+                    lost the link, <span className="font-semibold text-[color:var(--color-bad)]">red</span> if they did
+                  </span>
+                </div>
+                <AtAGlance rows={glance} highlight={glance.some((row) => row.policy === 'P3') ? 'P3' : 'P1'} compact />
+              </section>
             )}
 
             {aggregate && (

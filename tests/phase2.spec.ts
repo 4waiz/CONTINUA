@@ -44,13 +44,19 @@ async function requireEngine(page: Page): Promise<void> {
   }
 }
 
+/** The Mission page opens on its introduction; the run's controls are one click in. */
+async function openDrive(page: Page): Promise<void> {
+  await page.getByRole('button', { name: 'Drive it yourself' }).click({ timeout: 60_000 });
+}
+
 /** Start a run through the UI and wait until events are flowing. */
 async function startRun(page: Page, scenario?: string): Promise<void> {
+  await openDrive(page);
   if (scenario) {
     await page.getByLabel('Scenario').first().selectOption({ label: scenario });
   }
   await page.getByRole('button', { name: /Start run/ }).click();
-  await expect(page.getByText('CONNECTED', { exact: false })).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByText('CONNECTED', { exact: true })).toBeVisible({ timeout: 30_000 });
   await page.waitForFunction(
     () => {
       const canvas = document.querySelector('canvas');
@@ -116,6 +122,8 @@ test.describe('Mission dashboard', () => {
     await page.goto('/', { waitUntil: 'domcontentloaded' });
     await startRun(page);
 
+    // The measurements are behind Details; the simple view names states in words.
+    await page.getByRole('button', { name: 'Details' }).click();
     // Select the satellite card: it has no RSSI, and early in the run it has no
     // acknowledged samples either.
     await page.getByRole('button', { name: /Satellite/ }).first().click();
@@ -195,7 +203,7 @@ test.describe('other sections', () => {
 
     await page.getByRole('button', { name: /video/i }).first().click(); // toggle a workload class
     await page.getByRole('button', { name: /Run scenario/ }).first().click();
-    await expect(page.getByText('CONNECTED', { exact: false })).toBeVisible({ timeout: 40_000 });
+    await expect(page.getByText('CONNECTED', { exact: true })).toBeVisible({ timeout: 40_000 });
     await page.waitForTimeout(3000);
     await page.screenshot({ path: `${EVIDENCE}/p2-scenario-lab-${testInfo.project.name}.png` });
     expect(errors, errors.join(' | ')).toEqual([]);
@@ -325,7 +333,10 @@ test.describe('failure handling', () => {
     // placeholder's accessible name - the dashboard does not repeat the same
     // sentence down a column of four cards.
     await expect(page.getByText('SCENE PREVIEW')).toBeVisible();
-    await expect(page.getByLabel('Waiting for engine').first()).toBeVisible();
+    // The story needs the engine's runs; driving shows the panels, waiting.
+    await expect(page.getByRole('button', { name: /Watch the story/ })).toBeDisabled();
+    await openDrive(page);
+    await expect(page.getByText('Waiting for a run').first()).toBeVisible();
     // Every measurement surface on screen. With no run only the links panel
     // is: the application and camera cards enter with a run's first event.
     const surfaces = page.locator('section[aria-label="Access links"], section[aria-label="Application health"]');
@@ -335,7 +346,7 @@ test.describe('failure handling', () => {
     expect(numericMetrics, 'no measurement panel may show a number with no engine').toBe(0);
 
     // The detail is reachable, and it names how to start the engine.
-    await page.getByRole('button', { name: /Detail/ }).click();
+    await page.getByRole('button', { name: 'Detail', exact: true }).click();
     await expect(page.getByText(/npm run engine/)).toBeVisible();
     await expect(page.getByRole('button', { name: /Retry connection/ })).toBeVisible();
   });

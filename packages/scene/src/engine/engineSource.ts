@@ -65,6 +65,19 @@ export class EngineSceneStateSource implements SceneStateSource {
   private newestReceivedAt = 0;
   /** Every change of carrying link, in time order - what a handoff animates. */
   private switches: HandoffMark[] = [];
+  /**
+   * The run drives the route from its far end back to the dock. Events carry
+   * the distance *travelled*; the engine places a reversed vehicle at
+   * `length - travelled` (world.py), and so must the scene - drawn at
+   * `travelled` it drove the forward route, in the wrong place for every link.
+   * Set from the scenario, which is the only thing that says so.
+   */
+  reverse = false;
+
+  /** See `reverse`: the scenario's direction, once it is known. */
+  setReverse(reverse: boolean): void {
+    this.reverse = reverse;
+  }
 
   constructor(runId = 'engine', duration: Seconds = 100) {
     this.runId = runId;
@@ -214,13 +227,16 @@ export class EngineSceneStateSource implements SceneStateSource {
       speed = lerp(event.vehicle.speed_mps, next.vehicle.speed_mps, alpha);
     }
 
-    const sample = route.at(distance);
-    const roadY = terrain.elevationAtDistance(distance);
+    // Where on the route the rover is, and which way it faces along it.
+    const along = this.reverse ? route.length - distance : distance;
+    const direction = this.reverse ? -1 : 1;
+    const sample = route.at(along);
+    const roadY = terrain.elevationAtDistance(along);
     // The rover stands on the road, not on the land beside it: it pitches with
     // the road's grade between its axles, and the road is level across, so the
     // ground gives it no roll. (The terrain normal under its centre, read here
     // before, stepped every metre and shook the body on every hill.)
-    const pitch = Math.atan(terrain.gradeAtDistance(distance, VEHICLE.wheelbase));
+    const pitch = Math.atan(direction * terrain.gradeAtDistance(along, VEHICLE.wheelbase));
     const roll = 0;
 
     const links = {} as Record<AccessNetworkId, LinkStatus>;
@@ -281,12 +297,15 @@ export class EngineSceneStateSource implements SceneStateSource {
       zone: (event.vehicle?.zone ?? 'facility') as SceneState['zone'],
       vehicle: {
         position: { x: sample.x, y: roadY, z: sample.z },
-        heading: sample.heading,
+        heading: this.reverse ? sample.heading + Math.PI : sample.heading,
         pitch,
         roll,
-        distance,
+        // The scene's cameras and props read `distance` as a place on the
+        // route, so it is the route coordinate, not the odometer.
+        distance: along,
+        direction,
         speedMps: speed,
-        steerAngle: Math.atan(VEHICLE.wheelbase * sample.curvature),
+        steerAngle: Math.atan(direction * VEHICLE.wheelbase * sample.curvature),
         wheelAngle: distance / VEHICLE.wheelRadius,
       },
       links,

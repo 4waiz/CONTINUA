@@ -80,6 +80,8 @@ export function CameraFeed({
   event,
   baseline,
   baselineLabel = 'Reactive',
+  mainLabel = 'CONTINUA',
+  defaultOpen,
 }: {
   event: EngineEvent | null;
   /**
@@ -88,12 +90,15 @@ export function CameraFeed({
    */
   baseline?: EngineEvent | null;
   baselineLabel?: string;
+  mainLabel?: string;
+  /** Start open, whatever the screen height (the story and the simple view have room). */
+  defaultOpen?: boolean;
 }) {
   const primaryRef = useRef<HTMLCanvasElement>(null);
   const baselineRef = useRef<HTMLCanvasElement>(null);
   // Open by default only where the right column has room for it under the
   // route map and the health panel; elsewhere it is one click away.
-  const [open, setOpen] = useState(() => typeof window === 'undefined' || window.innerHeight >= 1000);
+  const [open, setOpen] = useState(() => defaultOpen ?? (typeof window === 'undefined' || window.innerHeight >= 1000));
   const split = baseline !== undefined;
   const video = event?.app?.classes.video;
   const baseVideo = baseline?.app?.classes.video;
@@ -154,7 +159,7 @@ export function CameraFeed({
         aria-expanded={open}
       >
         <CameraIcon size={15} className="text-[color:var(--color-faint)]" />
-        <span className="section-label flex-1">Camera</span>
+        <span className="section-label flex-1">{split ? 'What each operator sees' : 'Camera'}</span>
         <span
           className="rounded-full bg-[color-mix(in_srgb,var(--color-warn)_14%,white)] px-2 py-[2px] text-[11px] font-bold tracking-[0.05em] text-[color:var(--color-warn)]"
           title="The simulated world rendered from the rover's forward camera - not transported pixels. It moves only while the engine reports video frames delivered, and freezes while the receiver reports the stream stalled."
@@ -188,7 +193,7 @@ export function CameraFeed({
                 {split ? (
                   <div className="pointer-events-none absolute inset-x-0 top-0 flex justify-between bg-gradient-to-b from-[rgb(10_16_28/0.5)] to-transparent px-2 pb-3 pt-1.5 font-[family-name:var(--font-mono)] text-[11px] font-semibold text-white">
                     <span>{baselineLabel.toUpperCase()} · {baseVideo ? String(baseVideo.frames_delivered).padStart(5, '0') : ' - '}</span>
-                    <span>CONTINUA · {String(video.frames_delivered).padStart(5, '0')}</span>
+                    <span>{mainLabel.toUpperCase()} · {String(video.frames_delivered).padStart(5, '0')}</span>
                   </div>
                 ) : (
                   <div className="pointer-events-none absolute inset-x-0 top-0 flex justify-between bg-gradient-to-b from-[rgb(10_16_28/0.45)] to-transparent px-2 pb-3 pt-1.5 font-[family-name:var(--font-mono)] text-[11px] font-semibold text-white">
@@ -215,7 +220,7 @@ export function CameraFeed({
             <dl className="mt-2 grid grid-cols-[auto_1fr_1fr] gap-x-3 gap-y-0.5 text-[11px]">
               <dt />
               <dd className="font-semibold text-[color:var(--color-faint)]">{baselineLabel}</dd>
-              <dd className="font-semibold text-[color:var(--color-blue)]">CONTINUA</dd>
+              <dd className="font-semibold text-[color:var(--color-blue)]">{mainLabel}</dd>
               <dt className="text-[color:var(--color-faint)]">Delivered</dt>
               <dd className="metric font-semibold">{baseVideo ? `${baseVideo.frames_delivered}/${baseVideo.frames_expected}` : ' - '}</dd>
               <dd className="metric font-semibold">{video ? `${video.frames_delivered}/${video.frames_expected}` : ' - '}</dd>

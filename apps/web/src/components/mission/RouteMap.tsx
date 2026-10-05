@@ -71,20 +71,35 @@ const FULL_ROUTE = pathBetween(0, route.length);
  * The stretches of road each link carried the session over, from recorded
  * events: where on the ground the network changed, not just when.
  */
-function carriedStretches(events: EngineEvent[]): { from: number; to: number; link: EngineLinkId | null }[] {
+function carriedStretches(
+  events: EngineEvent[],
+  reverse: boolean,
+): { from: number; to: number; at: number; link: EngineLinkId | null }[] {
   const ordered = events.filter((event) => event.vehicle).sort((a, b) => a.t - b.t);
-  const out: { from: number; to: number; link: EngineLinkId | null }[] = [];
+  const out: { from: number; to: number; at: number; link: EngineLinkId | null }[] = [];
   for (const event of ordered) {
-    const d = event.vehicle!.distance_m;
+    const d = routePosition(event.vehicle!.distance_m, reverse);
     const last = out[out.length - 1];
     if (last && last.link === event.carrying) {
+      last.from = Math.min(last.from, d);
       last.to = Math.max(last.to, d);
     } else {
-      if (last) last.to = Math.max(last.to, d);
-      out.push({ from: d, to: d, link: event.carrying });
+      if (last) {
+        last.from = Math.min(last.from, d);
+        last.to = Math.max(last.to, d);
+      }
+      out.push({ from: d, to: d, at: d, link: event.carrying });
     }
   }
   return out.filter((stretch) => stretch.to > stretch.from);
+}
+
+/**
+ * Events report the distance *travelled*; a reversed run starts at the far end
+ * of the route, so its place on the route counts down from there.
+ */
+function routePosition(travelled: number, reverse: boolean): number {
+  return reverse ? route.length - travelled : travelled;
 }
 
 /** Zone boundaries, drawn as faint ticks across the route. */
@@ -108,15 +123,28 @@ function carryingSite(link: EngineLinkId, x: number, z: number) {
   return best;
 }
 
-export function RouteMap({ event, events = [] }: { event: EngineEvent | null; events?: EngineEvent[] }) {
+export function RouteMap({
+  event,
+  events = [],
+  reverse = false,
+}: {
+  event: EngineEvent | null;
+  events?: EngineEvent[];
+  /** The run drives the route from its far end (the scenario says so). */
+  reverse?: boolean;
+}) {
   const distance = event?.vehicle?.distance_m ?? null;
-  const zone = distance === null ? null : MISSION_ZONES.find((entry) => distance < entry.toDistance) ?? MISSION_ZONES.at(-1)!;
-  const rover = distance === null ? null : route.at(Math.max(0, Math.min(distance, route.length)));
+  const along = distance === null ? null : routePosition(distance, reverse);
+  const zone = along === null ? null : MISSION_ZONES.find((entry) => along < entry.toDistance) ?? MISSION_ZONES.at(-1)!;
+  const rover = along === null ? null : route.at(Math.max(0, Math.min(along, route.length)));
   const link = event?.carrying ?? null;
   const site = rover && link ? carryingSite(link, rover.x, rover.z) : null;
   const siteX = site ? site.x + (site.linkOffset?.[0] ?? 0) : 0;
   const siteZ = site ? site.z + (site.linkOffset?.[1] ?? 0) : 0;
-  const stretches = useMemo(() => carriedStretches(event ? [...events, event] : events), [events, event]);
+  const stretches = useMemo(
+    () => carriedStretches(event ? [...events, event] : events, reverse),
+    [events, event, reverse],
+  );
 
   return (
     <section className="glass px-4 pt-3 pb-3" aria-label="Route">
@@ -157,10 +185,10 @@ export function RouteMap({ event, events = [] }: { event: EngineEvent | null; ev
           />
         ))}
         {stretches.slice(1).map((stretch, index) => {
-          const at = route.at(stretch.from);
+          const at = route.at(stretch.at);
           return (
             <circle key={`h${index}`} cx={px(at.x)} cy={py(at.z)} r={2.2} fill="white" stroke="var(--color-ink)" strokeWidth={1}>
-              <title>{`Handoff at ${stretch.from.toFixed(0)} m${stretch.link ? ` to ${LINK_LABEL[stretch.link].label}` : ''}`}</title>
+              <title>{`Handoff at ${stretch.at.toFixed(0)} m${stretch.link ? ` to ${LINK_LABEL[stretch.link].label}` : ''}`}</title>
             </circle>
           );
         })}

@@ -11,12 +11,12 @@
  * There is no "LIVE" badge during playback. A replay says REPLAY.
  */
 
-import { api } from '@/lib/api';
+import { api, type ScenarioSpec } from '@/lib/api';
 import { installOverlayBridge } from '@/lib/captureOverlay';
 import { useEngineRun } from '@/lib/useEngineRun';
 import { LINK_IDS, LINK_LABEL } from '@continua/contracts/engine';
-import { NETWORK_COLOR } from '@continua/scene';
-import { useCallback, useEffect, useState } from 'react';
+import { deadZonesFromFaults, NETWORK_COLOR } from '@continua/scene';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ModeBadge } from './AppShell';
 import { CaptureOverlays } from './capture/CaptureOverlays';
 import { MissionScene } from './mission/MissionScene';
@@ -37,6 +37,28 @@ export function CaptureView({ runId, fullBleed = false }: { runId: string | null
 
   // The harness pushes burned-in text through this bridge; see captureOverlay.ts.
   useEffect(installOverlayBridge, []);
+
+  // The run's scenario, for what the world shows of it: its cuttings, and
+  // which way round the route a reversed run drives.
+  const [scenarios, setScenarios] = useState<ScenarioSpec[]>([]);
+  useEffect(() => {
+    let cancelled = false;
+    api
+      .scenarios()
+      .then((response) => {
+        if (!cancelled) setScenarios(response.scenarios);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  const scenario = scenarios.find((entry) => entry.id === run.state?.scenario_id);
+  const deadZones = useMemo(() => deadZonesFromFaults(scenario?.faults), [scenario]);
+  const reverse = Boolean(scenario?.reverse);
+  useEffect(() => {
+    run.source.setReverse(reverse);
+  }, [run.source, reverse]);
 
   useEffect(() => {
     (window as unknown as { __CONTINUA_CAPTURE__?: unknown }).__CONTINUA_CAPTURE__ = {
@@ -83,6 +105,7 @@ export function CaptureView({ runId, fullBleed = false }: { runId: string | null
             speed={run.state?.speed ?? 1}
             adaptive={false}
             inline
+            deadZones={deadZones}
           />
         ) : (
           <div className="grid h-full place-items-center text-[13px] text-[color:var(--color-muted)]">

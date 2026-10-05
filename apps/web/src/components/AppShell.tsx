@@ -26,12 +26,17 @@ import type { ReactNode } from 'react';
 import { IS_PUBLIC_PREVIEW } from '@/lib/deployment';
 import { Chip, Dot } from './ui/primitives';
 
+/**
+ * Four places, named for what a visitor wants from each: watch or drive the
+ * mission, see the results, read every decision, build a scenario of their
+ * own. The Scene Lab - a workbench for the 3D world itself - is still at
+ * /scene-lab, linked from the Scenario builder, but no longer in the way.
+ */
 const NAV = [
   { href: '/', label: 'Mission' },
-  { href: '/scenario-lab', label: 'Scenario Lab' },
-  { href: '/experiments', label: 'Experiments' },
-  { href: '/decision-log', label: 'Decision Log' },
-  { href: '/scene-lab', label: 'Scene Lab' },
+  { href: '/experiments', label: 'Results' },
+  { href: '/decision-log', label: 'Decision log' },
+  { href: '/scenario-lab', label: 'Scenario builder' },
 ] as const;
 
 export function ModeBadge({ state }: { state: EngineRunState | null }) {

@@ -13,7 +13,9 @@ import { api, EngineApiError, type PolicySpec, type ScenarioSpec } from '@/lib/a
 import { useEngineRun } from '@/lib/useEngineRun';
 import { LINK_IDS, LINK_LABEL, type EngineLinkId, type PolicyIdString, type TrafficClassId } from '@continua/contracts/engine';
 import { TRAFFIC_CLASSES } from '@continua/contracts/engine';
-import { useCallback, useEffect, useState } from 'react';
+import { deadZonesFromFaults } from '@continua/scene';
+import Link from 'next/link';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { AppShell, RunStatusBar } from './AppShell';
 import { LinkPills } from './mission/LinkPills';
 import { Pipeline } from './mission/MissionDock';
@@ -132,6 +134,12 @@ export function ScenarioLabView() {
   }, [scenarioId, policyId, seed, workload, speedScale, durationS, faultLink, faultAt, faultFor, congestLink, congestFactor]);
 
   const selectedScenario = scenarios.find((entry) => entry.id === scenarioId);
+  // The scenario's cuttings stand in the world; a reversed run is drawn from the far end.
+  const deadZones = useMemo(() => deadZonesFromFaults(selectedScenario?.faults), [selectedScenario]);
+  const reverse = Boolean(selectedScenario?.reverse);
+  useEffect(() => {
+    run.source.setReverse(reverse);
+  }, [run.source, reverse]);
   const enabledWorkloads = TRAFFIC_CLASSES.filter((cls) => workload[cls]);
 
   /**
@@ -219,6 +227,7 @@ export function ScenarioLabView() {
           className="scene-shell-bleed absolute inset-0 h-full w-full"
           preview={!runId}
           speed={run.state?.speed ?? 1}
+          deadZones={deadZones}
         />
 
         <div className="pointer-events-none absolute top-3 left-1/2 z-10 flex -translate-x-1/2 items-center gap-2">
@@ -227,6 +236,13 @@ export function ScenarioLabView() {
             {runId ? 'LAB RUN' : 'SCENE PREVIEW'}
           </span>
           <span className="hud-chip text-[color:var(--color-muted)]">{selectedScenario?.title ?? 'Select a scenario'}</span>
+          <Link
+            href="/scene-lab"
+            className="hud-chip pointer-events-auto text-[color:var(--color-blue)] no-underline"
+            title="The 3D world on its own: cameras, quality tiers, the rover up close"
+          >
+            3D workbench
+          </Link>
         </div>
 
         {/* ---------------- configuration ---------------- */}

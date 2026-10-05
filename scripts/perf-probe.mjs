@@ -59,6 +59,8 @@ if (noBackdrop) {
 if (quality) await page.evaluate((q) => window.__CONTINUA__.settings.set({ quality: q }), quality);
 
 if (pageId === 'mission' && !argv.includes('--no-run')) {
+  // Mission opens on its introduction; the run's controls are one click in.
+  await page.getByRole('button', { name: 'Drive it yourself' }).click();
   await page.getByRole('button', { name: /Start run/ }).click();
   await page.waitForFunction(() => Boolean(window.__CONTINUA__?.getFrame().active), undefined, { timeout: 60_000 });
   await page.waitForTimeout(9000); // past the dock dwell, into the drive

@@ -7,7 +7,7 @@
  * looking alive.
  */
 
-import type { EngineRunState, PolicyIdString } from '@continua/contracts/engine';
+import type { EngineLinkId, EngineRunState, PolicyIdString } from '@continua/contracts/engine';
 import { IS_PUBLIC_PREVIEW } from './deployment';
 import { demoApi, NeedsEngineError, staticControl } from './staticDemo';
 
@@ -74,10 +74,49 @@ export interface ScenarioSpec {
   duration_s: number;
   links: string[];
   workload: string[];
-  faults: { link: string; kind: string; start_s: number; duration_s: number; severity?: number }[];
+  faults: ScenarioFault[];
   background: { link: string; start_s: number; duration_s: number; load: number }[];
   speed_scale: number;
   reverse: boolean;
+  /** The survey a route-aware policy looks its route up in; absent on older catalogues. */
+  radio_map?: string | null;
+}
+
+/**
+ * A fault as the scenario file states it. Most are timed (`start_s`, held for
+ * `duration_s`); a `shadow` is anchored to the route instead - `from_m` to
+ * `to_m` from the route's forward start, eased in and out over `ramp_m` - so
+ * it is in the same place at any speed and in either direction.
+ */
+export interface ScenarioFault {
+  link: string;
+  kind: string;
+  start_s?: number;
+  duration_s?: number;
+  ramp_s?: number;
+  from_m?: number;
+  to_m?: number;
+  ramp_m?: number;
+  severity?: number;
+}
+
+/**
+ * A radio map, exactly as the controller reads it: for each link and each
+ * `bin_m` of route, the share of survey samples in which it was unavailable
+ * and its mean reported coverage. Observations from earlier survey drives -
+ * what a route-aware policy expects - never a measurement of the run on screen.
+ */
+export interface RadioMap {
+  version: string;
+  survey_scenario: string;
+  seed_block: string;
+  seeds: number[];
+  survey_policy: string;
+  observed: string;
+  bin_m: number;
+  length_m: number;
+  code_commit?: string;
+  links: Partial<Record<EngineLinkId, { unusable_share: number[]; mean_coverage: number[] }>>;
 }
 
 export interface PolicySpec {
@@ -143,6 +182,7 @@ const live = {
     request<{ policies: PolicySpec[]; violation_definition: string }>('/api/policies'),
   profiles: () => request<Record<string, unknown>>('/api/profiles'),
   capability: () => request<CapabilityReport>('/api/capability'),
+  radioMap: (surveyId: string) => request<RadioMap>(`/api/radio-maps/${encodeURIComponent(surveyId)}`),
 
   listRuns: (limit = 40) =>
     request<{ runs: RunRow[]; live: EngineRunState[] }>(`/api/runs?limit=${limit}`),

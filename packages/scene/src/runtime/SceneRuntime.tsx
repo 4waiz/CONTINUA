@@ -15,6 +15,7 @@ import type {
   SceneMode,
   SceneState,
   SceneStateSource,
+  StoryShot,
 } from '@continua/contracts';
 import {
   createContext,
@@ -28,6 +29,7 @@ import {
 } from 'react';
 import { SceneClock } from '../core/clock';
 import { previewSource } from '../preview/previewSource';
+import { NO_DEAD_ZONES, type DeadZone } from '../world/deadZones';
 
 export interface SceneSettings {
   mode: SceneMode;
@@ -37,6 +39,14 @@ export interface SceneSettings {
   showRoute: boolean;
   showMarkers: boolean;
   selectedSiteId: string | null;
+  /**
+   * Where the scenario on screen shadows the radio links, and so where the
+   * world stands walls (`world/deadZones.ts`). Compared by reference: pass
+   * the same array while it is the same scenario.
+   */
+  deadZones: readonly DeadZone[];
+  /** The story mode's current framing; used while `camera` is 'story'. */
+  storyShot: StoryShot;
 }
 
 const DEFAULT_SETTINGS: SceneSettings = {
@@ -47,6 +57,8 @@ const DEFAULT_SETTINGS: SceneSettings = {
   showRoute: true,
   showMarkers: true,
   selectedSiteId: null,
+  deadZones: NO_DEAD_ZONES,
+  storyShot: { id: 'follow', at: 0, from: null },
 };
 
 class SettingsStore {

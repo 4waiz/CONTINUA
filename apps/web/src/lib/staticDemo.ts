@@ -24,7 +24,7 @@ import type {
   EngineRunState,
   EngineSocketMessage,
 } from '@continua/contracts/engine';
-import type { CapabilityReport, PolicySpec, RunRow, ScenarioSpec } from './api';
+import type { CapabilityReport, PolicySpec, RadioMap, RunRow, ScenarioSpec } from './api';
 
 export interface DemoRunSummary {
   run_id: string;
@@ -407,23 +407,32 @@ export const demoApi = {
    * Policy specs are not exported: nothing in the static build can start a run
    * with one. The ids are enough for the selectors to render the comparison.
    */
-  policies: async (): Promise<{ policies: PolicySpec[]; violation_definition: string }> => ({
-    policies: (['B0', 'B1', 'B2', 'P1'] as const).map(
-      (id) =>
-        ({
-          id,
-          multipath: id !== 'B0',
-          proactive_warm: id === 'P1' || id === 'B2',
-          use_prediction: id === 'P1',
-          always_redundant: id === 'B2',
-          app_aware: id === 'P1',
-          min_dwell_s: 2,
-          predictor: id === 'P1' ? 'heuristic-trend-1.1' : 'none',
-        }) as PolicySpec,
-    ),
-    violation_definition:
-      'RTT above the control deadline, loss above 3 %, or the path becoming unusable.',
-  }),
+  policies: async (): Promise<{ policies: PolicySpec[]; violation_definition: string }> => {
+    // The recording says which policies it holds; an older one held these four.
+    const recorded = (await demoIndex()).policies ?? ['B0', 'B1', 'B2', 'P1'];
+    const continua = (id: string) => id === 'P1' || id === 'P3';
+    return {
+      policies: recorded.map(
+        (id) =>
+          ({
+            id,
+            multipath: id !== 'B0',
+            proactive_warm: continua(id) || id === 'B2',
+            use_prediction: continua(id),
+            always_redundant: id === 'B2',
+            app_aware: continua(id),
+            min_dwell_s: 2,
+            predictor: continua(id) ? 'heuristic-trend-1.1' : 'none',
+          }) as PolicySpec,
+      ),
+      violation_definition:
+        'RTT above the control deadline, loss above 3 %, or the path becoming unusable.',
+    };
+  },
+
+  /** The radio maps the recorded route-aware runs used, copied as they were. */
+  radioMap: (surveyId: string) =>
+    fetchJson<RadioMap>(`/demo/radio-maps/${encodeURIComponent(surveyId)}.json`, 'force-cache'),
 
   capability: async () => {
     const report = (await demoIndex()).capability;

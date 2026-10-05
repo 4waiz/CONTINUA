@@ -23,6 +23,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 from fastapi import BackgroundTasks, FastAPI, HTTPException, Query, WebSocket, WebSocketDisconnect
+from fastapi import Path as PathParam
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
@@ -36,6 +37,7 @@ from ..contracts import (
 )
 from ..controller.controller import POLICY_LIBRARY
 from ..controller.modes import SUPPORT_DEFINITION, mode_table
+from ..controller.radio_map import map_path
 from ..controller.predictors import VIOLATION_DEFINITION, LearnedPredictor
 from ..emulation.capability import probe as capability_probe
 from ..experiments.runner import DEFAULT_POLICIES, run_comparison, seed_for
@@ -119,10 +121,27 @@ def scenarios() -> dict:
                 "background": spec.get("background", []),
                 "speed_scale": spec.get("speed_scale", 1.0),
                 "reverse": spec.get("reverse", False),
+                # The survey a route-aware policy looks its route up in.
+                "radio_map": spec.get("radio_map"),
             }
             for spec in catalogue.values()
         ]
     }
+
+
+@app.get("/api/radio-maps/{survey_id}")
+def radio_map(survey_id: str = PathParam(pattern=r"^[a-z0-9-]{1,48}$")) -> dict:
+    """A radio map exactly as the controller reads it.
+
+    For each link and each 5 m of the planned route: the share of survey
+    samples in which the link was unavailable, and its mean reported coverage.
+    These are observations from earlier survey drives - what a route-aware
+    policy *expects* - not a measurement of any run on screen.
+    """
+    path = map_path(survey_id)
+    if not path.is_file():
+        raise HTTPException(status_code=404, detail="no radio map with that id")
+    return json.loads(path.read_text(encoding="utf-8"))
 
 
 @app.get("/api/policies")
@@ -220,6 +239,9 @@ async def control_run(run_id: str, request: ControlRequest) -> dict:
     if session is None:
         raise HTTPException(status_code=404, detail="no live session with that run id")
     if request.action == "play":
+        # A play may carry the rate to play at; it used to be dropped here.
+        if request.speed is not None:
+            session.set_speed(request.speed)
         session.resume()
         session.start()
     elif request.action == "pause":

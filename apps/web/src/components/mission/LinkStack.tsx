@@ -25,6 +25,7 @@ import { NETWORK_COLOR } from '@continua/scene';
 import { useMemo, useState } from 'react';
 import { Meter, Sparkline, TimeSeries } from '../ui/charts';
 import { GatewayIcon, NetworkIcon } from '../ui/icons';
+import { NETWORK } from './plain';
 
 type Phase = 'carrying' | 'warming' | 'ready' | 'unavailable';
 
@@ -43,6 +44,15 @@ const PHASE_LABEL: Record<Phase, string> = {
   ready: 'Available',
   unavailable: 'Unavailable',
 };
+
+/** The same states in plain words, for the simple view. */
+function plainPhase(event: EngineEvent | null, link: EngineLinkId, phase: Phase): string {
+  if (!event) return 'Waiting for a run';
+  if (phase === 'carrying') return 'Carrying the link';
+  if (phase === 'warming') return 'Starting up';
+  if (phase === 'unavailable') return 'Out of reach';
+  return event.links[link]?.phase === 'active' ? 'Ready as backup' : 'In range, off';
+}
 
 /** The one figure an operator reads first for each link. */
 function headline(observation: EngineLinkObservation | undefined, link: EngineLinkId): { value: string; unit: string } | null {
@@ -97,11 +107,17 @@ export function LinkStack({
   history,
   selected,
   onSelect,
+  simple = false,
 }: {
   event: EngineEvent | null;
   history: EngineEvent[];
   selected: EngineLinkId;
   onSelect: (link: EngineLinkId) => void;
+  /**
+   * The simple view: the four networks and what each is doing, in words - no
+   * figures, no chart. The measurements are one toggle away (Details).
+   */
+  simple?: boolean;
 }) {
   const recent = useMemo(() => history.slice(-72), [history]);
   const series = useMemo(() => {
@@ -138,7 +154,7 @@ export function LinkStack({
   return (
     <section className="glass flex min-h-0 flex-col" aria-label="Access links">
       <header className="flex items-center justify-between px-4 pt-3.5 pb-2">
-        <h2 className="section-label">Access links</h2>
+        <h2 className="section-label">{simple ? 'Networks' : 'Access links'}</h2>
         <span
           className="flex cursor-help items-center gap-1.5 text-[11px] font-medium text-[color:var(--color-faint)]"
           title="Four alternative paths to one session gateway - not a chain traffic passes through in sequence. At most one carries the session."
@@ -187,16 +203,25 @@ export function LinkStack({
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="block text-[13.5px] font-semibold leading-tight text-[color:var(--color-ink)]">
-                    {LINK_LABEL[link].label}
+                    {simple ? NETWORK[link].name : LINK_LABEL[link].label}
                   </span>
-                  <span
-                    className="mt-[3px] block text-[11px] font-semibold tracking-[0.04em] uppercase"
-                    style={{ color: carrying || phase === 'warming' ? color : 'var(--color-faint)' }}
-                  >
-                    {PHASE_LABEL[phase]}
-                  </span>
+                  {simple ? (
+                    <span
+                      className="mt-[2px] block text-[12px] font-medium"
+                      style={{ color: carrying || phase === 'warming' ? color : 'var(--color-faint)' }}
+                    >
+                      {plainPhase(event, link, phase)}
+                    </span>
+                  ) : (
+                    <span
+                      className="mt-[3px] block text-[11px] font-semibold tracking-[0.04em] uppercase"
+                      style={{ color: carrying || phase === 'warming' ? color : 'var(--color-faint)' }}
+                    >
+                      {PHASE_LABEL[phase]}
+                    </span>
+                  )}
                 </span>
-                <span className="flex w-[84px] shrink-0 flex-col items-end gap-1">
+                <span className={`flex w-[84px] shrink-0 flex-col items-end gap-1 ${simple ? 'hidden' : ''}`}>
                   {figure ? (
                     <span className="metric text-[15px] font-semibold leading-none text-[color:var(--color-ink)]">
                       {figure.value}
@@ -224,7 +249,11 @@ export function LinkStack({
         })}
       </ul>
 
-      {!event ? (
+      {simple ? (
+        <p className="mx-4 mt-1 mb-3.5 text-[12px] leading-snug text-[color:var(--color-muted)]">
+          Four ways to reach the rover. One carries the link; the next is readied before it is needed.
+        </p>
+      ) : !event ? (
         // Before a run there is nothing to measure: one line saying what will
         // be here, not three cards of "unavailable" and an empty chart.
         <div className="mx-3 mt-2 mb-3 rounded-[14px] border border-dashed border-[color:var(--color-line-strong)] px-3.5 py-3">

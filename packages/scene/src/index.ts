@@ -45,6 +45,15 @@ export {
   siteElevation,
   type SiteMarker,
 } from './world/sites';
+export {
+  deadZonesFromFaults,
+  withinDeadZone,
+  NO_DEAD_ZONES,
+  WALL as DEAD_ZONE_WALL,
+  type DeadZone,
+  type ShadowFaultLike,
+} from './world/deadZones';
+export { GATE_DISTANCE } from './world/layout';
 
 // --- components ------------------------------------------------------------
 export { ContinuaScene, qualityCeiling, type ContinuaSceneProps } from './components/ContinuaScene';

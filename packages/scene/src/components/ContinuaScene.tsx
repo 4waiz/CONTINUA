@@ -27,6 +27,7 @@ import { Lighting } from './Lighting';
 import { PostEffects } from './PostEffects';
 import { RoverCam } from './RoverCam';
 import { CoverageOverlay, LinkBeams } from './Network';
+import { DeadZoneWalls } from './DeadZone';
 import { Rover } from './Rover';
 import { SceneCameras } from './Cameras';
 import { WorldProps } from './WorldProps';
@@ -247,11 +248,13 @@ function SceneContents({
         selectedSiteId={settings.selectedSiteId}
         onSelectSite={onSelectSite}
         lite={quality === 'low'}
+        deadZones={settings.deadZones}
       />
+      <DeadZoneWalls zones={settings.deadZones} lite={quality === 'low'} />
       <Rover lod={quality === 'low'} />
       <CoverageOverlay visible={settings.showCoverage && !inspect} />
       {!inspect && <LinkBeams />}
-      <SceneCameras mode={inspect ? 'turntable' : settings.camera} />
+      <SceneCameras mode={inspect ? 'turntable' : settings.camera} story={settings.storyShot} />
       {quality === 'low' && <BakeShadows />}
       {quality === 'high' && <PostEffects />}
       {adaptive && <QualityGovernor />}

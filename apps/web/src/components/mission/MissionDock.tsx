@@ -26,7 +26,8 @@ import {
 } from '@continua/contracts/engine';
 import { NETWORK_COLOR } from '@continua/scene';
 import { useMemo, type ReactNode } from 'react';
-import { PauseIcon, PlayIcon, ReplayIcon, ResetIcon } from '../ui/icons';
+import { NetworkIcon, PauseIcon, PlayIcon, ReplayIcon, ResetIcon } from '../ui/icons';
+import { MAIN_STRATEGIES, NETWORK, plainDecision, STRATEGY } from './plain';
 
 const SPEEDS = [0.5, 1, 2, 4, 8] as const;
 
@@ -161,6 +162,51 @@ function Track({
   );
 }
 
+/** A moment worth jumping to: a change of network, or the road map's warning. */
+interface Flag {
+  t: number;
+  label: string;
+  title: string;
+  color: string;
+  link: EngineEvent['carrying'];
+}
+
+/**
+ * The run's key moments, from its own events: every change of carrying
+ * network, and a route-aware policy's preparation for a known gap. Each is a
+ * button that jumps the run to just before it.
+ */
+function flagsOf(events: readonly EngineEvent[]): Flag[] {
+  const flags: Flag[] = [];
+  let previous: EngineEvent['carrying'] = null;
+  let prepared = false;
+  for (const event of events) {
+    const actions = actionsOf(event);
+    const switched = actions.find((action) => action.kind === 'switch');
+    if (switched?.link && switched.link !== previous && previous !== null) {
+      flags.push({
+        t: event.t,
+        label: NETWORK[switched.link].name,
+        title: plainDecision(event, previous) ?? event.reason,
+        color: NETWORK_COLOR[switched.link],
+        link: switched.link,
+      });
+    }
+    if (!prepared && /^Preparing /.test(event.reason ?? '') && actions.length > 0) {
+      prepared = true;
+      flags.push({
+        t: event.t,
+        label: 'Gap ahead',
+        title: plainDecision(event, previous) ?? event.reason,
+        color: 'var(--color-violet)',
+        link: null,
+      });
+    }
+    if (event.carrying) previous = event.carrying;
+  }
+  return flags;
+}
+
 function Timeline({
   t,
   duration,
@@ -171,6 +217,7 @@ function Timeline({
   baseline,
   disabled,
   onSeek,
+  deadZoneTimes = [],
 }: {
   t: number;
   duration: number;
@@ -183,6 +230,8 @@ function Timeline({
   baseline?: RunTrack | null;
   disabled: boolean;
   onSeek: (t: number) => void;
+  /** When the rover was in a cutting, from its own distances. */
+  deadZoneTimes?: readonly { from: number; to: number }[];
 }) {
   const segments = useMemo(
     () => (track ? carryingSegments([], [...track.events], null) : carryingSegments(decisions, history, latest)),
@@ -226,12 +275,64 @@ function Timeline({
       }),
     [decisions],
   );
+  const flags = useMemo(
+    () => (track ? flagsOf(track.events) : []),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [track?.events, track?.version],
+  );
   const span = duration > 0 ? duration : 1;
   const x = (seconds: number) => `${Math.max(0, Math.min(100, (seconds / span) * 100))}%`;
+  // Which flags keep their words: each needs about a tenth of the track to itself.
+  const labelled = useMemo(() => {
+    const out: boolean[] = [];
+    let last = -Infinity;
+    for (const flag of flags) {
+      const at = flag.t / span;
+      const room = at - last >= 0.1;
+      if (room) last = at;
+      out.push(room);
+    }
+    return out;
+  }, [flags, span]);
 
   const split = baselineSegments !== null;
   return (
-    <div className="relative h-[26px] min-w-[180px] flex-1">
+    <div className="relative min-w-[180px] flex-1" style={{ height: flags.length ? 46 : 26 }}>
+      {/* Key moments, as buttons above the tracks: jump to just before each. */}
+      {flags.length > 0 && (
+        <div className="absolute inset-x-0 top-0 h-[18px]" aria-label="Key moments">
+          {flags.map((flag, index) => {
+            // A label needs room: one closer than this to the last labelled
+            // flag is drawn as its icon alone, and says itself on hover.
+            const crowded = labelled[index] === false;
+            return (
+              <button
+                key={`${flag.t}-${flag.label}`}
+                type="button"
+                className="timeline-flag"
+                data-compact={crowded}
+                style={{ left: x(flag.t), ['--flag' as string]: flag.color }}
+                title={`${flag.title} (jump here)`}
+                aria-label={`${flag.label}: jump to t+${flag.t.toFixed(0)}s`}
+                onClick={() => onSeek(Math.max(0, flag.t - 1.5))}
+                disabled={disabled}
+              >
+                {flag.link ? <NetworkIcon link={flag.link} size={11} /> : <span aria-hidden className="h-[6px] w-[6px] rounded-full bg-current" />}
+                {!crowded && flag.label}
+              </button>
+            );
+          })}
+        </div>
+      )}
+      <div className="absolute inset-x-0 bottom-0 h-[26px]">
+      {deadZoneTimes.map((zone) => (
+        <span
+          key={zone.from}
+          aria-hidden
+          className="dead-zone-hatch pointer-events-none absolute inset-y-0 rounded-[4px]"
+          style={{ left: x(zone.from), width: `max(3px, calc(${x(zone.to)} - ${x(zone.from)}))`, opacity: 0.7 }}
+        />
+      ))}
       {split ? (
         <>
           <Track segments={segments} outages={outages} x={x} top="3px" height={8} />
@@ -268,6 +369,7 @@ function Timeline({
         disabled={disabled}
         aria-label="Run timeline"
       />
+      </div>
     </div>
   );
 }
@@ -275,10 +377,10 @@ function Timeline({
 /** What the timeline's colours mean - the same colours as the links panel. */
 function TimelineLegend() {
   const items: { label: string; color: string }[] = [
-    { label: 'Wired · Wi-Fi', color: NETWORK_COLOR.wifi },
+    { label: 'Cable · Wi-Fi', color: NETWORK_COLOR.wifi },
     { label: 'Cellular', color: NETWORK_COLOR.cellular },
     { label: 'Satellite', color: NETWORK_COLOR.satellite },
-    { label: 'Session down', color: 'var(--color-bad)' },
+    { label: 'Link lost', color: 'var(--color-bad)' },
   ];
   return (
     <ul className="hidden shrink-0 items-center gap-2.5 xl:flex" aria-label="Timeline colours: the link carrying the session">
@@ -315,7 +417,7 @@ export function Pipeline({ event }: { event: EngineEvent | null }) {
                 }}
               >
                 <span className="metric text-[11px] opacity-80">{stage.index}</span>
-                {stage.title.toUpperCase()}
+                <span className={isActive ? '' : 'max-[1600px]:hidden'}>{stage.title.toUpperCase()}</span>
               </span>
               {index < STAGES.length - 1 && (
                 <span aria-hidden className="text-[11px] text-[color:var(--color-line-strong)]">
@@ -342,6 +444,23 @@ export function Pipeline({ event }: { event: EngineEvent | null }) {
         )}
       </p>
     </div>
+  );
+}
+
+/** The simple view's one line: the latest decision, in words. */
+function PlainLine({ event, previous }: { event: EngineEvent | null; previous: EngineEvent['carrying'] }) {
+  const text = event ? plainDecision(event, previous) : null;
+  return (
+    <p className="min-w-0 flex-1 truncate text-[13px] text-[color:var(--color-muted)]" title={event?.reason}>
+      {text ? (
+        <>
+          <span className="mr-1.5 font-semibold text-[color:var(--color-blue)]">Last decision</span>
+          <span className="text-[color:var(--color-ink)]">{text}</span>
+        </>
+      ) : (
+        'Each decision appears here, in words, as the run goes.'
+      )}
+    </p>
   );
 }
 
@@ -374,6 +493,13 @@ export function MissionDock({
   onCompare,
   track,
   baseline,
+  simple = false,
+  detail = false,
+  onDetail,
+  roadAhead,
+  deadZoneTimes,
+  lastDecision = null,
+  lastDecisionFrom = null,
 }: {
   scenarios: ScenarioSpec[];
   policies: PolicySpec[];
@@ -406,6 +532,18 @@ export function MissionDock({
   track?: RunTrack | null;
   /** The baseline's track, when one is running beside this run. */
   baseline?: RunTrack | null;
+  /** Plain words: strategy names, the latest decision as a sentence. */
+  simple?: boolean;
+  /** The expert panels are showing. */
+  detail?: boolean;
+  onDetail?: (detail: boolean) => void;
+  /** The road strip, between the run's set-up and its transport. */
+  roadAhead?: ReactNode;
+  /** When the rover was in a cutting, for the timeline. */
+  deadZoneTimes?: readonly { from: number; to: number }[];
+  /** The latest decision, and the link that carried before it. */
+  lastDecision?: EngineEvent | null;
+  lastDecisionFrom?: EngineEvent['carrying'];
 }) {
   return (
     <section className="glass flex flex-col gap-2 px-3 py-2.5" aria-label="Run controls">
@@ -427,25 +565,34 @@ export function MissionDock({
           ))}
         </select>
         <select
-          className="control w-[150px] shrink-0"
+          className="control w-[218px] shrink-0"
           value={policyId}
           onChange={(event) => onPolicy(event.target.value as PolicyIdString)}
           aria-label="Policy"
+          title={STRATEGY[policyId]?.blurb}
           disabled={policies.length === 0}
         >
           {policies.length === 0 && <option> - </option>}
-          {policies.map((entry) => (
-            <option key={entry.id} value={entry.id}>
-              {entry.id}
-              {entry.id === 'P1'
-                ? ' · CONTINUA'
-                : entry.id === 'P2'
-                  ? ' · CONTINUA P2'
-                  : entry.id === 'P3'
-                    ? ' · route-aware'
-                    : ''}
-            </option>
-          ))}
+          {policies.length > 0 && (
+            <>
+              <optgroup label="Strategies">
+                {MAIN_STRATEGIES.filter((id) => policies.some((entry) => entry.id === id)).map((id) => (
+                  <option key={id} value={id}>
+                    {STRATEGY[id].name} · {id}
+                  </option>
+                ))}
+              </optgroup>
+              <optgroup label="For comparison">
+                {policies
+                  .filter((entry) => !MAIN_STRATEGIES.includes(entry.id))
+                  .map((entry) => (
+                    <option key={entry.id} value={entry.id}>
+                      {STRATEGY[entry.id]?.name ?? entry.id} · {entry.id}
+                    </option>
+                  ))}
+              </optgroup>
+            </>
+          )}
         </select>
         {/* A recording's seed is a fact of the recording; there is nothing to type. */}
         <label className="flex shrink-0 items-center gap-1.5 text-[12px] text-[color:var(--color-muted)]" hidden={IS_PUBLIC_PREVIEW}>
@@ -461,7 +608,7 @@ export function MissionDock({
         </label>
         <label
           className="flex shrink-0 cursor-pointer items-center gap-1.5 text-[12px] font-medium text-[color:var(--color-muted)]"
-          title="Run the reactive baseline (B0) on the same scenario, route and seed alongside, and show the two side by side"
+          title="Run the normal rover - switch after it breaks (B0) - on the same scenario, route and seed alongside, and show the two side by side"
         >
           <input
             type="checkbox"
@@ -470,7 +617,7 @@ export function MissionDock({
             onChange={(event) => onCompare(event.target.checked)}
             disabled={policyId === 'B0'}
           />
-          vs reactive
+          vs normal rover
         </label>
         {!IS_PUBLIC_PREVIEW && (
           <button type="button" className="control control-primary shrink-0" onClick={onStart} disabled={busy}>
@@ -478,8 +625,22 @@ export function MissionDock({
           </button>
         )}
         <span className="divider-v mx-1" />
-        <Pipeline event={latest} />
+        {simple ? <PlainLine event={lastDecision} previous={lastDecisionFrom} /> : <Pipeline event={latest} />}
+        {onDetail && (
+          <button
+            type="button"
+            className="control shrink-0"
+            data-active={detail}
+            aria-pressed={detail}
+            onClick={() => onDetail(!detail)}
+            title="Show every measurement: round trip, loss, jitter, per-class deadlines, the controller's pipeline"
+          >
+            Details
+          </button>
+        )}
       </div>
+
+      {roadAhead && <div className="border-t border-[color:var(--color-line)] pt-2">{roadAhead}</div>}
 
       {/* Playback: the familiar shape - transport, clock, timeline. */}
       <div className="flex items-center gap-2.5 border-t border-[color:var(--color-line)] pt-2">
@@ -533,9 +694,9 @@ export function MissionDock({
           <span className="text-[color:var(--color-faint)]"> / {formatClock(duration)}</span>
         </span>
         {baseline && (
-          <span className="flex shrink-0 flex-col text-right text-[11px] font-semibold leading-[12px]" aria-hidden>
+          <span className="flex shrink-0 flex-col self-end pb-[1px] text-right text-[11px] font-semibold leading-[12px]" aria-hidden>
             <span className="text-[color:var(--color-blue)]">CONTINUA</span>
-            <span className="text-[color:var(--color-faint)]">Reactive</span>
+            <span className="text-[color:var(--color-faint)]">Normal</span>
           </span>
         )}
         <Timeline
@@ -548,6 +709,7 @@ export function MissionDock({
           baseline={baseline}
           disabled={!runId}
           onSeek={onSeek}
+          deadZoneTimes={deadZoneTimes}
         />
         <TimelineLegend />
         {extra}

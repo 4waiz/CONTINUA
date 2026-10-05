@@ -254,6 +254,14 @@ function buildRange(spec: RangeSpec, detail: number): BufferGeometry {
       // Cut to a depth set by their spacing, not the mountain's height: cut
       // in proportion to a 200 m face they were slots, each a dark stripe.
       h = Math.max(0, h - spec.flute * 0.2 * (1 - fluted) * face * fluteAmount);
+      // Knolls and hollows across the faces, tens of metres apart: forested
+      // slopes are lumpy, and a smooth cone read as a green blanket.
+      if (h > 0) {
+        const knoll = valueNoise2(x * 0.022, z * 0.022, spec.seed + 101) - 0.5;
+        const hummock = valueNoise2(x * 0.061, z * 0.061, spec.seed + 103) - 0.5;
+        h += (knoll * 2 * Math.min(16, crest * 0.07) + hummock * 2 * Math.min(5, crest * 0.022)) * smoothstep(0.02, 0.25, t);
+        h = Math.max(0, h);
+      }
 
       const index = i * stride + j;
       positions[index * 3] = x;
@@ -283,30 +291,42 @@ function buildRange(spec: RangeSpec, detail: number): BufferGeometry {
   geometry.setIndex(indices);
   geometry.computeVertexNormals();
 
-  // Colour from the shape: forest, shaded in the gullies and valleys, lit on
-  // the ribs, giving way to rock where the ground is too steep to hold it.
+  // Colour from the shape: forest, shaded deep in the gullies and valleys, lit
+  // on the ribs and crests, giving way to rock where the ground is too steep to
+  // hold it. Rock is also kept as its own channel, so the surface shader can
+  // draw strata on it and keep the forest's crowns off it.
   const normals = geometry.getAttribute('normal');
   const colours = new Float32Array(count * 3);
+  const rockiness = new Float32Array(count);
   const lush = new Color(spec.lush);
   const shade = new Color(spec.shade);
   const crestTone = new Color(spec.crest);
   const rock = new Color(spec.rock);
   const colour = new Color();
+  let top = 1;
+  for (let index = 0; index < count; index += 1) top = Math.max(top, positions[index * 3 + 1]!);
   for (let index = 0; index < count; index += 1) {
     const x = positions[index * 3]!;
+    const y = positions[index * 3 + 1]!;
     const z = positions[index * 3 + 2]!;
     const slope = 1 - Math.abs(normals.getY(index));
     const patch = valueNoise2(x * 0.018, z * 0.018, spec.seed + 81);
-    colour.copy(lush).multiplyScalar(0.88 + 0.24 * patch);
-    colour.lerp(shade, clamp((1 - fluting[index]!) * 0.5 * faces[index]! + valleys[index]! * 0.4, 0, 0.88));
-    colour.lerp(crestTone, fluting[index]! * fluting[index]! * 0.28 * faces[index]!);
+    colour.copy(lush).multiplyScalar(0.86 + 0.28 * patch);
+    // Gullies and valley floors hold shade the sun never reaches.
+    colour.lerp(shade, clamp((1 - fluting[index]!) * 0.62 * faces[index]! + valleys[index]! * 0.58, 0, 0.9));
+    // Ribs and the high ground catch it.
+    const high = smoothstep(0.35, 0.95, y / top);
+    colour.lerp(crestTone, clamp(fluting[index]! * fluting[index]! * 0.34 * faces[index]! + high * 0.22, 0, 0.6));
     const scar = valueNoise2(x * 0.03, z * 0.03, spec.seed + 91);
-    colour.lerp(rock, smoothstep(0.5, 0.72, slope + 0.22 * (scar - 0.5)));
+    const bare = smoothstep(0.46, 0.7, slope + 0.24 * (scar - 0.5) + 0.08 * high);
+    colour.lerp(rock, bare);
+    rockiness[index] = bare;
     colours[index * 3] = colour.r;
     colours[index * 3 + 1] = colour.g;
     colours[index * 3 + 2] = colour.b;
   }
   geometry.setAttribute('color', new Float32BufferAttribute(colours, 3));
+  geometry.setAttribute('aRock', new Float32BufferAttribute(rockiness, 1));
   geometry.computeBoundingSphere();
   return geometry;
 }
@@ -322,9 +342,30 @@ function buildRange(spec: RangeSpec, detail: number): BufferGeometry {
 function mountainMaterial(time: { value: number }): MeshStandardMaterial {
   const material = new MeshStandardMaterial({ vertexColors: true, roughness: 0.95, metalness: 0, side: DoubleSide });
   return patchStandard(material, {
-    key: 'continua-mountains-v4',
+    key: 'continua-mountains-v6',
     uniforms: { uTime: time },
+    vertexHeader: /* glsl */ `
+      attribute float aRock;
+      varying float vCtRock;
+    `,
+    vertex: /* glsl */ `
+      vCtRock = aRock;
+    `,
     header: /* glsl */ `
+      varying float vCtRock;
+      // Stands of forest: patches a few hundred metres across of a yellower or
+      // a bluer green, and clumps within them - what forest looks like from
+      // across water, where single crowns are far below a pixel.
+      vec3 ctStands(vec3 world) {
+        float stand = ctFbm2(world.xz * 0.0065 + vec2(world.y * 0.004, 7.0));
+        float clump = ctFbm2(world.xz * 0.034 + vec2(3.0, world.y * 0.02));
+        vec3 tint = mix(vec3(0.84, 0.95, 0.9), vec3(1.14, 1.09, 0.84), smoothstep(0.32, 0.72, stand));
+        return tint * (0.84 + 0.3 * clump);
+      }
+      // Bedded rock: bands that wander along the face.
+      float ctStrata(vec3 world) {
+        return 0.5 + 0.5 * sin(world.y * 0.62 + ctNoise(world.xz * 0.018) * 7.0);
+      }
       // Crowns about nine metres across.
       #define CT_CROWN 0.11
       // How many pixels one crown spans here: the texture fades out before
@@ -343,7 +384,7 @@ function mountainMaterial(time: { value: number }): MeshStandardMaterial {
           for (int x = -1; x <= 1; x++) {
             vec2 g = vec2(float(x), float(y));
             vec2 cell = i + g;
-            vec2 r = g + vec2(ctHash(cell), ctHash(cell + 17.3)) * 0.85 - f;
+            vec2 r = g + vec2(ctHash(cell), ctHash(cell + 17.3)) * 0.98 - f;
             float d = dot(r, r);
             if (d < best) {
               best = d;
@@ -353,11 +394,18 @@ function mountainMaterial(time: { value: number }): MeshStandardMaterial {
         }
         return vec2(clamp(1.0 - sqrt(best) * 1.15, 0.0, 1.0), id);
       }
-      // Crowns on the ground plane where it is gentle, across the slope where steep.
+      // Crowns on the ground plane where it is gentle, across the slope where
+      // steep - two sizes of tree, the larger standing over the smaller, so the
+      // canopy never settles into a lattice.
+      vec2 ctLayer(vec2 p) {
+        vec2 big = ctCrowns(p);
+        vec2 small = ctCrowns(p * 1.63 + 7.9);
+        return small.x * 0.92 > big.x ? vec2(small.x * 0.92, small.y) : big;
+      }
       vec2 ctCanopy(vec3 world, vec3 n) {
-        vec2 level = ctCrowns(world.xz * CT_CROWN);
+        vec2 level = ctLayer(world.xz * CT_CROWN);
         vec2 across = normalize(vec2(-n.z, n.x) + 1e-4);
-        vec2 steep = ctCrowns(vec2(dot(world.xz, across), world.y * 1.15) * CT_CROWN);
+        vec2 steep = ctLayer(vec2(dot(world.xz, across), world.y * 1.15) * CT_CROWN);
         return mix(steep, level, smoothstep(0.55, 0.85, n.y));
       }
     `,
@@ -365,12 +413,18 @@ function mountainMaterial(time: { value: number }): MeshStandardMaterial {
       #ifndef CT_LITE
         vec3 ctN = normalize(inverseTransformDirection(vNormal, viewMatrix));
         float ctNear = smoothstep(4.0, 10.0, ctCrownPixels());
+        float ctForested = 1.0 - smoothstep(0.25, 0.75, vCtRock);
         vec2 ctTree = ctCanopy(vCtWorld, ctN);
         float ctClumps = ctNoise(vCtWorld.xz * 0.035 + 3.0);
+        // Stands of forest at every distance; single crowns where they resolve.
+        diffuseColor.rgb *= mix(vec3(1.0), ctStands(vCtWorld), ctForested);
         // Lit crowns, dark gaps, and tree-to-tree variety: yellower, bluer.
         vec3 ctTint = mix(vec3(1.06, 1.04, 0.86), vec3(0.88, 0.98, 1.02), ctTree.y);
-        vec3 ctForest = ctTint * (0.68 + 0.44 * ctTree.x) * (0.9 + 0.2 * ctClumps);
-        diffuseColor.rgb *= mix(vec3(1.0), ctForest, ctNear);
+        vec3 ctForest = ctTint * (0.62 + 0.46 * pow(ctTree.x, 0.55)) * (0.82 + 0.3 * ctTree.y) * (0.9 + 0.2 * ctClumps);
+        diffuseColor.rgb *= mix(vec3(1.0), ctForest, ctNear * ctForested);
+        // Bare rock in beds, lighter and darker, flecked close up.
+        float ctBed = ctStrata(vCtWorld);
+        diffuseColor.rgb *= mix(1.0, 0.8 + 0.34 * ctBed + 0.08 * ctNoise(vCtWorld.xz * 0.4 + vCtWorld.y), vCtRock);
         // The same cloud shadows that drift over the island, a function of
         // the scene clock alone.
         float ctCloud = smoothstep(0.5, 0.74, ctFbm2(vCtWorld.xz * 0.0055 + vec2(uTime * 0.03, uTime * 0.011)));
@@ -382,8 +436,15 @@ function mountainMaterial(time: { value: number }): MeshStandardMaterial {
         {
           vec3 ctN = normalize(inverseTransformDirection(vNormal, viewMatrix));
           float ctNear = smoothstep(7.0, 18.0, ctCrownPixels());
+          float ctForested = 1.0 - smoothstep(0.25, 0.75, vCtRock);
           vec2 ctTree = ctCanopy(vCtWorld, ctN);
-          normal = ctBump(-vViewPosition, normal, ctTree.x * ctNear, 1.4);
+          // Crowns close up; the stands' clumps modelled by the sun further out;
+          // ledges on the rock.
+          float ctFar = 1.0 - smoothstep(900.0, 1700.0, vCtDist);
+          float ctRelief = ctTree.x * ctNear * ctForested * 1.4
+            + ctFbm2(vCtWorld.xz * 0.034 + vec2(3.0, vCtWorld.y * 0.02)) * 9.0 * ctFar * ctForested
+            + ctStrata(vCtWorld) * 2.2 * vCtRock * ctFar;
+          normal = ctBump(-vViewPosition, normal, ctRelief, 1.0);
         }
       #endif
     `,

@@ -75,6 +75,10 @@ export function patchStandard(
     normal?: string;
     /** The low tier's variant: `CT_LITE` is defined, and the shader skips detail. */
     lite?: boolean;
+    /** Declarations for the vertex shader: attributes, varyings. */
+    vertexHeader?: string;
+    /** Vertex code after `begin_vertex`; `transformed` is the object-space position. */
+    vertex?: string;
   },
 ): MeshStandardMaterial {
   const key = options.lite ? `${options.key}-lite` : options.key;
@@ -104,7 +108,8 @@ export function patchStandard(
         '#include <common>',
         `#include <common>
          varying vec3 vCtWorld;
-         varying float vCtDist;`,
+         varying float vCtDist;
+         ${options.vertexHeader ?? ''}`,
       )
       .replace(
         '#include <begin_vertex>',
@@ -114,7 +119,8 @@ export function patchStandard(
            ctWorld = modelMatrix * instanceMatrix * vec4(transformed, 1.0);
          #endif
          vCtWorld = ctWorld.xyz;
-         vCtDist = distance(ctWorld.xyz, cameraPosition);`,
+         vCtDist = distance(ctWorld.xyz, cameraPosition);
+         ${options.vertex ?? ''}`,
       );
 
     shader.fragmentShader = shader.fragmentShader

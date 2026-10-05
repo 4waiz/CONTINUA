@@ -203,7 +203,7 @@ export function Lighting({ quality }: { quality: 'high' | 'balanced' | 'low' }) 
   useLayoutEffect(() => {
     // Clear coastal air: the haze starts later and ends where the camera's far
     // plane does, so the sea meets the sky without a seam.
-    scene.fog = new Fog(SCENE_COLOR.fog, 320, 2400);
+    scene.fog = new Fog(SCENE_COLOR.fog, 400, 2400);
     // The sky environment is bright everywhere; at full strength it floods
     // every shadow and the scene reads flat. A third of it keeps reflections
     // and fill while the sun does the modelling.
@@ -251,10 +251,10 @@ export function Lighting({ quality }: { quality: 'high' | 'balanced' | 'low' }) 
   return (
     <>
       <GradientSky lite={quality === 'low'} />
-      <hemisphereLight args={['#A9CDF0', SCENE_COLOR.groundBounce, 0.5]} />
+      <hemisphereLight args={['#9EC6F2', SCENE_COLOR.groundBounce, 0.55]} />
       <directionalLight
         ref={lightRef}
-        intensity={3.0}
+        intensity={3.25}
         color={SCENE_COLOR.sun}
         castShadow={shadows}
         shadow-mapSize-width={SHADOW_SIZE[quality]}

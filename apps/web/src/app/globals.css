@@ -690,3 +690,414 @@ button:focus-visible {
     transition-duration: 1ms !important;
   }
 }
+
+/* --- story mode, status cards, road strip, proof ---------------------------------
+   The story's surfaces are the same glass as every panel, set larger: a caption
+   is meant to be read from across a room, so its headline is 20 px and nothing
+   else on screen competes with it while it is up. */
+
+.story-caption {
+  max-width: min(760px, calc(100vw - 2 * var(--edge) - 640px));
+  min-width: 420px;
+  padding: 14px 20px 15px;
+}
+
+.story-caption-kicker,
+.story-landing-kicker {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--color-blue);
+}
+
+.story-caption-headline {
+  margin: 4px 0 0;
+  font-size: 19.5px;
+  line-height: 1.38;
+  font-weight: 600;
+  letter-spacing: -0.012em;
+  color: var(--color-ink);
+  text-wrap: pretty;
+}
+
+.story-caption-detail {
+  margin: 7px 0 0;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--color-muted);
+}
+
+@media (max-width: 1500px) {
+  .story-caption {
+    max-width: min(640px, calc(100vw - 2 * var(--edge) - 560px));
+  }
+  .story-caption-headline {
+    font-size: 17.5px;
+  }
+}
+
+.story-chapter {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 7px;
+  height: 30px;
+  padding: 0 11px 0 5px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--color-faint);
+  white-space: nowrap;
+}
+
+.story-chapter-index {
+  display: grid;
+  place-items: center;
+  width: 21px;
+  height: 21px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  background: var(--color-line);
+  color: var(--color-muted);
+}
+
+.story-chapter-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.story-chapter[data-state='done'] {
+  color: var(--color-muted);
+}
+
+.story-chapter[data-state='done'] .story-chapter-index {
+  background: color-mix(in srgb, var(--color-good) 18%, white);
+  color: var(--color-good);
+}
+
+.story-chapter[data-state='now'] {
+  background: color-mix(in srgb, var(--color-blue) 10%, white);
+  color: var(--color-blue);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-blue) 26%, transparent);
+}
+
+.story-chapter[data-state='now'] .story-chapter-index {
+  background: var(--brand-gradient);
+  color: white;
+}
+
+@media (max-width: 1500px) {
+  .story-chapter[data-state='next'] .story-chapter-title,
+  .story-chapter[data-state='done'] .story-chapter-title {
+    display: none;
+  }
+}
+
+.story-rate {
+  flex-shrink: 0;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 650;
+  color: var(--color-violet);
+  background: color-mix(in srgb, var(--color-violet) 9%, white);
+  font-variant-numeric: tabular-nums;
+}
+
+.story-landing,
+.story-proof {
+  width: min(640px, calc(100vw - 2 * var(--edge)));
+  padding: 22px 26px 20px;
+  border-radius: var(--radius-hero);
+}
+
+.story-proof {
+  width: min(880px, calc(100vw - 2 * var(--edge)));
+}
+
+.story-landing-title {
+  margin: 6px 0 0;
+  font-size: 30px;
+  line-height: 1.12;
+  font-weight: 700;
+  letter-spacing: -0.028em;
+}
+
+.story-landing-body,
+.story-proof-body {
+  margin: 10px 0 0;
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--color-muted);
+  text-wrap: pretty;
+}
+
+.story-landing-foot {
+  margin: 14px 0 0;
+  font-size: 12px;
+  color: var(--color-faint);
+}
+
+.story-proof-title {
+  margin: 6px 0 0;
+  font-size: 23px;
+  line-height: 1.2;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.story-proof-points {
+  margin: 14px 0 0;
+  padding-left: 18px;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--color-muted);
+}
+
+.story-proof-points li + li {
+  margin-top: 4px;
+}
+
+.story-proof-points strong {
+  color: var(--color-ink);
+}
+
+/* Can each operator reach their rover: the question the demonstration is about. */
+.rover-status {
+  position: relative;
+  display: flex;
+  min-width: 268px;
+  align-items: center;
+  gap: 11px;
+  padding: 9px 12px 10px 14px;
+  border-radius: 16px;
+  background: rgb(255 255 255 / 0.93);
+  box-shadow:
+    0 0 0 1px rgb(17 29 58 / 0.05),
+    0 12px 28px -16px rgb(17 29 58 / 0.4);
+  backdrop-filter: blur(16px) saturate(1.3);
+  overflow: hidden;
+}
+
+.rover-status::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background: var(--tone);
+}
+
+.rover-status[data-up='false'] {
+  background: color-mix(in srgb, var(--color-bad) 7%, rgb(255 255 255 / 0.95));
+}
+
+.rover-status-dot {
+  width: 10px;
+  height: 10px;
+  flex-shrink: 0;
+  border-radius: 999px;
+  background: var(--tone);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--tone) 18%, transparent);
+}
+
+.rover-status-name {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.rover-status-state {
+  font-size: 17px;
+  line-height: 1.2;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: var(--tone);
+}
+
+.rover-status-detail {
+  font-size: 12px;
+  line-height: 1.3;
+  color: var(--color-muted);
+  white-space: nowrap;
+}
+
+.rover-status-link {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  margin-left: auto;
+  flex-shrink: 0;
+  border-radius: 10px;
+}
+
+/* A scenario's cutting on the road strip: hatched, so it reads as a place. */
+.dead-zone-hatch {
+  background: repeating-linear-gradient(135deg, rgb(17 29 58 / 0.13) 0 3px, transparent 3px 7px);
+  box-shadow: inset 0 0 0 1px rgb(17 29 58 / 0.22);
+}
+
+/* Twenty drives as twenty rovers. */
+.glance {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 14px;
+}
+
+.glance-row {
+  display: grid;
+  grid-template-columns: minmax(170px, 1.1fr) minmax(0, 2.4fr) 86px 74px;
+  align-items: center;
+  gap: 14px;
+  padding: 7px 10px;
+  border-radius: 12px;
+}
+
+.glance-row[data-subject='true'] {
+  background: color-mix(in srgb, var(--color-blue) 7%, white);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-blue) 22%, transparent);
+}
+
+.glance-name {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  font-size: 13px;
+  line-height: 1.25;
+}
+
+.glance-icons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+
+.glance-rover {
+  width: 17px;
+  height: 13px;
+  fill: var(--color-bad);
+}
+
+.glance-rover[data-kept='true'] {
+  fill: var(--color-good);
+}
+
+.glance-score,
+.glance-cost {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.glance[data-compact='true'] .glance-row {
+  grid-template-columns: minmax(150px, 1fr) minmax(0, 2.2fr) 74px 64px;
+  padding: 5px 8px;
+}
+
+/* A key moment on the run timeline: a small labelled pin, a button to jump to it. */
+.timeline-flag {
+  position: absolute;
+  top: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  height: 17px;
+  padding: 0 6px 0 5px;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--flag) 35%, white);
+  background: color-mix(in srgb, var(--flag) 9%, white);
+  color: var(--flag);
+  font-size: 10.5px;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  z-index: 2;
+}
+
+.timeline-flag::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  width: 1.5px;
+  height: 6px;
+  transform: translateX(-50%);
+  background: var(--flag);
+  opacity: 0.6;
+}
+
+.timeline-flag:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--flag) 16%, white);
+}
+
+.timeline-flag:disabled {
+  cursor: default;
+}
+
+/* The dock's height by view: the drive dock carries the road strip and the
+   timeline's key moments; the story's bar is the chapters and the strip. */
+.mission-root[data-view='drive'] {
+  --dock-h: 186px;
+}
+
+.mission-root[data-view='story'] {
+  --dock-h: 124px;
+}
+
+.mission-root[data-view='landing'] {
+  --dock-h: 0px;
+}
+
+@media (max-height: 800px) {
+  .mission-root[data-view='drive'] {
+    --dock-h: 178px;
+  }
+}
+
+/* Short screens: the story's caption and its proof stay clear of the rover and
+   inside the frame. */
+@media (max-height: 800px) {
+  .story-caption {
+    padding: 10px 16px 11px;
+  }
+  .story-caption-headline {
+    font-size: 16px;
+  }
+  .story-caption-detail {
+    margin-top: 4px;
+    font-size: 12px;
+  }
+  .story-proof {
+    padding: 16px 20px 14px;
+  }
+  .story-proof-title {
+    font-size: 19px;
+  }
+  .story-proof-body {
+    margin-top: 6px;
+    font-size: 13px;
+  }
+  .story-proof .glance {
+    margin-top: 8px;
+  }
+  .story-proof .glance-row {
+    padding: 3px 8px;
+  }
+  .story-proof-points {
+    margin-top: 8px;
+    font-size: 12.5px;
+  }
+}
+
+.timeline-flag[data-compact='true'] {
+  padding: 0 4px;
+}

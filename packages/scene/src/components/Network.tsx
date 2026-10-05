@@ -361,7 +361,9 @@ function Beam({
     const material = line.material as { opacity: number };
     const fade = ghost ? Math.pow(1 - ghostAge / GHOST_S, 1.6) : 1;
     if (role === 'warming') {
-      material.opacity = 0.32 + 0.14 * Math.sin(now * 3.1);
+      // A link being readied pulses: it is the moment the story points at, so
+      // it has to be seen, while staying fainter than the carrying beam.
+      material.opacity = 0.5 + 0.2 * Math.sin(now * 3.1);
     } else {
       material.opacity = 0.95 * fade;
     }
@@ -453,7 +455,7 @@ function Beam({
         points={initial}
         vertexColors={colours}
         color={colours ? '#ffffff' : colour}
-        lineWidth={role === 'active' ? 3 : 1.5}
+        lineWidth={role === 'active' ? 3 : 2.2}
         transparent
         opacity={role === 'active' ? 0.95 : 0.45}
         dashed={role === 'warming'}

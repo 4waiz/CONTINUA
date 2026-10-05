@@ -15,12 +15,15 @@
 
 import {
   EngineSceneStateSource,
+  NO_DEAD_ZONES,
   previewSource,
   qualityCeiling,
   SceneRuntimeProvider,
   useSceneRuntime,
   useSetSceneSettings,
+  type DeadZone,
 } from '@continua/scene';
+import type { StoryShot } from '@continua/contracts';
 import { useEffect, useState } from 'react';
 import { SceneStage } from '../SceneStage';
 
@@ -143,8 +146,8 @@ function ClockSync({
   return null;
 }
 
-/** The three cameras the run views offer; Scene Lab has the full set. */
-export type MissionCamera = 'follow' | 'overview' | 'closeup' | 'cinematic';
+/** The cameras the run views offer; Scene Lab has the full set. 'story' is the story mode's. */
+export type MissionCamera = 'follow' | 'overview' | 'closeup' | 'cinematic' | 'story';
 
 /** Pushes the page's camera choice into the scene's settings store. */
 function CameraSync({ camera }: { camera: MissionCamera }) {
@@ -152,6 +155,28 @@ function CameraSync({ camera }: { camera: MissionCamera }) {
   useEffect(() => {
     setSettings({ camera });
   }, [camera, setSettings]);
+  return null;
+}
+
+/**
+ * Pushes the scenario's dead zones - where it shadows the radio links - into
+ * the scene, which stands the walled lane there. The same array for the same
+ * scenario, so the walls are built once.
+ */
+function DeadZoneSync({ zones }: { zones: readonly DeadZone[] }) {
+  const setSettings = useSetSceneSettings();
+  useEffect(() => {
+    setSettings({ deadZones: zones });
+  }, [zones, setSettings]);
+  return null;
+}
+
+/** Pushes the story's framing into the scene; the camera eases into it from the last. */
+function StoryShotSync({ shot }: { shot: StoryShot | null }) {
+  const setSettings = useSetSceneSettings();
+  useEffect(() => {
+    if (shot) setSettings({ storyShot: shot });
+  }, [shot, setSettings]);
   return null;
 }
 
@@ -174,6 +199,8 @@ export function MissionScene({
   speed = 1,
   adaptive = true,
   inline = false,
+  deadZones = NO_DEAD_ZONES,
+  storyShot = null,
 }: {
   source: EngineSceneStateSource;
   t: number;
@@ -190,6 +217,10 @@ export function MissionScene({
   /** The scene has loaded and drawn - see `SceneStage`'s `onReady`. */
   onSceneReady?: () => void;
   camera?: MissionCamera;
+  /** Where the scenario on screen shadows the links (`deadZonesFromFaults`). */
+  deadZones?: readonly DeadZone[];
+  /** The story mode's framing, used with `camera` 'story'. */
+  storyShot?: StoryShot | null;
 }) {
   // The device's known ceiling from the first frame: a software rasteriser
   // starts on the low tier instead of compiling the high one and switching.
@@ -203,6 +234,8 @@ export function MissionScene({
     <SceneRuntimeProvider source={preview ? previewSource : source} initialSettings={initialSettings}>
       <ClockSync t={t} duration={duration} playing={playing} speed={speed} enabled={!preview} />
       <CameraSync camera={camera} />
+      <DeadZoneSync zones={deadZones} />
+      <StoryShotSync shot={storyShot} />
       <SceneStage className={className} onReady={onSceneReady} adaptive={adaptive} inline={inline} />
     </SceneRuntimeProvider>
   );
