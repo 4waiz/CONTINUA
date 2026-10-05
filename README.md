@@ -24,12 +24,13 @@ npm run build && npm start  # app on localhost:3000
 
 | URL | Section |
 | --- | --- |
-| <http://localhost:3000> | **Mission** - a run over the full-screen 3D scene, beside a reactive baseline on the same route and seed: links, route map, application health, a split camera, a timeline of every handoff and every outage |
-| <http://localhost:3000/scenario-lab> | Inject failures and congestion, change speed and workload |
-| <http://localhost:3000/experiments> | Paired policy comparison and the execution-capability report |
-| <http://localhost:3000/decision-log> | A timeline of every controller action, with its observations, reason and the run's recorded outcome |
+| <http://localhost:3000> | **Mission** - opens on what this is and two ways in: **Watch the story**, a guided minute on the shadowed route, or **Drive it yourself** - any scenario and strategy beside the normal rover, in plain words, with every measurement behind **Details** |
+| <http://localhost:3000/?story> | Straight into the story - the link to send someone |
+| <http://localhost:3000/experiments> | **Results** - every paired comparison, twenty drives a strategy at a glance, then the full tables and the execution-capability report |
+| <http://localhost:3000/decision-log> | **Decision log** - every controller action, with its observations, reason and the run's recorded outcome |
+| <http://localhost:3000/scenario-lab> | **Scenario builder** - inject failures and congestion, change speed and workload |
 | <http://localhost:3000/capture?run=…> | Fixed 16:9 capture frame |
-| <http://localhost:3000/scene-lab> | Phase 1 scene inspector |
+| <http://localhost:3000/scene-lab> | The 3D workbench: cameras, quality tiers, the rover up close |
 
 Node 20.11+ and Python 3.11+ required. Engine dependencies:
 `pip install -r services/engine/requirements.txt`. If port 8000 is taken,
@@ -57,6 +58,28 @@ distribution at all, and nothing was executed).
 
 ![Rover close-up](assets/previews/browser/view-02-vehicle-closeup.png)
 
+### The story
+
+**Watch the story** plays the one run that shows what CONTINUA is for, in six
+chapters: two identical rovers on the shadowed route, same seed - CONTINUA
+with its road map, and the normal rover that only switches network once the
+one it is on has failed. A cutting ahead blocks Wi-Fi and cellular together;
+CONTINUA's road map sees it 79 m out and starts satellite in time, and the
+normal rover loses its link for 4.5 s and has to stop. It ends on the stored
+comparison: the same road driven twenty times by every strategy, one green
+or red rover a drive, with what each cost - including the one that is
+cheaper than CONTINUA.
+
+Nothing in it is scripted. Each chapter begins when the run reaches it - the
+rover's place on the route, or a decision the engine logged - and every
+number in a caption is read from the two runs' events at that moment. What
+the story chooses is presentation: the framing, and the playback rate,
+slowed while a caption is read; the rate is always on screen. It plays from
+the engine locally and from the recorded runs on the public site
+(`apps/web/src/components/mission/story.tsx`).
+
+![The story, inside the cutting](assets/previews/browser/story-cutting.png)
+
 ### The world
 
 A green coastal island: the operations campus and its lawns, the industrial
@@ -67,7 +90,12 @@ under a launch gantry whose status line is red while the rover is docked and
 turns green as it pulls out, in a kerbed yard between the operations centre
 and the rover's garage, with the campus road leaving it through a bell-mouth.
 Office glazing mirrors the sky with lit rooms behind it. Everything in it is
-scenery - nothing in the network model knows about the sea or the mountains.
+scenery - nothing in the network model knows about the sea or the mountains -
+with one exception that runs the other way: where a scenario shadows the
+links (the five `shadow-*` scenarios), the world stands what the shadow
+stands for, a cutting - grassed banks held back by precast retaining walls,
+open to the sky - built from the scenario's own `from_m` / `to_m`, and only in
+those scenarios.
 
 ![The island from above the campus](assets/previews/browser/world-island.png)
 
@@ -148,7 +176,7 @@ list and `docs/VIDEO_CLAIMS.md` is the gate.
 ## Layout
 
 ```
-apps/web/            Next.js 16 frontend - Mission, Scenario Lab, Experiments, Decision Log
+apps/web/            Next.js 16 frontend - Mission (story and drive), Results, Decision log, Scenario builder
 services/engine/     Python engine - simulator, controller, predictors, API, experiments
 packages/scene/      Reusable 3D scene, plus the engine-driven scene source
 packages/contracts/  Shared types (TypeScript + Python) and world.json
@@ -211,9 +239,10 @@ continuity for a third of the cost or less. It is **not cheaper than
 B2-defer**, and an out-of-date map costs 0.40 units for nothing. Everywhere
 else P3 is P1, trial for trial. `docs/PHASE_5_RESULTS.md`.
 
-Rendering (kept separate from network metrics): 188 fps uncapped at
-1920×1080 during a run beside its reactive baseline, frame time p95 7.8 ms,
-high tier with ambient occlusion on, on an RTX 4070 Laptop GPU
+Rendering (kept separate from network metrics): 159 fps uncapped at
+1920×1080 during a run beside the normal rover, frame time p95 8.8 ms,
+high tier with ambient occlusion, the grade and the ranges' forest on, on an
+RTX 4070 Laptop GPU
 (`node scripts/perf-probe.mjs`); one shared canvas for every scene page, so
 switching pages builds nothing; 2.66 MB of Draco-compressed models.
 On a slower GPU the scene steps its own quality tier down, and a software

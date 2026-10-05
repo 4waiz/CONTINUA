@@ -152,6 +152,11 @@ to treat it as a measurement.
   terrain - a cutting, a hillside - so it is at the same place on every run,
   at any speed and in either direction. Only the five `shadow-*` scenarios
   have one; every earlier scenario's trace is unchanged.
+* The world draws a shadow as a cutting - banks and retaining walls where the
+  shadow is at full depth and half of each ramp - so the obstruction has a
+  visible cause. It is a picture of the modelled fault, not a propagation
+  model: nothing computes how much a wall attenuates, and the walls stand
+  only in the scenarios that carry the fault.
 * The radio map is a table of survey observations, binned every 5 m. Because
   coverage here is a function of position alone, a map of the same world is
   **exact**. A real survey map is noisy and goes out of date; `shadow-stale`

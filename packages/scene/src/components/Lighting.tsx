@@ -52,6 +52,7 @@ const SKY_FRAGMENT = /* glsl */ `
   uniform vec3 uHorizon;
   uniform vec3 uSun;
   uniform vec3 uSunDir;
+  uniform float uTime;
   varying vec3 vWorld;
   float h21(vec2 p) { p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
   float n2(vec2 p) {
@@ -82,7 +83,9 @@ const SKY_FRAGMENT = /* glsl */ `
     #ifndef CT_LITE
     if (dir.y > 0.0) {
       vec2 q = dir.xz / (dir.y + 0.06) * 2.2;
-      vec2 drift = vec2(3.0, 1.0);
+      // The deck drifts on the same breeze as the cloud shadows on the land
+      // and the sea - east by a little north - as a function of the clock.
+      vec2 drift = vec2(3.0, 1.0) + uTime * vec2(0.0042, 0.0015);
       // Heaped, not smeared: the shape is domain-warped, and a billow layer
       // gives the thin edges their rounded, cauliflower outline.
       vec2 warp = vec2(n2(q * 0.32 + 5.1), n2(q * 0.32 + 9.7)) - 0.5;
@@ -114,6 +117,7 @@ function skyMaterial(lite: boolean): ShaderMaterial {
       uHorizon: { value: new Color(SCENE_COLOR.skyHorizon) },
       uSun: { value: new Color(SCENE_COLOR.sun) },
       uSunDir: { value: SUN_DIRECTION.clone() },
+      uTime: { value: 0 },
     },
     vertexShader: SKY_VERTEX,
     fragmentShader: SKY_FRAGMENT,
@@ -133,6 +137,10 @@ function skyMaterial(lite: boolean): ShaderMaterial {
  */
 function GradientSky({ lite }: { lite: boolean }) {
   const material = useMemo(() => skyMaterial(lite), [lite]);
+  const { clock } = useSceneRuntime();
+  useFrame(() => {
+    material.uniforms.uTime!.value = clock.time;
+  });
   useEffect(() => () => material.dispose(), [material]);
   const ref = useRef<Mesh>(null);
   useLayoutEffect(() => {

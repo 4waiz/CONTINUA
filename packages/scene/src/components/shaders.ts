@@ -171,7 +171,7 @@ export function terrainMaterial(palette: {
 }, lite = false): MeshStandardMaterial {
   const material = new MeshStandardMaterial({ color: '#ffffff', roughness: 0.94, metalness: 0 });
   return patchStandard(material, {
-    key: 'continua-terrain-v6',
+    key: 'continua-terrain-v7',
     lite,
     uniforms: {
       uCampus: { value: new Color(palette.campus) },
@@ -265,6 +265,14 @@ export function terrainMaterial(palette: {
       float slope = 1.0 - clamp(worldNormal.y, 0.0, 1.0);
       ground = mix(ground, uRock * (0.92 + 0.12 * mid), smoothstep(0.16, 0.42, slope) * 0.85);
       ground *= 0.965 + 0.07 * fine * fineFade;
+      #ifndef CT_LITE
+        // Close to, turf is blades and the gaps between them: a speckle at the
+        // scale of a hand, gone before it is small enough to shimmer.
+        float ctBladeFade = 1.0 - smoothstep(0.18, 0.5, length(fwidth(p * 26.0)));
+        float ctBlades = ctNoise(p * 26.0) * 0.6 + ctNoise(p * 57.0 + 3.7) * 0.4;
+        float ctThatch = smoothstep(0.62, 0.9, ctNoise(p * 4.3 + 9.1));
+        ground *= 1.0 + ((ctBlades - 0.5) * 0.3 - ctThatch * 0.06) * ctBladeFade;
+      #endif
 
       // The shore: a pale beach above the waterline, wet sand at it, and a
       // sandy shelf below that the shallows show through.
@@ -287,7 +295,8 @@ export function terrainMaterial(palette: {
         float fade = 1.0 - smoothstep(30.0, 140.0, vCtDist);
         // Tussocky turf; fine ripples on the beach.
         float beach = 1.0 - smoothstep(uSeaLevel + 0.9, uSeaLevel + 2.3, vCtWorld.y);
-        float turf = ctNoise(p * 2.4) * 0.12 + ctNoise(p * 6.5) * 0.05;
+        float bladeFade = 1.0 - smoothstep(0.18, 0.5, length(fwidth(p * 26.0)));
+        float turf = ctNoise(p * 2.4) * 0.12 + ctNoise(p * 6.5) * 0.05 + ctNoise(p * 26.0) * 0.035 * bladeFade;
         float ripple = 0.5 + 0.5 * sin(p.x * 1.9 + p.y * 1.1 + ctNoise(p * 0.3) * 4.0);
         float h = mix(turf, ripple * 0.08, beach);
         normal = ctBump(-vViewPosition, normal, h * fade, 1.0);

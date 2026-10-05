@@ -32,6 +32,7 @@ import {
   DataUtils,
   DoubleSide,
   Float32BufferAttribute,
+  Group,
   HalfFloatType,
   IcosahedronGeometry,
   InstancedMesh,
@@ -473,6 +474,148 @@ function withMist(material: MeshStandardMaterial): MeshStandardMaterial {
   return material;
 }
 
+/**
+ * Trees standing on the near range, so its ridgelines and spurs carry a
+ * canopy against the sky instead of a smooth edge, and its faces have crowns
+ * the sun can light from one side. Rounded canopies, a few thousand of them,
+ * placed from the range's own vertices: on forested ground (not the bare rock
+ * channel), on the island-facing front of the range where they are seen, more
+ * on the ridges than in the gullies. Seeded, so the same build is the same
+ * forest. They ride on the vertex they stand on, half sunk into it, so none
+ * floats where the mesh between vertices dips.
+ */
+const CANOPY_COLOURS = ['#2F5E33', '#3A6B39', '#2A5232', '#46713F', '#284C32', '#3B6440', '#4F7A42'].map((hex) => new Color(hex));
+
+function forestOn(range: BufferGeometry, count: number, seed: number): { matrices: Float32Array; colours: Float32Array; placed: number } {
+  const positions = range.getAttribute('position');
+  const normals = range.getAttribute('normal');
+  const rock = range.getAttribute('aRock');
+  const random = makeRandom(seed);
+  const matrices = new Float32Array(count * 16);
+  const colours = new Float32Array(count * 3);
+  const matrix = new Matrix4();
+  const quaternion = new Quaternion();
+  const position = new Vector3();
+  const scale = new Vector3();
+  const up = new Vector3(0, 1, 0);
+  const tilt = new Vector3();
+  let placed = 0;
+  const vertices = positions.count;
+  // Trees grow in stands: a centre drawn from the range's vertices, then a
+  // handful of crowns around it on neighbouring vertices of the same row band.
+  // A bounded number of tries: some draws land on rock, water or cliff.
+  for (let attempt = 0; attempt < count * 6 && placed < count; attempt += 1) {
+    const centre = Math.floor(random() * vertices);
+    const cy = positions.getY(centre);
+    if (cy < 6) continue;
+    if (rock && rock.getX(centre) > 0.35) continue;
+    const cny = normals.getY(centre);
+    if (cny < 0.6) continue;
+    // Thinner where it is steep, thicker on the ridges and shoulders.
+    if (random() > 0.3 + 0.7 * cny * cny) continue;
+    const stand = 3 + Math.floor(random() * 5);
+    for (let k = 0; k < stand && placed < count; k += 1) {
+      // A neighbour up or down the same face (vertices run down the slope in rows).
+      const index = Math.min(vertices - 1, Math.max(0, centre + Math.floor((random() - 0.5) * 6)));
+      const y = positions.getY(index);
+      if (y < 6) continue;
+      const ny = normals.getY(index);
+      if (ny < 0.55 || (rock && rock.getX(index) > 0.45)) continue;
+      const size = 4.4 + random() * 4.4;
+      position.set(
+        positions.getX(index) + (random() - 0.5) * 7,
+        y + size * 0.12,
+        positions.getZ(index) + (random() - 0.5) * 7,
+      );
+      // A crown leans a little with the slope it grows on.
+      tilt.set(normals.getX(index) * 0.25, 1, normals.getZ(index) * 0.25).normalize();
+      quaternion.setFromUnitVectors(up, tilt);
+      // Broad, flattish crowns that touch their neighbours: a canopy, not a field of balls.
+      scale.set(size * (0.95 + random() * 0.3), size * (0.58 + random() * 0.3), size * (0.95 + random() * 0.3));
+      matrix.compose(position, quaternion, scale);
+      matrix.toArray(matrices, placed * 16);
+      const colour = CANOPY_COLOURS[Math.floor(random() * CANOPY_COLOURS.length)]!;
+      const shade = 0.88 + random() * 0.24;
+      colours[placed * 3] = colour.r * shade;
+      colours[placed * 3 + 1] = colour.g * shade;
+      colours[placed * 3 + 2] = colour.b * shade;
+      placed += 1;
+    }
+  }
+  return { matrices, colours, placed };
+}
+
+function MountainForest({ range, count }: { range: BufferGeometry; count: number }) {
+  const crown = useMemo(() => new IcosahedronGeometry(1, 1), []);
+  // Leafy, not smooth: clumps of foliage on each crown, darker underneath,
+  // and a bump the sun can catch - all from world position, so it is fixed.
+  const material = useMemo(
+    () =>
+      patchStandard(new MeshStandardMaterial({ roughness: 0.92, metalness: 0 }), {
+        key: 'continua-mountain-forest-v2',
+        colour: /* glsl */ `
+          {
+            vec3 ctN = normalize(inverseTransformDirection(vNormal, viewMatrix));
+            float ctLeaf = ctNoise(vCtWorld.xz * 0.35 + vCtWorld.y * 0.3) * 0.55 + ctNoise(vCtWorld.xz * 1.1 - vCtWorld.y * 0.9) * 0.45;
+            diffuseColor.rgb *= (0.78 + 0.36 * ctLeaf) * mix(0.55, 1.05, smoothstep(-0.35, 0.7, ctN.y));
+          }
+        `,
+        normal: /* glsl */ `
+          {
+            float ctNearLeaf = 1.0 - smoothstep(120.0, 420.0, vCtDist);
+            float ctLeafH = ctNoise(vCtWorld.xz * 1.3 + vCtWorld.y * 1.1) * 0.5 + ctNoise(vCtWorld.xz * 3.2 - vCtWorld.y * 2.4) * 0.25;
+            normal = ctBump(-vViewPosition, normal, ctLeafH * ctNearLeaf, 0.9);
+          }
+        `,
+      }),
+    [],
+  );
+  const forest = useMemo(() => forestOn(range, count, 7123), [range, count]);
+  // In sectors round the range, so the ones behind the camera are culled: a
+  // single mesh's bounds spanned the whole arc and every crown was drawn always.
+  const group = useMemo(() => {
+    const sectors = 16;
+    const buckets: number[][] = Array.from({ length: sectors }, () => []);
+    for (let i = 0; i < forest.placed; i += 1) {
+      const x = forest.matrices[i * 16 + 12]! - NEAR_RANGE.cx;
+      const z = forest.matrices[i * 16 + 14]! - NEAR_RANGE.cz;
+      const angle = (Math.atan2(z, x) + Math.PI * 2) % (Math.PI * 2);
+      buckets[Math.min(sectors - 1, Math.floor((angle / (Math.PI * 2)) * sectors))]!.push(i);
+    }
+    const holder = new Group();
+    holder.name = 'CONTINUA_MountainForest';
+    const colour = new Color();
+    for (const bucket of buckets) {
+      if (bucket.length === 0) continue;
+      const instanced = new InstancedMesh(crown, material, bucket.length);
+      bucket.forEach((source, index) => {
+        instanced.instanceMatrix.array.set(forest.matrices.subarray(source * 16, source * 16 + 16), index * 16);
+        colour.setRGB(forest.colours[source * 3]!, forest.colours[source * 3 + 1]!, forest.colours[source * 3 + 2]!);
+        instanced.setColorAt(index, colour);
+      });
+      instanced.instanceMatrix.needsUpdate = true;
+      if (instanced.instanceColor) instanced.instanceColor.needsUpdate = true;
+      instanced.computeBoundingSphere();
+      holder.add(instanced);
+    }
+    return holder;
+  }, [crown, material, forest]);
+  useEffect(
+    () => () => {
+      crown.dispose();
+      material.dispose();
+    },
+    [crown, material],
+  );
+  useEffect(
+    () => () => {
+      for (const child of group.children) (child as InstancedMesh).dispose();
+    },
+    [group],
+  );
+  return <primitive object={group} />;
+}
+
 export function Mountains({ quality }: { quality: 'high' | 'balanced' | 'low' }) {
   // At that distance the silhouette carries a coarser mesh on the lower tiers.
   const detail = quality === 'low' ? 0.4 : quality === 'balanced' ? 0.7 : 1;
@@ -508,6 +651,7 @@ export function Mountains({ quality }: { quality: 'high' | 'balanced' | 'low' })
     <group name="CONTINUA_Mountains">
       <mesh geometry={far} material={material} />
       <mesh geometry={near} material={material} />
+      {!lite && <MountainForest range={near} count={quality === 'high' ? 12000 : 5000} />}
     </group>
   );
 }

@@ -133,6 +133,41 @@ One screen, no page scroll, at 1920×1080, 1440×900, 1366×768 and 1280×720.
 * Sections inside one surface are separated by hairlines, not nested cards.
   Nested cards were most of what made the earlier dashboard read as bloated.
 
+### Mission's three moods
+
+* **Landing.** No panels: the island under the director's cut, and one card -
+  what this is in three sentences, **Watch the story** and **Drive it
+  yourself**. With the engine offline it stays, the story disabled.
+* **Story.** A guided minute (`mission/story.tsx`). Top centre: two status
+  cards, one per rover - "Connected / Connection lost", what carries it, how
+  long it has been offline in all - the question the demonstration is about.
+  Left: what CONTINUA decided, in sentences. Right: what each operator sees.
+  Bottom: the caption (a 20 px headline, the chapter, where its numbers came
+  from) over the story's bar - six chapters, the playback rate always shown
+  ("0.40× slow motion"), Pause, Next chapter, leave - and the road strip.
+* **Drive.** The dock (scenario, strategy, the normal rover beside it, Start
+  run), the road strip, the transport and a timeline with **key moments** -
+  each change of network and the road map's warning, buttons that jump the run.
+  Plain words by default; **Details** brings back the access-link figures, the
+  application-health card, the control-mode chips and the pipeline.
+
+### Plain words
+
+Strategies are named for what they do ("Switch after it breaks", "CONTINUA +
+road map", ids kept beside them); networks are Cable, Wi-Fi, Cellular,
+Satellite; states are "Carrying the link", "Ready as backup", "Starting up",
+"Out of reach". A decision becomes a sentence built from the event's own
+actions and reason (`mission/plain.ts`) - nothing added; the engine's wording
+is in each line's tooltip and in the Decision log.
+
+### The road strip
+
+The route as one strip: where the radio map the policy uses expects Wi-Fi,
+cellular and satellite (`GET /api/radio-maps/{id}`, available where under half
+of survey samples were unusable), the scenario's cuttings hatched, the zones
+beneath, the rover, and - for the route-aware policy - its 8 s look-ahead,
+violet with "Gap ahead: getting satellite ready" while it is preparing.
+
 ## 5. Scene art direction
 
 * **Clear, warm daylight.** A sun key at intensity 3.0, 41° up over the sea -
@@ -199,6 +234,20 @@ One screen, no page scroll, at 1920×1080, 1440×900, 1366×768 and 1280×720.
   behind its introduction under a director's cut that begins with an aerial of
   the whole island and descends to the rover; soft cloud shadows drift over
   land and sea.
+* **A cutting where the scenario has one.** The five `shadow-*` scenarios
+  shadow the radio links over stretches of route; the world stands what that
+  stands for there and only there (`world/deadZones.ts`, `DeadZone.tsx`):
+  grassed banks drawn with the ground's own shader, held back by precast
+  retaining panels with stepped wings, a worn hazard band at the road face and
+  chevrons on the ends, open to the sky so the satellite still sees the rover.
+  The lane stops at the gatehouse canopy; the bedding it would cut is left out.
+* **Forest on the ranges.** The near range carries some twelve thousand
+  instanced crowns in stands, on forested ground on the island-facing faces,
+  leafy-shaded and in sixteen culled sectors; the faces between them have
+  knolls, stands of a yellower or bluer green, and bedded rock.
+* **A light grade.** After the AO pass, on the display image: a soft S-curve,
+  a little more colour in the mid-tones, sun-warm light over sky-cool shade,
+  a soft vignette. Clouds drift on the same breeze as their shadows.
 * **Restraint.** No bloom, no god rays, no particles, no floating labels over
   the vehicle. Infrastructure is marked with a thin ground ring that only grows
   a vertical stem when selected.
@@ -223,7 +272,8 @@ the new link reaches out from its site to the rover behind a bright head, the
 link it replaced fades out as a ghost, and the site and the rover's antenna
 ping - all as a pure function of the clock and the recorded handoff time. Small packets travel along it toward the rover as a pure
 function of the scene clock - they show direction, not a measured rate.
-Pre-warming links use the same beam form, dashed and at 45 % opacity. The wired
+Pre-warming links use the same beam form, dashed, thinner, pulsing between
+30 % and 70 % opacity - the moment the story points at has to be seen. The wired
 tether sags *downward* like a cable; radio links bow *upward*.
 
 A **satellite** link is served from the sky, not from a site on the ground, and

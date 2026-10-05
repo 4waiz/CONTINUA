@@ -1347,3 +1347,56 @@ scenarios: P3 identical to P1 in every trial.
 test:engine 156 passed (11 new, `tests/engine/test_phase5.py`); the regression
 guard holds every earlier policy byte for byte.
 
+---
+
+# Story mode and the second look
+
+The owner asked for the project to explain itself - "self-explainable,
+understandable" - and for the visuals to be several times better.
+
+**What a first-time viewer could not get.** On the screen at the moment the
+work mattered - the rover in the shadowed stretch - were 30-odd numbers of
+equal weight; the one fact that mattered (CONTINUA connected, the other not)
+was a small chip. CONTINUA's own panels read "Strained" and its camera
+"STALLED" (satellite is slow), so the winning moment looked like a failure.
+The cause was invisible: the rover lost Wi-Fi and the cell on an open road.
+The results were six charts by seven policy codes.
+
+**What was built.**
+* **Story mode** - six chapters on the shadowed route, P3 beside B0, each begun
+  by the run itself and captioned from its events; the framing and the pace
+  are functions of run time, the playback rate always shown; the last chapter
+  is the stored test4 comparison as twenty rovers a strategy, with cost, and
+  says where CONTINUA is not the cheapest. Local runs and public recordings.
+* **The cutting** - banks and retaining walls built from the scenario's
+  shadow faults, in those scenarios only.
+* **Plain words** by default and **Details** on demand; status cards; the
+  road strip with the radio map and P3's horizon; key moments on the timeline;
+  at-a-glance rows on Results; navigation as Mission, Results, Decision log,
+  Scenario builder.
+* **Visuals** - the grade pass; forest, knolls and bedded rock on the ranges;
+  light through broadleaf leaves; drifting clouds; grass blades close to.
+
+**Found on the way.**
+* **Reversed runs were drawn on the forward route.** The engine places a
+  reversed vehicle at `length - travelled`; the scene placed it at
+  `travelled`, facing forward, in the wrong place for every link. The engine
+  source, the camera rigs and the route map now take the direction.
+* **The dock's speed control did nothing.** It sent `play` with a speed and
+  the engine's `play` dropped it; it is honoured now (tests/engine/test_api_story.py).
+* **README overstated a ratio.** "About a quarter of the cost" against
+  always-on redundancy was a third on the headline scenario (1.58 against
+  5.02); corrected in 1271544.
+
+**Public demo.** `build_demo_data.py --add` recorded the 35 missing pairs -
+the shadow scenarios by five policies and P3 on the originals - with the radio
+maps and the Phase 5 shadow experiments; the story plays from them on the
+static export. Not deployed.
+
+**Measured.** Mission during a run, high tier, RTX 4070 Laptop GPU: 159 fps,
+frame p50 / p95 / p99 6.1 / 8.8 / 10.3 ms, 5.85 M triangles (from 188 fps and
+p95 7.8 ms before the forest; sixteen culled sectors brought it back from
+153.8 fps and 6.86 M). test:engine 160 passed; test:phase2 11/11 (updated for
+the introduction, Details and an exact connection-badge locator);
+test:smoke 11 passed / 10 skipped.
+
