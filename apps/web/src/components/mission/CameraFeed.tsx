@@ -28,6 +28,7 @@ import {
 } from '@continua/scene';
 import { useEffect, useRef, useState, type RefObject } from 'react';
 import { CameraIcon, ChevronIcon } from '../ui/icons';
+import { InfoTip } from '../ui/InfoTip';
 
 type VideoClass = NonNullable<NonNullable<EngineEvent['app']>['classes']['video']>;
 
@@ -152,26 +153,36 @@ export function CameraFeed({
 
   return (
     <section className="glass overflow-hidden" aria-label="Camera">
-      <button
-        type="button"
-        className="flex w-full items-center gap-2 px-4 py-2.5 text-left"
-        onClick={() => setOpen((value) => !value)}
-        aria-expanded={open}
-      >
-        <CameraIcon size={15} className="text-[color:var(--color-faint)]" />
-        <span className="section-label flex-1">{split ? 'What each operator sees' : 'Camera'}</span>
+      <div className="flex w-full items-center gap-2 px-4 py-2.5">
+        <button
+          type="button"
+          className="flex min-w-0 flex-1 items-center gap-2 text-left"
+          onClick={() => setOpen((value) => !value)}
+          aria-expanded={open}
+        >
+          <CameraIcon size={15} className="shrink-0 text-[color:var(--color-faint)]" />
+          <span className="section-label truncate whitespace-nowrap">{split ? 'Operator views' : 'Camera'}</span>
+        </button>
+        <InfoTip align="end" text="The rover's forward camera as its operator receives it. A picture freezes when that rover's video stalls; SESSION DOWN means no link at all. Drawn from the simulation, not real video." />
         <span
-          className="rounded-full bg-[color-mix(in_srgb,var(--color-warn)_14%,white)] px-2 py-[2px] text-[11px] font-bold tracking-[0.05em] text-[color:var(--color-warn)]"
+          className="shrink-0 rounded-full bg-[color-mix(in_srgb,var(--color-warn)_14%,white)] px-1.5 py-[2px] text-[11px] font-bold tracking-[0.04em] text-[color:var(--color-warn)]"
           title="The simulated world rendered from the rover's forward camera - not transported pixels. It moves only while the engine reports video frames delivered, and freezes while the receiver reports the stream stalled."
         >
-          SYNTHETIC STREAM
+          SYNTHETIC
         </span>
-        <ChevronIcon
-          size={14}
-          className="text-[color:var(--color-faint)] transition-transform"
-          style={{ transform: open ? 'rotate(90deg)' : undefined }}
-        />
-      </button>
+        <button
+          type="button"
+          className="grid h-6 w-6 shrink-0 place-items-center rounded-full"
+          onClick={() => setOpen((value) => !value)}
+          aria-label={open ? 'Hide the camera' : 'Show the camera'}
+        >
+          <ChevronIcon
+            size={14}
+            className="text-[color:var(--color-faint)] transition-transform"
+            style={{ transform: open ? 'rotate(90deg)' : undefined }}
+          />
+        </button>
+      </div>
       {open && (
         <div className="px-3 pb-3">
           <div className="relative aspect-video overflow-hidden rounded-[11px] bg-[#1b2435]">

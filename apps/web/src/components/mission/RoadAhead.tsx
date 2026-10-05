@@ -23,6 +23,7 @@ import { api } from '@/lib/api';
 import type { EngineLinkId } from '@continua/contracts/engine';
 import { MISSION_ZONES, NETWORK_COLOR, route, type DeadZone } from '@continua/scene';
 import { useEffect, useMemo, useState } from 'react';
+import { InfoTip } from '../ui/InfoTip';
 import { NETWORK } from './plain';
 
 /** The route-aware policy's look-ahead, seconds (controller `route_horizon_s`). */
@@ -122,7 +123,13 @@ export function RoadAhead({
 
   return (
     <div className="flex min-w-0 items-stretch gap-2.5" aria-label="The road ahead">
-      <div className="relative shrink-0" style={{ width: 60 }} aria-hidden>
+      <div className="relative shrink-0" style={{ width: 60 }}>
+        <span className="absolute left-0" style={{ top: top + ROWS.length * (rowHeight + rowGap) - 1 }}>
+          <InfoTip
+            side="right"
+            text="The road ahead: where each network is expected along the route, from a road map built on earlier drives. Hatched: a cutting. The bracket is what CONTINUA with the road map looks up - the next 8 seconds."
+          />
+        </span>
         {ROWS.map((link, row) => (
           <span
             key={link}

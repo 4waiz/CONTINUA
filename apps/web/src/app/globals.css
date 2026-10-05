@@ -1101,3 +1101,91 @@ button:focus-visible {
 .timeline-flag[data-compact='true'] {
   padding: 0 4px;
 }
+
+/* A "?" that explains the panel it sits on: on hover, and on keyboard focus. */
+.info-tip {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  border-radius: 999px;
+  border: 1px solid var(--color-line-strong);
+  background: var(--color-surface);
+  color: var(--color-muted);
+  font-size: 10.5px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0;
+  text-transform: none;
+  cursor: help;
+}
+
+.info-tip:hover,
+.info-tip:focus-visible {
+  color: var(--color-blue);
+  border-color: color-mix(in srgb, var(--color-blue) 45%, white);
+  outline: none;
+}
+
+.info-tip-bubble {
+  position: absolute;
+  z-index: 60;
+  top: calc(100% + 8px);
+  left: 50%;
+  width: max-content;
+  max-width: 270px;
+  padding: 9px 11px;
+  transform: translateX(-50%);
+  border-radius: 11px;
+  background: var(--color-ink);
+  color: white;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.45;
+  text-align: left;
+  white-space: normal;
+  box-shadow: 0 12px 28px -12px rgb(17 29 58 / 0.55);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity 140ms ease,
+    visibility 140ms ease;
+}
+
+.info-tip[data-side='right'] .info-tip-bubble {
+  top: 50%;
+  left: calc(100% + 8px);
+  transform: translateY(-50%);
+}
+
+.info-tip[data-side='top'] .info-tip-bubble {
+  top: auto;
+  bottom: calc(100% + 8px);
+}
+
+.info-tip[data-side='left'] .info-tip-bubble {
+  top: 50%;
+  left: auto;
+  right: calc(100% + 8px);
+  transform: translateY(-50%);
+}
+
+.info-tip:hover .info-tip-bubble,
+.info-tip:focus-visible .info-tip-bubble {
+  opacity: 1;
+  visibility: visible;
+}
+
+.info-tip[data-align='start'] .info-tip-bubble {
+  left: -6px;
+  transform: none;
+}
+
+.info-tip[data-align='end'] .info-tip-bubble {
+  left: auto;
+  right: -6px;
+  transform: none;
+}

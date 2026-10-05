@@ -11,6 +11,7 @@
 import { api, EngineApiError, type CapabilityReport, type ScenarioSpec } from '@/lib/api';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AtAGlance, glanceRows } from './experiments/AtAGlance';
+import { InfoTip } from './ui/InfoTip';
 import type { PolicyIdString } from '@continua/contracts/engine';
 import { AppShell } from './AppShell';
 import { CompareIcon } from './ui/icons';
@@ -384,8 +385,9 @@ export function ExperimentsView() {
             {glance.length > 0 && (
               <section className="panel px-4 py-3.5" aria-label="At a glance">
                 <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-                  <h2 className="panel-label">
+                  <h2 className="panel-label flex items-center gap-1.5">
                     At a glance · {scenarioTitle(String(results?.scenario_id ?? ''))} · {glance[0]!.trials.length} paired drives each
+                    <InfoTip text="Every strategy drove the same road with the same random draws - only the strategy differs. One rover per drive. Cost is the simulator's relative cost model, not money." />
                   </h2>
                   <span className="text-[11.5px] text-[color:var(--color-muted)]">
                     One rover per drive: <span className="font-semibold text-[color:var(--color-good)]">green</span> if the operator never

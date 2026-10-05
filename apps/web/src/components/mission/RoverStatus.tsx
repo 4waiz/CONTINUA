@@ -13,6 +13,7 @@
 import type { EngineEvent, EngineLinkId } from '@continua/contracts/engine';
 import { NETWORK_COLOR } from '@continua/scene';
 import { NetworkIcon } from '../ui/icons';
+import { InfoTip } from '../ui/InfoTip';
 import { connectionState, NETWORK, seconds } from './plain';
 
 function Card({ name, event, ours }: { name: string; event: EngineEvent | null; ours: boolean }) {
@@ -70,6 +71,11 @@ export function RoverStatus({
     <div className="pointer-events-none flex items-stretch gap-2.5" aria-label="Can each operator reach their rover?">
       <Card name={mainName} event={main} ours />
       {baseline !== undefined && <Card name={baselineName} event={baseline} ours={false} />}
+      <span className="pointer-events-auto self-center">
+        <InfoTip
+          text="Can each operator reach their rover right now? From the receiver's own report. 'Offline in all' adds up every moment the rover was out of reach this run."
+        />
+      </span>
     </div>
   );
 }

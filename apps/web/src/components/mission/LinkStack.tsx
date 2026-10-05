@@ -25,6 +25,7 @@ import { NETWORK_COLOR } from '@continua/scene';
 import { useMemo, useState } from 'react';
 import { Meter, Sparkline, TimeSeries } from '../ui/charts';
 import { GatewayIcon, NetworkIcon } from '../ui/icons';
+import { InfoTip } from '../ui/InfoTip';
 import { NETWORK } from './plain';
 
 type Phase = 'carrying' | 'warming' | 'ready' | 'unavailable';
@@ -154,7 +155,10 @@ export function LinkStack({
   return (
     <section className="glass flex min-h-0 flex-col" aria-label="Access links">
       <header className="flex items-center justify-between px-4 pt-3.5 pb-2">
-        <h2 className="section-label">{simple ? 'Networks' : 'Access links'}</h2>
+        <h2 className="section-label flex items-center gap-1.5">
+          {simple ? 'Networks' : 'Access links'}
+          <InfoTip align="start" text="Four ways to reach the rover. Only one carries the link at a time; CONTINUA readies the next one before it is needed. Details shows each network's measurements." />
+        </h2>
         <span
           className="flex cursor-help items-center gap-1.5 text-[11px] font-medium text-[color:var(--color-faint)]"
           title="Four alternative paths to one session gateway - not a chain traffic passes through in sequence. At most one carries the session."

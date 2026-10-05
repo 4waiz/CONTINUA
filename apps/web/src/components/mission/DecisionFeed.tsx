@@ -14,6 +14,7 @@ import { actionsOf } from '@continua/contracts/engine';
 import { NETWORK_COLOR } from '@continua/scene';
 import { useMemo } from 'react';
 import { NetworkIcon } from '../ui/icons';
+import { InfoTip } from '../ui/InfoTip';
 import { plainDecision } from './plain';
 
 function clock(t: number): string {
@@ -48,7 +49,10 @@ export function DecisionFeed({
 
   return (
     <section className="glass px-4 pt-3 pb-3.5" aria-label="Decisions in plain words">
-      <h2 className="section-label">{title}</h2>
+      <h2 className="section-label flex items-center gap-1.5">
+        {title}
+        <InfoTip align="end" text="CONTINUA's decisions as it makes them, in plain words. Hover a line for the engine's own wording; every one is in the Decision log." />
+      </h2>
       {lines.length === 0 ? (
         <p className="mt-2 text-[12.5px] text-[color:var(--color-faint)]">Its decisions appear here as it makes them.</p>
       ) : (

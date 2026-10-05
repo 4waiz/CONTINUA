@@ -94,7 +94,7 @@ test.describe('Mission dashboard', () => {
 
     // Mode must be visible before anything else is believed.
     await startRun(page);
-    await expect(page.getByText('SIMULATION')).toBeVisible();
+    await expect(page.getByText('SIMULATION', { exact: true })).toBeVisible();
 
     // Values must actually move. A dashboard of constants would pass a
     // screenshot test and fail this one.
@@ -282,7 +282,7 @@ test.describe('other sections', () => {
     await expect.poll(async () => frame.getAttribute('data-capture-ready'), { timeout: 40_000 }).toBe('true');
 
     // Identity must always be present in a capture.
-    await expect(page.getByText('SIMULATION')).toBeVisible();
+    await expect(page.getByText('SIMULATION', { exact: true })).toBeVisible();
     await expect(page.getByText(runId)).toBeVisible();
     // And there must be no invented LIVE badge.
     await expect(page.getByText(/^LIVE$/)).toHaveCount(0);
