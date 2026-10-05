@@ -17,11 +17,20 @@ every document and every experiment. Recording the real thing does not.
 
     python scripts/build_demo_data.py            # the full matrix
     python scripts/build_demo_data.py --policies P1,B0
+    python scripts/build_demo_data.py --add      # only the pairs not yet recorded
 
 Output: apps/web/public/demo/
     index.json              catalogue: runs, scenarios, experiments, capability
     runs/<id>.json          one run, columnar (see `encode_events`)
     experiments/<id>.json   aggregate results, already small
+    radio-maps/<id>.json    the radio maps route-aware runs used, as the engine reads them
+
+`--add` keeps every run already recorded and records only the pairs that are
+missing - a new scenario, a new policy - so a release does not rewrite forty
+recordings under new run ids. The earlier policies' decisions and metrics are
+held unchanged by `tests/engine/test_regression_guard.py`; an older recording
+lacks only the fields added since (per-class paths, the control mode), which
+the interface treats as absent.
 
 ## Why the run files are columnar
 
@@ -54,7 +63,7 @@ OUT = ROOT / "apps" / "web" / "public" / "demo"
 #: they exist to answer "does the predictor pay for itself", which is a question
 #: about aggregates across twenty trials, not about watching one run. Their
 #: results are on the Experiments page, where that comparison belongs.
-POLICIES = ["B0", "B1", "B2", "P1"]
+POLICIES = ["B0", "B1", "B2", "P1", "P3"]
 
 #: The seed every demo run uses. One seed, fixed here, so that any two policies
 #: a visitor compares faced a byte-identical exogenous trace - the same pairing
@@ -73,6 +82,13 @@ SCENARIO_FIRST = [
 
 #: Experiment results worth shipping: the completed 20-trial test-block runs.
 DEMO_EXPERIMENTS = [
+    # Phase 5: the shadowed route, where the road map pays (docs/PHASE_5_RESULTS.md).
+    # The story's last chapter reads phase5-test4-shadow-survey.
+    "phase5-test4-shadow-survey",
+    "phase5-test4-shadow-degradation",
+    "phase5-test4-shadow-fast",
+    "phase5-test4-shadow-reverse",
+    "phase5-test4-shadow-stale",
     "exp-26f132d5d7",  # wifi-degradation
     "exp-64931cf540",  # cellular-congestion
     "exp-966206c65b",  # satellite-fallback
@@ -281,6 +297,11 @@ def main() -> None:
         default="",
         help="comma-separated scenario ids (default: the whole catalogue)",
     )
+    parser.add_argument(
+        "--add",
+        action="store_true",
+        help="keep the recordings already in apps/web/public/demo and record only missing pairs",
+    )
     args = parser.parse_args()
 
     from continua_engine.sim.exogenous import get_scenario, scenario_catalogue
@@ -292,16 +313,36 @@ def main() -> None:
         *[entry for entry in known if entry not in SCENARIO_FIRST],
     ]
 
-    if OUT.exists():
-        shutil.rmtree(OUT)
-    OUT.mkdir(parents=True)
+    previous: dict = {}
+    if args.add and (OUT / "index.json").exists():
+        previous = json.loads((OUT / "index.json").read_text(encoding="utf-8"))
+        if previous.get("seed") != DEMO_SEED:
+            raise SystemExit("--add: the recorded runs used another seed; record the full matrix instead")
+    else:
+        if OUT.exists():
+            shutil.rmtree(OUT)
+        OUT.mkdir(parents=True)
 
-    print(f"Recording {len(scenarios)} scenarios x {len(policies)} policies, seed {DEMO_SEED}")
-    summaries = []
-    for scenario_id in scenarios:
+    summaries = list(previous.get("runs", []))
+    have = {(run["scenario_id"], run["policy_id"]) for run in summaries}
+    wanted = [(scenario_id, policy) for scenario_id in scenarios for policy in policies if (scenario_id, policy) not in have]
+    print(f"Recording {len(wanted)} runs (seed {DEMO_SEED}); {len(have)} already recorded")
+    for scenario_id, policy in wanted:
         scenario = get_scenario(scenario_id)
-        for policy in policies:
-            summaries.append(build_run(scenario_id, policy, scenario["title"]))
+        summaries.append(build_run(scenario_id, policy, scenario["title"]))
+    # The catalogue's order: scenarios as listed, each scenario's policies in order.
+    order = {scenario_id: index for index, scenario_id in enumerate(scenarios)}
+    rank = {policy: index for index, policy in enumerate(POLICIES)}
+    summaries.sort(key=lambda run: (order.get(run["scenario_id"], 999), rank.get(run["policy_id"], 99)))
+
+    print("\nRadio maps")
+    from continua_engine.controller.radio_map import MAP_DIR
+
+    (OUT / "radio-maps").mkdir(parents=True, exist_ok=True)
+    for source in sorted(MAP_DIR.glob("radio_map-*.json")):
+        survey = source.stem.removeprefix("radio_map-")
+        shutil.copyfile(source, OUT / "radio-maps" / f"{survey}.json")
+        print(f"  {survey}")
 
     print("\nExperiments")
     experiments = export_experiments()
@@ -311,15 +352,17 @@ def main() -> None:
         json.loads(CAPABILITY.read_text(encoding="utf-8")) if CAPABILITY.exists() else None
     )
 
+    recorded_policies = [policy for policy in POLICIES if any(run["policy_id"] == policy for run in summaries)]
     index = {
-        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "generated_at": previous.get("generated_at") or datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat(),
         "note": (
             "Every run here was executed by the CONTINUA engine and is replayed exactly as "
             "recorded. Nothing is synthesised for the demo and no value is computed in the "
             "browser. The engine itself is Python and runs locally; this site plays its output."
         ),
         "seed": DEMO_SEED,
-        "policies": policies,
+        "policies": recorded_policies,
         "runs": summaries,
         "experiments": experiments,
         "scenarios": catalogue,
