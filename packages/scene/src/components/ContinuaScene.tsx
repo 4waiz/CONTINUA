@@ -322,7 +322,12 @@ function SceneContents({
       <Rover lod={quality === 'low'} />
       <CoverageOverlay visible={settings.showCoverage && !inspect} />
       {!inspect && <LinkBeams />}
-      <SceneCameras mode={inspect ? 'turntable' : settings.camera} story={settings.storyShot} inset={settings.viewInset} />
+      <SceneCameras
+        mode={inspect ? 'turntable' : settings.camera}
+        story={settings.storyShot}
+        inset={settings.viewInset}
+        zones={settings.deadZones}
+      />
       {quality === 'low' && <BakeShadows />}
       {quality === 'high' && <PostEffects />}
       {adaptive && <QualityGovernor />}

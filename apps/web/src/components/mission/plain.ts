@@ -154,10 +154,13 @@ export function plainDecision(event: EngineEvent, previous: EngineLinkId | null)
     if (/measured violation/.test(reason)) return `${capitalise(from ?? 'the old network')} got too slow, so the connection moved to ${to}.`;
     return `Moved the connection${from ? ` from ${from}` : ''} to ${to}.`;
   }
-  if (/^Preparing /.test(reason)) {
+  // The road map's warning is the decision that starts a network for the gap.
+  // Later decisions give the same reason for what they hold back meanwhile;
+  // they are said as what they do, below.
+  const backup = actions.find((action) => action.kind === 'activate_backup');
+  if (/^Preparing /.test(reason) && backup?.link) {
     const ahead = numberBefore(reason, 'm ahead');
-    const link = actions.find((action) => action.kind === 'activate_backup')?.link;
-    return `Dead zone ${ahead !== null ? `${ahead.toFixed(0)} m ` : ''}ahead on the road map: starting ${linkName(link)} now, so it is ready in time.`;
+    return `Dead zone ${ahead !== null ? `${ahead.toFixed(0)} m ` : ''}ahead on the road map: starting ${linkName(backup.link)} now, so it is ready in time.`;
   }
   const kinds = new Set(actions.map((action) => action.kind));
   if (kinds.has('safe_stop')) return 'No network can carry the connection: the rover stops safely and waits.';
@@ -183,6 +186,20 @@ export function plainDecision(event: EngineEvent, previous: EngineLinkId | null)
   if (kinds.has('stop_duplication')) return 'Back to one network for the steering commands.';
   return null;
 }
+
+/**
+ * What the voice says while driving - the short words already on screen, so a
+ * run of changes close together, as at the cutting, is still said as it
+ * happens. The reasons stay in the dock's last decision, to read.
+ */
+export const spokenLines = {
+  /** The handoff toast: "Moved to Satellite". */
+  movedTo: (link: EngineLinkId): string => `Moved to ${NETWORK[link].name}.`,
+  /** The road strip, while the road map's warning stands. */
+  gapAhead: 'Gap ahead: getting satellite ready.',
+  /** A status card turning red, or green again. */
+  connection: (rover: string, up: boolean): string => (up ? `${rover}: connected again.` : `${rover}: connection lost.`),
+} as const;
 
 /** The connection as the operator experiences it, from the receiver's report. */
 export function connectionState(event: EngineEvent | null | undefined): {

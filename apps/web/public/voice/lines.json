@@ -1,0 +1,41 @@
+{
+  "drive": [
+    "Moved to Cable.",
+    "Moved to Wi-Fi.",
+    "Moved to Cellular.",
+    "Moved to Satellite.",
+    "Gap ahead: getting satellite ready.",
+    "Normal rover: connection lost.",
+    "Normal rover: connected again.",
+    "Backup-after-trouble rover: connection lost.",
+    "Backup-after-trouble rover: connected again.",
+    "Everything-on rover: connection lost.",
+    "Everything-on rover: connected again.",
+    "CONTINUA: connection lost.",
+    "CONTINUA: connected again.",
+    "CONTINUA (no forecast): connection lost.",
+    "CONTINUA (no forecast): connected again.",
+    "CONTINUA (no app priorities): connection lost.",
+    "CONTINUA (no app priorities): connected again.",
+    "CONTINUA P2: connection lost.",
+    "CONTINUA P2: connected again.",
+    "CONTINUA P2 (no routing): connection lost.",
+    "CONTINUA P2 (no routing): connected again.",
+    "CONTINUA P2 (no modes): connection lost.",
+    "CONTINUA P2 (no modes): connected again.",
+    "CONTINUA P2 (late modes): connection lost.",
+    "CONTINUA P2 (late modes): connected again."
+  ],
+  "story": [
+    "This rescue rover is driven from far away. Its operator must never lose the link.",
+    "Off the cable and straight onto Wi-Fi, without a moment offline.",
+    "A normal rover without CONTINUA drives this same road at the same moment. Its status is beside ours, at the top.",
+    "Ahead, a cutting blocks Wi-Fi and cellular. CONTINUA's road map saw it 79 m out and is warming up satellite.",
+    "The banks close in: Wi-Fi and cellular fade out.",
+    "CONTINUA is on satellite and still connected. The normal rover has lost its link.",
+    "CONTINUA is on satellite and still connected, though its video pauses on the thinner link. The normal rover has lost its link.",
+    "Wi-Fi and cellular are gone. CONTINUA is on satellite and still connected, though its video pauses on the thinner link.",
+    "Through the cutting, CONTINUA never lost its link. The normal rover was cut off for 4.5 s and had to stop.",
+    "The same road, 20 times. CONTINUA with its road map kept the link 20 times out of 20; the normal rover, 0. Keeping every network on also stayed connected, at about 3× the cost - and, with big uploads held back, for less than CONTINUA."
+  ]
+}

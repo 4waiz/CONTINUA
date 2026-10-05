@@ -1471,3 +1471,60 @@ collector's view (`gc.freeze`).
 
 **Checks.** lint, typecheck, build; test:engine 161 passed; test:phase2 11/11;
 test:smoke 11 passed / 10 skipped (behaviour and evidence run at 1920 only).
+
+# One button, a voice, and where each link comes from
+
+The owner asked for four things: a voice-over, so a judge can listen as well
+as read; a landing that does nothing until it is pressed, with one button
+instead of two; to see where a new link comes from when the network changes,
+with camera moves that are not sloppy; and a proof card that is less text and
+less frightening.
+
+**One way in.** The landing holds the scene still (the preview's clock paused)
+under two sentences and **Drive it yourself**, which starts the run that shows
+what CONTINUA is for - the shadowed route, CONTINUA with its road map beside
+the normal rover - at once. The story stays at `/?story`.
+
+**Where the link comes from.** On every change of carrying network the follow
+and close-up cameras turn to the far end of the new link - access point, mast,
+or the sky for satellite - hold 2.6 s and come back, smoothstepped, as a pure
+function of run time (the scene source now also reports the change before the
+latest, so one reveal can hand over to the next without a cut). Three framings
+were tried and checked in screenshots at 1706 x 800: beside the road (the
+camera stood inside the cutting's walls), straight down the road (a mast off
+to the side sat behind the side panels), and the one kept - back from the rover
+and low, part-way over its shoulder, on the road near a cutting.
+
+**The voice.** It says the words on screen. A first version read the dock's
+full sentences; around the cutting five things happen in eight seconds, the
+voice fell four seconds behind, and the normal rover losing its link - the
+moment the comparison is about - was never said. Driving, it now reads the
+short words (the toast, the road strip's warning, the status cards); the
+reasons stay in the dock. Captions replace waiting captions; announcements
+queue, expire after 8 s, and a "connected again" withdraws a "connection lost"
+not yet said. 35 lines (25 for driving, 10 for the story) recorded locally with
+the Windows voice Microsoft Mark, 1.1 MB; a line with no recording falls back
+to a local browser voice. Checked by logging every clip played against the run:
+each change said within about two seconds of happening, none dropped.
+
+**Less text at the end.** The run's summary is two cards in words - kept its
+connection or lost it, seconds offline, had to stop - with how often each
+changed network and what each sent over satellite, whichever way those fall
+(here the normal rover sent 107 MB over satellite to CONTINUA's 5.6 MB; the
+first wording called both "what being ready cost", which this run contradicts),
+and the stored twenty-drive result. The proof card is one plain bar a
+strategy with one sentence above and one below; its provenance is in the "?".
+The dock's "last decision" now shows only changes of network, the road map's
+warning, stops and restarts - held-back video came every second.
+
+**Found on the way.** A decision that holds video back while satellite starts
+gives the same "Preparing ..." reason as the one that starts it, and was
+written as "starting another network"; the warning is now the decision that
+activates a link, in the dock, the voice and the timeline's flags.
+
+**Checks.** lint, typecheck, build; test:engine 161 passed; test:phase2 11/11
+(the offline test now opens the one way in before looking for the preview
+badge); test:smoke 11 passed / 10 skipped. The flow - still landing, one
+click, the run, the reveals, the voice, the end card, the story's proof - was
+walked in a browser at 1706 x 800 @1.5 and 1920 x 1080 with no console errors.
+

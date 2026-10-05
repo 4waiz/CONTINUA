@@ -46,7 +46,9 @@
     "video:claims": "node scripts/check-claims.mjs",
     "video:narration": "node scripts/build-narration.mjs",
     "video:qa": "node scripts/qa-demo.mjs",
-    "video:renders": "node scripts/run-blender.mjs scripts/blender/render_video_shots.py"
+    "video:renders": "node scripts/run-blender.mjs scripts/blender/render_video_shots.py",
+    "voice:build": "node scripts/build-voice.mjs",
+    "voice:lines": "npx tsx scripts/voice-lines-drive.mts && node scripts/voice-lines-story.mjs"
   },
   "devDependencies": {
     "@playwright/test": "1.63.0",

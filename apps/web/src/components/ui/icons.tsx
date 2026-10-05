@@ -206,6 +206,26 @@ export function CloseupIcon(props: IconProps) {
   );
 }
 
+/** A loudspeaker with its sound: the story's voice is on. */
+export function SpeakerIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M4.5 9.5h3l4.5-3.75v12.5L7.5 14.5h-3v-5Z" fill="currentColor" />
+      <path d="M15.5 9.25a4 4 0 0 1 0 5.5M18 6.75a7.6 7.6 0 0 1 0 10.5" />
+    </Svg>
+  );
+}
+
+/** A loudspeaker, crossed out: the story's voice is off. */
+export function SpeakerOffIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M4.5 9.5h3l4.5-3.75v12.5L7.5 14.5h-3v-5Z" fill="currentColor" />
+      <path d="M16 9.75l4.5 4.5M20.5 9.75 16 14.25" />
+    </Svg>
+  );
+}
+
 export function CloseIcon(props: IconProps) {
   return (
     <Svg {...props}>

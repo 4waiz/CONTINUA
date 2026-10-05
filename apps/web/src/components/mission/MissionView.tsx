@@ -1,15 +1,18 @@
 'use client';
 
 /**
- * The Mission page - the flagship view, in three moods.
+ * The Mission page - the flagship view.
  *
- * * **Landing.** What this is, in three sentences, over the island; two ways in.
- * * **Story.** A guided minute through the one run that shows what CONTINUA is
- *   for (`story.tsx`): two rovers on the shadowed route, captions in plain
- *   words built from the runs' own events, the framing chosen for each
- *   chapter, and the stored twenty-trial comparison at the end.
- * * **Drive.** The run, yours to choose and scrub - in plain words by default,
- *   with every measurement one toggle away (Details).
+ * * **Landing.** What this is, in two sentences, over a still island; one way
+ *   in. Nothing moves until it is pressed.
+ * * **Drive.** The run that shows what CONTINUA is for - the shadowed route,
+ *   CONTINUA with its road map beside the normal rover - starts at once, and
+ *   is then yours to change and scrub: in plain words by default, every
+ *   measurement one toggle away (Details). Each change of network is shown -
+ *   the camera turns to where the new link comes from - and said aloud.
+ * * **Story** (`?story` only). A guided minute through the same run
+ *   (`story.tsx`): captions read aloud, the framing chosen for each chapter,
+ *   and the stored twenty-trial comparison at the end.
  *
  * The world is the interface in all three: the 3D scene runs edge to edge
  * under a slim top bar, and everything else floats over it.
@@ -41,20 +44,21 @@ import {
 import { deadZonesFromFaults, MISSION_ZONES, NETWORK_COLOR, route } from '@continua/scene';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { AppShell, RunStatusBar } from '../AppShell';
-import { CinematicIcon, CloseupIcon, FollowIcon, NetworkIcon, OverviewIcon } from '../ui/icons';
+import { CinematicIcon, CloseupIcon, FollowIcon, NetworkIcon, OverviewIcon, SpeakerIcon, SpeakerOffIcon } from '../ui/icons';
 import { ApplicationPanel } from './ApplicationPanel';
 import { CameraFeed } from './CameraFeed';
 import { FullscreenButton } from './FullscreenButton';
 import { LinkStack } from './LinkStack';
 import { MissionDock } from './MissionDock';
 import { MissionScene, type MissionCamera } from './MissionScene';
-import { NETWORK, plainDecision, STRATEGY } from './plain';
+import { connectionState, NETWORK, spokenLines, STRATEGY } from './plain';
 import { RoadAhead, useRadioMap } from './RoadAhead';
 import { RouteMap } from './RouteMap';
 import { RoverStatus } from './RoverStatus';
 import { RunSummary } from './RunSummary';
 import { StoryBar, STORY_POLICY, STORY_SCENARIO, useStoryDirector } from './story';
-import { StoryLanding, StoryProof } from './StoryCards';
+import { proofSentence, StoryLanding, StoryProof, useProofRows } from './StoryCards';
+import { narrator, useNarrator } from './voice';
 
 const ZONE_LABEL: Record<string, string> = Object.fromEntries(MISSION_ZONES.map((zone) => [zone.id, zone.label]));
 
@@ -342,6 +346,7 @@ export function MissionView() {
   // --- the story ----------------------------------------------------------------
 
   const startStory = useCallback(() => {
+    narrator.stop();
     setScenarioId(STORY_SCENARIO);
     setPolicyId(STORY_POLICY);
     setCompare(true);
@@ -385,6 +390,26 @@ export function MissionView() {
     }, 0);
     return () => clearTimeout(timer);
   }, [scenarios.length, demoRuns.length, startStory]);
+
+  /**
+   * The one way in: the run that shows what CONTINUA is for - the shadowed
+   * route, CONTINUA with its road map beside the normal rover - started at
+   * once. The dock changes it from there.
+   */
+  const startDrive = useCallback(() => {
+    narrator.stop();
+    setView('drive');
+    setCamera('follow');
+    setScenarioId(STORY_SCENARIO);
+    setPolicyId(STORY_POLICY);
+    setSeed(STORY_SEED);
+    setCompare(true);
+    setPinned(false);
+    // On the public build the selection is the recording, and it plays itself.
+    if (!IS_PUBLIC_PREVIEW && scenarios.some((entry) => entry.id === STORY_SCENARIO)) {
+      void startWith({ scenario: STORY_SCENARIO, policy: STORY_POLICY, seed: STORY_SEED, compare: true });
+    }
+  }, [startWith, scenarios]);
 
   const exitStory = useCallback(() => {
     setView('drive');
@@ -507,10 +532,20 @@ export function MissionView() {
     (at: number) => (run.source.eventAt(at)?.carrying ?? null) as EngineLinkId | null,
     [run.source],
   );
+  // The dock's last decision, and what the voice says: a change of network,
+  // the road map's warning, a stop or a restart. Held-back video and doubled
+  // steering commands come many times a run; they are in Details and the
+  // Decision log, not in a line that would change every second.
   const lastDecision = useMemo(() => {
     for (let i = run.decisions.length - 1; i >= 0; i -= 1) {
       const event = run.decisions[i]!;
-      if (plainDecision(event, null)) return event;
+      const kinds = actionsOf(event).map((action) => action.kind);
+      if (
+        kinds.some((kind) => kind === 'switch' || kind === 'safe_stop' || kind === 'resume') ||
+        (/^Preparing /.test(event.reason ?? '') && kinds.includes('activate_backup'))
+      ) {
+        return event;
+      }
     }
     return null;
   }, [run.decisions]);
@@ -530,6 +565,15 @@ export function MissionView() {
     run.latest !== null &&
     run.latest.t - preparedAt < 10 &&
     run.latest.carrying !== 'satellite';
+  // When the road map's warning started a network: what the voice announces,
+  // once - the decisions after it give the same reason for what they hold back.
+  const warnedAt = useMemo(() => {
+    for (let i = run.decisions.length - 1; i >= 0; i -= 1) {
+      const event = run.decisions[i]!;
+      if (/^Preparing /.test(event.reason ?? '') && actionsOf(event).some((action) => action.kind === 'activate_backup')) return event.t;
+    }
+    return null;
+  }, [run.decisions]);
   const roadAhead = (
     <RoadAhead
       map={radioMap}
@@ -567,6 +611,11 @@ export function MissionView() {
 
   const mainName = STRATEGY[runPolicy]?.who ?? runPolicy;
   const landing = view === 'landing' && !runId;
+  // The run the page opens on - the shadowed route, CONTINUA with its road map
+  // beside the normal rover - has a stored twenty-drive comparison; its
+  // summary says what that found.
+  const featuredRun = (run.state?.scenario_id ?? scenarioId) === STORY_SCENARIO && runPolicy === STORY_POLICY && Boolean(baselineId);
+  const { rows: proofRows } = useProofRows(showSummary && featuredRun);
   // The road strip says something only where there is a cutting to point at
   // or a road map steering the run; elsewhere it was one more band of text.
   const showRoad = deadZones.length > 0 || runPolicy === 'P3';
@@ -598,6 +647,80 @@ export function MissionView() {
     return () => observer.disconnect();
   }, [view, runId, storyBar, showRoad, detail]);
 
+  // --- the story's voice ------------------------------------------------------
+  // Each caption is read aloud once it has held for a moment: as the facts
+  // arrive a caption can be rewritten twice in a second, and the voice should
+  // read the settled one, not each draft.
+  const voice = useNarrator();
+  const captionText = storyBar ? (story.caption?.text ?? null) : null;
+  useEffect(() => {
+    narrator.showing(captionText);
+  }, [captionText]);
+  useEffect(() => {
+    if (!captionText) return undefined;
+    const timer = setTimeout(() => narrator.say(captionText), 450);
+    return () => clearTimeout(timer);
+  }, [captionText]);
+  useEffect(() => {
+    if (storyPaused) narrator.pause();
+    else narrator.resume();
+  }, [storyPaused]);
+  // Silent outside the story, and when the page goes.
+  useEffect(() => {
+    if (view !== 'story') narrator.stop();
+  }, [view]);
+  useEffect(() => () => narrator.stop(), []);
+  const narrateProof = useCallback(
+    (text: string) => {
+      if (view !== 'story') return;
+      narrator.showing(text);
+      narrator.say(text);
+    },
+    [view],
+  );
+
+  // Driving, the voice says what changed, in the short words on screen: the
+  // toast when the network changes, the road strip's warning, and a status
+  // card when either rover loses or gets back its connection - once that has
+  // held for a second, so the session's first fifth of a second and other
+  // blips stay silent. Long sentences fell behind when changes came close
+  // together; the reasons are in the dock's last decision, to read.
+  const handoffKey = view === 'drive' && handoff ? `${runId}:${handoff.seq}` : null;
+  const handoffLine = handoff ? spokenLines.movedTo(handoff.to) : null;
+  useEffect(() => {
+    if (!handoffKey || !handoffLine) return undefined;
+    const timer = setTimeout(() => narrator.say(handoffLine, { kind: 'announcement' }), 250);
+    return () => clearTimeout(timer);
+    // Keyed on the handoff, not its words: the same move can come twice.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [handoffKey]);
+  const warningKey = view === 'drive' && preparing && warnedAt !== null ? `${runId}:${warnedAt}` : null;
+  useEffect(() => {
+    if (!warningKey) return undefined;
+    const timer = setTimeout(() => narrator.say(spokenLines.gapAhead, { kind: 'announcement' }), 250);
+    return () => clearTimeout(timer);
+  }, [warningKey]);
+  const mainUp = view === 'drive' && runId ? connectionState(run.latest).up : null;
+  const baseUp = view === 'drive' && baselineId ? connectionState(baselineEvent).up : null;
+  const heardUp = useRef<{ run: string | null; main: boolean | null; base: boolean | null }>({ run: null, main: null, base: null });
+  useEffect(() => {
+    if (mainUp === null && baseUp === null) return undefined;
+    const timer = setTimeout(() => {
+      const heard = heardUp.current;
+      if (heard.run !== runId) Object.assign(heard, { run: runId, main: null, base: null });
+      const say = (name: string, previous: boolean | null, now: boolean | null) => {
+        if (previous === null || now === null || previous === now) return;
+        if (now) narrator.say(spokenLines.connection(name, true), { kind: 'announcement', cancels: spokenLines.connection(name, false) });
+        else narrator.say(spokenLines.connection(name, false), { kind: 'announcement' });
+      };
+      say(mainName, heard.main, mainUp);
+      say('Normal rover', heard.base, baseUp);
+      if (mainUp !== null) heard.main = mainUp;
+      if (baseUp !== null) heard.base = baseUp;
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [mainUp, baseUp, runId, mainName]);
+
   return (
     <AppShell
       variant="immersive"
@@ -622,12 +745,13 @@ export function MissionView() {
           speed={run.state?.speed ?? 1}
           deadZones={deadZones}
           inset={landing ? undefined : inset}
+          still={landing}
         />
 
         {/* --- top centre: can each operator reach their rover? --------------- */}
         <div className="pointer-events-none absolute top-3 left-1/2 z-10 flex -translate-x-1/2 flex-col items-center gap-2">
           <div ref={topRef} className="flex flex-col items-center gap-2">
-          {!runId ? (
+          {landing ? null : !runId ? (
             <div className="flex items-center gap-2">
               <span
                 className="hud-chip text-[color:var(--color-warn)]"
@@ -708,18 +832,10 @@ export function MissionView() {
           )}
         </div>
 
-        {/* --- the landing: what this is, and the two ways in ------------------------ */}
+        {/* --- the landing: what this is, and the one way in ------------------------- */}
         {landing && (
           <div className={`absolute inset-x-0 z-10 flex justify-center px-3 ${bootError ? 'top-[30%]' : 'top-[14%]'}`}>
-            <StoryLanding
-              onWatch={startStory}
-              onDrive={() => {
-                setView('drive');
-                setCamera('follow');
-              }}
-              canWatch={IS_PUBLIC_PREVIEW ? demoRuns.length > 0 : scenarios.some((entry) => entry.id === STORY_SCENARIO)}
-              busy={busy}
-            />
+            <StoryLanding onDrive={startDrive} busy={busy} />
           </div>
         )}
 
@@ -732,7 +848,7 @@ export function MissionView() {
         {/* --- the story's end: the same road, twenty times --------------------------- */}
         {view === 'story' && story.finished && (
           <div className="absolute inset-x-0 top-[112px] bottom-[var(--edge)] z-20 flex items-start justify-center px-3 max-[800px]:top-[96px]">
-            <StoryProof onReplay={startStory} onDrive={exitStory} />
+            <StoryProof onReplay={startStory} onDrive={exitStory} onNarrate={narrateProof} />
           </div>
         )}
 
@@ -743,6 +859,9 @@ export function MissionView() {
             title={scenario?.title ?? run.state?.scenario_id ?? scenarioId}
             policy={run.state?.policy_id ?? policyId}
             seed={run.state?.seed ?? null}
+            simple={!detail}
+            mainName={mainName}
+            proof={featuredRun ? proofSentence(proofRows) : null}
             onReplay={() => {
               setSummaryClosedFor(runId);
               void replay();
@@ -821,8 +940,18 @@ export function MissionView() {
               chapter={story.caption?.chapter ?? 1}
               paused={storyPaused}
               speed={storySpeed}
+              voice={{
+                on: !voice.muted,
+                blocked: voice.blocked,
+                onToggle: () => narrator.setMuted(!voice.muted),
+                onUnblock: () => narrator.unblock(),
+              }}
               onToggle={toggleStory}
-              onNext={() => setSkippingFrom(story.beat)}
+              onNext={() => {
+                // The next chapter's caption is read at once, not after this one.
+                narrator.stop();
+                setSkippingFrom(story.beat);
+              }}
               onExit={exitStory}
             />
           </div>
@@ -872,6 +1001,12 @@ export function MissionView() {
               lastDecisionFrom={lastDecision ? carryingBefore(lastDecision.t - 0.05) : null}
               extra={
                 <>
+                  <VoiceSwitch
+                    on={!voice.muted}
+                    blocked={voice.blocked}
+                    onToggle={() => narrator.setMuted(!voice.muted)}
+                    onUnblock={() => narrator.unblock()}
+                  />
                   <CameraSwitch value={camera} onChange={setCamera} />
                   <FullscreenButton target={stageRef} />
                 </>
@@ -896,6 +1031,45 @@ export function MissionView() {
         )}
       </div>
     </AppShell>
+  );
+}
+
+/** The voice that says what changed: on, off, or waiting for a click the browser asked for. */
+function VoiceSwitch({
+  on,
+  blocked,
+  onToggle,
+  onUnblock,
+}: {
+  on: boolean;
+  blocked: boolean;
+  onToggle: () => void;
+  onUnblock: () => void;
+}) {
+  if (on && blocked) {
+    return (
+      <button
+        type="button"
+        className="control story-sound shrink-0"
+        onClick={onUnblock}
+        title="The browser held the voice back until the page is clicked: click to hear each change said aloud"
+      >
+        <SpeakerIcon size={15} /> Sound
+      </button>
+    );
+  }
+  return (
+    <button
+      type="button"
+      className="icon-btn shrink-0"
+      onClick={onToggle}
+      aria-pressed={on}
+      aria-label={on ? 'Turn the voice off' : 'Say each change aloud'}
+      title={on ? 'Voice on: each change of network is said aloud. Click to turn it off.' : 'Voice off. Click to hear each change of network said aloud.'}
+      data-active={on}
+    >
+      {on ? <SpeakerIcon size={16} /> : <SpeakerOffIcon size={16} />}
+    </button>
   );
 }
 

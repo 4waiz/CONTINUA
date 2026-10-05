@@ -15,11 +15,13 @@
 import { useFrame, useThree } from '@react-three/fiber';
 import { useMemo, useRef } from 'react';
 import { Vector3, type PerspectiveCamera } from 'three';
-import type { CameraMode, StoryShot, StoryShotId } from '@continua/contracts';
+import type { AccessNetworkId, CameraMode, SceneState, StoryShot, StoryShotId } from '@continua/contracts';
 import { clamp } from '../math/noise';
 import { useSceneRuntime } from '../runtime/SceneRuntime';
 import { route } from '../world/route';
 import { roadSurfaceY } from '../world/road';
+import type { DeadZone } from '../world/deadZones';
+import { SATELLITE_SKY, siteForNetwork } from '../world/sites';
 import { terrain } from '../world/terrain';
 
 /** Keep the camera this far above whatever ground is beneath it. */
@@ -334,15 +336,153 @@ function turntableShot(time: number, out: Shot): Shot {
 /** Degrees to radians and back. */
 const DEG = Math.PI / 180;
 
+// ---------------------------------------------------------------------------
+// A change of network, shown: where the new link comes from
+// ---------------------------------------------------------------------------
+
+/**
+ * When the carrying network changes, the follow and close-up cameras turn to
+ * show where the new link comes from - the access point, the mast, the sky -
+ * hold it, and come back. A beam that ran off the edge of the frame said a
+ * link had changed but not to what. Scene seconds, so a scrubbed or captured
+ * frame is the same as a played one.
+ */
+const REVEAL_IN_S = 1.2;
+const REVEAL_HOLD_S = 2.6;
+const REVEAL_OUT_S = 1.6;
+const REVEAL_S = REVEAL_IN_S + REVEAL_HOLD_S + REVEAL_OUT_S;
+
+function smooth01(x: number): number {
+  const c = Math.min(1, Math.max(0, x));
+  return c * c * (3 - 2 * c);
+}
+
+/** How far into a change's reveal the camera is: 0 before and after, 1 while it holds. */
+function revealWeight(age: number): number {
+  if (age < 0 || age > REVEAL_S) return 0;
+  if (age < REVEAL_IN_S) return smooth01(age / REVEAL_IN_S);
+  if (age < REVEAL_IN_S + REVEAL_HOLD_S) return 1;
+  return 1 - smooth01((age - REVEAL_IN_S - REVEAL_HOLD_S) / REVEAL_OUT_S);
+}
+
+const SKY = new Vector3(SATELLITE_SKY.x, SATELLITE_SKY.y, SATELLITE_SKY.z).normalize();
+const _end = new Vector3();
+const _toRover = new Vector3();
+const _toEnd = new Vector3();
+const _aim = new Vector3();
+/** The furthest the rover may sit from the middle of a reveal, so it stays in the clear part of the screen. */
+const REVEAL_ROVER_MAX = 15 * (Math.PI / 180);
+/** Metres around a cutting in which a reveal keeps to the road, clear of the walls and banks. */
+const CUTTING_MARGIN_M = 30;
+
+/**
+ * Toward the other end of `network`'s link - the access point, the mast, or
+ * the sky the satellite link climbs into - with the rover in the frame.
+ *
+ * The camera stands back from the rover and a little above it, part-way
+ * between behind it on the road and over its shoulder away from the far end,
+ * so the rover and the far end line up near the middle of the screen - a mast
+ * far off to one side otherwise sat behind a side panel - and low enough that
+ * the rover below and the antenna beyond both fit between the status cards
+ * and the dock. Near a cutting, and for satellite,
+ * it keeps to the road - a camera off to the side stood inside the walls.
+ * When the far end is behind the rover, the camera looks back from in front.
+ * False when there is nothing to show - the cable, at the dock.
+ */
+function revealShot(state: SceneState, network: AccessNetworkId, out: Shot, zones: readonly DeadZone[]): boolean {
+  if (network === 'wired') return false;
+  const rover = state.vehicle.position;
+  if (network === 'satellite') {
+    _end.set(rover.x + SKY.x * 10, rover.y + 2 + SKY.y * 10, rover.z + SKY.z * 10);
+  } else {
+    const site = siteForNetwork(network, rover.x, rover.z);
+    if (!site) return false;
+    const ax = site.x + (site.linkOffset?.[0] ?? 0);
+    const az = site.z + (site.linkOffset?.[1] ?? 0);
+    _end.set(ax, terrain.height(ax, az) + (site.linkHeight ?? 3), az);
+  }
+  const along = state.vehicle.distance;
+  const heading = travelHeading(along, state.vehicle.direction ?? 1, 20);
+  const forwardX = Math.cos(heading);
+  const forwardZ = -Math.sin(heading);
+  const offX = _end.x - rover.x;
+  const offZ = _end.z - rover.z;
+  const across = Math.hypot(offX, offZ);
+  const ahead = offX * forwardX + offZ * forwardZ;
+  const behind = ahead < -0.5 * across;
+  const nearCutting = zones.some(
+    (zone) => along > zone.from - zone.ramp - CUTTING_MARGIN_M && along < zone.to + zone.ramp + CUTTING_MARGIN_M,
+  );
+  const onRoad = network === 'satellite' || nearCutting || across < 2;
+  // Which way from the rover the camera stands, flat: behind it on the road
+  // (or in front, when the far end is behind), turned toward over-the-shoulder.
+  let dx = behind ? forwardX : -forwardX;
+  let dz = behind ? forwardZ : -forwardZ;
+  if (!onRoad) {
+    const share = behind ? 1 : 0.4;
+    dx = dx * (1 - share) - (offX / across) * share;
+    dz = dz * (1 - share) - (offZ / across) * share;
+    const length = Math.hypot(dx, dz) || 1;
+    dx /= length;
+    dz /= length;
+  }
+  out.position.set(rover.x + dx * 16, rover.y + 5, rover.z + dz * 16);
+  // Between the rover and the far end, leaning to the far end - but never so
+  // far that the rover leaves the middle of the frame.
+  _toRover.set(rover.x, rover.y + 1, rover.z).sub(out.position).normalize();
+  _toEnd.copy(_end).sub(out.position).normalize();
+  _aim.copy(_toRover).multiplyScalar(0.45).addScaledVector(_toEnd, 0.55).normalize();
+  const apart = _aim.angleTo(_toRover);
+  if (apart > REVEAL_ROVER_MAX) _aim.lerpVectors(_toRover, _aim, REVEAL_ROVER_MAX / apart).normalize();
+  out.target.copy(out.position).addScaledVector(_aim, 20);
+  out.fov = 50;
+  return true;
+}
+
+const _base: Shot = { position: new Vector3(), target: new Vector3(), fov: 40 };
+const _reveal: Shot = { position: new Vector3(), target: new Vector3(), fov: 40 };
+const _delta = new Vector3();
+
+function mixInto(shot: Shot, reveal: Shot, weight: number): void {
+  shot.position.addScaledVector(_delta.subVectors(reveal.position, _base.position), weight);
+  shot.target.addScaledVector(_delta.subVectors(reveal.target, _base.target), weight);
+  shot.fov += (reveal.fov - _base.fov) * weight;
+}
+
+/**
+ * Mixes the reveal of the latest change - and, while it fades, the one before
+ * it - into `shot`. A change that comes while the last one is still on screen
+ * takes over from it rather than cutting back to the rover first.
+ */
+function applyReveals(state: SceneState, time: number, shot: Shot, zones: readonly DeadZone[]): void {
+  const latest = state.handoff ?? null;
+  if (!latest) return;
+  const before = state.handoffBefore ?? null;
+  const w1 = revealWeight(time - latest.at);
+  let w0 = before ? revealWeight(time - before.at) : 0;
+  if (w0 > 0 && time >= latest.at) w0 *= 1 - smooth01((time - latest.at) / REVEAL_IN_S);
+  if (w0 <= 1e-4 && w1 <= 1e-4) return;
+  _base.position.copy(shot.position);
+  _base.target.copy(shot.target);
+  _base.fov = shot.fov;
+  if (before && w0 > 1e-4 && revealShot(state, before.to, _reveal, zones)) mixInto(shot, _reveal, w0);
+  if (w1 > 1e-4 && revealShot(state, latest.to, _reveal, zones)) mixInto(shot, _reveal, w1);
+}
+
+const NO_ZONES: readonly DeadZone[] = [];
+
 export function SceneCameras({
   mode,
   story,
   inset,
+  zones = NO_ZONES,
 }: {
   mode: CameraMode;
   story?: StoryShot;
   /** The page's panels over the canvas, top and bottom, in CSS pixels. */
   inset?: { top: number; bottom: number };
+  /** The scenario's cuttings, where a reveal keeps to the road. */
+  zones?: readonly DeadZone[];
 }) {
   const { clock, frame } = useSceneRuntime();
   const camera = useThree((state) => state.camera) as PerspectiveCamera;
@@ -365,6 +505,7 @@ export function SceneCameras({
         break;
       case 'closeup':
         closeupShot(distance, dir, time, shot);
+        applyReveals(state, time, shot, zones);
         break;
       case 'overview':
         overviewShot(distance, dir, time, shot);
@@ -379,6 +520,7 @@ export function SceneCameras({
       case 'follow':
       default:
         followShot(distance, dir, shot);
+        applyReveals(state, time, shot, zones);
         break;
     }
 

@@ -116,6 +116,26 @@ Nothing else in the video is generated. The 3D vehicle, the world, the caption
 cards and the interface are all this repository's own work, and every figure on
 screen is read from a recorded run.
 
+### The Mission page's voice
+
+The page reads its own words aloud - each change of network and each rover
+losing or regaining its link while driving, each caption in the story - and
+that voice is **synthesised speech** too, made the same way: locally, with
+`scripts/speak.ps1` and the Windows OneCore voice "Microsoft Mark", ahead of
+time (`npm run voice:lines`, `npm run voice:build`), into the MP3s under
+`apps/web/public/voice/`. No text or audio left the machine.
+
+* **The words are the page's own.** The drive's lines are made by the same
+  function the page uses (`spokenLines` in
+  `apps/web/src/components/mission/plain.ts`); the story's are recorded from a
+  run of it. Only units are expanded for speech ("4.5 s" is said "4.5
+  seconds"). Nothing is added, summarised or reworded.
+* **No online voice.** A line with no recording - one whose numbers came out
+  differently on a run - is read by one of the browser's *local* voices, or
+  not at all: a browser's online voices would send the text to a speech
+  service.
+* **It can be turned off**, and stays off on that device.
+
 ---
 
 ## 6. Ethical and practical notes

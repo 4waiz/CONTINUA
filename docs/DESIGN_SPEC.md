@@ -135,27 +135,24 @@ One screen, no page scroll, at 1920×1080, 1440×900, 1366×768 and 1280×720.
 
 ### Mission's three moods
 
-* **Landing.** No panels: the island under the director's cut, and one card -
-  what this is in three sentences, **Watch the story** and **Drive it
-  yourself**. With the engine offline it stays, the story disabled.
-* **Story.** A guided minute (`mission/story.tsx`), with as little on the
-  picture as it can take. Top centre: two status cards, one per rover -
-  "Connected / Connection lost" and the network carrying it - the question the
-  demonstration is about. Right: what each operator sees, CONTINUA on the left
-  half as in the cards. Bottom: one bar - five chapters as a progress line,
-  one caption of one or two short sentences, Pause, Next, leave. The run plays
-  in real time but for the cutting, which plays at half speed under a
-  "Slow motion · ½×" label. An earlier cut - six chapters, a two-line caption
-  card over a bar carrying the road strip, a decision feed down the left, and
-  a rate that slowed for each caption and hurried up to 6× between them - hid
-  the rover on a laptop screen and made it surge for no visible reason.
-* **Drive.** The dock (scenario, strategy, the normal rover beside it, Start
-  run), the road strip where it has something to show (a scenario with a
+* **Landing.** A still island - the scene's clock held, nothing moving until
+  asked - and one card: what this is in two sentences and one button, **Drive
+  it yourself**. An earlier landing offered a story and a drive side by side
+  over a scene already driving itself; it read as something that had started
+  without the viewer.
+* **Drive.** The button starts the run that shows what CONTINUA is for - the
+  shadowed route, CONTINUA with its road map beside the normal rover - and the
+  dock changes it from there: scenario, strategy, the normal rover beside it,
+  Start run, the road strip where it has something to show (a scenario with a
   cutting, or the road-map strategy), the transport and a timeline with **key
-  moments** - each change of network and the road map's warning, buttons that
-  jump the run. Plain words by default; **Details** brings back the
-  access-link figures, the application-health card, the control-mode chips,
-  the pipeline, the timeline's colour key and each rover's total time offline.
+  moments**. Plain words by default; **Details** brings back the access-link
+  figures, the application-health card, the control-mode chips, the pipeline,
+  the timeline's colour key and each rover's total time offline.
+* **Story** (`/?story`). The same run as a guided minute
+  (`mission/story.tsx`): five chapters in one bar - a progress line, one
+  caption read aloud, the transport - in real time but for the cutting, played
+  at half speed under a "Slow motion · ½×" label, ending on the stored
+  twenty-drive comparison as one plain bar a strategy.
 * **The picture clears the panels.** The page measures how much of the stage
   its top cards and its dock cover and hands that to the scene, whose cameras
   shift the lens (`setViewOffset`) so what they frame sits in the middle of
@@ -165,6 +162,38 @@ One screen, no page scroll, at 1920×1080, 1440×900, 1366×768 and 1280×720.
 * **A paused video is not a lost link.** In the operator views a stream that
   has stalled while its link holds is amber, "VIDEO PAUSED"; a rover with no
   link is red, "LINK LOST" ("STALLED · n ms" and "SESSION DOWN" in Details).
+* **The end of a run, in words.** One card per rover - kept its connection or
+  lost it, seconds without a link, whether it had to stop - then how often each
+  changed network and what each sent over satellite, whichever way those fall,
+  and on the featured run what the stored comparison found. The table is under
+  Details.
+
+### Showing a change of network
+
+When the carrying network changes, the follow and close-up cameras turn to
+where the new link comes from - the access point, the mast, or the sky the
+satellite link climbs into - hold it for 2.6 s, and come back, easing in and
+out. The camera stands back from the rover, low, part-way between behind it
+on the road and over its shoulder away from the far end, so the rover and the
+far end line up near the middle of the screen; near a cutting, and for
+satellite, it keeps to the road, clear of the walls. A change that comes while
+the last is still on screen takes over from it. All of it is a function of
+the run's time and its recorded changes, so a scrubbed or captured frame is
+the frame that plays.
+
+### The voice
+
+The page says what changed, word for word what the screen says: driving, the
+handoff toast ("Moved to Satellite"), the road strip's warning ("Gap ahead:
+getting satellite ready") and the status cards ("Normal rover: connection
+lost") - short, so a run of changes close together, as at the cutting, is
+still said as it happens; in the story, each caption and the proof card.
+One line at a time, never cut off; a caption replaces a caption still
+waiting, an announcement waits its turn unless it has waited eight seconds,
+and "connected again" withdraws a "connection lost" that was never said. The
+lines are recorded ahead of time (`npm run voice:lines`, `npm run
+voice:build`); a line with no recording is read by a local browser voice, or
+not at all. A speaker button in the dock and the story bar turns it off.
 
 ### Plain words
 

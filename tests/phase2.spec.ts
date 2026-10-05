@@ -44,7 +44,10 @@ async function requireEngine(page: Page): Promise<void> {
   }
 }
 
-/** The Mission page opens on its introduction; the run's controls are one click in. */
+/**
+ * The Mission page opens on its introduction; one click starts the featured
+ * run and shows the controls, which can start another.
+ */
 async function openDrive(page: Page): Promise<void> {
   await page.getByRole('button', { name: 'Drive it yourself' }).click({ timeout: 60_000 });
 }
@@ -332,10 +335,10 @@ test.describe('failure handling', () => {
     // shows a placeholder rather than a value. The reason is on the
     // placeholder's accessible name - the dashboard does not repeat the same
     // sentence down a column of four cards.
-    await expect(page.getByText('SCENE PREVIEW')).toBeVisible();
-    // The story needs the engine's runs; driving shows the panels, waiting.
-    await expect(page.getByRole('button', { name: /Watch the story/ })).toBeDisabled();
+    // The landing has one way in. With no engine it opens the panels, waiting,
+    // over a scene badged as a preview.
     await openDrive(page);
+    await expect(page.getByText('SCENE PREVIEW')).toBeVisible();
     await expect(page.getByText('Waiting for a run').first()).toBeVisible();
     // Every measurement surface on screen. With no run only the links panel
     // is: the application and camera cards enter with a run's first event.

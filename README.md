@@ -58,28 +58,36 @@ distribution at all, and nothing was executed).
 
 ![Rover close-up](assets/previews/browser/view-02-vehicle-closeup.png)
 
-### The story
+### The Mission page
 
-**Watch the story** plays the one run that shows what CONTINUA is for, in five
-chapters: two identical rovers on the shadowed route, same seed - CONTINUA
-with its road map, and the normal rover that only switches network once the
-one it is on has failed. A cutting ahead blocks Wi-Fi and cellular together;
-CONTINUA's road map sees it 79 m out and starts satellite in time, and the
-normal rover loses its link for 4.5 s and has to stop. It ends on the stored
-comparison: the same road driven twenty times by every strategy, one green
-or red rover a drive, with what each cost - including the one that is
-cheaper than CONTINUA.
+The page opens on a still island and one button, **Drive it yourself**, which
+starts the run that shows what CONTINUA is for: two identical rovers on the
+shadowed route, same seed - CONTINUA with its road map, and the normal rover
+that only switches network once the one it is on has failed. A cutting ahead
+blocks Wi-Fi and cellular together; CONTINUA's road map sees it 79 m out and
+starts satellite in time, and the normal rover loses its link for 4.5 s and
+has to stop.
 
-Nothing in it is scripted. Each chapter begins when the run reaches it - the
-rover's place on the route, or a decision the engine logged - and every
-number in a caption is read from the two runs' events at that moment. What
-the story chooses is presentation: the framing, one short caption at a time,
-and the playback rate - real time, but for the cutting, which plays at half
-speed under a label saying so. It plays from
-the engine locally and from the recorded runs on the public site
-(`apps/web/src/components/mission/story.tsx`).
+* **Every change of network is shown.** The camera turns to where the new
+  link comes from - the access point, the mast, the sky the satellite link
+  climbs into - holds it, and comes back to the rover
+  (`packages/scene/src/components/Cameras.tsx`).
+* **And said.** A voice says what changed, in the short words on screen -
+  "Moved to Satellite", "Normal rover: connection lost" - so a viewer can
+  listen as well as read. The lines are recorded on this machine with a voice
+  that ships with Windows; see [AI use](docs/AI_USE.md). A speaker button
+  turns it off.
+* **The end says how it went** in words - did each rover keep its
+  connection, for how long was each cut off, how often did each change
+  network - and, on this road, what the stored twenty-drive comparison found.
+  Every measurement stays one click away under **Details**.
 
-![The story, inside the cutting](assets/previews/browser/story-cutting.png)
+The dock changes the scenario and the strategy and starts another run.
+`/?story` plays the same run as a narrated minute with chapter captions,
+ending on the stored comparison (`apps/web/src/components/mission/story.tsx`).
+Nothing in either is scripted: every number is read from the runs' own events.
+
+![Inside the cutting: CONTINUA on satellite, the normal rover cut off](assets/previews/browser/mission-cutting.png)
 
 ### The world
 
@@ -173,6 +181,8 @@ list and `docs/VIDEO_CLAIMS.md` is the gate.
 | `npm run video:claims` | Banned phrases, claim resolution, timeline integrity |
 | `npm run video:build` | Composite, encode, poster, contact sheet, manifest |
 | `npm run video:qa` | Inspect the finished MP4 and write `docs/VIDEO_QA.md` |
+| `npm run voice:lines` | List every line the page's voice can say: the drive's from the page's own wording, the story's from a run of it (app and engine running) |
+| `npm run voice:build` | Record those lines locally with a Windows voice, into `apps/web/public/voice/` |
 
 ## Layout
 

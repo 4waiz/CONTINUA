@@ -192,7 +192,7 @@ function flagsOf(events: readonly EngineEvent[]): Flag[] {
         link: switched.link,
       });
     }
-    if (!prepared && /^Preparing /.test(event.reason ?? '') && actions.length > 0) {
+    if (!prepared && /^Preparing /.test(event.reason ?? '') && actions.some((action) => action.kind === 'activate_backup')) {
       prepared = true;
       flags.push({
         t: event.t,

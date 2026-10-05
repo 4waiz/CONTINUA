@@ -145,8 +145,8 @@ export class EngineSceneStateSource implements SceneStateSource {
     for (let i = 0; i < this.events.length; i += 1) this.noteSwitch(this.events[i - 1], this.events[i]!);
   }
 
-  /** The latest change of carrying link at or before `t`. */
-  private handoffAt(t: Seconds): HandoffMark | null {
+  /** The index of the latest change of carrying link at or before `t`, or -1. */
+  private switchIndexAt(t: Seconds): number {
     const switches = this.switches;
     let low = 0;
     let high = switches.length - 1;
@@ -160,7 +160,19 @@ export class EngineSceneStateSource implements SceneStateSource {
         high = mid - 1;
       }
     }
-    return found >= 0 ? switches[found]! : null;
+    return found;
+  }
+
+  /** The latest change of carrying link at or before `t`. */
+  private handoffAt(t: Seconds): HandoffMark | null {
+    const index = this.switchIndexAt(t);
+    return index >= 0 ? this.switches[index]! : null;
+  }
+
+  /** The change before that one. */
+  private handoffBeforeAt(t: Seconds): HandoffMark | null {
+    const index = this.switchIndexAt(t);
+    return index >= 1 ? this.switches[index - 1]! : null;
   }
 
   subscribe(listener: (state: SceneState) => void): () => void {
@@ -311,6 +323,7 @@ export class EngineSceneStateSource implements SceneStateSource {
       links,
       active: (event.carrying ?? null) as AccessNetworkId | null,
       handoff: this.handoffAt(t),
+      handoffBefore: this.handoffBeforeAt(t),
       warming,
       degraded,
       traffic: {

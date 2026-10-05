@@ -1,0 +1,220 @@
+{
+  "voice": "Microsoft Mark",
+  "rate": 0,
+  "engine": {
+    "engine": "winrt",
+    "voice": "Microsoft Mark"
+  },
+  "lines": [
+    {
+      "text": "Moved to Cable.",
+      "spoken": "Moved to Cable.",
+      "file": "7c59e3c16f25.mp3",
+      "seconds": 1.62
+    },
+    {
+      "text": "Moved to Wi-Fi.",
+      "spoken": "Moved to Wi-Fi.",
+      "file": "ace0596b6932.mp3",
+      "seconds": 1.72
+    },
+    {
+      "text": "Moved to Cellular.",
+      "spoken": "Moved to Cellular.",
+      "file": "3893593dc848.mp3",
+      "seconds": 1.8
+    },
+    {
+      "text": "Moved to Satellite.",
+      "spoken": "Moved to Satellite.",
+      "file": "ac75ca6d9f0e.mp3",
+      "seconds": 1.81
+    },
+    {
+      "text": "Gap ahead: getting satellite ready.",
+      "spoken": "Gap ahead: getting satellite ready.",
+      "file": "82c8ac218fef.mp3",
+      "seconds": 2.94
+    },
+    {
+      "text": "Normal rover: connection lost.",
+      "spoken": "Normal rover: connection lost.",
+      "file": "252bb116e56c.mp3",
+      "seconds": 2.92
+    },
+    {
+      "text": "Normal rover: connected again.",
+      "spoken": "Normal rover: connected again.",
+      "file": "f918cecd1636.mp3",
+      "seconds": 2.79
+    },
+    {
+      "text": "Backup-after-trouble rover: connection lost.",
+      "spoken": "Backup-after-trouble rover: connection lost.",
+      "file": "64abc536a5d2.mp3",
+      "seconds": 3.65
+    },
+    {
+      "text": "Backup-after-trouble rover: connected again.",
+      "spoken": "Backup-after-trouble rover: connected again.",
+      "file": "179f054d46bb.mp3",
+      "seconds": 3.5
+    },
+    {
+      "text": "Everything-on rover: connection lost.",
+      "spoken": "Everything-on rover: connection lost.",
+      "file": "495054127a15.mp3",
+      "seconds": 3.14
+    },
+    {
+      "text": "Everything-on rover: connected again.",
+      "spoken": "Everything-on rover: connected again.",
+      "file": "4134f4808574.mp3",
+      "seconds": 2.99
+    },
+    {
+      "text": "CONTINUA: connection lost.",
+      "spoken": "CONTINUA: connection lost.",
+      "file": "7935b36ad0d6.mp3",
+      "seconds": 2.79
+    },
+    {
+      "text": "CONTINUA: connected again.",
+      "spoken": "CONTINUA: connected again.",
+      "file": "3dc12a303fc8.mp3",
+      "seconds": 2.66
+    },
+    {
+      "text": "CONTINUA (no forecast): connection lost.",
+      "spoken": "CONTINUA (no forecast): connection lost.",
+      "file": "52d905824200.mp3",
+      "seconds": 3.64
+    },
+    {
+      "text": "CONTINUA (no forecast): connected again.",
+      "spoken": "CONTINUA (no forecast): connected again.",
+      "file": "e9c456cee3af.mp3",
+      "seconds": 3.51
+    },
+    {
+      "text": "CONTINUA (no app priorities): connection lost.",
+      "spoken": "CONTINUA (no app priorities): connection lost.",
+      "file": "4bcad93a24c7.mp3",
+      "seconds": 4.01
+    },
+    {
+      "text": "CONTINUA (no app priorities): connected again.",
+      "spoken": "CONTINUA (no app priorities): connected again.",
+      "file": "b271b7cfe49a.mp3",
+      "seconds": 3.86
+    },
+    {
+      "text": "CONTINUA P2: connection lost.",
+      "spoken": "CONTINUA P2: connection lost.",
+      "file": "ad1cf52d69ea.mp3",
+      "seconds": 3.17
+    },
+    {
+      "text": "CONTINUA P2: connected again.",
+      "spoken": "CONTINUA P2: connected again.",
+      "file": "ab8d4063ba80.mp3",
+      "seconds": 3.02
+    },
+    {
+      "text": "CONTINUA P2 (no routing): connection lost.",
+      "spoken": "CONTINUA P2 (no routing): connection lost.",
+      "file": "11589a56b904.mp3",
+      "seconds": 3.78
+    },
+    {
+      "text": "CONTINUA P2 (no routing): connected again.",
+      "spoken": "CONTINUA P2 (no routing): connected again.",
+      "file": "0746c0450f3c.mp3",
+      "seconds": 3.65
+    },
+    {
+      "text": "CONTINUA P2 (no modes): connection lost.",
+      "spoken": "CONTINUA P2 (no modes): connection lost.",
+      "file": "b4f21d47cc08.mp3",
+      "seconds": 3.83
+    },
+    {
+      "text": "CONTINUA P2 (no modes): connected again.",
+      "spoken": "CONTINUA P2 (no modes): connected again.",
+      "file": "bf19b0dc6d0f.mp3",
+      "seconds": 3.7
+    },
+    {
+      "text": "CONTINUA P2 (late modes): connection lost.",
+      "spoken": "CONTINUA P2 (late modes): connection lost.",
+      "file": "2a2eb43f915f.mp3",
+      "seconds": 3.87
+    },
+    {
+      "text": "CONTINUA P2 (late modes): connected again.",
+      "spoken": "CONTINUA P2 (late modes): connected again.",
+      "file": "2524add913da.mp3",
+      "seconds": 3.74
+    },
+    {
+      "text": "This rescue rover is driven from far away. Its operator must never lose the link.",
+      "spoken": "This rescue rover is driven from far away. Its operator must never lose the link.",
+      "file": "7dd266f4146e.mp3",
+      "seconds": 5.73
+    },
+    {
+      "text": "Off the cable and straight onto Wi-Fi, without a moment offline.",
+      "spoken": "Off the cable and straight onto Wi-Fi, without a moment offline.",
+      "file": "de2eddb10b7e.mp3",
+      "seconds": 4.28
+    },
+    {
+      "text": "A normal rover without CONTINUA drives this same road at the same moment. Its status is beside ours, at the top.",
+      "spoken": "A normal rover without CONTINUA drives this same road at the same moment. Its status is beside ours, at the top.",
+      "file": "e01f40b92d5e.mp3",
+      "seconds": 7.68
+    },
+    {
+      "text": "Ahead, a cutting blocks Wi-Fi and cellular. CONTINUA's road map saw it 79 m out and is warming up satellite.",
+      "spoken": "Ahead, a cutting blocks Wi-Fi and cellular. CONTINUA's road map saw it 79 metres out and is warming up satellite.",
+      "file": "8c0a92092824.mp3",
+      "seconds": 8.3
+    },
+    {
+      "text": "The banks close in: Wi-Fi and cellular fade out.",
+      "spoken": "The banks close in: Wi-Fi and cellular fade out.",
+      "file": "0b1afb5f8a43.mp3",
+      "seconds": 3.79
+    },
+    {
+      "text": "CONTINUA is on satellite and still connected. The normal rover has lost its link.",
+      "spoken": "CONTINUA is on satellite and still connected. The normal rover has lost its link.",
+      "file": "1288a4a2ae7c.mp3",
+      "seconds": 5.72
+    },
+    {
+      "text": "CONTINUA is on satellite and still connected, though its video pauses on the thinner link. The normal rover has lost its link.",
+      "spoken": "CONTINUA is on satellite and still connected, though its video pauses on the thinner link. The normal rover has lost its link.",
+      "file": "bd10c7300e35.mp3",
+      "seconds": 8.09
+    },
+    {
+      "text": "Wi-Fi and cellular are gone. CONTINUA is on satellite and still connected, though its video pauses on the thinner link.",
+      "spoken": "Wi-Fi and cellular are gone. CONTINUA is on satellite and still connected, though its video pauses on the thinner link.",
+      "file": "2fd0b91a7ef8.mp3",
+      "seconds": 7.81
+    },
+    {
+      "text": "Through the cutting, CONTINUA never lost its link. The normal rover was cut off for 4.5 s and had to stop.",
+      "spoken": "Through the cutting, CONTINUA never lost its link. The normal rover was cut off for 4.5 seconds and had to stop.",
+      "file": "9a93744faf41.mp3",
+      "seconds": 8.02
+    },
+    {
+      "text": "The same road, 20 times. CONTINUA with its road map kept the link 20 times out of 20; the normal rover, 0. Keeping every network on also stayed connected, at about 3× the cost - and, with big uploads held back, for less than CONTINUA.",
+      "spoken": "The same road, 20 times. CONTINUA with its road map kept the link 20 times out of 20; the normal rover, 0. Keeping every network on also stayed connected, at about 3 times the cost - and, with big uploads held back, for less than CONTINUA.",
+      "file": "d1e25f2e5fa2.mp3",
+      "seconds": 17.62
+    }
+  ]
+}

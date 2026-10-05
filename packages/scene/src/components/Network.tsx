@@ -39,7 +39,7 @@ import {
 import type { AccessNetworkId } from '@continua/contracts';
 import { NETWORK_COLOR } from '../theme';
 import { useSceneRuntime } from '../runtime/SceneRuntime';
-import { coverageAt, SATELLITE_SKY, SITES } from '../world/sites';
+import { coverageAt, SATELLITE_SKY, siteForNetwork, SITES } from '../world/sites';
 import { terrain } from '../world/terrain';
 
 const BEAM_SEGMENTS = 32;
@@ -132,21 +132,6 @@ export function CoverageOverlay({ visible }: { visible: boolean }) {
 // ---------------------------------------------------------------------------
 // Link beams
 // ---------------------------------------------------------------------------
-
-function siteForNetwork(network: AccessNetworkId, x: number, z: number) {
-  const candidates = SITES.filter((site) => site.network === network);
-  if (candidates.length === 0) return null;
-  let best = candidates[0]!;
-  let bestDistance = Infinity;
-  for (const site of candidates) {
-    const distance = Math.hypot(site.x - x, site.z - z);
-    if (distance < bestDistance) {
-      bestDistance = distance;
-      best = site;
-    }
-  }
-  return best;
-}
 
 /**
  * An arc between the rover and a site, written into `target`.

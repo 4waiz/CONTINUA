@@ -8,6 +8,11 @@
  * Run beside the reactive baseline, it is a paired comparison - same scenario,
  * route and seed - and the costs of acting early (handovers, overhead, bytes
  * on the expensive link) sit in the same table as the wins.
+ *
+ * By default it says that in words: did each rover keep its connection, how
+ * long was each cut off, did either have to stop - and, in the same breath,
+ * how often each changed network and what each sent over satellite, whichever
+ * way those fall. The full table is under Details.
  */
 
 import Link from 'next/link';
@@ -146,6 +151,64 @@ function Comparison({ rows, basePolicy, runPolicy }: { rows: Row[]; basePolicy: 
   );
 }
 
+/** One rover's run, as a card: cut off for how long, and whether it had to stop. */
+function RoverOutcome({ name, metrics, ours }: { name: string; metrics: Record<string, unknown>; ours: boolean }) {
+  const lost = read(metrics, 'continuity.total_interruption_s');
+  const stopped = readFlag(metrics, 'continuity.safe_stop_entered');
+  const reconnects = read(metrics, 'continuity.session_reconnects');
+  const kept = reconnects === 0;
+  return (
+    <div className="run-outcome" data-kept={reconnects === null ? undefined : String(kept)}>
+      <div className="run-outcome-name" style={{ color: ours ? 'var(--color-blue)' : 'var(--color-muted)' }}>
+        {name}
+      </div>
+      <div className="run-outcome-state">
+        {reconnects === null ? 'unavailable' : kept ? 'Kept its connection' : `Lost it ${reconnects} time${reconnects === 1 ? '' : 's'}`}
+      </div>
+      <div className="run-outcome-detail">
+        {lost === null ? 'time offline unavailable' : `${lost.toFixed(1)} s without a link`}
+        {stopped === null ? '' : stopped ? ' · had to stop' : ' · never had to stop'}
+      </div>
+    </div>
+  );
+}
+
+/** The run's ending in words, with what it cost said beside it. */
+function SimpleSummary({
+  metrics,
+  mainName,
+  baseline,
+  proof,
+}: {
+  metrics: Record<string, unknown>;
+  mainName: string;
+  baseline: Record<string, unknown> | null;
+  proof: string | null;
+}) {
+  const changes = read(metrics, 'control_plane.handovers');
+  const satellite = megabytes(read(metrics, 'links.satellite_bytes'));
+  const baseChanges = baseline ? read(baseline, 'control_plane.handovers') : null;
+  const baseSatellite = baseline ? megabytes(read(baseline, 'links.satellite_bytes')) : null;
+  const price = [
+    changes === null ? null : `${changes} change${changes === 1 ? '' : 's'} of network${baseChanges === null ? '' : ` (normal rover: ${baseChanges})`}`,
+    satellite === null ? null : `${satellite} over satellite, the costly link${baseSatellite === null ? '' : ` (normal rover: ${baseSatellite})`}`,
+  ].filter(Boolean);
+  return (
+    <>
+      <div className={`mt-4 grid gap-3 ${baseline ? 'grid-cols-2' : 'grid-cols-1'}`}>
+        <RoverOutcome name={mainName} metrics={metrics} ours />
+        {baseline && <RoverOutcome name="Normal rover" metrics={baseline} ours={false} />}
+      </div>
+      {price.length > 0 && (
+        <p className="mt-3 text-[12.5px] leading-snug text-[color:var(--color-muted)]">
+          Along the way: {price.join(' and ')}.
+        </p>
+      )}
+      {proof && <p className="mt-2 text-[12.5px] leading-snug font-medium text-[color:var(--color-ink)]">{proof}</p>}
+    </>
+  );
+}
+
 export function RunSummary({
   metrics,
   title,
@@ -154,6 +217,9 @@ export function RunSummary({
   onReplay,
   onClose,
   baseline,
+  simple = false,
+  mainName = 'CONTINUA',
+  proof = null,
 }: {
   metrics: Record<string, unknown>;
   title: string;
@@ -163,6 +229,12 @@ export function RunSummary({
   onClose: () => void;
   /** The reactive baseline's metrics, when it ran beside this run. */
   baseline?: { metrics: Record<string, unknown>; policy: string } | null;
+  /** In words, the table left to Details. */
+  simple?: boolean;
+  /** This run's rover, as the status cards name it. */
+  mainName?: string;
+  /** What the stored twenty-drive comparison found, for the run it was made on. */
+  proof?: string | null;
 }) {
   const reconnects = read(metrics, 'continuity.session_reconnects');
   const interruptions = read(metrics, 'continuity.interruptions');
@@ -175,7 +247,7 @@ export function RunSummary({
 
   return (
     <section
-      className="glass drop-in absolute top-1/2 left-1/2 z-30 w-[min(620px,calc(100vw-48px))] -translate-x-1/2 -translate-y-1/2 px-6 pt-5 pb-5"
+      className="glass drop-in absolute top-[calc((100%-var(--dock-h)-var(--edge))/2)] left-1/2 z-30 w-[min(620px,calc(100vw-48px))] -translate-x-1/2 -translate-y-1/2 px-6 pt-5 pb-5"
       role="dialog"
       aria-label="Run complete"
     >
@@ -189,12 +261,22 @@ export function RunSummary({
       </button>
       <div className="section-label">Run complete</div>
       <h2 className="mt-1 pr-10 text-[19px] font-semibold tracking-[-0.015em]">
-        {reconnects === 0 ? (
+        {reconnects === null ? (
+          'The run finished.'
+        ) : simple ? (
+          reconnects === 0 ? (
+            <>
+              {mainName} <span className="text-[color:var(--color-good)]">kept its connection the whole way.</span>
+            </>
+          ) : (
+            <>
+              {mainName} <span className="text-[color:var(--color-bad)]">lost its connection {reconnects} time{reconnects === 1 ? '' : 's'}</span>.
+            </>
+          )
+        ) : reconnects === 0 ? (
           <>
             The session held. <span className="text-[color:var(--color-good)]">No reconnects.</span>
           </>
-        ) : reconnects === null ? (
-          'The run finished.'
         ) : (
           <>
             The session reconnected <span className="text-[color:var(--color-bad)]">{reconnects} time{reconnects === 1 ? '' : 's'}</span>.
@@ -202,12 +284,14 @@ export function RunSummary({
         )}
       </h2>
       <p className="mt-1 text-[12px] text-[color:var(--color-muted)]">
-        {title} · {policy}
-        {seed !== null ? ` · seed ${seed}` : ''}
-        {baseline ? ` · beside the reactive baseline, ${baseline.policy}` : ''}
+        {simple
+          ? `${title}${baseline ? ' · the same road, signal and moment for both rovers' : ''}`
+          : `${title} · ${policy}${seed !== null ? ` · seed ${seed}` : ''}${baseline ? ` · beside the reactive baseline, ${baseline.policy}` : ''}`}
       </p>
 
-      {baseline ? (
+      {simple ? (
+        <SimpleSummary metrics={metrics} mainName={mainName} baseline={baseline?.metrics ?? null} proof={proof} />
+      ) : baseline ? (
         <Comparison rows={compareRows(baseline.metrics, metrics)} basePolicy={baseline.policy} runPolicy={policy} />
       ) : (
       <div className="mt-4 grid grid-cols-3 gap-x-6 gap-y-4 border-t border-[color:var(--color-line)] pt-4">

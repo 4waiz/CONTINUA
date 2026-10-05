@@ -193,6 +193,12 @@ export interface SceneState {
    * say leaves it out, and nothing is animated.
    */
   readonly handoff?: HandoffMark | null;
+  /**
+   * The change of carrying link before `handoff`, so a camera that shows each
+   * change can pass from one to the next without a jump. Optional, like
+   * `handoff`.
+   */
+  readonly handoffBefore?: HandoffMark | null;
 }
 
 /**

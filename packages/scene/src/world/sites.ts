@@ -249,3 +249,19 @@ export const ZONE_OVERVIEWS: Readonly<Record<MissionZoneId, { x: number; z: numb
 export function siteElevation(site: SiteMarker): number {
   return terrain.height(site.x, site.z);
 }
+
+/** The site of `network` nearest to a point: the end of that link the rover talks to. */
+export function siteForNetwork(network: AccessNetworkId, x: number, z: number): SiteMarker | null {
+  const candidates = SITES.filter((site) => site.network === network);
+  if (candidates.length === 0) return null;
+  let best = candidates[0]!;
+  let bestDistance = Infinity;
+  for (const site of candidates) {
+    const distance = Math.hypot(site.x - x, site.z - z);
+    if (distance < bestDistance) {
+      bestDistance = distance;
+      best = site;
+    }
+  }
+  return best;
+}

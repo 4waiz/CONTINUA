@@ -40,6 +40,12 @@ const PLAYOUT_DELAY_S = 0.25;
 const RESYNC_S = 1.0;
 /** How long an arrival keeps a say in where the engine is - see `ClockSync`. */
 const ANCHOR_WINDOW_MS = 3000;
+/**
+ * The landing's picture: the preview held still at this moment, so nothing
+ * moves - and nothing looks as if it has started - until the viewer presses
+ * the way in.
+ */
+const STILL_AT_S = 4.5;
 
 /** Site markers are an inspection aid for Scene Lab; the mission view hides them. */
 const MISSION_SETTINGS = { showMarkers: false } as const;
@@ -50,6 +56,7 @@ function ClockSync({
   playing,
   speed,
   enabled,
+  still,
 }: {
   t: number;
   duration: number;
@@ -62,6 +69,8 @@ function ClockSync({
    * not change the shape of the tree underneath the provider - see below.
    */
   enabled: boolean;
+  /** Hold the preview still (the landing). */
+  still: boolean;
 }) {
   const { clock, source } = useSceneRuntime();
 
@@ -71,15 +80,21 @@ function ClockSync({
   }, [clock, duration, enabled]);
 
   useEffect(() => {
-    // The preview plays on its own loop - the rover touring the island behind
-    // the introduction, badged SCENE PREVIEW - until a run takes the clock.
+    // Behind the introduction the preview holds one picture; elsewhere it plays
+    // its own loop - the rover touring the island, badged SCENE PREVIEW - until
+    // a run takes the clock.
+    if (!enabled && still) {
+      clock.pause();
+      clock.setTime(STILL_AT_S, false);
+      return;
+    }
     if (!enabled) {
       clock.play();
       return;
     }
     if (playing) clock.play();
     else clock.pause();
-  }, [clock, playing, enabled]);
+  }, [clock, playing, enabled, still]);
 
   useEffect(() => {
     // While paused the timeline is being *scrubbed* - by someone dragging the
@@ -211,6 +226,7 @@ export function MissionScene({
   deadZones = NO_DEAD_ZONES,
   storyShot = null,
   inset,
+  still = false,
 }: {
   source: EngineSceneStateSource;
   t: number;
@@ -236,6 +252,8 @@ export function MissionScene({
    * pixels: the cameras centre what they frame in the part that shows.
    */
   inset?: { top: number; bottom: number };
+  /** Hold the preview on one still picture - the landing, before anything is pressed. */
+  still?: boolean;
 }) {
   // The device's known ceiling from the first frame: a software rasteriser
   // starts on the low tier instead of compiling the high one and switching.
@@ -247,7 +265,7 @@ export function MissionScene({
   // `source` prop rebuilds the runtime and leaves everything below it alone.
   return (
     <SceneRuntimeProvider source={preview ? previewSource : source} initialSettings={initialSettings}>
-      <ClockSync t={t} duration={duration} playing={playing} speed={speed} enabled={!preview} />
+      <ClockSync t={t} duration={duration} playing={playing} speed={speed} enabled={!preview} still={still} />
       <CameraSync camera={camera} />
       <DeadZoneSync zones={deadZones} />
       <StoryShotSync shot={storyShot} />

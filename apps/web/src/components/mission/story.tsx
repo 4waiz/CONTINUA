@@ -28,7 +28,7 @@ import type { StoryShot, StoryShotId } from '@continua/contracts';
 import { actionsOf, type EngineEvent } from '@continua/contracts/engine';
 import { route, type DeadZone } from '@continua/scene';
 import { useMemo } from 'react';
-import { CloseIcon, PauseIcon, PlayIcon } from '../ui/icons';
+import { CloseIcon, PauseIcon, PlayIcon, SpeakerIcon, SpeakerOffIcon } from '../ui/icons';
 import { seconds } from './plain';
 
 /** The run the story tells: the shadowed route, CONTINUA with the road map against the normal rover. */
@@ -309,13 +309,15 @@ export function useStoryDirector({
 
 /**
  * Everything the story says sits in this one bar under the scene: the
- * chapter, one caption, and the transport. Nothing else covers the picture.
+ * chapter, one caption - read aloud as well - and the transport. Nothing else
+ * covers the picture.
  */
 export function StoryBar({
   caption,
   chapter,
   paused,
   speed,
+  voice,
   onToggle,
   onNext,
   onExit,
@@ -324,6 +326,8 @@ export function StoryBar({
   chapter: number;
   paused: boolean;
   speed: number;
+  /** The voice that reads the captions: on or off, and whether the browser is holding it back. */
+  voice: { on: boolean; blocked: boolean; onToggle: () => void; onUnblock: () => void };
   onToggle: () => void;
   onNext: () => void;
   onExit: () => void;
@@ -352,6 +356,28 @@ export function StoryBar({
         >
           {slow ? `Slow motion · ${speed === 0.5 ? '½' : speed.toFixed(2)}×` : `${speed.toFixed(0)}× faster`}
         </span>
+      )}
+      {voice.on && voice.blocked ? (
+        <button
+          type="button"
+          className="control story-sound shrink-0"
+          onClick={voice.onUnblock}
+          title="The browser held the voice back until the page is clicked: click to hear the captions read aloud"
+        >
+          <SpeakerIcon size={15} /> Sound
+        </button>
+      ) : (
+        <button
+          type="button"
+          className="icon-btn shrink-0"
+          onClick={voice.onToggle}
+          aria-pressed={voice.on}
+          aria-label={voice.on ? 'Turn the voice off' : 'Read the captions aloud'}
+          title={voice.on ? 'Voice on: each caption is read aloud. Click to turn it off.' : 'Voice off. Click to hear each caption read aloud.'}
+          data-active={voice.on}
+        >
+          {voice.on ? <SpeakerIcon size={16} /> : <SpeakerOffIcon size={16} />}
+        </button>
       )}
       <button type="button" className="icon-btn shrink-0" onClick={onToggle} aria-label={paused ? 'Play story' : 'Pause story'} title={paused ? 'Play' : 'Pause'}>
         {paused ? <PlayIcon size={15} /> : <PauseIcon size={15} />}
