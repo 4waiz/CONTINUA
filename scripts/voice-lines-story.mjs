@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
- * Collect the lines the story's voice reads, from a run of the story (the
- * `?story` view).
+ * Collect the lines the story's voice reads, from a run of the story in 3D
+ * (`?story` opens the film; its "Replay it in 3D" plays the story).
  *
  * The captions are built from the run's own events, so the way to know them is
  * to play the story: this opens the Mission page's story in a browser and
@@ -34,9 +34,20 @@ const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
 await page.addInitScript(() => {
   window.__CONTINUA_VOICE_LOG__ = [];
 });
-// The story is the `?story` view; it starts once the page has its scenarios.
+// `?story` opens the film; its "Replay it in 3D" plays the story in the app.
 await page.goto(`${WEB}/?story`, { waitUntil: 'domcontentloaded', timeout: 120_000 });
 await page.waitForFunction(() => Boolean(window.__CONTINUA__?.three), undefined, { timeout: 180_000 });
+const replay = page.getByRole('dialog', { name: /one-minute film/ }).getByRole('button', { name: 'Replay it in 3D' });
+await replay.waitFor({ timeout: 60_000 });
+await page.waitForFunction(
+  () => {
+    const button = [...document.querySelectorAll('button')].find((element) => element.textContent?.includes('Replay it in 3D'));
+    return Boolean(button && !button.disabled);
+  },
+  undefined,
+  { timeout: 60_000 },
+);
+await replay.click();
 
 const seen = [];
 const started = Date.now();

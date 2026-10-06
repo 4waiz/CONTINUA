@@ -1,6 +1,8 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "continua",
+  // The account that owns the custom domain; the login can see more than one.
+  "account_id": "f8dc06dc6cc06ecfe499b2fdbcf45196",
   "compatibility_date": "2026-09-01",
 
   // Keep the workers.dev hostname alive alongside the custom domain: it is a
@@ -9,10 +11,15 @@
 
   // CONTINUA has no server of its own. The Python engine runs separately, and
   // its recorded runs ship as static JSON, so the public site is an export
-  // served straight from Cloudflare's edge: no Worker script, only assets.
+  // served straight from Cloudflare's edge. The one script, edge/worker.js,
+  // runs only for /video/*: it answers byte-range requests, which the asset
+  // store does not and which the story film needs to play in Safari and seek.
+  "main": "edge/worker.js",
   "assets": {
     "directory": "apps/web/out",
-    "not_found_handling": "404-page"
+    "binding": "ASSETS",
+    "not_found_handling": "404-page",
+    "run_worker_first": ["/video/*"]
   },
 
   // The public hostname. Cloudflare creates the DNS record for this when the

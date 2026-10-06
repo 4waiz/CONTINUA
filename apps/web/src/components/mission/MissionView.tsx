@@ -10,9 +10,10 @@
  *   is then yours to change and scrub: in plain words by default, every
  *   measurement one toggle away (Details). Each change of network is shown -
  *   the camera turns to where the new link comes from - and said aloud.
- * * **Story** (`?story` only). A guided minute through the same run
- *   (`story.tsx`): captions read aloud, the framing chosen for each chapter,
- *   and the stored twenty-trial comparison at the end.
+ * * **The story** (`?story` only, the link to send someone). The one-minute
+ *   film (`StoryFilm.tsx`); its "Replay it in 3D" plays the same run as a
+ *   guided minute (`story.tsx`): captions read aloud, the framing chosen for
+ *   each chapter, and the stored twenty-trial comparison at the end.
  *
  * The world is the interface in all three: the 3D scene runs edge to edge
  * under a slim top bar, and everything else floats over it.
@@ -58,6 +59,7 @@ import { RoverStatus } from './RoverStatus';
 import { RunSummary } from './RunSummary';
 import { StoryBar, STORY_POLICY, STORY_SCENARIO, useStoryDirector } from './story';
 import { proofSentence, StoryLanding, StoryProof, useProofRows } from './StoryCards';
+import { StoryFilm } from './StoryFilm';
 import { narrator, useNarrator } from './voice';
 
 const ZONE_LABEL: Record<string, string> = Object.fromEntries(MISSION_ZONES.map((zone) => [zone.id, zone.label]));
@@ -101,7 +103,7 @@ const REPLAY_LEAD_S = 4;
  */
 const BASELINE_POLICY: PolicyIdString = 'B0';
 
-/** Where the run starts: `?story` plays the story, `?drive` opens the controls. */
+/** Where the run starts: `?drive` opens the controls. (`?story` opens the story film - see below.) */
 function initialView(): View {
   if (typeof window === 'undefined') return 'landing';
   const params = new URLSearchParams(window.location.search);
@@ -130,6 +132,8 @@ export function MissionView() {
   const [bootError, setBootError] = useState<string | null>(null);
   const [bootAttempt, setBootAttempt] = useState(0);
   const [demoRuns, setDemoRuns] = useState<DemoRunSummary[]>([]);
+  // The story as a one-minute film, over the scene.
+  const [filmOpen, setFilmOpen] = useState(false);
   // Side by side with the normal rover, by default: the comparison is the
   // point. (A B0 run has nothing to be compared with.)
   const [compare, setCompare] = useState(true);
@@ -374,22 +378,21 @@ export function MissionView() {
     ).catch(() => undefined);
   }, [view, runId, baselineId, storyTake]);
 
-  // `?story` opens straight into it - the link to send someone.
-  const storyLinkHandled = useRef(false);
+  // `?story` opens straight into the film - the link to send someone. The film
+  // is a file, so unlike the 3D replay it does not wait for the runs to load.
   useEffect(() => {
-    if (storyLinkHandled.current) return undefined;
     if (typeof window === 'undefined' || !new URLSearchParams(window.location.search).has('story')) return undefined;
-    if (!IS_PUBLIC_PREVIEW && scenarios.length === 0) return undefined;
-    if (IS_PUBLIC_PREVIEW && demoRuns.length === 0) return undefined;
-    // Started from a timer, once: the effect only notices that it is time.
+    // Opened from a timer, once: the effect only notices that it is time.
     const timer = setTimeout(() => {
-      if (storyLinkHandled.current) return;
-      storyLinkHandled.current = true;
       window.history.replaceState(null, '', window.location.pathname);
-      startStory();
+      setFilmOpen(true);
     }, 0);
     return () => clearTimeout(timer);
-  }, [scenarios.length, demoRuns.length, startStory]);
+  }, []);
+
+  // The 3D replay of the story needs its two runs: recorded, or an engine to run them.
+  const canReplay3D = IS_PUBLIC_PREVIEW ? demoRuns.length > 0 : scenarios.some((entry) => entry.id === STORY_SCENARIO);
+  const closeFilm = useCallback(() => setFilmOpen(false), []);
 
   /**
    * The one way in: the run that shows what CONTINUA is for - the shadowed
@@ -837,6 +840,21 @@ export function MissionView() {
           <div className={`absolute inset-x-0 z-10 flex justify-center px-3 ${bootError ? 'top-[30%]' : 'top-[14%]'}`}>
             <StoryLanding onDrive={startDrive} busy={busy} />
           </div>
+        )}
+
+        {filmOpen && (
+          <StoryFilm
+            onClose={closeFilm}
+            canReplay3D={canReplay3D}
+            onReplay3D={() => {
+              setFilmOpen(false);
+              startStory();
+            }}
+            onDrive={() => {
+              setFilmOpen(false);
+              startDrive();
+            }}
+          />
         )}
 
         {view === 'story' && !runId && !bootError && (

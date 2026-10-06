@@ -148,11 +148,12 @@ One screen, no page scroll, at 1920×1080, 1440×900, 1366×768 and 1280×720.
   moments**. Plain words by default; **Details** brings back the access-link
   figures, the application-health card, the control-mode chips, the pipeline,
   the timeline's colour key and each rover's total time offline.
-* **Story** (`/?story`). The same run as a guided minute
-  (`mission/story.tsx`): five chapters in one bar - a progress line, one
-  caption read aloud, the transport - in real time but for the cutting, played
-  at half speed under a "Slow motion · ½×" label, ending on the stored
-  twenty-drive comparison as one plain bar a strategy.
+* **Story** (`/?story`, the link to send someone). The one-minute film of the
+  run (`mission/StoryFilm.tsx`); its "Replay it in 3D" plays the same run as a
+  guided minute (`mission/story.tsx`): five chapters in one bar - a progress
+  line, one caption read aloud, the transport - in real time but for the
+  cutting, played at half speed under a "Slow motion · ½×" label, ending on the
+  stored twenty-drive comparison as one plain bar a strategy.
 * **The picture clears the panels.** The page measures how much of the stage
   its top cards and its dock cover and hands that to the scene, whose cameras
   shift the lens (`setViewOffset`) so what they frame sits in the middle of

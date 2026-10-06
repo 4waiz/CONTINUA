@@ -24,8 +24,8 @@ npm run build && npm start  # app on localhost:3000
 
 | URL | Section |
 | --- | --- |
-| <http://localhost:3000> | **Mission** - opens on what this is and two ways in: **Watch the story**, a guided minute on the shadowed route, or **Drive it yourself** - any scenario and strategy beside the normal rover, in plain words, with every measurement behind **Details** |
-| <http://localhost:3000/?story> | Straight into the story - the link to send someone |
+| <http://localhost:3000> | **Mission** - opens on what this is and one way in, **Drive it yourself**: the shadowed route, CONTINUA beside the normal rover, then any scenario and strategy - in plain words, said aloud, with every measurement behind **Details** |
+| <http://localhost:3000/?story> | The one-minute story film - the link to send someone; "Replay it in 3D" plays it in the app |
 | <http://localhost:3000/experiments> | **Results** - every paired comparison, twenty drives a strategy at a glance, then the full tables and the execution-capability report |
 | <http://localhost:3000/decision-log> | **Decision log** - every controller action, with its observations, reason and the run's recorded outcome |
 | <http://localhost:3000/scenario-lab> | **Scenario builder** - inject failures and congestion, change speed and workload |
@@ -83,9 +83,10 @@ has to stop.
   Every measurement stays one click away under **Details**.
 
 The dock changes the scenario and the strategy and starts another run.
-`/?story` plays the same run as a narrated minute with chapter captions,
-ending on the stored comparison (`apps/web/src/components/mission/story.tsx`).
-Nothing in either is scripted: every number is read from the runs' own events.
+`/?story` opens the one-minute film of the same run (below); its "Replay it in
+3D" plays it in the app as a narrated minute with chapter captions, ending on
+the stored comparison (`apps/web/src/components/mission/story.tsx`). Nothing in
+either is scripted: every number is read from the runs' own events.
 
 ![Inside the cutting: CONTINUA on satellite, the normal rover cut off](assets/previews/browser/mission-cutting.png)
 
@@ -159,8 +160,15 @@ workload overrides are hidden there, and the page says so.
 | --- | --- |
 | `python scripts/build_demo_data.py` | Run the matrix through the engine and export it to `apps/web/public/demo/` (~3 min, 40 runs, 43 MB, about 4 MB on the wire) |
 | `node scripts/build-brand-logo.mjs` | Un-matte `logo.png` to a transparent wordmark |
-| `CONTINUA_STATIC=1 NEXT_PUBLIC_PUBLIC_PREVIEW=1 npm run build` | Static export into `apps/web/out/` |
-| `npx wrangler deploy` | Publish to Cloudflare |
+| `npm run deploy` | Static export into `apps/web/out/` in public-preview mode, checked, then published to Cloudflare (`-- --dry` stops before publishing) |
+
+The `?story` link plays a one-minute film
+(`apps/web/public/video/story.mp4`): the app itself replaying the two story
+runs, captured frame by frame, with narration and captions. Its storyboard and
+claim ledger are in `brag-output/brag-plan.md`; the capture, edit, music and
+voice scripts are in `brag-output/work/`. The asset store does not answer byte
+ranges, which Safari needs to play video at all, so `edge/worker.js` serves
+`/video/*` with 206 responses; everything else is plain static assets.
 
 Run files are columnar: one array per field path rather than one object per
 event, which is the same data at a third of the size. `decodeRun` in

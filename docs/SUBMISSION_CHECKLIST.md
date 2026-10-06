@@ -65,7 +65,7 @@ manifest **are** tracked.
 
 | Item | State |
 | --- | --- |
-| Branch | `continua/build` |
+| Branch | `main` |
 | Secrets, `.env`, private MCP settings | Not tracked. `.env.example` is the only credential-shaped file (`.gitignore`, and the checkpoint supervisor's secret scan) |
 | Dependencies, caches, frame sequences, raw renders | Not tracked (`.gitignore`) |
 | Run event logs (`data/runs/`) | Not tracked - regenerable from `(scenario, seed, policy)`. The three runs the video cites have their `metrics.json` and `manifest.json` tracked under `data/evidence/video/` |

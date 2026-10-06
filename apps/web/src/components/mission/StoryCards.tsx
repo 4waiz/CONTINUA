@@ -30,6 +30,10 @@ const PROOF_ROWS: readonly { policy: PolicyIdString; name: string }[] = [
   { policy: 'B2-defer', name: 'Every network on, uploads wait' },
 ];
 
+/**
+ * One way in. The story film stays one link away - `?story`, the link to send
+ * someone - rather than a second button beside this one.
+ */
 export function StoryLanding({ onDrive, busy }: { onDrive: () => void; busy: boolean }) {
   return (
     <section className="story-landing glass" aria-label="Introduction">

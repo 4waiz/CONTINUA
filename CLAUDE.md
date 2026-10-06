@@ -73,9 +73,9 @@ python scripts/checkpoint.py stop              # at phase completion
   Anthropic tokens, private-key blocks, hardcoded credential assignments), and
   file-size limits - warn at 5 MB, refuse above 45 MB unless Git LFS tracks
   the file. On failure it unstages and leaves the working tree untouched.
-* **Branch safety.** Works on `continua/build`, or an already-established
-  development branch if one is checked out. `main` and `master` are protected:
-  the supervisor switches away rather than committing to them.
+* **Branch safety.** Works on `main`, the only long-lived branch, or on
+  another branch if one is already checked out. `master` is protected: the
+  supervisor switches to `main` rather than committing to it.
 * **Push verification.** After pushing it runs `git ls-remote` and records the
   remote SHA. `status` shows the last *verified* push, not the last attempt.
 * **Bounded backoff.** Four retries (4s → 32s) for transient network errors
@@ -108,6 +108,8 @@ packages/contracts/  Shared types (TypeScript + Python) and world.json
 scripts/blender/     Reproducible Blender generation + export
 scripts/emulation/   Linux namespace / netem topology scripts (setup, verify, cleanup)
 scripts/             checkpoint.py, run-blender.mjs, engine_cli.py
+edge/                Cloudflare Worker: byte ranges for /video/* (the rest is static assets)
+brag-output/         The story film: plan, claim ledger, composition, capture and audio scripts
 assets/              .blend sources, reference imagery, renders, browser evidence
 data/                Experiment results and capability report (run logs git-ignored)
 docs/                Ten documents
