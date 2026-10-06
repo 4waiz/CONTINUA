@@ -25,9 +25,9 @@ import {
   type PolicyIdString,
 } from '@continua/contracts/engine';
 import { NETWORK_COLOR } from '@continua/scene';
-import { useMemo, type ReactNode } from 'react';
-import { NetworkIcon, PauseIcon, PlayIcon, ReplayIcon, ResetIcon } from '../ui/icons';
-import { MAIN_STRATEGIES, NETWORK, plainDecision, STRATEGY } from './plain';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { CloseIcon, NetworkIcon, PauseIcon, PlayIcon, ReplayIcon, ResetIcon, SlidersIcon } from '../ui/icons';
+import { MAIN_STRATEGIES, NETWORK, plainDecision, readableReason, STRATEGY } from './plain';
 
 const SPEEDS = [0.5, 1, 2, 4, 8] as const;
 
@@ -187,7 +187,7 @@ function flagsOf(events: readonly EngineEvent[]): Flag[] {
       flags.push({
         t: event.t,
         label: NETWORK[switched.link].name,
-        title: plainDecision(event, previous) ?? event.reason,
+        title: plainDecision(event, previous) ?? readableReason(event.reason),
         color: NETWORK_COLOR[switched.link],
         link: switched.link,
       });
@@ -197,7 +197,7 @@ function flagsOf(events: readonly EngineEvent[]): Flag[] {
       flags.push({
         t: event.t,
         label: 'Gap ahead',
-        title: plainDecision(event, previous) ?? event.reason,
+        title: plainDecision(event, previous) ?? readableReason(event.reason),
         color: 'var(--color-violet)',
         link: null,
       });
@@ -218,6 +218,7 @@ function Timeline({
   disabled,
   onSeek,
   deadZoneTimes = [],
+  quiet = false,
 }: {
   t: number;
   duration: number;
@@ -232,6 +233,8 @@ function Timeline({
   onSeek: (t: number) => void;
   /** When the rover was in a cutting, from its own distances. */
   deadZoneTimes?: readonly { from: number; to: number }[];
+  /** Changes of network as icons alone; only the road map's warning keeps its words. */
+  quiet?: boolean;
 }) {
   const segments = useMemo(
     () => (track ? carryingSegments([], [...track.events], null) : carryingSegments(decisions, history, latest)),
@@ -269,7 +272,7 @@ function Timeline({
             t: event.t,
             switched: Boolean(switched),
             color: switched?.link ? NETWORK_COLOR[switched.link] : TICK_COLOUR[other!.kind]!,
-            title: `t+${event.t.toFixed(1)}s · ${actions.map((action) => ACTION_LABEL[action.kind]).join(', ')} - ${event.reason}`,
+            title: `t+${event.t.toFixed(1)}s · ${actions.map((action) => ACTION_LABEL[action.kind]).join(', ')} - ${readableReason(event.reason)}`,
           },
         ];
       }),
@@ -282,35 +285,60 @@ function Timeline({
   );
   const span = duration > 0 ? duration : 1;
   const x = (seconds: number) => `${Math.max(0, Math.min(100, (seconds / span) * 100))}%`;
-  // Which flags keep their words: each needs about a tenth of the track to itself.
-  const labelled = useMemo(() => {
-    const out: boolean[] = [];
-    let last = -Infinity;
-    for (const flag of flags) {
-      const at = flag.t / span;
-      const room = at - last >= 0.1;
-      if (room) last = at;
-      out.push(room);
-    }
+  // The track's width in pixels, so a flag keeps its words only where they fit.
+  const boxRef = useRef<HTMLDivElement>(null);
+  const [width, setWidth] = useState(640);
+  useLayoutEffect(() => {
+    const box = boxRef.current;
+    if (!box) return undefined;
+    const observer = new ResizeObserver(([entry]) => {
+      if (entry) setWidth(entry.contentRect.width);
+    });
+    observer.observe(box);
+    return () => observer.disconnect();
+  }, []);
+  // Which flags keep their words, and which way a label runs: a label is drawn
+  // only where it clears the flags around it, and is said on hover otherwise.
+  // Quiet, a change of network is its icon alone and the road map's warning
+  // runs leftwards from its pin, into the stretch before the gap where nothing
+  // else happens.
+  const layout = useMemo(() => {
+    const iconWidth = 22;
+    const labelWidth = (flag: Flag) => 26 + flag.label.length * 6.4;
+    const placed = flags.map((flag) => ({ at: (flag.t / span) * width, flag }));
+    const out: { labelled: boolean; anchor: 'centre' | 'end' }[] = [];
+    let lastRight = -Infinity;
+    placed.forEach(({ at, flag }, index) => {
+      const warning = flag.link === null;
+      const anchor: 'centre' | 'end' = quiet && warning ? 'end' : 'centre';
+      const wants = !quiet || warning;
+      const full = labelWidth(flag);
+      const left = anchor === 'end' ? at - full + 9 : at - full / 2;
+      const right = anchor === 'end' ? at + 9 : at + full / 2;
+      const next = placed[index + 1];
+      const nextLeft = next ? next.at - (next.flag.link === null && quiet ? labelWidth(next.flag) - 9 : iconWidth / 2) : Infinity;
+      const labelled = wants && left >= lastRight + 4 && right <= nextLeft - 4;
+      out.push({ labelled, anchor: labelled ? anchor : 'centre' });
+      lastRight = labelled ? right : at + iconWidth / 2;
+    });
     return out;
-  }, [flags, span]);
+  }, [flags, span, width, quiet]);
 
   const split = baselineSegments !== null;
   return (
-    <div className="relative min-w-[180px] flex-1" style={{ height: flags.length ? 46 : 26 }}>
+    <div ref={boxRef} className="relative min-w-[180px] flex-1" style={{ height: flags.length ? 46 : 26 }}>
       {/* Key moments, as buttons above the tracks: jump to just before each. */}
       {flags.length > 0 && (
         <div className="absolute inset-x-0 top-0 h-[18px]" aria-label="Key moments">
           {flags.map((flag, index) => {
-            // A label needs room: one closer than this to the last labelled
-            // flag is drawn as its icon alone, and says itself on hover.
-            const crowded = labelled[index] === false;
+            const crowded = layout[index]?.labelled !== true;
             return (
               <button
                 key={`${flag.t}-${flag.label}`}
                 type="button"
                 className="timeline-flag"
                 data-compact={crowded}
+                data-anchor={layout[index]?.anchor ?? 'centre'}
                 style={{ left: x(flag.t), ['--flag' as string]: flag.color }}
                 title={`${flag.title} (jump here)`}
                 aria-label={`${flag.label}: jump to t+${flag.t.toFixed(0)}s`}
@@ -428,7 +456,7 @@ export function Pipeline({ event }: { event: EngineEvent | null }) {
           );
         })}
       </ol>
-      <p className="min-w-0 flex-1 truncate text-[12.5px] text-[color:var(--color-muted)]" title={event?.reason}>
+      <p className="min-w-0 flex-1 truncate text-[12.5px] text-[color:var(--color-muted)]" title={readableReason(event?.reason)}>
         {event?.reason ? (
           <>
             {active && (
@@ -437,7 +465,7 @@ export function Pipeline({ event }: { event: EngineEvent | null }) {
                 <span className="mx-1.5 text-[color:var(--color-line-strong)]">·</span>
               </span>
             )}
-            <span className="text-[color:var(--color-ink)]">{event.reason}</span>
+            <span className="text-[color:var(--color-ink)]">{readableReason(event.reason)}</span>
           </>
         ) : (
           'The controller reports each stage, and why, once a run is going.'
@@ -447,20 +475,165 @@ export function Pipeline({ event }: { event: EngineEvent | null }) {
   );
 }
 
-/** The simple view's one line: the latest decision, in words. */
-function PlainLine({ event, previous }: { event: EngineEvent | null; previous: EngineEvent['carrying'] }) {
-  const text = event ? plainDecision(event, previous) : null;
+/**
+ * Everything that chooses a run, in one popover over the bar: what to run,
+ * beside what, from which seed, at what speed. Locally it starts the run; on
+ * the public build every pairing was recorded ahead of time, so the selection
+ * is the run and plays at once.
+ */
+function RunSettings({
+  scenarios,
+  policies,
+  scenarioId,
+  policyId,
+  seed,
+  compare,
+  speed,
+  runId,
+  busy,
+  onScenario,
+  onPolicy,
+  onSeed,
+  onCompare,
+  onSpeed,
+  onStart,
+  onClose,
+}: {
+  scenarios: ScenarioSpec[];
+  policies: PolicySpec[];
+  scenarioId: string;
+  policyId: PolicyIdString;
+  seed: number;
+  compare: boolean;
+  speed: number;
+  runId: string | null;
+  busy: boolean;
+  onScenario: (id: string) => void;
+  onPolicy: (id: PolicyIdString) => void;
+  onSeed: (seed: number) => void;
+  onCompare: (compare: boolean) => void;
+  onSpeed: (speed: number) => void;
+  onStart: () => void;
+  onClose: () => void;
+}) {
+  const scenario = scenarios.find((entry) => entry.id === scenarioId);
   return (
-    <p className="min-w-0 flex-1 truncate text-[13px] text-[color:var(--color-muted)]" title={event?.reason}>
-      {text ? (
-        <>
-          <span className="mr-1.5 font-semibold text-[color:var(--color-blue)]">Last decision</span>
-          <span className="text-[color:var(--color-ink)]">{text}</span>
-        </>
-      ) : (
-        'Each decision appears here, in words, as the run goes.'
+    <div className="run-settings glass drop-in" role="dialog" aria-label="Change the run">
+      <div className="flex items-center justify-between">
+        <span className="section-label">Change the run</span>
+        <button type="button" className="run-settings-close" onClick={onClose} aria-label="Close the run settings">
+          <CloseIcon size={14} />
+        </button>
+      </div>
+      <label className="run-settings-field">
+        <span>Road and signal</span>
+        <select
+          className="control w-full truncate"
+          title={scenario?.title}
+          value={scenarioId}
+          onChange={(event) => onScenario(event.target.value)}
+          aria-label="Scenario"
+          disabled={scenarios.length === 0}
+        >
+          {scenarios.length === 0 && <option>No scenarios - engine offline</option>}
+          {scenarios.map((entry) => (
+            <option key={entry.id} value={entry.id}>
+              {entry.title}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="run-settings-field">
+        <span>Strategy</span>
+        <select
+          className="control w-full"
+          value={policyId}
+          onChange={(event) => onPolicy(event.target.value as PolicyIdString)}
+          aria-label="Policy"
+          title={STRATEGY[policyId]?.blurb}
+          disabled={policies.length === 0}
+        >
+          {policies.length === 0 && <option> - </option>}
+          {policies.length > 0 && (
+            <>
+              <optgroup label="Strategies">
+                {MAIN_STRATEGIES.filter((id) => policies.some((entry) => entry.id === id)).map((id) => (
+                  <option key={id} value={id}>
+                    {STRATEGY[id].name} · {id}
+                  </option>
+                ))}
+              </optgroup>
+              <optgroup label="For comparison">
+                {policies
+                  .filter((entry) => !MAIN_STRATEGIES.includes(entry.id))
+                  .map((entry) => (
+                    <option key={entry.id} value={entry.id}>
+                      {STRATEGY[entry.id]?.name ?? entry.id} · {entry.id}
+                    </option>
+                  ))}
+              </optgroup>
+            </>
+          )}
+        </select>
+        {STRATEGY[policyId] && <span className="run-settings-hint">{STRATEGY[policyId].blurb}</span>}
+      </label>
+      <label
+        className="run-settings-check"
+        title="Run the normal rover - switch after it breaks (B0) - on the same scenario, route and seed alongside, and show the two side by side"
+      >
+        <input
+          type="checkbox"
+          className="h-[15px] w-[15px] accent-[color:var(--color-blue)]"
+          checked={compare}
+          onChange={(event) => onCompare(event.target.checked)}
+          disabled={policyId === 'B0'}
+        />
+        <span>
+          vs normal rover
+          <span className="run-settings-hint">The same road beside a rover that switches only after its network breaks.</span>
+        </span>
+      </label>
+      <div className="flex items-end gap-3">
+        {/* A recording's seed is a fact of the recording; there is nothing to type. */}
+        {!IS_PUBLIC_PREVIEW && (
+          <label className="run-settings-field w-[92px]">
+            <span>Seed</span>
+            <input
+              className="control w-full px-2.5"
+              type="number"
+              min={0}
+              max={2147483647}
+              value={seed}
+              onChange={(event) => onSeed(Number(event.target.value) || 0)}
+            />
+          </label>
+        )}
+        <label className="run-settings-field w-[92px]">
+          <span>Speed</span>
+          <select
+            className="control w-full px-2.5"
+            value={speed}
+            onChange={(event) => onSpeed(Number(event.target.value))}
+            disabled={!runId}
+            aria-label="Playback speed"
+          >
+            {SPEEDS.map((value) => (
+              <option key={value} value={value}>
+                {value}×
+              </option>
+            ))}
+          </select>
+        </label>
+        {!IS_PUBLIC_PREVIEW && (
+          <button type="button" className="control control-primary ml-auto" onClick={onStart} disabled={busy}>
+            <PlayIcon size={14} /> Start run
+          </button>
+        )}
+      </div>
+      {IS_PUBLIC_PREVIEW && (
+        <p className="run-settings-hint">Every pairing here was recorded by the engine; choosing one plays it.</p>
       )}
-    </p>
+    </div>
   );
 }
 
@@ -498,8 +671,8 @@ export function MissionDock({
   onDetail,
   roadAhead,
   deadZoneTimes,
-  lastDecision = null,
-  lastDecisionFrom = null,
+  settingsOpen = false,
+  onSettings,
 }: {
   scenarios: ScenarioSpec[];
   policies: PolicySpec[];
@@ -532,121 +705,51 @@ export function MissionDock({
   track?: RunTrack | null;
   /** The baseline's track, when one is running beside this run. */
   baseline?: RunTrack | null;
-  /** Plain words: strategy names, the latest decision as a sentence. */
+  /** Plain words: the timeline's key moments as icons, the legend left out. */
   simple?: boolean;
-  /** The expert panels are showing. */
+  /** The expert panels are showing: the road strip and the controller's pipeline join the bar. */
   detail?: boolean;
   onDetail?: (detail: boolean) => void;
-  /** The road strip, between the run's set-up and its transport. */
+  /** The road strip, shown with Details. */
   roadAhead?: ReactNode;
   /** When the rover was in a cutting, for the timeline. */
   deadZoneTimes?: readonly { from: number; to: number }[];
-  /** The latest decision, and the link that carried before it. */
-  lastDecision?: EngineEvent | null;
-  lastDecisionFrom?: EngineEvent['carrying'];
+  /** The run's settings popover. */
+  settingsOpen?: boolean;
+  onSettings?: (open: boolean) => void;
 }) {
-  return (
-    <section className="glass flex flex-col gap-2 px-3 py-2.5" aria-label="Run controls">
-      {/* Context: what is running, and what the controller is doing about it. */}
-      <div className="flex items-center gap-2.5">
-        <select
-          className="control min-w-[150px] max-w-[280px] flex-[0_1_270px] truncate"
-          title={scenarios.find((entry) => entry.id === scenarioId)?.title}
-          value={scenarioId}
-          onChange={(event) => onScenario(event.target.value)}
-          aria-label="Scenario"
-          disabled={scenarios.length === 0}
-        >
-          {scenarios.length === 0 && <option>No scenarios - engine offline</option>}
-          {scenarios.map((entry) => (
-            <option key={entry.id} value={entry.id}>
-              {entry.title}
-            </option>
-          ))}
-        </select>
-        <select
-          className="control w-[218px] shrink-0"
-          value={policyId}
-          onChange={(event) => onPolicy(event.target.value as PolicyIdString)}
-          aria-label="Policy"
-          title={STRATEGY[policyId]?.blurb}
-          disabled={policies.length === 0}
-        >
-          {policies.length === 0 && <option> - </option>}
-          {policies.length > 0 && (
-            <>
-              <optgroup label="Strategies">
-                {MAIN_STRATEGIES.filter((id) => policies.some((entry) => entry.id === id)).map((id) => (
-                  <option key={id} value={id}>
-                    {STRATEGY[id].name} · {id}
-                  </option>
-                ))}
-              </optgroup>
-              <optgroup label="For comparison">
-                {policies
-                  .filter((entry) => !MAIN_STRATEGIES.includes(entry.id))
-                  .map((entry) => (
-                    <option key={entry.id} value={entry.id}>
-                      {STRATEGY[entry.id]?.name ?? entry.id} · {entry.id}
-                    </option>
-                  ))}
-              </optgroup>
-            </>
-          )}
-        </select>
-        {/* A recording's seed is a fact of the recording; there is nothing to type. */}
-        <label className="flex shrink-0 items-center gap-1.5 text-[12px] text-[color:var(--color-muted)]" hidden={IS_PUBLIC_PREVIEW}>
-          Seed
-          <input
-            className="control w-[64px] px-2.5"
-            type="number"
-            min={0}
-            max={2147483647}
-            value={seed}
-            onChange={(event) => onSeed(Number(event.target.value) || 0)}
-          />
-        </label>
-        <label
-          className="flex shrink-0 cursor-pointer items-center gap-1.5 text-[12px] font-medium text-[color:var(--color-muted)]"
-          title="Run the normal rover - switch after it breaks (B0) - on the same scenario, route and seed alongside, and show the two side by side"
-        >
-          <input
-            type="checkbox"
-            className="h-[15px] w-[15px] accent-[color:var(--color-blue)]"
-            checked={compare}
-            onChange={(event) => onCompare(event.target.checked)}
-            disabled={policyId === 'B0'}
-          />
-          vs normal rover
-        </label>
-        {!IS_PUBLIC_PREVIEW && (
-          <button type="button" className="control control-primary shrink-0" onClick={onStart} disabled={busy}>
-            <PlayIcon size={14} /> Start run
-          </button>
-        )}
-        <span className="divider-v mx-1" />
-        {simple ? <PlainLine event={lastDecision} previous={lastDecisionFrom} /> : <Pipeline event={latest} />}
-        {onDetail && (
-          <button
-            type="button"
-            className="control shrink-0"
-            data-active={detail}
-            aria-pressed={detail}
-            onClick={() => onDetail(!detail)}
-            title="Show every measurement: round trip, loss, jitter, per-class deadlines, the controller's pipeline"
-          >
-            Details
-          </button>
-        )}
-      </div>
+  const popoverRef = useRef<HTMLDivElement>(null);
+  // The popover closes on Escape and on a press anywhere outside it.
+  useEffect(() => {
+    if (!settingsOpen || !onSettings) return undefined;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onSettings(false);
+    };
+    const onPress = (event: PointerEvent) => {
+      if (popoverRef.current && !popoverRef.current.contains(event.target as Node)) onSettings(false);
+    };
+    window.addEventListener('keydown', onKey);
+    window.addEventListener('pointerdown', onPress);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      window.removeEventListener('pointerdown', onPress);
+    };
+  }, [settingsOpen, onSettings]);
 
-      {roadAhead && <div className="border-t border-[color:var(--color-line)] pt-2">{roadAhead}</div>}
+  return (
+    <section className="glass mission-bar" aria-label="Run controls">
+      {detail && (
+        <div className="mission-bar-detail">
+          {roadAhead && <div>{roadAhead}</div>}
+          <Pipeline event={latest} />
+        </div>
+      )}
 
       {/* Playback: the familiar shape - transport, clock, timeline. */}
-      <div className="flex items-center gap-2.5 border-t border-[color:var(--color-line)] pt-2">
+      <div className="mission-bar-row">
         <button
           type="button"
-          className="control w-[104px] shrink-0"
+          className="control w-[96px] shrink-0"
           onClick={onToggle}
           disabled={busy || !runId}
           data-active={playing}
@@ -676,20 +779,7 @@ export function MissionDock({
             <ReplayIcon size={16} />
           </button>
         )}
-        <select
-          className="control w-[66px] shrink-0 px-2.5"
-          value={speed}
-          onChange={(event) => onSpeed(Number(event.target.value))}
-          disabled={!runId}
-          aria-label="Playback speed"
-        >
-          {SPEEDS.map((value) => (
-            <option key={value} value={value}>
-              {value}×
-            </option>
-          ))}
-        </select>
-        <span className="metric w-[104px] shrink-0 text-center font-[family-name:var(--font-mono)] text-[12.5px] font-semibold text-[color:var(--color-ink)]">
+        <span className="metric w-[96px] shrink-0 text-center font-[family-name:var(--font-mono)] text-[12.5px] font-semibold text-[color:var(--color-ink)]">
           {formatClock(t)}
           <span className="text-[color:var(--color-faint)]"> / {formatClock(duration)}</span>
         </span>
@@ -710,8 +800,60 @@ export function MissionDock({
           disabled={!runId}
           onSeek={onSeek}
           deadZoneTimes={deadZoneTimes}
+          quiet={simple}
         />
-        {!simple && <TimelineLegend />}
+        {detail && <TimelineLegend />}
+        <span className="divider-v mx-0.5" />
+        <div className="relative shrink-0" ref={popoverRef}>
+          <button
+            type="button"
+            className="control shrink-0 px-3"
+            data-active={settingsOpen}
+            aria-expanded={settingsOpen}
+            aria-haspopup="dialog"
+            aria-label="Change the run"
+            onClick={() => onSettings?.(!settingsOpen)}
+            title="Choose the road, the strategy and what it is compared with"
+          >
+            <SlidersIcon size={15} /> <span className="max-[1380px]:hidden">Change the run</span>
+          </button>
+          {settingsOpen && (
+            <RunSettings
+              scenarios={scenarios}
+              policies={policies}
+              scenarioId={scenarioId}
+              policyId={policyId}
+              seed={seed}
+              compare={compare}
+              speed={speed}
+              runId={runId}
+              busy={busy}
+              onScenario={onScenario}
+              onPolicy={onPolicy}
+              onSeed={onSeed}
+              onCompare={onCompare}
+              onSpeed={onSpeed}
+              onStart={() => {
+                onStart();
+                onSettings?.(false);
+              }}
+              onClose={() => onSettings?.(false)}
+            />
+          )}
+        </div>
+        {onDetail && (
+          <button
+            type="button"
+            className="control shrink-0"
+            data-active={detail}
+            aria-pressed={detail}
+            onClick={() => onDetail(!detail)}
+            title="Show every measurement: round trip, loss, jitter, per-class deadlines, the controller's pipeline"
+          >
+            Details
+          </button>
+        )}
+        {extra && <span className="divider-v mx-0.5" />}
         {extra}
       </div>
     </section>

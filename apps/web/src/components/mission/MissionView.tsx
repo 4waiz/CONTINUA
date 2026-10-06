@@ -49,10 +49,12 @@ import { CinematicIcon, CloseupIcon, FollowIcon, NetworkIcon, OverviewIcon, Spea
 import { ApplicationPanel } from './ApplicationPanel';
 import { CameraFeed } from './CameraFeed';
 import { FullscreenButton } from './FullscreenButton';
+import { HeadToHead } from './HeadToHead';
 import { LinkStack } from './LinkStack';
 import { MissionDock } from './MissionDock';
 import { MissionScene, type MissionCamera } from './MissionScene';
-import { connectionState, NETWORK, spokenLines, STRATEGY } from './plain';
+import { Moment, type MomentSpec } from './Moment';
+import { connectionState, handoffWhy, NETWORK, spokenLines, STRATEGY, warningWords } from './plain';
 import { RoadAhead, useRadioMap } from './RoadAhead';
 import { RouteMap } from './RouteMap';
 import { RoverStatus } from './RoverStatus';
@@ -66,6 +68,12 @@ const ZONE_LABEL: Record<string, string> = Object.fromEntries(MISSION_ZONES.map(
 
 /** How long a handoff stays announced, in run seconds. */
 const HANDOFF_VISIBLE_S = 5;
+
+/** How long the road map's warning stays up at most, in run seconds - less if its network takes over first. */
+const WARNING_VISIBLE_S = 8;
+
+/** How long the bar waits, with nothing touched, before it steps aside for the picture. */
+const BAR_IDLE_MS = 3500;
 
 /** The story's seed: any would do; this one is the one the story was written against. */
 const STORY_SEED = 1;
@@ -125,6 +133,11 @@ export function MissionView() {
   const [camera, setCamera] = useState<MissionCamera>('cinematic');
   const [view, setView] = useState<View>(initialView);
   const [detail, setDetail] = useState(false);
+  // The run's settings, in a popover over the bar.
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  // While a run plays untouched the bar steps aside; any movement brings it back.
+  const [barIdle, setBarIdle] = useState(false);
+  const [barHeld, setBarHeld] = useState(false);
   const [summary, setSummary] = useState<{ runId: string; metrics: Record<string, unknown> } | null>(null);
   const [summaryClosedFor, setSummaryClosedFor] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -531,28 +544,6 @@ export function MissionView() {
   const handoff = useMemo(() => recentHandoff(run.decisions, run.latest), [run.decisions, run.latest]);
   const runPolicy = (run.state?.policy_id ?? policyId) as PolicyIdString;
 
-  const carryingBefore = useCallback(
-    (at: number) => (run.source.eventAt(at)?.carrying ?? null) as EngineLinkId | null,
-    [run.source],
-  );
-  // The dock's last decision, and what the voice says: a change of network,
-  // the road map's warning, a stop or a restart. Held-back video and doubled
-  // steering commands come many times a run; they are in Details and the
-  // Decision log, not in a line that would change every second.
-  const lastDecision = useMemo(() => {
-    for (let i = run.decisions.length - 1; i >= 0; i -= 1) {
-      const event = run.decisions[i]!;
-      const kinds = actionsOf(event).map((action) => action.kind);
-      if (
-        kinds.some((kind) => kind === 'switch' || kind === 'safe_stop' || kind === 'resume') ||
-        (/^Preparing /.test(event.reason ?? '') && kinds.includes('activate_backup'))
-      ) {
-        return event;
-      }
-    }
-    return null;
-  }, [run.decisions]);
-
   // The road strip: the policy's road map, the rover on it, and its horizon.
   const radioMap = useRadioMap(runId || view !== 'landing' ? (scenario?.radio_map ?? 'baseline-journey') : null);
   const travelled = run.latest?.vehicle?.distance_m ?? null;
@@ -577,6 +568,36 @@ export function MissionView() {
     }
     return null;
   }, [run.decisions]);
+  // The road map's warning while it stands: from the decision that started a
+  // network for a known gap until that network carries the link, or a few
+  // seconds pass.
+  const warning = useMemo(() => {
+    const now = run.latest;
+    if (!now) return null;
+    for (let i = run.decisions.length - 1; i >= 0; i -= 1) {
+      const event = run.decisions[i]!;
+      if (event.t > now.t + 0.05) continue;
+      if (now.t - event.t > WARNING_VISIBLE_S) return null;
+      const words = warningWords(event);
+      if (words) return now.carrying === words.link ? null : { event, words };
+    }
+    return null;
+  }, [run.decisions, run.latest]);
+  // The one thing that just happened, for the banner: the more recent of the
+  // warning and the last change of network. Whether the new network was
+  // already up is its recorded phase just before the switch.
+  const moment = useMemo((): MomentSpec | null => {
+    if (view !== 'drive') return null;
+    if (warning && (!handoff || warning.event.t > handoff.at)) {
+      return { kind: 'warning', key: `w${warning.event.seq}`, at: warning.event.t, ...warning.words };
+    }
+    if (!handoff) return null;
+    const why = handoffWhy(handoff.event, handoff.from);
+    const ready = run.source.eventAt(handoff.at - 0.05)?.links[handoff.to]?.phase === 'active';
+    const detail = [why, ready ? `${NETWORK[handoff.to].name} was already up` : null].filter(Boolean).join(' · ');
+    return { kind: 'handoff', key: `h${handoff.seq}`, at: handoff.at, from: handoff.from, to: handoff.to, detail: detail || null };
+  }, [view, warning, handoff, run.source]);
+
   const roadAhead = (
     <RoadAhead
       map={radioMap}
@@ -649,6 +670,29 @@ export function MissionView() {
     if (bottomRef.current) observer.observe(bottomRef.current);
     return () => observer.disconnect();
   }, [view, runId, storyBar, showRoad, detail]);
+
+  // The bar steps aside after a few seconds with nothing touched, while a run
+  // plays; the picture is the point. Moving over the scene, or any key, brings
+  // it back at once.
+  useEffect(() => {
+    if (view !== 'drive') return undefined;
+    const stage = stageRef.current;
+    let timer = setTimeout(() => setBarIdle(true), BAR_IDLE_MS);
+    const wake = () => {
+      setBarIdle(false);
+      clearTimeout(timer);
+      timer = setTimeout(() => setBarIdle(true), BAR_IDLE_MS);
+    };
+    stage?.addEventListener('pointermove', wake);
+    stage?.addEventListener('pointerdown', wake);
+    window.addEventListener('keydown', wake);
+    return () => {
+      clearTimeout(timer);
+      stage?.removeEventListener('pointermove', wake);
+      stage?.removeEventListener('pointerdown', wake);
+      window.removeEventListener('keydown', wake);
+    };
+  }, [view]);
 
   // --- the story's voice ------------------------------------------------------
   // Each caption is read aloud once it has held for a moment: as the facts
@@ -752,7 +796,11 @@ export function MissionView() {
         />
 
         {/* --- top centre: can each operator reach their rover? --------------- */}
-        <div className="pointer-events-none absolute top-3 left-1/2 z-10 flex -translate-x-1/2 flex-col items-center gap-2">
+        {/* The run's ending says how it went; the live status steps aside for it. */}
+        <div
+          className="pointer-events-none absolute top-3 left-1/2 z-10 flex -translate-x-1/2 flex-col items-center gap-2 transition-opacity duration-300"
+          style={showSummary ? { opacity: 0 } : undefined}
+        >
           <div ref={topRef} className="flex flex-col items-center gap-2">
           {landing ? null : !runId ? (
             <div className="flex items-center gap-2">
@@ -769,7 +817,9 @@ export function MissionView() {
             <RoverStatus
               main={run.latest}
               mainName={mainName}
+              mainTimeline={run.source.timeline}
               baseline={baselineId ? baselineEvent : undefined}
+              baselineTimeline={baselineId ? baseline.source.timeline : undefined}
               totals={view === 'drive' && detail}
             />
           )}
@@ -794,44 +844,9 @@ export function MissionView() {
           )}
           </div>
 
-          {/* A handoff, announced for a few seconds - the story says it in its caption. */}
-          {handoff && view === 'drive' && (
-            <div className={detail ? 'w-[min(560px,46vw)]' : ''} role="status">
-              <div className="glass drop-in relative flex items-center gap-3 overflow-hidden px-4 py-2.5" key={handoff.seq}>
-                <span
-                  aria-hidden
-                  className="countdown absolute bottom-0 left-0 h-[2px] w-full"
-                  style={{ background: NETWORK_COLOR[handoff.to], animationDuration: `${HANDOFF_VISIBLE_S}s` }}
-                />
-                <span className="flex shrink-0 items-center gap-1.5">
-                  {handoff.from && (
-                    <span
-                      className="grid h-7 w-7 place-items-center rounded-full"
-                      style={{ background: `color-mix(in srgb, ${NETWORK_COLOR[handoff.from]} 14%, white)`, color: NETWORK_COLOR[handoff.from] }}
-                    >
-                      <NetworkIcon link={handoff.from} size={15} />
-                    </span>
-                  )}
-                  <span className="text-[13px] text-[color:var(--color-faint)]">→</span>
-                  <span className="grid h-7 w-7 place-items-center rounded-full text-white" style={{ background: NETWORK_COLOR[handoff.to] }}>
-                    <NetworkIcon link={handoff.to} size={15} />
-                  </span>
-                </span>
-                <div className="min-w-0">
-                  <div className="text-[12.5px] font-semibold" title={handoff.event.reason}>
-                    Moved to {NETWORK[handoff.to].name}
-                    <span className="ml-1.5 font-normal text-[color:var(--color-faint)]">t+{handoff.at.toFixed(1)}s</span>
-                  </div>
-                  {/* The why, in Details; in the simple view the dock's last
-                      decision already says it, in the same words. */}
-                  {detail && (
-                    <div className="truncate text-[11.5px] text-[color:var(--color-muted)]" title={handoff.event.reason}>
-                      {handoff.event.reason}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
+          {/* What just happened, said once - the story says it in its caption. */}
+          {moment && (
+            <Moment moment={moment} holdSeconds={moment.kind === 'warning' ? WARNING_VISIBLE_S : HANDOFF_VISIBLE_S} />
           )}
         </div>
 
@@ -903,6 +918,7 @@ export function MissionView() {
               history={run.history}
               selected={activeLink}
               simple={!detail}
+              title={`${mainName}'s networks`}
               onSelect={(link) => {
                 setSelectedLink(link);
                 setPinned(true);
@@ -921,30 +937,43 @@ export function MissionView() {
           </aside>
         )}
 
-        {/* --- right: route, camera, and (Details) application health ----------------- */}
-        {/* Before a run only the route is shown - it says what is coming. The
-            health and camera cards had nothing to say yet but an empty gauge
-            and "no stream"; they enter with the run's first event. */}
-        {(view === 'drive' || (view === 'story' && runId && !story.finished)) && (
+        {/* --- right: the two rovers head to head; Details adds the measurements ------- */}
+        {/* Nothing here before a run: the totals and the cameras enter with its
+            first event, rather than as empty gauges and "no stream". */}
+        {(view === 'drive' || (view === 'story' && runId && !story.finished)) && run.latest && (
           <aside className="mission-side mission-right scroll-y enter-late flex flex-col gap-3 *:shrink-0">
-            {view === 'drive' && <RouteMap event={run.latest} events={run.decisions} reverse={reverse} />}
-            {run.latest && (
+            <HeadToHead
+              main={run.latest}
+              baseline={baselineId ? baselineEvent : undefined}
+              mainName={mainName}
+              camera={
+                detail && view === 'drive' ? undefined : (
+                  <CameraFeed
+                    event={run.latest}
+                    baseline={baselineId ? baselineEvent : undefined}
+                    baselineLabel="Normal rover"
+                    mainLabel={mainName}
+                    compact
+                    bare
+                  />
+                )
+              }
+            />
+            {view === 'drive' && detail && (
               <>
-                {view === 'drive' && detail && (
-                  <div className="enter">
-                    <ApplicationPanel event={run.latest} />
-                  </div>
-                )}
+                <div className="enter">
+                  <ApplicationPanel event={run.latest} />
+                </div>
                 <div className="enter-late">
                   <CameraFeed
                     event={run.latest}
                     baseline={baselineId ? baselineEvent : undefined}
                     baselineLabel="Normal rover"
                     mainLabel={mainName}
-                    defaultOpen={view === 'story' || !detail}
-                    compact={!detail}
+                    defaultOpen={false}
                   />
                 </div>
+                <RouteMap event={run.latest} events={run.decisions} reverse={reverse} />
               </>
             )}
           </aside>
@@ -975,7 +1004,16 @@ export function MissionView() {
           </div>
         )}
         {view === 'drive' && (
-          <div className="mission-dock" ref={bottomRef}>
+          <div
+            className="mission-dock"
+            ref={bottomRef}
+            data-idle={barIdle && !barHeld && playing && !settingsOpen && !detail}
+            onPointerEnter={() => setBarHeld(true)}
+            onPointerLeave={() => setBarHeld(false)}
+            onFocusCapture={() => setBarHeld(true)}
+            onBlurCapture={() => setBarHeld(false)}
+          >
+            <span aria-hidden className="mission-dock-peek" style={{ transform: `scaleX(${duration > 0 ? Math.min(1, t / duration) : 0})` }} />
             <MissionDock
               scenarios={scenarios}
               policies={policies}
@@ -1015,8 +1053,8 @@ export function MissionView() {
               onDetail={setDetail}
               roadAhead={showRoad ? roadAhead : undefined}
               deadZoneTimes={deadZoneTimes}
-              lastDecision={lastDecision}
-              lastDecisionFrom={lastDecision ? carryingBefore(lastDecision.t - 0.05) : null}
+              settingsOpen={settingsOpen}
+              onSettings={setSettingsOpen}
               extra={
                 <>
                   <VoiceSwitch

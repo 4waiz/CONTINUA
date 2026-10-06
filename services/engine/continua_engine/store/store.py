@@ -89,6 +89,7 @@ class RunStore:
         with closing(self._connect()) as conn:
             conn.executescript(SCHEMA)
             conn.commit()
+        self._index_committed_results()
 
     def _connect(self) -> sqlite3.Connection:
         conn = sqlite3.connect(self.db_path, timeout=15)
@@ -290,6 +291,54 @@ class RunStore:
                     results_path,
                     notes,
                 ),
+            )
+            conn.commit()
+
+    def _index_committed_results(self) -> None:
+        """Make the result files already on disk listable.
+
+        Results are written next to the run store (`data/experiments/`) and
+        tracked in the repository; the database that lists them lives with the
+        run logs and is not. On a fresh clone the files were there and the
+        list was empty. Each file names its own experiment, so any the database
+        does not know is added from what the file says - nothing is recomputed,
+        and a row the database already has is left as it is.
+        """
+        directory = self.root.parent / "experiments"
+        if not directory.is_dir():
+            return
+        rows = []
+        for path in sorted(directory.glob("*.json")):
+            try:
+                summary = json.loads(path.read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                continue
+            if not isinstance(summary, dict) or summary.get("experiment_id") != path.stem:
+                continue
+            if "scenario_id" not in summary or "aggregate" not in summary:
+                continue
+            completed = summary.get("trials_completed") or {}
+            rows.append(
+                (
+                    path.stem,
+                    summary.get("finished_at") or summary.get("started_at") or "",
+                    summary["scenario_id"],
+                    int(summary.get("trials_requested") or 0),
+                    ",".join(summary.get("policies") or []),
+                    "completed_with_failures" if summary.get("failures") else "completed",
+                    sum(completed.values()) if isinstance(completed, dict) else 0,
+                    str(path),
+                )
+            )
+        if not rows:
+            return
+        with closing(self._connect()) as conn:
+            conn.executemany(
+                """INSERT OR IGNORE INTO experiments
+                   (experiment_id, created_at, scenario_id, trials, policies, status,
+                    completed, results_path)
+                   VALUES (?,?,?,?,?,?,?,?)""",
+                rows,
             )
             conn.commit()
 

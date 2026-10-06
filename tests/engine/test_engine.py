@@ -266,6 +266,38 @@ def test_replaying_a_recorded_run_reproduces_it_exactly(tmp_path):
         assert recorded["reason"] == original.reason
 
 
+def test_committed_experiment_results_are_listed_on_a_fresh_store(tmp_path):
+    """A clone has the result files but not the database that lists them."""
+    from continua_engine.store.store import RunStore
+
+    results = tmp_path / "experiments"
+    results.mkdir()
+    summary = {
+        "experiment_id": "phase9-test-x",
+        "scenario_id": "flapping",
+        "trials_requested": 2,
+        "trials_completed": {"B0": 2, "P1": 2},
+        "policies": ["B0", "P1"],
+        "finished_at": "2026-10-06T00:00:00+00:00",
+        "failures": [],
+        "aggregate": {},
+    }
+    (results / "phase9-test-x.json").write_text(json.dumps(summary), encoding="utf-8")
+    # Not experiment results: an index, and a file whose name and id disagree.
+    (results / "phase9_index.json").write_text(json.dumps({"experiments": ["phase9-test-x"]}), encoding="utf-8")
+    (results / "renamed.json").write_text(json.dumps({**summary, "experiment_id": "other"}), encoding="utf-8")
+
+    store = RunStore(tmp_path / "runs")
+    listed = store.list_experiments()
+    assert [row["experiment_id"] for row in listed] == ["phase9-test-x"]
+    assert listed[0]["completed"] == 4 and listed[0]["policies"] == "B0,P1"
+    assert store.experiment_results("phase9-test-x") == summary
+
+    # Opening the store again neither duplicates nor overwrites the row.
+    store.record_experiment("phase9-test-x", "flapping", 2, ["B0", "P1"], "completed", 4, None, notes="kept")
+    assert RunStore(tmp_path / "runs").list_experiments()[0]["notes"] == "kept"
+
+
 def test_scenario_overrides_never_mutate_the_catalogue():
     before = json.dumps(get_scenario("baseline-journey"), sort_keys=True)
     apply_overrides(get_scenario("baseline-journey"), {"inject_fault": "wifi", "inject_fault_at_s": 10})

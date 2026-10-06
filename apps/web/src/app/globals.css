@@ -896,6 +896,43 @@ button:focus-visible {
   line-height: 1.12;
   font-weight: 700;
   letter-spacing: -0.028em;
+  text-wrap: balance;
+}
+
+/* The landing's evidence: the stored comparison on the road the drive takes. */
+.landing-proof {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 14px 0 0;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: var(--color-surface-muted);
+}
+
+.landing-proof-head {
+  font-size: 10.5px;
+  font-weight: 750;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--color-faint);
+}
+
+.landing-proof-row {
+  display: grid;
+  grid-template-columns: 104px minmax(0, 1fr) 132px;
+  align-items: center;
+  gap: 10px;
+}
+
+.landing-proof-name {
+  font-size: 13px;
+  font-weight: 650;
+  color: var(--color-muted);
+}
+
+.landing-proof-row[data-ours='true'] .landing-proof-name {
+  color: var(--color-blue);
 }
 
 .story-landing-body,
@@ -1218,10 +1255,11 @@ button:focus-visible {
   cursor: default;
 }
 
-/* The dock's height by view: the drive dock carries the road strip and the
-   timeline's key moments; the story's bar is the chapters and the strip. */
+/* The dock's height by view, before it is measured: the drive's one slim bar
+   (Details adds the road strip and the pipeline above it); the story's bar is
+   the chapters and the caption. */
 .mission-root[data-view='drive'] {
-  --dock-h: 186px;
+  --dock-h: 66px;
 }
 
 .mission-root[data-view='story'] {
@@ -1234,7 +1272,7 @@ button:focus-visible {
 
 @media (max-height: 800px) {
   .mission-root[data-view='drive'] {
-    --dock-h: 178px;
+    --dock-h: 64px;
   }
 }
 
@@ -1265,6 +1303,17 @@ button:focus-visible {
 
 .timeline-flag[data-compact='true'] {
   padding: 0 4px;
+}
+
+/* A label that runs leftwards from its pin: the road map's warning, before the gap. */
+.timeline-flag[data-anchor='end'] {
+  transform: translateX(calc(-100% + 9px));
+}
+
+.timeline-flag[data-anchor='end']::after {
+  left: auto;
+  right: 9px;
+  transform: translateX(50%);
 }
 
 /* A "?" that explains the panel it sits on: on hover, and on keyboard focus. */
@@ -1353,4 +1402,535 @@ button:focus-visible {
   left: auto;
   right: -6px;
   transform: none;
+}
+
+/* --- the drive, redesigned: one pair, one moment, one scoreboard, one bar --------
+   Four things on screen while a run plays: whether each operator can reach
+   their rover (top), what just happened (under it), what each has lived
+   through so far (right), and the transport (bottom) - which steps aside when
+   nothing is touched. Everything else is behind Details. */
+
+/* The two rovers as one card, either side of a "vs". */
+.versus {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  overflow: hidden;
+  border-radius: 18px;
+  background: rgb(255 255 255 / 0.94);
+  box-shadow:
+    0 0 0 1px rgb(17 29 58 / 0.06),
+    0 14px 32px -18px rgb(17 29 58 / 0.42);
+  backdrop-filter: blur(16px) saturate(1.3);
+}
+
+.versus .versus-side {
+  min-width: 262px;
+  flex: 1 1 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  transition: background-color 220ms ease;
+}
+
+.versus .versus-side::before {
+  display: none;
+}
+
+.versus .versus-side[data-up='false'] {
+  background: color-mix(in srgb, var(--color-bad) 9%, white);
+}
+
+.versus[data-pair='true'] .versus-side:first-child {
+  padding-right: 22px;
+}
+
+.versus[data-pair='true'] .versus-side:last-child {
+  padding-left: 22px;
+}
+
+.versus-vs {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  transform: translate(-50%, -50%);
+  border-radius: 999px;
+  background: var(--color-surface);
+  box-shadow:
+    0 0 0 1px var(--color-line-strong),
+    0 4px 10px -4px rgb(17 29 58 / 0.25);
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-faint);
+}
+
+.versus[data-pair='true']::after {
+  content: '';
+  position: absolute;
+  top: 10px;
+  bottom: 10px;
+  left: 50%;
+  width: 1px;
+  background: var(--color-line);
+}
+
+.versus .versus-side[data-up='false'] .rover-status-dot {
+  animation: continua-alarm 1.1s ease-in-out infinite;
+}
+
+@keyframes continua-alarm {
+  0%,
+  100% {
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-bad) 22%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 7px color-mix(in srgb, var(--color-bad) 6%, transparent);
+  }
+}
+
+.rover-status-lost {
+  background: color-mix(in srgb, var(--color-bad) 13%, white);
+  color: var(--color-bad);
+}
+
+/* What just happened: the road map's warning, or a change of network and why. */
+.moment {
+  position: relative;
+  display: flex;
+  max-width: min(620px, 52vw);
+  align-items: center;
+  gap: 12px;
+  overflow: hidden;
+  padding: 9px 18px 10px 12px;
+}
+
+.moment[data-kind='warning'] {
+  box-shadow:
+    0 0 0 1.5px color-mix(in srgb, var(--moment) 38%, transparent),
+    0 16px 36px -18px rgb(17 29 58 / 0.32);
+}
+
+.moment-countdown {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: var(--moment);
+}
+
+.moment-icon {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  background: var(--moment);
+  color: white;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--moment) 16%, transparent);
+}
+
+.moment-title {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--color-ink);
+}
+
+.moment[data-kind='warning'] .moment-title {
+  color: var(--moment);
+}
+
+.moment-time {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-faint);
+}
+
+.moment-detail {
+  font-size: 12.5px;
+  line-height: 1.35;
+  color: var(--color-muted);
+}
+
+/* Head to head: the running totals, two bars a row, the shorter the better. */
+.h2h {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px 13px;
+}
+
+.h2h-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.h2h-legend {
+  display: flex;
+  gap: 10px;
+  font-size: 11px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.h2h-legend > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.h2h-legend > span::before {
+  content: '';
+  width: 10px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--side);
+}
+
+.h2h-legend > [data-side='main'] {
+  --side: var(--color-blue);
+  color: var(--color-blue);
+}
+
+.h2h-legend > [data-side='base'] {
+  --side: #8a96ad;
+  color: var(--color-muted);
+}
+
+.h2h-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.h2h-row {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.h2h-row-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.h2h-label {
+  font-size: 12px;
+  font-weight: 620;
+  color: var(--color-ink);
+}
+
+.h2h-ratio {
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.h2h-ratio[data-better='main'] {
+  color: color-mix(in srgb, var(--color-good) 82%, black);
+  background: color-mix(in srgb, var(--color-good) 12%, white);
+}
+
+.h2h-ratio[data-better='base'] {
+  color: var(--color-bad);
+  background: color-mix(in srgb, var(--color-bad) 9%, white);
+}
+
+.h2h-line {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 62px;
+  align-items: center;
+  gap: 8px;
+}
+
+.h2h-track,
+.ending-track {
+  position: relative;
+  height: 7px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-ink) 6%, transparent);
+}
+
+/* No easing: a bar is the number beside it at every frame, so a paused,
+   scrubbed or captured frame shows the same length as a played one. */
+.h2h-fill,
+.ending-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 999px;
+}
+
+.h2h-line[data-side='main'] .h2h-fill,
+.ending-cell[data-side='main'] .ending-fill {
+  background: linear-gradient(90deg, var(--color-cyan), var(--color-blue));
+}
+
+.h2h-line[data-side='base'] .h2h-fill,
+.ending-cell[data-side='base'] .ending-fill {
+  background: #8a96ad;
+}
+
+.h2h-value {
+  font-size: 12.5px;
+  font-weight: 700;
+  text-align: right;
+  white-space: nowrap;
+  color: var(--color-ink);
+}
+
+.h2h-line[data-side='base'] .h2h-value {
+  color: var(--color-muted);
+}
+
+.h2h-missing {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--color-faint);
+}
+
+/* The run's ending: the same rows, larger, with what acting early cost beneath. */
+.ending-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 14px 0 0;
+  padding: 12px 0 0;
+  border-top: 1px solid var(--color-line);
+  list-style: none;
+}
+
+.ending-row {
+  display: grid;
+  grid-template-columns: 148px minmax(0, 1fr) minmax(0, 1fr) 124px;
+  align-items: center;
+  gap: 14px;
+}
+
+.ending-name {
+  font-size: 10.5px;
+  font-weight: 750;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.ending-name[data-side='main'] {
+  color: var(--color-blue);
+}
+
+.ending-name[data-side='base'] {
+  color: var(--color-muted);
+}
+
+.ending-label {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--color-muted);
+}
+
+.ending-cell {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 70px;
+  align-items: center;
+  gap: 8px;
+}
+
+.ending-track {
+  height: 8px;
+}
+
+.ending-value {
+  font-size: 15px;
+  font-weight: 700;
+  text-align: right;
+  white-space: nowrap;
+  color: var(--color-ink);
+}
+
+.ending-cell[data-side='base'] .ending-value {
+  color: var(--color-muted);
+}
+
+.ending-ratio {
+  font-size: 11.5px;
+  font-weight: 750;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.ending-ratio[data-better='main'] {
+  color: color-mix(in srgb, var(--color-good) 82%, black);
+}
+
+.ending-ratio[data-better='base'] {
+  color: var(--color-bad);
+}
+
+.ending-cost {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 12px 0 0;
+  padding: 9px 12px;
+  border-radius: 12px;
+  background: var(--color-surface-muted);
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--color-muted);
+}
+
+.ending-cost-label {
+  font-size: 10.5px;
+  font-weight: 750;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--color-faint);
+}
+
+.ending-proof {
+  margin: 10px 0 0;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.45;
+  color: var(--color-ink);
+}
+
+/* The bar: transport, clock, the two timelines, and the run's settings. */
+.mission-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 10px;
+  transition: opacity 280ms ease;
+}
+
+.mission-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mission-bar-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 2px 2px 8px;
+  border-bottom: 1px solid var(--color-line);
+}
+
+/* Nothing touched while a run plays: the bar fades for the picture, and a
+   hairline keeps the progress. Any movement brings it straight back. It only
+   fades - it does not move or stop taking clicks - so a control that is
+   reached without moving the pointer (a keyboard, a switch, a script) still
+   works while it is faded, and pressing it brings the bar back. */
+.mission-dock[data-idle='true'] > .mission-bar {
+  opacity: 0;
+}
+
+.mission-dock-peek {
+  position: absolute;
+  right: 18px;
+  bottom: -2px;
+  left: 18px;
+  height: 3px;
+  border-radius: 999px;
+  background: var(--brand-gradient);
+  transform-origin: left center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 280ms ease;
+}
+
+.mission-dock[data-idle='true'] > .mission-dock-peek {
+  opacity: 0.9;
+}
+
+/* The run's settings: one popover over the bar, opening upwards. */
+.run-settings {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 14px);
+  z-index: 40;
+  display: flex;
+  width: 348px;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 16px 16px;
+  text-align: left;
+  background: rgb(255 255 255 / 0.98);
+}
+
+.run-settings-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 620;
+  color: var(--color-muted);
+}
+
+.run-settings-hint {
+  display: block;
+  margin-top: 2px;
+  font-size: 11.5px;
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--color-faint);
+}
+
+.run-settings-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 620;
+  color: var(--color-ink);
+}
+
+.run-settings-check input {
+  margin-top: 2px;
+}
+
+.run-settings-close {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  color: var(--color-faint);
+}
+
+.run-settings-close:hover {
+  background: var(--color-surface-muted);
+  color: var(--color-ink);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .versus .versus-side[data-up='false'] .rover-status-dot {
+    animation: none;
+  }
 }

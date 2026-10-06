@@ -104,6 +104,7 @@ export function CameraFeed({
   mainLabel = 'CONTINUA',
   defaultOpen,
   compact = false,
+  bare = false,
 }: {
   event: EngineEvent | null;
   /**
@@ -117,12 +118,15 @@ export function CameraFeed({
   defaultOpen?: boolean;
   /** The pictures alone: the frame counts and deadline misses are for Details. */
   compact?: boolean;
+  /** The picture with no card around it, always open: for a panel that frames it itself. */
+  bare?: boolean;
 }) {
   const primaryRef = useRef<HTMLCanvasElement>(null);
   const baselineRef = useRef<HTMLCanvasElement>(null);
   // Open by default only where the right column has room for it under the
   // route map and the health panel; elsewhere it is one click away.
-  const [open, setOpen] = useState(() => defaultOpen ?? (typeof window === 'undefined' || window.innerHeight >= 1000));
+  const [toggled, setOpen] = useState(() => defaultOpen ?? (typeof window === 'undefined' || window.innerHeight >= 1000));
+  const open = bare || toggled;
   const split = baseline !== undefined;
   const video = event?.app?.classes.video;
   const baseVideo = baseline?.app?.classes.video;
@@ -174,6 +178,67 @@ export function CameraFeed({
     setRoverCamStalled(stalled && (!split || baseStalled));
   }, [stalled, split, baseStalled]);
 
+  const picture = (
+    <div className="relative aspect-video overflow-hidden rounded-[11px] bg-[#1b2435]">
+      <Picture canvasRef={primaryRef} half={split ? 'left' : null} visible={streaming} />
+      {split && <Picture canvasRef={baselineRef} half="right" visible={streaming} />}
+      {video && (
+        <>
+          {/* Framing marks of an inspection camera, kept thin. */}
+          <svg
+            className="pointer-events-none absolute inset-0 h-full w-full"
+            viewBox="0 0 160 90"
+            preserveAspectRatio="none"
+            aria-hidden
+          >
+            <g fill="none" stroke="rgb(255 255 255 / 0.55)" strokeWidth="0.6" vectorEffect="non-scaling-stroke">
+              <path d="M70 40 h-4 v3 M90 40 h4 v3 M70 50 h-4 v-3 M90 50 h4 v-3" />
+            </g>
+          </svg>
+          {split ? (
+            <div className="pointer-events-none absolute inset-x-0 top-0 flex justify-between bg-gradient-to-b from-[rgb(10_16_28/0.5)] to-transparent px-2 pb-3 pt-1.5 font-[family-name:var(--font-mono)] text-[11px] font-semibold text-white">
+              <span>{compact ? mainLabel.toUpperCase() : `${mainLabel.toUpperCase()} · ${String(video.frames_delivered).padStart(5, '0')}`}</span>
+              <span>
+                {compact
+                  ? baselineLabel.toUpperCase()
+                  : `${baselineLabel.toUpperCase()} · ${baseVideo ? String(baseVideo.frames_delivered).padStart(5, '0') : ' - '}`}
+              </span>
+            </div>
+          ) : (
+            <div className="pointer-events-none absolute inset-x-0 top-0 flex justify-between bg-gradient-to-b from-[rgb(10_16_28/0.45)] to-transparent px-2 pb-3 pt-1.5 font-[family-name:var(--font-mono)] text-[11px] font-semibold text-white">
+              <span>FWD · FRAME {String(video.frames_delivered).padStart(6, '0')}</span>
+              <span>t+{(event?.t ?? 0).toFixed(1)}s</span>
+            </div>
+          )}
+          {split && (
+            <span aria-hidden className="pointer-events-none absolute inset-y-0 left-1/2 w-[2px] -translate-x-1/2 bg-white/85 shadow-[0_0_0_1px_rgb(10_16_28/0.25)]" />
+          )}
+        </>
+      )}
+      {!video && (
+        <div className="absolute inset-0 grid place-items-center text-[11.5px] font-medium text-white/60">
+          no stream until a run starts
+        </div>
+      )}
+      {video && (
+        <HalfState video={video} inOutage={event?.app?.in_outage === true} side={split ? 'left' : null} plain={compact} />
+      )}
+      {split && baseline && (
+        <HalfState video={baseVideo} inOutage={baseline.app?.in_outage === true} side="right" plain={compact} />
+      )}
+      {/* On the picture itself, where it cannot be missed - and out of a
+          header that, at 1280 px, it pushed into an ellipsis. */}
+      <span
+        className="absolute bottom-1.5 left-1.5 rounded-full bg-[rgb(10_16_28/0.55)] px-1.5 py-[1px] text-[10px] font-bold tracking-[0.06em] text-[color:color-mix(in_srgb,var(--color-warn)_50%,white)]"
+        title="The simulated world rendered from the rover's forward camera - not transported pixels. It moves only while the engine reports video frames delivered, and freezes while the receiver reports the stream stalled."
+      >
+        SYNTHETIC
+      </span>
+    </div>
+  );
+
+  if (bare) return picture;
+
   return (
     <section className="glass overflow-hidden" aria-label="Camera">
       <div className="flex w-full items-center gap-2 px-4 py-2.5">
@@ -209,62 +274,7 @@ export function CameraFeed({
       </div>
       {open && (
         <div className="px-3 pb-3">
-          <div className="relative aspect-video overflow-hidden rounded-[11px] bg-[#1b2435]">
-            <Picture canvasRef={primaryRef} half={split ? 'left' : null} visible={streaming} />
-            {split && <Picture canvasRef={baselineRef} half="right" visible={streaming} />}
-            {video && (
-              <>
-                {/* Framing marks of an inspection camera, kept thin. */}
-                <svg
-                  className="pointer-events-none absolute inset-0 h-full w-full"
-                  viewBox="0 0 160 90"
-                  preserveAspectRatio="none"
-                  aria-hidden
-                >
-                  <g fill="none" stroke="rgb(255 255 255 / 0.55)" strokeWidth="0.6" vectorEffect="non-scaling-stroke">
-                    <path d="M70 40 h-4 v3 M90 40 h4 v3 M70 50 h-4 v-3 M90 50 h4 v-3" />
-                  </g>
-                </svg>
-                {split ? (
-                  <div className="pointer-events-none absolute inset-x-0 top-0 flex justify-between bg-gradient-to-b from-[rgb(10_16_28/0.5)] to-transparent px-2 pb-3 pt-1.5 font-[family-name:var(--font-mono)] text-[11px] font-semibold text-white">
-                    <span>{compact ? mainLabel.toUpperCase() : `${mainLabel.toUpperCase()} · ${String(video.frames_delivered).padStart(5, '0')}`}</span>
-                    <span>
-                      {compact
-                        ? baselineLabel.toUpperCase()
-                        : `${baselineLabel.toUpperCase()} · ${baseVideo ? String(baseVideo.frames_delivered).padStart(5, '0') : ' - '}`}
-                    </span>
-                  </div>
-                ) : (
-                  <div className="pointer-events-none absolute inset-x-0 top-0 flex justify-between bg-gradient-to-b from-[rgb(10_16_28/0.45)] to-transparent px-2 pb-3 pt-1.5 font-[family-name:var(--font-mono)] text-[11px] font-semibold text-white">
-                    <span>FWD · FRAME {String(video.frames_delivered).padStart(6, '0')}</span>
-                    <span>t+{(event?.t ?? 0).toFixed(1)}s</span>
-                  </div>
-                )}
-                {split && (
-                  <span aria-hidden className="pointer-events-none absolute inset-y-0 left-1/2 w-[2px] -translate-x-1/2 bg-white/85 shadow-[0_0_0_1px_rgb(10_16_28/0.25)]" />
-                )}
-              </>
-            )}
-            {!video && (
-              <div className="absolute inset-0 grid place-items-center text-[11.5px] font-medium text-white/60">
-                no stream until a run starts
-              </div>
-            )}
-            {video && (
-              <HalfState video={video} inOutage={event?.app?.in_outage === true} side={split ? 'left' : null} plain={compact} />
-            )}
-            {split && baseline && (
-              <HalfState video={baseVideo} inOutage={baseline.app?.in_outage === true} side="right" plain={compact} />
-            )}
-            {/* On the picture itself, where it cannot be missed - and out of a
-                header that, at 1280 px, it pushed into an ellipsis. */}
-            <span
-              className="absolute bottom-1.5 left-1.5 rounded-full bg-[rgb(10_16_28/0.55)] px-1.5 py-[1px] text-[10px] font-bold tracking-[0.06em] text-[color:color-mix(in_srgb,var(--color-warn)_50%,white)]"
-              title="The simulated world rendered from the rover's forward camera - not transported pixels. It moves only while the engine reports video frames delivered, and freezes while the receiver reports the stream stalled."
-            >
-              SYNTHETIC
-            </span>
-          </div>
+          {picture}
           {compact ? null : split ? (
             <dl className="mt-2 grid grid-cols-[auto_1fr_1fr] gap-x-3 gap-y-0.5 text-[11px]">
               <dt />

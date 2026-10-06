@@ -17,6 +17,7 @@ import { AppShell } from './AppShell';
 import { CompareIcon } from './ui/icons';
 import { IS_PUBLIC_PREVIEW, REPO_URL } from '@/lib/deployment';
 import { ComparisonChart } from './experiments/ComparisonChart';
+import { PROOF_EXPERIMENT } from './mission/StoryCards';
 import { Chip, Panel } from './ui/primitives';
 
 const POLICY_NOTE: Record<string, string> = {
@@ -111,8 +112,11 @@ export function ExperimentsView() {
     setError(null);
     try {
       const payload = await api.getExperiment(id);
-      setResults((payload.results ?? payload) as Record<string, unknown>);
+      const loaded = (payload.results ?? payload) as Record<string, unknown>;
+      setResults(loaded);
       setExperimentId(id);
+      // The selector names the road the results on screen are for.
+      if (typeof loaded.scenario_id === 'string') setScenarioId(loaded.scenario_id);
       setProgress({ status: 'completed' });
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : String(cause));
@@ -126,12 +130,15 @@ export function ExperimentsView() {
       .listExperiments()
       .then((r) => {
         setStored(r.stored);
-        // Land on results rather than an empty page. The largest completed
-        // experiment is the most informative default; picking one from the list
-        // replaces it.
-        const best = r.stored
-          .filter((row) => Number(row.completed ?? 0) > 0)
-          .sort((a, b) => Number(b.completed ?? 0) - Number(a.completed ?? 0))[0];
+        // Land on results rather than an empty page: the comparison on the
+        // road the Mission page drives, when it is on disk, and otherwise the
+        // largest completed experiment. Picking one from the list replaces it.
+        const featured = r.stored.find((row) => row.experiment_id === PROOF_EXPERIMENT && Number(row.completed ?? 0) > 0);
+        const best =
+          featured ??
+          r.stored
+            .filter((row) => Number(row.completed ?? 0) > 0)
+            .sort((a, b) => Number(b.completed ?? 0) - Number(a.completed ?? 0))[0];
         if (best) void loadStored(String(best.experiment_id));
       })
       .catch(() => undefined);
@@ -305,9 +312,18 @@ export function ExperimentsView() {
                 <ul className="flex flex-col gap-1">
                   {stored
                     .slice()
-                    .sort((a, b) => Number(b.completed ?? 0) - Number(a.completed ?? 0))
+                    // The Mission page's road first, then newest first.
+                    .sort((a, b) =>
+                      a.experiment_id === PROOF_EXPERIMENT
+                        ? -1
+                        : b.experiment_id === PROOF_EXPERIMENT
+                          ? 1
+                          : String(b.created_at ?? '').localeCompare(String(a.created_at ?? '')),
+                    )
                     .map((row) => {
                       const active = experimentId === row.experiment_id;
+                      const drives = Number(row.trials ?? 0);
+                      const strategies = drives > 0 ? Math.round(Number(row.completed ?? 0) / drives) : 0;
                       return (
                         <li key={String(row.experiment_id)}>
                           <button
@@ -323,12 +339,12 @@ export function ExperimentsView() {
                             <span
                               className="truncate text-[12.5px] font-semibold"
                               style={{ color: active ? 'var(--color-blue)' : undefined }}
-                              title={String(row.scenario_id)}
+                              title={`${String(row.experiment_id)} · ${String(row.scenario_id)}`}
                             >
                               {scenarioTitle(String(row.scenario_id))}
                             </span>
-                            <span className="metric shrink-0 text-[11px] text-[color:var(--color-muted)]">
-                              {String(row.trials)} x {String(row.completed)}
+                            <span className="metric shrink-0 text-[11px] text-[color:var(--color-muted)]" title={`${String(row.completed)} runs`}>
+                              {strategies} strategies · {drives} drives
                             </span>
                           </button>
                         </li>

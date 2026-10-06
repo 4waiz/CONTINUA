@@ -60,29 +60,41 @@ distribution at all, and nothing was executed).
 
 ### The Mission page
 
-The page opens on a still island and one button, **Drive it yourself**, which
-starts the run that shows what CONTINUA is for: two identical rovers on the
-shadowed route, same seed - CONTINUA with its road map, and the normal rover
-that only switches network once the one it is on has failed. A cutting ahead
-blocks Wi-Fi and cellular together; CONTINUA's road map sees it 79 m out and
-starts satellite in time, and the normal rover loses its link for 4.5 s and
-has to stop.
+The page opens on a still island, what the stored twenty-drive comparison
+found on the road it is about to drive, and one button, **Drive it
+yourself**, which starts the run that shows what CONTINUA is for: two
+identical rovers on the shadowed route, same seed - CONTINUA with its road
+map, and the normal rover that only switches network once the one it is on
+has failed. A cutting ahead blocks Wi-Fi and cellular together; CONTINUA's
+road map sees it 79 m out and starts satellite in time, and the normal rover
+loses its link for 4.5 s and has to stop - and then stays on satellite, the
+slow and costly link, for the rest of the road, because it only ever moves
+once its network has failed.
 
-* **Every change of network is shown.** The camera turns to where the new
+While a run plays the screen holds four things, and nothing else:
+
+* **Can each operator reach their rover** - one card, the two rovers either
+  side of a "vs", red the moment one is cut off and counting how long.
+* **What just happened**, said once under it: the road map's warning ("Dead
+  zone 79 m ahead") or a change of network and why ("Cellular stopped
+  working · Satellite was already up"). The camera turns to where the new
   link comes from - the access point, the mast, the sky the satellite link
-  climbs into - holds it, and comes back to the rover
-  (`packages/scene/src/components/Cameras.tsx`).
-* **And said.** A voice says what changed, in the short words on screen -
-  "Moved to Satellite", "Normal rover: connection lost" - so a viewer can
-  listen as well as read. The lines are recorded on this machine with a voice
-  that ships with Windows; see [AI use](docs/AI_USE.md). A speaker button
-  turns it off.
-* **The end says how it went** in words - did each rover keep its
-  connection, for how long was each cut off, how often did each change
-  network - and, on this road, what the stored twenty-drive comparison found.
-  Every measurement stays one click away under **Details**.
+  climbs into - and comes back round the rover
+  (`packages/scene/src/components/Cameras.tsx`). A voice says the same short
+  words; the lines are recorded on this machine with a voice that ships with
+  Windows ([AI use](docs/AI_USE.md)), and a speaker button turns it off.
+* **Head to head** - both operators' camera views, and four running totals
+  read from each run's own events at the same moment of the road: time
+  without a link, video frozen, steering commands late, data over satellite.
+  The gap is set by the strategy alone, and it grows as the road goes on
+  (`apps/web/src/components/mission/HeadToHead.tsx`).
+* **One slim bar** - transport, both rovers' timelines, **Change the run**
+  (road, strategy, comparison, seed, speed) and **Details**. It steps aside
+  while a run plays untouched; any movement brings it back.
 
-The dock changes the scenario and the strategy and starts another run.
+The end card puts the same four totals side by side and, in the same card,
+what acting early cost: more changes of network, and big uploads held back.
+Every measurement stays one click away under **Details**.
 `/?story` opens the one-minute film of the same run (below); its "Replay it in
 3D" plays it in the app as a narrated minute with chapter captions, ending on
 the stored comparison (`apps/web/src/components/mission/story.tsx`). Nothing in

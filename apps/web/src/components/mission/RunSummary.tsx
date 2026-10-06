@@ -173,7 +173,62 @@ function RoverOutcome({ name, metrics, ours }: { name: string; metrics: Record<s
   );
 }
 
-/** The run's ending in words, with what it cost said beside it. */
+/** "2.5× less" when ours is lower, "1.8× more" when higher; nothing below the floor or under 1.5×. */
+function ratioWords(ours: number | null, theirs: number | null, floor: number): { text: string; ours: boolean } | null {
+  if (ours === null || theirs === null || Math.min(ours, theirs) < floor) return null;
+  const high = Math.max(ours, theirs);
+  const low = Math.min(ours, theirs);
+  if (high / low < 1.5) return null;
+  const factor = high / low < 10 ? (high / low).toFixed(1) : (high / low).toFixed(0);
+  return ours < theirs ? { text: `${factor}× less`, ours: true } : { text: `${factor}× more`, ours: false };
+}
+
+interface Versus {
+  label: string;
+  why: string;
+  ours: number | null;
+  theirs: number | null;
+  format: (value: number) => string;
+  floor: number;
+}
+
+const secondsText = (value: number): string => (value < 10 ? `${value.toFixed(1)} s` : `${value.toFixed(0)} s`);
+const percentText = (value: number): string => `${value < 10 ? value.toFixed(1) : value.toFixed(0)} %`;
+const sizeText = (megabytes: number): string =>
+  megabytes < 1 ? `${(megabytes * 1000).toFixed(0)} KB` : megabytes < 100 ? `${megabytes.toFixed(1)} MB` : `${megabytes.toFixed(0)} MB`;
+
+/** One measured row of the ending: the two values, the shorter bar the better, and how far apart. */
+function VersusRow({ row, mainName }: { row: Versus; mainName: string }) {
+  const max = Math.max(row.ours ?? 0, row.theirs ?? 0);
+  const width = (value: number | null) => (value === null || max <= 0 ? 0 : Math.max(1.5, (value / max) * 100));
+  const ratio = ratioWords(row.ours, row.theirs, row.floor);
+  return (
+    <li className="ending-row" title={row.why}>
+      <span className="ending-label">{row.label}</span>
+      <span className="ending-cell" data-side="main">
+        <span className="ending-track" aria-hidden>
+          <span className="ending-fill" style={{ width: `${width(row.ours)}%` }} />
+        </span>
+        <span className="ending-value metric">{row.ours === null ? 'unavailable' : row.format(row.ours)}</span>
+      </span>
+      <span className="ending-cell" data-side="base">
+        <span className="ending-track" aria-hidden>
+          <span className="ending-fill" style={{ width: `${width(row.theirs)}%` }} />
+        </span>
+        <span className="ending-value metric">{row.theirs === null ? 'unavailable' : row.format(row.theirs)}</span>
+      </span>
+      <span className="ending-ratio" data-better={ratio ? (ratio.ours ? 'main' : 'base') : undefined}>
+        {ratio ? `${mainName} ${ratio.text}` : ''}
+      </span>
+    </li>
+  );
+}
+
+/**
+ * The run's ending, side by side: did each rover keep its connection, then
+ * what each operator lived through - frozen video, late steering, the costly
+ * link - and, in the same table, what acting early cost CONTINUA.
+ */
 function SimpleSummary({
   metrics,
   mainName,
@@ -185,26 +240,107 @@ function SimpleSummary({
   baseline: Record<string, unknown> | null;
   proof: string | null;
 }) {
-  const changes = read(metrics, 'control_plane.handovers');
-  const satellite = megabytes(read(metrics, 'links.satellite_bytes'));
-  const baseChanges = baseline ? read(baseline, 'control_plane.handovers') : null;
-  const baseSatellite = baseline ? megabytes(read(baseline, 'links.satellite_bytes')) : null;
-  const price = [
-    changes === null ? null : `${changes} change${changes === 1 ? '' : 's'} of network${baseChanges === null ? '' : ` (normal rover: ${baseChanges})`}`,
-    satellite === null ? null : `${satellite} over satellite, the costly link${baseSatellite === null ? '' : ` (normal rover: ${baseSatellite})`}`,
-  ].filter(Boolean);
+  if (!baseline) {
+    const changes = read(metrics, 'control_plane.handovers');
+    const satellite = megabytes(read(metrics, 'links.satellite_bytes'));
+    return (
+      <>
+        <div className="mt-4 grid grid-cols-1 gap-3">
+          <RoverOutcome name={mainName} metrics={metrics} ours />
+        </div>
+        <p className="mt-3 text-[12.5px] leading-snug text-[color:var(--color-muted)]">
+          Along the way:{' '}
+          {[
+            changes === null ? null : `${changes} change${changes === 1 ? '' : 's'} of network`,
+            satellite === null ? null : `${satellite} over satellite, the costly link`,
+          ]
+            .filter(Boolean)
+            .join(' and ')}
+          .
+        </p>
+      </>
+    );
+  }
+  const stall = (source: Record<string, unknown>) => {
+    const ms = read(source, 'application.video.stall_ms');
+    return ms === null ? null : ms / 1000;
+  };
+  const satellite = (source: Record<string, unknown>) => {
+    const bytes = read(source, 'links.satellite_bytes');
+    return bytes === null ? null : bytes / 1e6;
+  };
+  const measured: Versus[] = [
+    {
+      label: 'Time without a link',
+      why: "Seconds the operator could not reach the rover at all, from the receiver's report - the session's first fifth of a second included, the same for both.",
+      ours: read(metrics, 'continuity.total_interruption_s'),
+      theirs: read(baseline, 'continuity.total_interruption_s'),
+      format: secondsText,
+      floor: 1,
+    },
+    {
+      label: 'Video frozen',
+      why: "Seconds the operator's camera picture was stalled.",
+      ours: stall(metrics),
+      theirs: stall(baseline),
+      format: secondsText,
+      floor: 1,
+    },
+    {
+      label: 'Steering commands late',
+      why: 'Share of steering commands that arrived after their deadline, or could not be sent at all.',
+      ours: read(metrics, 'application.control.deadline_miss_pct'),
+      theirs: read(baseline, 'application.control.deadline_miss_pct'),
+      format: percentText,
+      floor: 1,
+    },
+    {
+      label: 'Data over satellite',
+      why: 'Everything sent over the satellite link, the slow and costly one.',
+      ours: satellite(metrics),
+      theirs: satellite(baseline),
+      format: sizeText,
+      floor: 0.5,
+    },
+  ];
+  const changes = [read(metrics, 'control_plane.handovers'), read(baseline, 'control_plane.handovers')] as const;
+  const uploads = [read(metrics, 'application.bulk.completion_pct'), read(baseline, 'application.bulk.completion_pct')] as const;
   return (
     <>
-      <div className={`mt-4 grid gap-3 ${baseline ? 'grid-cols-2' : 'grid-cols-1'}`}>
+      <div className="mt-4 grid grid-cols-2 gap-3">
         <RoverOutcome name={mainName} metrics={metrics} ours />
-        {baseline && <RoverOutcome name="Normal rover" metrics={baseline} ours={false} />}
+        <RoverOutcome name="Normal rover" metrics={baseline} ours={false} />
       </div>
-      {price.length > 0 && (
-        <p className="mt-3 text-[12.5px] leading-snug text-[color:var(--color-muted)]">
-          Along the way: {price.join(' and ')}.
-        </p>
-      )}
-      {proof && <p className="mt-2 text-[12.5px] leading-snug font-medium text-[color:var(--color-ink)]">{proof}</p>}
+      <ul className="ending-rows" aria-label="What each operator lived through">
+        <li className="ending-row ending-row-head" aria-hidden>
+          <span />
+          <span className="ending-name" data-side="main">
+            {mainName}
+          </span>
+          <span className="ending-name" data-side="base">
+            Normal rover
+          </span>
+          <span />
+        </li>
+        {measured.map((row) => (
+          <VersusRow key={row.label} row={row} mainName={mainName} />
+        ))}
+      </ul>
+      <p className="ending-cost">
+        <span className="ending-cost-label">What acting early cost</span>
+        {changes[0] !== null && changes[1] !== null && (
+          <span>
+            {changes[0]} changes of network (normal rover: {changes[1]})
+          </span>
+        )}
+        {uploads[0] !== null && uploads[1] !== null && (
+          <span>
+            {uploads[0].toFixed(0)} % of big uploads finished (normal rover: {uploads[1].toFixed(0)} %) - held back to keep steering and video
+            moving
+          </span>
+        )}
+      </p>
+      {proof && <p className="ending-proof">{proof}</p>}
     </>
   );
 }
@@ -244,10 +380,12 @@ export function RunSummary({
   const health = read(metrics, 'app_health_score');
   const satellite = read(metrics, 'links.satellite_bytes');
   const overhead = read(metrics, 'links.overhead_pct');
+  const baselineLost = baseline ? read(baseline.metrics, 'continuity.session_reconnects') : null;
+  const baselineStopped = baseline ? readFlag(baseline.metrics, 'continuity.safe_stop_entered') : null;
 
   return (
     <section
-      className="glass drop-in absolute top-[calc((100%-var(--dock-h)-var(--edge))/2)] left-1/2 z-30 w-[min(620px,calc(100vw-48px))] -translate-x-1/2 -translate-y-1/2 px-6 pt-5 pb-5"
+      className={`glass drop-in run-summary absolute top-[calc((100%-var(--dock-h)-var(--edge))/2)] left-1/2 z-30 -translate-x-1/2 -translate-y-1/2 px-6 pt-5 pb-5 ${simple && baseline ? 'w-[min(760px,calc(100vw-48px))]' : 'w-[min(620px,calc(100vw-48px))]'}`}
       role="dialog"
       aria-label="Run complete"
     >
@@ -267,6 +405,12 @@ export function RunSummary({
           reconnects === 0 ? (
             <>
               {mainName} <span className="text-[color:var(--color-good)]">kept its connection the whole way.</span>
+              {baselineLost !== null && baselineLost > 0 && (
+                <span className="mt-0.5 block text-[15px] font-semibold text-[color:var(--color-muted)]">
+                  The normal rover lost it {baselineLost === 1 ? 'once' : `${baselineLost} times`}
+                  {baselineStopped ? ' and had to stop.' : '.'}
+                </span>
+              )}
             </>
           ) : (
             <>

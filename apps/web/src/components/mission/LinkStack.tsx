@@ -109,6 +109,7 @@ export function LinkStack({
   selected,
   onSelect,
   simple = false,
+  title,
 }: {
   event: EngineEvent | null;
   history: EngineEvent[];
@@ -119,6 +120,8 @@ export function LinkStack({
    * figures, no chart. The measurements are one toggle away (Details).
    */
   simple?: boolean;
+  /** Whose networks these are, for the simple view's heading. */
+  title?: string;
 }) {
   const recent = useMemo(() => history.slice(-72), [history]);
   const series = useMemo(() => {
@@ -156,7 +159,7 @@ export function LinkStack({
     <section className="glass flex min-h-0 flex-col" aria-label="Access links">
       <header className="flex items-center justify-between px-4 pt-3.5 pb-2">
         <h2 className="section-label flex items-center gap-1.5">
-          {simple ? 'Networks' : 'Access links'}
+          {simple ? (title ?? 'Networks') : 'Access links'}
           <InfoTip align="start" text="Four ways to reach the rover. Only one carries the link at a time; CONTINUA readies the next one before it is needed. Details shows each network's measurements." />
         </h2>
         {!simple && (
@@ -183,7 +186,7 @@ export function LinkStack({
                 type="button"
                 onClick={() => onSelect(link)}
                 aria-pressed={isSelected}
-                className="group relative flex w-full items-center gap-3 rounded-[13px] px-2.5 py-2 text-left transition-colors"
+                className={`group relative flex w-full items-center gap-3 rounded-[13px] px-2.5 text-left transition-colors ${simple ? 'py-1.5' : 'py-2'}`}
                 style={{
                   background: carrying
                     ? `color-mix(in srgb, ${color} 9%, white)`
@@ -198,7 +201,7 @@ export function LinkStack({
                   <span aria-hidden className="absolute top-2 bottom-2 left-0 w-[3px] rounded-full" style={{ background: color }} />
                 )}
                 <span
-                  className={`grid h-9 w-9 shrink-0 place-items-center rounded-full ${phase === 'warming' ? 'breathe' : ''}`}
+                  className={`grid shrink-0 place-items-center rounded-full ${simple ? 'h-8 w-8' : 'h-9 w-9'} ${phase === 'warming' ? 'breathe' : ''}`}
                   style={{
                     background: carrying ? color : `color-mix(in srgb, ${color} 12%, white)`,
                     color: carrying ? 'white' : color,

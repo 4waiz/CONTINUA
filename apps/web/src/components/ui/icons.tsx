@@ -233,3 +233,36 @@ export function CloseIcon(props: IconProps) {
     </Svg>
   );
 }
+
+/** Three sliders: the run's settings - scenario, strategy, comparison. */
+export function SlidersIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M5 7h8M17 7h2M5 12h2M11 12h8M5 17h6M15 17h4" />
+      <circle cx="15" cy="7" r="2" />
+      <circle cx="9" cy="12" r="2" />
+      <circle cx="13" cy="17" r="2" />
+    </Svg>
+  );
+}
+
+/** A folded map with a mark on it: the road map, seeing a gap ahead. */
+export function RoadMapIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M3.5 6.5 9 4.5l6 2 5.5-2v13l-5.5 2-6-2-5.5 2v-13Z" />
+      <path d="M9 4.5v13M15 6.5v13" />
+    </Svg>
+  );
+}
+
+/** A broken link: a rover its operator cannot reach. */
+export function LinkLostIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M10.5 13.5a3.5 3.5 0 0 0 5 0l2.75-2.75a3.5 3.5 0 0 0-5-5L12 7" />
+      <path d="M13.5 10.5a3.5 3.5 0 0 0-5 0L5.75 13.25a3.5 3.5 0 0 0 5 5L12 17" />
+      <path d="M4 4l2 2M20 20l-2-2" />
+    </Svg>
+  );
+}

@@ -30,13 +30,21 @@ const PROOF_ROWS: readonly { policy: PolicyIdString; name: string }[] = [
   { policy: 'B2-defer', name: 'Every network on, uploads wait' },
 ];
 
+const keptOf = (row: GlanceRow | null | undefined) => (row ? row.trials.filter(Boolean).length : null);
+
 /**
  * One way in. The story film stays one link away - `?story`, the link to send
  * someone - rather than a second button beside this one.
  */
 export function StoryLanding({ onDrive, busy }: { onDrive: () => void; busy: boolean }) {
+  // What the stored comparison found on this road, before anything is pressed:
+  // the claim the drive is about to show, with the evidence for it.
+  const { rows } = useProofRows(true);
+  const ours = rows.find((row) => row.policy === 'P3');
+  const normal = rows.find((row) => row.policy === 'B0');
   return (
     <section className="story-landing glass" aria-label="Introduction">
+      <div className="story-landing-kicker">One road · two rovers · four networks</div>
       <h2 className="story-landing-title">
         The network changes. <span className="brand-text">The session doesn&apos;t.</span>
       </h2>
@@ -44,6 +52,28 @@ export function StoryLanding({ onDrive, busy }: { onDrive: () => void; busy: boo
         Two rescue rovers take the same road, from cable to Wi-Fi, cellular and satellite - one with CONTINUA, one
         without. See which one stays connected.
       </p>
+      {ours && normal && (
+        <div className="landing-proof" title={`The stored comparison on this road (${PROOF_EXPERIMENT}): same signal and same random draws for both.`}>
+          <div className="landing-proof-head">On this road, {ours.trials.length} drives each</div>
+          {[
+            { row: ours, name: 'CONTINUA', ours: true },
+            { row: normal, name: 'Normal rover', ours: false },
+          ].map(({ row, name, ours: isOurs }) => {
+            const kept = keptOf(row) ?? 0;
+            return (
+              <div key={name} className="landing-proof-row" data-ours={isOurs}>
+                <span className="landing-proof-name">{name}</span>
+                <span className="proof-row-bar" aria-hidden>
+                  <span style={{ width: `${(100 * kept) / Math.max(1, row.trials.length)}%` }} />
+                </span>
+                <span className="proof-row-count" data-none={kept === 0}>
+                  kept the link {kept} of {row.trials.length}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      )}
       <div className="mt-5">
         <button type="button" className="control control-primary h-[44px] px-6 text-[15px]" onClick={onDrive} disabled={busy}>
           <PlayIcon size={15} /> Drive it yourself
@@ -84,8 +114,6 @@ export function useProofRows(enabled: boolean): {
   const rows = useMemo(() => glanceRows(results, PROOF_ROWS.map((row) => row.policy)), [results]);
   return { rows, results, failed };
 }
-
-const keptOf = (row: GlanceRow | null | undefined) => (row ? row.trials.filter(Boolean).length : null);
 
 /** How many of the drives CONTINUA with its road map and the normal rover kept the link in. */
 function proofCounts(rows: GlanceRow[]): { trials: number; ours: number; normal: number } | null {

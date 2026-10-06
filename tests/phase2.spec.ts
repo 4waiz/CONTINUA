@@ -55,6 +55,8 @@ async function openDrive(page: Page): Promise<void> {
 /** Start a run through the UI and wait until events are flowing. */
 async function startRun(page: Page, scenario?: string): Promise<void> {
   await openDrive(page);
+  // What to run is chosen in one popover over the bar.
+  await page.getByRole('button', { name: 'Change the run' }).click();
   if (scenario) {
     await page.getByLabel('Scenario').first().selectOption({ label: scenario });
   }

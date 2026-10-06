@@ -188,6 +188,37 @@ export function plainDecision(event: EngineEvent, previous: EngineLinkId | null)
 }
 
 /**
+ * Why a change of network happened, in a few words - the second line of the
+ * moment banner. Read from the engine's recorded reason; null when the reason
+ * says nothing a visitor would recognise.
+ */
+export function handoffWhy(event: EngineEvent, previous: EngineLinkId | null): string | null {
+  const reason = event.reason ?? '';
+  const from = previous ? NETWORK[previous].name : null;
+  if (/became unusable/.test(reason)) return from ? `${from} stopped working` : 'The old network stopped working';
+  if (/predicted violation/.test(reason)) return from ? `Before ${from} could fail` : 'Before the old network could fail';
+  if (/measured violation/.test(reason)) return from ? `${from} got too slow` : 'The old network got too slow';
+  if (/^Preparing /.test(reason)) return 'Ready before the dead zone';
+  return null;
+}
+
+/**
+ * The road map's warning, as the banner says it: where the gap is, and what
+ * CONTINUA is doing about it. Null for any other decision.
+ */
+export function warningWords(event: EngineEvent): { title: string; detail: string; link: EngineLinkId } | null {
+  const reason = event.reason ?? '';
+  const backup = actionsOf(event).find((action) => action.kind === 'activate_backup');
+  if (!/^Preparing /.test(reason) || !backup?.link) return null;
+  const ahead = numberBefore(reason, 'm ahead');
+  return {
+    title: ahead !== null ? `Dead zone ${ahead.toFixed(0)} m ahead` : 'Dead zone ahead',
+    detail: `The road map saw it coming: starting ${NETWORK[backup.link].name.toLowerCase()} now, so it is ready in time.`,
+    link: backup.link,
+  };
+}
+
+/**
  * What the voice says while driving - the short words already on screen, so a
  * run of changes close together, as at the cutting, is still said as it
  * happens. The reasons stay in the dock's last decision, to read.
@@ -218,6 +249,16 @@ export function connectionState(event: EngineEvent | null | undefined): {
   }
   const via = event.carrying ? NETWORK[event.carrying].name : null;
   return { up: true, label: 'Connected', detail: via ? `via ${via}` : 'connected' };
+}
+
+/**
+ * An engine reason as recorded, with a missing measurement said as one. The
+ * controller formats an absent round trip or loss as "nan" in a few of its
+ * sentences; the recording is evidence and stays as it is, and on screen a
+ * value that does not exist reads "unavailable", never as a number.
+ */
+export function readableReason(reason: string | null | undefined): string {
+  return (reason ?? '').replace(/\bRTT nan ms\b/g, 'RTT unavailable').replace(/\bloss nan %/g, 'loss unavailable');
 }
 
 export function capitalise(text: string): string {

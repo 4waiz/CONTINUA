@@ -439,14 +439,31 @@ function revealShot(state: SceneState, network: AccessNetworkId, out: Shot, zone
   return true;
 }
 
-const _base: Shot = { position: new Vector3(), target: new Vector3(), fov: 40 };
 const _reveal: Shot = { position: new Vector3(), target: new Vector3(), fov: 40 };
-const _delta = new Vector3();
 
-function mixInto(shot: Shot, reveal: Shot, weight: number): void {
-  shot.position.addScaledVector(_delta.subVectors(reveal.position, _base.position), weight);
-  shot.target.addScaledVector(_delta.subVectors(reveal.target, _base.target), weight);
-  shot.fov += (reveal.fov - _base.fov) * weight;
+/**
+ * Moves `shot` toward `reveal` by `weight` round the rover rather than through
+ * it: distance and bearing from the rover are blended - the bearing the short
+ * way round - and the height straight. A straight line between a camera behind
+ * the rover and one in front of it, as when the far end of the new link is
+ * behind, passed over the rover's roof mid-turn.
+ */
+function mixRound(shot: Shot, reveal: Shot, weight: number, centre: { x: number; z: number }): void {
+  const ax = shot.position.x - centre.x;
+  const az = shot.position.z - centre.z;
+  const bx = reveal.position.x - centre.x;
+  const bz = reveal.position.z - centre.z;
+  const from = Math.atan2(az, ax);
+  let turn = Math.atan2(bz, bx) - from;
+  while (turn > Math.PI) turn -= 2 * Math.PI;
+  while (turn < -Math.PI) turn += 2 * Math.PI;
+  const radius = Math.hypot(ax, az) + (Math.hypot(bx, bz) - Math.hypot(ax, az)) * weight;
+  const bearing = from + turn * weight;
+  shot.position.x = centre.x + Math.cos(bearing) * radius;
+  shot.position.z = centre.z + Math.sin(bearing) * radius;
+  shot.position.y += (reveal.position.y - shot.position.y) * weight;
+  shot.target.lerp(reveal.target, weight);
+  shot.fov += (reveal.fov - shot.fov) * weight;
 }
 
 /**
@@ -462,11 +479,9 @@ function applyReveals(state: SceneState, time: number, shot: Shot, zones: readon
   let w0 = before ? revealWeight(time - before.at) : 0;
   if (w0 > 0 && time >= latest.at) w0 *= 1 - smooth01((time - latest.at) / REVEAL_IN_S);
   if (w0 <= 1e-4 && w1 <= 1e-4) return;
-  _base.position.copy(shot.position);
-  _base.target.copy(shot.target);
-  _base.fov = shot.fov;
-  if (before && w0 > 1e-4 && revealShot(state, before.to, _reveal, zones)) mixInto(shot, _reveal, w0);
-  if (w1 > 1e-4 && revealShot(state, latest.to, _reveal, zones)) mixInto(shot, _reveal, w1);
+  const rover = state.vehicle.position;
+  if (before && w0 > 1e-4 && revealShot(state, before.to, _reveal, zones)) mixRound(shot, _reveal, w0, rover);
+  if (w1 > 1e-4 && revealShot(state, latest.to, _reveal, zones)) mixRound(shot, _reveal, w1, rover);
 }
 
 const NO_ZONES: readonly DeadZone[] = [];

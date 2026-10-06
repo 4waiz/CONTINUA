@@ -45,7 +45,7 @@ export function LinkPills({ event }: { event: EngineEvent | null }) {
               boxShadow: carrying ? `inset 0 0 0 1px color-mix(in srgb, ${color} 45%, transparent)` : undefined,
               opacity: phase === 'unavailable' && event ? 0.55 : 1,
             }}
-            title={`${LINK_LABEL[link].label}: ${PHASE_LABEL[phase]}`}
+            title={event ? `${LINK_LABEL[link].label}: ${PHASE_LABEL[phase]}` : `${LINK_LABEL[link].label}: no run yet`}
           >
             <span
               className={`grid h-7 w-7 place-items-center rounded-full ${phase === 'warming' ? 'breathe' : ''}`}
@@ -56,7 +56,8 @@ export function LinkPills({ event }: { event: EngineEvent | null }) {
             <span className="leading-tight">
               <span className="block text-[12px] font-semibold">{LINK_LABEL[link].label}</span>
               <span className="block text-[11px] font-medium" style={{ color: carrying ? color : 'var(--color-faint)' }}>
-                {value ?? PHASE_LABEL[phase]}
+                {/* Before a run nothing is unavailable - there is nothing yet. */}
+                {event ? (value ?? PHASE_LABEL[phase]) : 'No run yet'}
               </span>
             </span>
           </li>

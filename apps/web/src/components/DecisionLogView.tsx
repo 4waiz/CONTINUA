@@ -34,6 +34,7 @@ import Link from 'next/link';
 import { useEffect, useMemo, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { AppShell } from './AppShell';
 import { carryingSegments } from './mission/MissionDock';
+import { readableReason } from './mission/plain';
 import { NetworkIcon, ReplayIcon } from './ui/icons';
 import { Chip } from './ui/primitives';
 
@@ -582,7 +583,7 @@ function DecisionRow({
           <span
             className={`mt-0.5 block text-[12px] leading-snug ${emphatic ? 'text-[color:var(--color-ink)]' : 'text-[color:var(--color-muted)]'}`}
           >
-            {event.reason}
+            {readableReason(event.reason)}
           </span>
         </span>
       </button>
@@ -620,7 +621,7 @@ function DecisionDetail({ event }: { event: EngineEvent }) {
 
       <div>
         <div className="section-label">Reason recorded at decision time</div>
-        <p className="mt-1.5 text-[13px] leading-snug font-medium">{event.reason}</p>
+        <p className="mt-1.5 text-[13px] leading-snug font-medium">{readableReason(event.reason)}</p>
         {/* The recording replays through the same engine; the public build has
             no engine to start one, so the link is local-only. */}
         {!IS_PUBLIC_PREVIEW && (
@@ -661,7 +662,7 @@ function DecisionDetail({ event }: { event: EngineEvent }) {
                     <span className="metric ml-auto text-[11px] text-[color:var(--color-faint)]">{index + 1}</span>
                   </div>
                   {typeof action.detail.reason === 'string' && action.detail.reason !== event.reason && (
-                    <p className="mt-1 pl-4 text-[11.5px] leading-snug text-[color:var(--color-muted)]">{action.detail.reason}</p>
+                    <p className="mt-1 pl-4 text-[11.5px] leading-snug text-[color:var(--color-muted)]">{readableReason(action.detail.reason)}</p>
                   )}
                 </li>
               );
