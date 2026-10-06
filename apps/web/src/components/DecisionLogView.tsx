@@ -97,6 +97,16 @@ export function DecisionLogView() {
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<Filter>('key');
 
+  // Scenarios by the name the rest of the interface uses, not their ids.
+  const [scenarioTitles, setScenarioTitles] = useState<Record<string, string>>({});
+  useEffect(() => {
+    api
+      .scenarios()
+      .then((r) => setScenarioTitles(Object.fromEntries(r.scenarios.map((entry) => [entry.id, entry.title]))))
+      .catch(() => undefined);
+  }, []);
+  const titleOf = (id: string) => scenarioTitles[id] ?? id;
+
   useEffect(() => {
     api
       .listRuns(60)
@@ -211,7 +221,12 @@ export function DecisionLogView() {
             <ul className="scroll-y flex-1 px-2 pb-2" aria-label="Recorded runs">
               {runs.map((row) => (
                 <li key={row.run_id}>
-                  <RunItem row={row} active={row.run_id === runId} onPick={() => setPickedRunId(row.run_id)} />
+                  <RunItem
+                    row={row}
+                    title={titleOf(row.scenario_id)}
+                    active={row.run_id === runId}
+                    onPick={() => setPickedRunId(row.run_id)}
+                  />
                 </li>
               ))}
             </ul>
@@ -226,7 +241,7 @@ export function DecisionLogView() {
               <p className="mt-1 truncate text-[15px] font-semibold tracking-[-0.01em]">
                 {run ? (
                   <>
-                    {run.scenario_id}
+                    <span title={run.scenario_id}>{titleOf(run.scenario_id)}</span>
                     <span className="font-medium text-[color:var(--color-muted)]">
                       {' '}
                       · {POLICY_NAME[run.policy_id as PolicyIdString] ?? run.policy_id}
@@ -325,7 +340,7 @@ export function DecisionLogView() {
 
 // ---------------------------------------------------------------------------
 
-function RunItem({ row, active, onPick }: { row: RunRow; active: boolean; onPick: () => void }) {
+function RunItem({ row, title, active, onPick }: { row: RunRow; title: string; active: boolean; onPick: () => void }) {
   const started = new Date(row.started_at);
   const when = Number.isNaN(started.getTime())
     ? row.started_at
@@ -342,8 +357,12 @@ function RunItem({ row, active, onPick }: { row: RunRow; active: boolean; onPick
         <span aria-hidden className="absolute top-2.5 bottom-2.5 left-0 w-[3px] rounded-full bg-[color:var(--color-blue)]" />
       )}
       <span className="flex w-full items-center justify-between gap-2">
-        <span className="truncate text-[13px] font-semibold" style={{ color: active ? 'var(--color-blue)' : undefined }}>
-          {row.scenario_id}
+        <span
+          className="truncate text-[13px] font-semibold"
+          style={{ color: active ? 'var(--color-blue)' : undefined }}
+          title={row.scenario_id}
+        >
+          {title}
         </span>
         <span
           className="shrink-0 rounded-full bg-[color:var(--color-surface-muted)] px-2 py-[1px] text-[11px] font-semibold text-[color:var(--color-muted)]"
