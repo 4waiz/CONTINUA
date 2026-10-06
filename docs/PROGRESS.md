@@ -1571,3 +1571,100 @@ kept whole and opens from the `?story` link, the link to send someone; its
 "Replay it in 3D" plays the voiced 3D story and its "Drive it yourself" starts
 the same run as the landing. The offline test opens the film through `?story`,
 finds "Replay it in 3D" disabled, then takes the one way in.
+
+# Flights, the wheel, the brief, the credits - and a narrator who is not a robot
+
+**The camera flies to every new link** (Mohammad Umar's ask: when the link
+changes, show it from the mast to the car, then come back to the car). At each
+change of network the camera lifts off the rover, flies out to where the new
+link comes from - the Wi-Fi access point, the cell mast, or high above the
+road for satellite - holds there with the beam arcing to the rover, rides the
+beam back and settles behind the rover again: 1.7 s out, 1.2 s held, 2.3 s
+down the beam, 1.8 s home (`packages/scene/src/components/Cameras.tsx`).
+Flights are a pure function of the clock, so a frame-exact capture replays
+them exactly. A floor keeps the camera above the palms (10 m out, rising to
+16 m on the ride down), after the first version flew through a crown. A toggle
+in the bar turns flights off; they start off for anyone whose system asks for
+reduced motion.
+
+**Take the wheel.** W (or any arrow) takes CONTINUA's rover: W and S are
+throttle and brake (reverse once stopped), A and D steer, Space holds, Esc
+hands back to the autopilot. `packages/scene/src/drive/` is a kinematic
+bicycle model - 58 km/h forward, 18 km/h in reverse - held to the drivable
+surface (the road, the dock bay and the turning circle, as one signed-distance
+field): at the kerb it is pushed back and its speed scrubbed, and with nothing
+steered it is eased along the lane. Driving invents no network state.
+`RoadClock` maps the rover's position on the road to the time the recorded run
+was there, and every link, handoff, figure and spoken line is the recording at
+that point: drive on and it plays forward, reverse and it plays back. A flight
+fires only on road the recording has not shown yet. Locally a run is
+fast-forwarded first so the whole recording is there to drive through; handing
+back replays from where you stopped.
+
+**Coverage you can see.** The overlay's footprints (cable 9 m, each access
+point 155 m, the mast 330 m) got a stronger fill and an edge band, and are
+unmounted entirely while the overlay is off. From the follow camera's height a
+155 m footprint still reads as an edge across the grass rather than a disc, so
+the stills show the Details panel instead.
+
+**The brief** (`/challenge`) sets the EDGE challenge's question and its five
+success criteria beside the evidence for each: the mechanisms it is measured
+against (Multipath TCP, RFC 8684 - modelled as the reactive baseline B1, not
+run; 3GPP ATSSS, TS 23.501 §5.32 and TS 24.193 - the always-on B2 and
+B2-defer), the observe-predict-prepare-steer-explain pipeline, the stored
+results, and where prediction did not pay. **Credits** (`/credits`) names Team
+Kanban and their roles (from the proposal deck), the stack, the voices and the
+music ("Happy Beats / Business Moves" by ende.app, CC BY 4.0; Kenney's effects,
+CC0), and where everything comes from.
+
+**The intro, the walkthrough and ten stills.** Made with /brag: a 30-second
+intro (29.4 s) replaces `apps/web/public/video/story.mp4` (20.4 MB), and a
+narrated walkthrough of the whole app (1:55.8; 38.3 MB in `deliverables/`, the
+194 MB master kept local) and ten 1920×1080 stills are in `deliverables/`.
+Both films are the public build captured frame by frame on a fake clock -
+3,463 frames for the walkthrough, no page errors - and cut in HyperFrames
+(`brag-output-2026-10-06-230856/work/build.mjs`), every overlay timed to the
+capture's own marks (the moment the app showed "Moved to Wi-Fi", the dead-zone
+banner, the wheel taken). The Credits page changed after the first recording,
+so the walkthrough was recorded again whole: a re-shot tail would not have
+matched, because page changes after 79 s land a frame later from one run to the
+next (the router loads in real time while the film clock is held). The stills
+come from the same harness with no cursor (`work/stills.mjs`).
+
+**A narrator who is not a robot.** The demo's Windows voice was called
+robotic, fairly. The new films were first voiced by Kokoro-82M `am_michael`.
+Scored without ears on one test passage, UTMOS - a learned naturalness score -
+put every Kokoro voice and every Chatterbox take between 4.3 and 4.5 and could
+not separate them; pitch movement could: `am_michael` moved least of all (3.3
+semitones s.d.), Chatterbox speaking in its voice 4.3-4.7. So the films are
+narrated by Chatterbox (Resemble AI, open weights, MIT), on the CPU, in a voice
+cloned from a Kokoro `am_michael` clip - synthetic, nobody's real voice. It
+samples, so every take is transcribed (Whisper base.en) and kept only if it
+says the script, the name included. That check found three things. Unprimed,
+Whisper writes "continuous" for CONTINUA even in Kokoro's take, so it is now
+primed with the script's names. "So CONTINUA stays connected" was heard as
+"continuous stays" in all eight takes, primed or not - said aloud the two words
+run together - and now reads "so CONTINUA keeps the link". And only one of four
+takes of "CONTINUA kept the link" was not heard as "continue will keep"; the
+intro uses it at 1.08x, starting 0.1 s earlier. The intro's W A S D key caps
+light on the narrator's letters, from Whisper's word timestamps. Transcribed
+line by line, the finished mixes (voice over music) differ from their scripts
+in 4 of 242 words (walkthrough), 1 of 63 (intro) and 2 of 238 (demo).
+
+**The demo, re-voiced.** `deliverables/CONTINUA_Team_Kanban_Demo.mp4` keeps
+its picture - the video stream is copied, its MD5 unchanged - and its
+subtitles; the same fourteen cues are spoken by the new narrator at the same
+times (`work/revoice_demo.py`), none above 1.03x, one ("spends", heard as
+"spins") retaken until word-perfect. `docs/VIDEO_QA.md` carries the re-measured
+audio rows and says why the picture rows stand.
+
+**Checks.** lint and typecheck clean; build clean, and the static export's
+dry run (`npm run deploy -- --dry`: 75 recorded runs, preview mode on); test:engine 162 passed;
+test:phase2 11/11 - the first full run timed out once on "transport controls
+all do something" with the engine's messages marked stale, and the test passed
+alone and in a second full run; test:smoke 10 passed and 10 skipped by design,
+with one failure in the suite - the SwiftShader frame count, 7 frames where
+more than 8 are required - that passed alone (10 frames, 2.2 fps). Nothing new
+renders on `/scene-lab`; this laptop's software rasteriser sits at that line.
+Viewed at 1920×1080 (the stills) and at 1440×900 and 1280×720 (landing and
+Credits).

@@ -9,7 +9,8 @@
  * * the handoff toast - "Moved to Satellite." - for every network;
  * * the road strip's warning - "Gap ahead: getting satellite ready.";
  * * a status card - "<rover>: connection lost." and "<rover>: connected
- *   again." - for every strategy's rover.
+ *   again." - for every strategy's rover;
+ * * taking the wheel and handing it back.
  *
  *   npx tsx scripts/voice-lines-drive.mts
  *
@@ -33,6 +34,8 @@ for (const rover of rovers) {
   lines.add(spokenLines.connection(rover, false));
   lines.add(spokenLines.connection(rover, true));
 }
+lines.add(spokenLines.tookWheel);
+lines.add(spokenLines.handedBack);
 
 mkdirSync(dirname(OUT), { recursive: true });
 const existing = existsSync(OUT) ? JSON.parse(readFileSync(OUT, 'utf8')) : {};

@@ -33,10 +33,10 @@ const PROOF_ROWS: readonly { policy: PolicyIdString; name: string }[] = [
 const keptOf = (row: GlanceRow | null | undefined) => (row ? row.trials.filter(Boolean).length : null);
 
 /**
- * One way in. The story film stays one link away - `?story`, the link to send
- * someone - rather than a second button beside this one.
+ * One way in, and the thirty-second intro beside it. The intro is also `?story`,
+ * the link to send someone.
  */
-export function StoryLanding({ onDrive, busy }: { onDrive: () => void; busy: boolean }) {
+export function StoryLanding({ onDrive, onWatch, busy }: { onDrive: () => void; onWatch?: () => void; busy: boolean }) {
   // What the stored comparison found on this road, before anything is pressed:
   // the claim the drive is about to show, with the evidence for it.
   const { rows } = useProofRows(true);
@@ -74,11 +74,20 @@ export function StoryLanding({ onDrive, busy }: { onDrive: () => void; busy: boo
           })}
         </div>
       )}
-      <div className="mt-5">
+      <div className="mt-5 flex flex-wrap items-center gap-2.5">
         <button type="button" className="control control-primary h-[44px] px-6 text-[15px]" onClick={onDrive} disabled={busy}>
           <PlayIcon size={15} /> Drive it yourself
         </button>
+        {onWatch && (
+          <button type="button" className="control h-[44px] px-5 text-[14.5px]" onClick={onWatch} title="The thirty-second intro: the same two rovers, the same road">
+            <PlayIcon size={13} /> Watch the intro · 30 s
+          </button>
+        )}
       </div>
+      <p className="story-landing-hint">
+        Then take the wheel: <kbd className="drive-key">W</kbd> <kbd className="drive-key">A</kbd> <kbd className="drive-key">S</kbd>{' '}
+        <kbd className="drive-key">D</kbd> - the camera flies to every new link.
+      </p>
       <p className="story-landing-foot">A simulation, not a live network test.</p>
     </section>
   );

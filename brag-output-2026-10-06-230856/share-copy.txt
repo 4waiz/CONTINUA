@@ -1,0 +1,1 @@
+CONTINUA: the network changes, the session doesn't. At every handoff the camera flies to where the new link comes from, and on the shadowed road it kept the rover connected in 20 of 20 simulated drives (the normal rover: 0 of 20). Take the wheel yourself, W A S D: continua.kanbanstudios.ae - by Team Kanban.

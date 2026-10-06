@@ -1,11 +1,11 @@
 'use client';
 
 /**
- * The story as a film: one minute cut from the app itself, replaying the two
- * recorded runs the 3D story tells - the same scene, status panels and
- * captions - and ending on the stored twenty-drive comparison. Every figure in
- * it, and the run or experiment it comes from, is listed in
- * `brag-output/brag-plan.md`.
+ * The intro: thirty seconds cut from the app itself, replaying the two
+ * recorded runs the 3D story tells - the camera's flight to each new link, the
+ * cutting, the rover driven by hand - and ending on the stored twenty-drive
+ * comparison. Every figure in it, and the run or experiment it comes from, is
+ * listed in the brag plan beside its composition (`brag-output-*`).
  *
  * A film is a file, so it plays whether or not an engine or the recordings are
  * reachable. Replaying the story in 3D needs the runs themselves.
@@ -63,7 +63,7 @@ export function StoryFilm({
   return createPortal(
     <div className="story-film-layer">
       <div className="story-film-scrim" onClick={onClose} aria-hidden />
-      <section className="story-film glass enter" role="dialog" aria-modal="true" aria-label="The story, as a one-minute film">
+      <section className="story-film glass enter" role="dialog" aria-modal="true" aria-label="The intro, a thirty-second film">
         <div className="story-film-frame">
           <video
             ref={video}
@@ -88,7 +88,7 @@ export function StoryFilm({
           )}
         </div>
         <div className="story-film-bar">
-          <p>A software simulation, cut from two recorded runs. Every figure in it comes from those runs or the stored experiment.</p>
+          <p>Thirty seconds of the app replaying two recorded runs - a software simulation. Every figure comes from those runs or the stored experiment.</p>
           <button
             type="button"
             className="control"

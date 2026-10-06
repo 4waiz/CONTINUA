@@ -1,0 +1,101 @@
+{
+ "site": "http://localhost:4321",
+ "shots": [
+  {
+   "file": "01-mission-landing.png",
+   "note": "The Mission landing: one way in, the intro, and the keys.",
+   "t": 4.5,
+   "url": "/",
+   "moment": null,
+   "status": []
+  },
+  {
+   "file": "02-handoff-flight.png",
+   "note": "A change of network: the camera flies out to the access point the new link comes from, then rides the beam back.",
+   "t": 12.227734846607529,
+   "url": "/",
+   "moment": "→ Moved to Wi-Fi t+9.7s From access point A · Wi-Fi was already up",
+   "status": [
+    "CONTINUA Connected via Wi-Fi",
+    "NORMAL ROVER Connected via Wi-Fi"
+   ]
+  },
+  {
+   "file": "03-dead-zone-ahead.png",
+   "note": "The road map's warning: a dead zone ahead, satellite warmed up before Wi-Fi and cellular drop.",
+   "t": 23.719999999796396,
+   "url": "/",
+   "moment": "Dead zone 79 m ahead t+22.9s The road map saw it coming: starting satellite now, so it is ready in time.",
+   "status": [
+    "CONTINUA Connected via Wi-Fi",
+    "NORMAL ROVER Connected via Wi-Fi"
+   ]
+  },
+  {
+   "file": "04-satellite-vs-cut-off.png",
+   "note": "In the cutting: CONTINUA on satellite, still connected; the normal rover has lost its link.",
+   "t": 32.21999999999998,
+   "url": "/",
+   "moment": "→ Moved to Satellite t+30.4s Wi-Fi stopped working · Satellite was already up",
+   "status": [
+    "CONTINUA Connected via Satellite",
+    "NORMAL ROVER Connection lost Cut off 2.0 s · operator cannot reach it"
+   ]
+  },
+  {
+   "file": "05-you-drive.png",
+   "note": "Taken the wheel: W A S D drives the rover along the road; the network is the recorded run at that point of the road.",
+   "t": 8.227999999999973,
+   "url": "/",
+   "moment": "→ Moved to Cellular t+39.9s From the cell mast · Wi-Fi got too slow · Cellular was already up",
+   "status": [
+    "CONTINUA Connected via Cellular",
+    "NORMAL ROVER Connected via Satellite"
+   ]
+  },
+  {
+   "file": "06-details.png",
+   "note": "Details: every measurement for both rovers at this moment, down to each kind of traffic.",
+   "t": 48.373336368551854,
+   "url": "/",
+   "moment": null,
+   "status": [
+    "CONTINUA Connected via Cellular · 0.2 s offline in all",
+    "NORMAL ROVER Connected via Satellite · 5.5 s offline in all"
+   ]
+  },
+  {
+   "file": "07-results.png",
+   "note": "Results: every strategy on the same road, twenty paired drives each.",
+   "t": null,
+   "url": "/experiments/",
+   "moment": null,
+   "status": []
+  },
+  {
+   "file": "08-decision-log.png",
+   "note": "The decision log: every choice the controller made, the observations behind it, and why.",
+   "t": null,
+   "url": "/decision-log/",
+   "moment": null,
+   "status": []
+  },
+  {
+   "file": "09-the-brief.png",
+   "note": "The brief: the EDGE challenge's success criteria, each mapped to its evidence.",
+   "t": null,
+   "url": "/challenge/",
+   "moment": null,
+   "status": []
+  },
+  {
+   "file": "10-credits.png",
+   "note": "Credits: Team Kanban, the stack, and where every figure comes from.",
+   "t": null,
+   "url": "/credits/",
+   "moment": null,
+   "status": []
+  }
+ ],
+ "errors": []
+}

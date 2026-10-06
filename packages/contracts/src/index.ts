@@ -171,6 +171,12 @@ export interface HandoffMark {
   readonly at: Seconds;
   readonly from: AccessNetworkId | null;
   readonly to: AccessNetworkId;
+  /**
+   * Whether the cameras fly out to show where the new link comes from.
+   * Absent means yes. A driven rover backing over a change it has already
+   * been shown sets it false: the beams still change, the camera stays put.
+   */
+  readonly reveal?: boolean;
 }
 
 export interface SceneState {
@@ -219,13 +225,20 @@ export interface SceneStateSource {
   sampleAt(simTime: Seconds): SceneState;
   /** Optional push channel for a live engine. Unused in Phase 1. */
   subscribe?(listener: (state: SceneState) => void): () => void;
+  /**
+   * Optional: advance a source that is driven by input rather than by a
+   * recording - the rover under the viewer's own keys - by one frame, before
+   * the frame is sampled. A recorded source has none, and stays pure.
+   */
+  step?(simTime: Seconds, dt: Seconds): void;
 }
 
 // ---------------------------------------------------------------------------
 // Camera and playback contracts (shared with the Phase 3 capture pipeline)
 // ---------------------------------------------------------------------------
 
-export type CameraMode = 'follow' | 'overview' | 'closeup' | 'turntable' | 'cinematic' | 'story';
+/** `drive`: behind the rover while the viewer drives it with the keyboard. */
+export type CameraMode = 'follow' | 'overview' | 'closeup' | 'turntable' | 'cinematic' | 'story' | 'drive';
 
 /**
  * The story mode's framings, each a pure function of where the rover is and

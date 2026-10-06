@@ -54,6 +54,18 @@ export interface SceneSettings {
    * framed behind the dock.
    */
   viewInset: { readonly top: number; readonly bottom: number };
+  /**
+   * Fly the follow, close-up and drive cameras out to where each new link
+   * comes from - the access point, the mast, the satellite - and back along
+   * it to the rover (`Cameras.tsx`). Off for anyone who asks the system for
+   * reduced motion.
+   */
+  linkFlights: boolean;
+  /**
+   * How many scene seconds a flight's beat lasts per second it is meant to
+   * take: the run's playback rate, so at 4x the flight still reads.
+   */
+  flightPace: number;
 }
 
 const DEFAULT_SETTINGS: SceneSettings = {
@@ -67,6 +79,8 @@ const DEFAULT_SETTINGS: SceneSettings = {
   deadZones: NO_DEAD_ZONES,
   storyShot: { id: 'follow', at: 0, from: null },
   viewInset: { top: 0, bottom: 0 },
+  linkFlights: true,
+  flightPace: 1,
 };
 
 class SettingsStore {

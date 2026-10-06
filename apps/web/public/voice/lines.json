@@ -24,7 +24,9 @@
     "CONTINUA P2 (no modes): connection lost.",
     "CONTINUA P2 (no modes): connected again.",
     "CONTINUA P2 (late modes): connection lost.",
-    "CONTINUA P2 (late modes): connected again."
+    "CONTINUA P2 (late modes): connected again.",
+    "You have the wheel.",
+    "Autopilot. The recording drives on from here."
   ],
   "story": [
     "This rescue rover is driven from far away. Its operator must never lose the link.",

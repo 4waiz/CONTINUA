@@ -26,7 +26,7 @@ import {
 } from '@continua/contracts/engine';
 import { NETWORK_COLOR } from '@continua/scene';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { CloseIcon, NetworkIcon, PauseIcon, PlayIcon, ReplayIcon, ResetIcon, SlidersIcon } from '../ui/icons';
+import { CloseIcon, NetworkIcon, PauseIcon, PlayIcon, ReplayIcon, ResetIcon, SlidersIcon, SteeringIcon } from '../ui/icons';
 import { MAIN_STRATEGIES, NETWORK, plainDecision, readableReason, STRATEGY } from './plain';
 
 const SPEEDS = [0.5, 1, 2, 4, 8] as const;
@@ -673,7 +673,14 @@ export function MissionDock({
   deadZoneTimes,
   settingsOpen = false,
   onSettings,
+  driving = false,
 }: {
+  /**
+   * The viewer has the wheel: the transport hands the rover back to the
+   * recording, reset puts it back at the dock, and a moment on the timeline
+   * puts it where the recording had it then.
+   */
+  driving?: boolean;
   scenarios: ScenarioSpec[];
   policies: PolicySpec[];
   scenarioId: string;
@@ -747,23 +754,36 @@ export function MissionDock({
 
       {/* Playback: the familiar shape - transport, clock, timeline. */}
       <div className="mission-bar-row">
-        <button
-          type="button"
-          className="control w-[96px] shrink-0"
-          onClick={onToggle}
-          disabled={busy || !runId}
-          data-active={playing}
-        >
-          {playing ? <PauseIcon size={14} /> : <PlayIcon size={14} />}
-          {playing ? 'Pause' : IS_PUBLIC_PREVIEW ? 'Play' : 'Resume'}
-        </button>
+        {driving ? (
+          <button
+            type="button"
+            className="control w-[112px] shrink-0"
+            onClick={onToggle}
+            disabled={busy || !runId}
+            data-active
+            title="Hand the rover back to the recording, from where it is now (Esc)"
+          >
+            <SteeringIcon size={15} /> Autopilot
+          </button>
+        ) : (
+          <button
+            type="button"
+            className="control w-[96px] shrink-0"
+            onClick={onToggle}
+            disabled={busy || !runId}
+            data-active={playing}
+          >
+            {playing ? <PauseIcon size={14} /> : <PlayIcon size={14} />}
+            {playing ? 'Pause' : IS_PUBLIC_PREVIEW ? 'Play' : 'Resume'}
+          </button>
+        )}
         <button
           type="button"
           className="icon-btn shrink-0"
           onClick={onReset}
           disabled={busy || !runId}
-          aria-label={IS_PUBLIC_PREVIEW ? 'Restart' : 'Reset'}
-          title={IS_PUBLIC_PREVIEW ? 'Restart from the beginning' : 'Reset to the start of the run'}
+          aria-label={driving ? 'Back to the dock' : IS_PUBLIC_PREVIEW ? 'Restart' : 'Reset'}
+          title={driving ? 'Put the rover back in its bay at the dock' : IS_PUBLIC_PREVIEW ? 'Restart from the beginning' : 'Reset to the start of the run'}
         >
           <ResetIcon size={16} />
         </button>

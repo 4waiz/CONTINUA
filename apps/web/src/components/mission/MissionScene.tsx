@@ -14,6 +14,7 @@
  */
 
 import {
+  DrivenSceneStateSource,
   EngineSceneStateSource,
   NO_DEAD_ZONES,
   previewSource,
@@ -161,8 +162,39 @@ function ClockSync({
   return null;
 }
 
-/** The cameras the run views offer; Scene Lab has the full set. 'story' is the story mode's. */
-export type MissionCamera = 'follow' | 'overview' | 'closeup' | 'cinematic' | 'story';
+/**
+ * While the viewer drives, the scene's clock is the animation's alone - beams
+ * reaching out, packets, the camera's flights - and simply runs. Where the
+ * rover is, and what the recording shows there, is the driven source's.
+ */
+function DriveClock({ driving }: { driving: boolean }) {
+  const { clock } = useSceneRuntime();
+  useEffect(() => {
+    if (driving) clock.play();
+  }, [clock, driving]);
+  return null;
+}
+
+/** The cameras the run views offer; Scene Lab has the full set. 'story' is the story mode's, 'drive' the driven rover's. */
+export type MissionCamera = 'follow' | 'overview' | 'closeup' | 'cinematic' | 'story' | 'drive';
+
+/** Pushes the flight settings - on or off, and the run's playback rate - into the scene. */
+function FlightSync({ on, pace }: { on: boolean; pace: number }) {
+  const setSettings = useSetSceneSettings();
+  useEffect(() => {
+    setSettings({ linkFlights: on, flightPace: pace });
+  }, [on, pace, setSettings]);
+  return null;
+}
+
+/** Pushes the coverage overlay - where each network reaches - into the scene. */
+function CoverageSync({ on }: { on: boolean }) {
+  const setSettings = useSetSceneSettings();
+  useEffect(() => {
+    setSettings({ showCoverage: on });
+  }, [on, setSettings]);
+  return null;
+}
 
 /** Pushes the page's camera choice into the scene's settings store. */
 function CameraSync({ camera }: { camera: MissionCamera }) {
@@ -227,8 +259,17 @@ export function MissionScene({
   storyShot = null,
   inset,
   still = false,
+  driven = null,
+  flights = true,
+  coverage = false,
 }: {
   source: EngineSceneStateSource;
+  /** The rover under the viewer's keys, over the same run's recording: drawn instead of `source`. */
+  driven?: DrivenSceneStateSource | null;
+  /** Fly the camera out to each new link. */
+  flights?: boolean;
+  /** Show where each network reaches. */
+  coverage?: boolean;
   t: number;
   duration: number;
   playing: boolean;
@@ -264,8 +305,11 @@ export function MissionScene({
   // context and a glTF reload for a change of data source. Swapping only the
   // `source` prop rebuilds the runtime and leaves everything below it alone.
   return (
-    <SceneRuntimeProvider source={preview ? previewSource : source} initialSettings={initialSettings}>
-      <ClockSync t={t} duration={duration} playing={playing} speed={speed} enabled={!preview} still={still} />
+    <SceneRuntimeProvider source={driven ?? (preview ? previewSource : source)} initialSettings={initialSettings}>
+      <ClockSync t={t} duration={duration} playing={playing} speed={speed} enabled={!preview && !driven} still={still && !driven} />
+      <DriveClock driving={Boolean(driven)} />
+      <FlightSync on={flights} pace={driven ? 1 : speed} />
+      <CoverageSync on={coverage} />
       <CameraSync camera={camera} />
       <DeadZoneSync zones={deadZones} />
       <StoryShotSync shot={storyShot} />

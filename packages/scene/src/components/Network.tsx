@@ -28,6 +28,7 @@ import {
   BufferAttribute,
   BufferGeometry,
   Color,
+  DoubleSide,
   InstancedMesh,
   Matrix4,
   Mesh,
@@ -95,20 +96,61 @@ function buildFootprint(cx: number, cz: number, radius: number): BufferGeometry 
   return geometry;
 }
 
+/**
+ * A band round a footprint's edge, following the ground like the disc: where
+ * the network's reach ends. A tint alone over a disc hundreds of metres across
+ * read as no overlay at all from the rover's camera - the ground was simply
+ * a shade bluer everywhere it looked.
+ */
+function buildBand(cx: number, cz: number, inner: number, outer: number): BufferGeometry {
+  const segments = 160;
+  const positions: number[] = [];
+  const indices: number[] = [];
+  const lift = 0.26;
+  for (let s = 0; s < segments; s += 1) {
+    const angle = (s / segments) * Math.PI * 2;
+    for (const r of [inner, outer]) {
+      const x = cx + Math.cos(angle) * r;
+      const z = cz + Math.sin(angle) * r;
+      positions.push(x, terrain.surfaceHeight(x, z) + lift, z);
+    }
+  }
+  for (let s = 0; s < segments; s += 1) {
+    const a = s * 2;
+    const b = ((s + 1) % segments) * 2;
+    indices.push(a, b, a + 1, a + 1, b, b + 1);
+  }
+  const geometry = new BufferGeometry();
+  geometry.setAttribute('position', new BufferAttribute(Float32Array.from(positions), 3));
+  geometry.setIndex(indices);
+  geometry.computeBoundingSphere();
+  return geometry;
+}
+
 const FOOTPRINT_RADIUS: Partial<Record<AccessNetworkId, number>> = {
   wired: 9,
   wifi: 155,
   cellular: 330,
 };
 
+/** How wide the edge band is, as a share of the footprint's radius, within these bounds (metres). */
+const BAND_SHARE = 0.022;
+const BAND_MIN_M = 0.6;
+const BAND_MAX_M = 5;
+
 export function CoverageOverlay({ visible }: { visible: boolean }) {
   const footprints = useMemo(
     () =>
-      SITES.filter((site) => site.network && FOOTPRINT_RADIUS[site.network]).map((site) => ({
-        id: site.id,
-        network: site.network!,
-        geometry: buildFootprint(site.x, site.z, FOOTPRINT_RADIUS[site.network!]!),
-      })),
+      SITES.filter((site) => site.network && FOOTPRINT_RADIUS[site.network]).map((site) => {
+        const radius = FOOTPRINT_RADIUS[site.network!]!;
+        const band = Math.min(BAND_MAX_M, Math.max(BAND_MIN_M, radius * BAND_SHARE));
+        return {
+          id: site.id,
+          network: site.network!,
+          geometry: buildFootprint(site.x, site.z, radius),
+          edge: buildBand(site.x, site.z, radius - band, radius),
+        };
+      }),
     [],
   );
 
@@ -116,14 +158,20 @@ export function CoverageOverlay({ visible }: { visible: boolean }) {
   return (
     <group name="CONTINUA_Coverage">
       {footprints.map((footprint) => (
-        <mesh key={footprint.id} geometry={footprint.geometry} renderOrder={4}>
-          <meshBasicMaterial
-            color={NETWORK_COLOR[footprint.network]}
-            transparent
-            opacity={0.09}
-            depthWrite={false}
-          />
-        </mesh>
+        <group key={footprint.id}>
+          <mesh geometry={footprint.geometry} renderOrder={4}>
+            <meshBasicMaterial color={NETWORK_COLOR[footprint.network]} transparent opacity={0.12} depthWrite={false} />
+          </mesh>
+          <mesh geometry={footprint.edge} renderOrder={4}>
+            <meshBasicMaterial
+              color={NETWORK_COLOR[footprint.network]}
+              transparent
+              opacity={0.62}
+              depthWrite={false}
+              side={DoubleSide}
+            />
+          </mesh>
+        </group>
       ))}
     </group>
   );

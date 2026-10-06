@@ -340,7 +340,7 @@ test.describe('failure handling', () => {
     // The story film is a file and plays without the engine - the `?story`
     // link opens it; replaying the story in 3D needs the engine's runs.
     await page.goto('/?story', { waitUntil: 'domcontentloaded' });
-    const film = page.getByRole('dialog', { name: /one-minute film/ });
+    const film = page.getByRole('dialog', { name: /thirty-second film/ });
     await expect(film).toBeVisible();
     await expect(film.getByRole('button', { name: 'Replay it in 3D' })).toBeDisabled();
     await page.keyboard.press('Escape');

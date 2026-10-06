@@ -25,10 +25,12 @@ npm run build && npm start  # app on localhost:3000
 | URL | Section |
 | --- | --- |
 | <http://localhost:3000> | **Mission** - opens on what this is and one way in, **Drive it yourself**: the shadowed route, CONTINUA beside the normal rover, then any scenario and strategy - in plain words, said aloud, with every measurement behind **Details** |
-| <http://localhost:3000/?story> | The one-minute story film - the link to send someone; "Replay it in 3D" plays it in the app |
+| <http://localhost:3000/?story> | The 30-second intro film - the link to send someone; "Replay it in 3D" plays the story in the app |
 | <http://localhost:3000/experiments> | **Results** - every paired comparison, twenty drives a strategy at a glance, then the full tables and the execution-capability report |
 | <http://localhost:3000/decision-log> | **Decision log** - every controller action, with its observations, reason and the run's recorded outcome |
 | <http://localhost:3000/scenario-lab> | **Scenario builder** - inject failures and congestion, change speed and workload |
+| <http://localhost:3000/challenge> | **The brief** - the EDGE challenge's five success criteria, each mapped to its evidence, the existing mechanisms it is measured against, and what this is not |
+| <http://localhost:3000/credits> | **Credits** - Team Kanban, the stack, and where every figure comes from |
 | <http://localhost:3000/capture?run=…> | Fixed 16:9 capture frame |
 | <http://localhost:3000/scene-lab> | The 3D workbench: cameras, quality tiers, the rover up close |
 
@@ -77,10 +79,13 @@ While a run plays the screen holds four things, and nothing else:
   side of a "vs", red the moment one is cut off and counting how long.
 * **What just happened**, said once under it: the road map's warning ("Dead
   zone 79 m ahead") or a change of network and why ("Cellular stopped
-  working · Satellite was already up"). The camera turns to where the new
-  link comes from - the access point, the mast, the sky the satellite link
-  climbs into - and comes back round the rover
-  (`packages/scene/src/components/Cameras.tsx`). A voice says the same short
+  working · Satellite was already up"). At every change of network the
+  camera **flies to where the new link comes from** - out to the access point
+  or the cell mast, or high above the road for satellite - holds there with
+  the beam arcing to the rover, then rides the beam back to it
+  (`packages/scene/src/components/Cameras.tsx`; the flight is a pure function
+  of the clock, so a capture replays it frame for frame, and a toggle in the
+  bar turns it off). A voice says the same short
   words; the lines are recorded on this machine with a voice that ships with
   Windows ([AI use](docs/AI_USE.md)), and a speaker button turns it off.
 * **Head to head** - both operators' camera views, and four running totals
@@ -92,10 +97,22 @@ While a run plays the screen holds four things, and nothing else:
   (road, strategy, comparison, seed, speed) and **Details**. It steps aside
   while a run plays untouched; any movement brings it back.
 
+**Take the wheel.** Press W (or any arrow) and you drive CONTINUA's rover:
+W and S for throttle and brake, A and D to steer, Space to hold, Esc hands it
+back to the autopilot. A kinematic model keeps the rover on the drivable
+surface - the road, the dock bay and the turning circle - pushing back off the
+kerb, and lightly assists along the lane when nothing is steered
+(`packages/scene/src/drive/`). Driving never invents network state: every
+link, handoff and measurement shown is the recorded run **at the rover's
+position on the road**, so driving on plays the recording forward and backing
+up plays it back; the camera still flies at each change of network you drive
+into. **Coverage** in the bar draws where the dock's cable, each Wi-Fi access
+point and the cell mast reach - kept apart from the route and the active link.
+
 The end card puts the same four totals side by side and, in the same card,
 what acting early cost: more changes of network, and big uploads held back.
 Every measurement stays one click away under **Details**.
-`/?story` opens the one-minute film of the same run (below); its "Replay it in
+`/?story` opens the 30-second intro film (below); its "Replay it in
 3D" plays it in the app as a narrated minute with chapter captions, ending on
 the stored comparison (`apps/web/src/components/mission/story.tsx`). Nothing in
 either is scripted: every number is read from the runs' own events.
@@ -174,11 +191,16 @@ workload overrides are hidden there, and the page says so.
 | `node scripts/build-brand-logo.mjs` | Un-matte `logo.png` to a transparent wordmark |
 | `npm run deploy` | Static export into `apps/web/out/` in public-preview mode, checked, then published to Cloudflare (`-- --dry` stops before publishing) |
 
-The `?story` link plays a one-minute film
-(`apps/web/public/video/story.mp4`): the app itself replaying the two story
-runs, captured frame by frame, with narration and captions. Its storyboard and
-claim ledger are in `brag-output/brag-plan.md`; the capture, edit, music and
-voice scripts are in `brag-output/work/`. The asset store does not answer byte
+The `?story` link and the landing's **Watch the intro · 30 s** play a
+30-second film (`apps/web/public/video/story.mp4`): the app itself replaying
+the two story runs - the camera's flight at a handoff, the dead zone, driving
+by hand - captured frame by frame, then the stored twenty-drive result, with a
+narrator and captions. Its storyboard, claim ledger and voice script are in
+`brag-output-2026-10-06-230856/brag-plan.md`; the frame-exact capture, voice,
+edit and stills scripts are in `brag-output-2026-10-06-230856/work/`, and the
+same capture with the same voice makes a two-minute narrated walkthrough of
+the whole app (`brag-output-2026-10-06-230856/walkthrough/`). The previous
+one-minute film's sources stay in `brag-output/`. The asset store does not answer byte
 ranges, which Safari needs to play video at all, so `edge/worker.js` serves
 `/video/*` with 206 responses; everything else is plain static assets.
 
@@ -204,10 +226,15 @@ list and `docs/VIDEO_CLAIMS.md` is the gate.
 | `npm run voice:lines` | List every line the page's voice can say: the drive's from the page's own wording, the story's from a run of it (app and engine running) |
 | `npm run voice:build` | Record those lines locally with a Windows voice, into `apps/web/public/voice/` |
 
+The shipped demo was re-voiced on 2026-10-07 with the films' narrator, its picture
+and subtitles unchanged (`brag-output-2026-10-06-230856/work/revoice_demo.py`;
+`docs/VIDEO_QA.md`). `npm run video:narration` still makes the original
+Windows-voiced track.
+
 ## Layout
 
 ```
-apps/web/            Next.js 16 frontend - Mission (story and drive), Results, Decision log, Scenario builder
+apps/web/            Next.js 16 frontend - Mission (story and drive), Results, Decision log, Scenario builder, The brief, Credits
 services/engine/     Python engine - simulator, controller, predictors, API, experiments
 packages/scene/      Reusable 3D scene, plus the engine-driven scene source
 packages/contracts/  Shared types (TypeScript + Python) and world.json

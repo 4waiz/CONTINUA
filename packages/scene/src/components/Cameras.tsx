@@ -6,7 +6,9 @@
  * Every camera is a pure function of `clock.time` - no springs, no smoothing
  * over previous frames. That means scrubbing to a timestamp reproduces exactly
  * the frame you would have got by playing to it, which Phase 3 capture needs,
- * and it also removes the jitter a naive lerp-to-target introduces.
+ * and it also removes the jitter a naive lerp-to-target introduces. The one
+ * exception is the drive camera, behind a rover the viewer is steering, which
+ * is never captured.
  *
  * Smoothness comes instead from sampling the route's *smoothed* heading over a
  * window, which is inherently continuous.
@@ -15,8 +17,8 @@
 import { useFrame, useThree } from '@react-three/fiber';
 import { useMemo, useRef } from 'react';
 import { Vector3, type PerspectiveCamera } from 'three';
-import type { AccessNetworkId, CameraMode, SceneState, StoryShot, StoryShotId } from '@continua/contracts';
-import { clamp } from '../math/noise';
+import type { AccessNetworkId, CameraMode, HandoffMark, SceneState, StoryShot, StoryShotId } from '@continua/contracts';
+import { angleDelta, clamp } from '../math/noise';
 import { useSceneRuntime } from '../runtime/SceneRuntime';
 import { route } from '../world/route';
 import { roadSurfaceY } from '../world/road';
@@ -337,167 +339,332 @@ function turntableShot(time: number, out: Shot): Shot {
 const DEG = Math.PI / 180;
 
 // ---------------------------------------------------------------------------
-// A change of network, shown: where the new link comes from
+// A change of network, flown: out to where the new link comes from, and back
+// along it to the rover
 // ---------------------------------------------------------------------------
 
 /**
- * When the carrying network changes, the follow and close-up cameras turn to
- * show where the new link comes from - the access point, the mast, the sky -
- * hold it, and come back. A beam that ran off the edge of the frame said a
- * link had changed but not to what. Scene seconds, so a scrubbed or captured
- * frame is the same as a played one.
+ * When the carrying network changes, the follow, close-up and drive cameras
+ * leave the rover and fly to the far end of the new link - the access point,
+ * the mast - hold there with the beam leaving it for the rover, ride the beam
+ * back down to the rover and settle behind it again. For satellite, whose far
+ * end is the sky, the camera climbs high up the rover's beam, looks down it
+ * at the island and the rover far below, and rides it down. A camera that
+ * only turned toward the new link left a mast two hundred metres off as a
+ * speck at the edge of the frame; this one goes there.
+ *
+ * Every pose is a pure function of the scene clock, the rover's place and
+ * when the link changed, so a scrubbed or captured frame is the same as a
+ * played one.
  */
-const REVEAL_IN_S = 1.2;
-const REVEAL_HOLD_S = 2.6;
-const REVEAL_OUT_S = 1.6;
-const REVEAL_S = REVEAL_IN_S + REVEAL_HOLD_S + REVEAL_OUT_S;
+const FLIGHT_OUT_S = 1.7;
+const FLIGHT_HOLD_S = 1.2;
+const FLIGHT_RIDE_S = 2.3;
+const FLIGHT_HOME_S = 1.8;
+const FLIGHT_S = FLIGHT_OUT_S + FLIGHT_HOLD_S + FLIGHT_RIDE_S + FLIGHT_HOME_S;
+/** The beam's end on the rover, above its contact plane (`Network.tsx`'s roof mast). */
+const ROOF_M = 2.25;
+/** How far up the satellite beam a flight reaches, metres. */
+const SKY_REACH_M = 200;
 
 function smooth01(x: number): number {
   const c = Math.min(1, Math.max(0, x));
   return c * c * (3 - 2 * c);
 }
 
-/** How far into a change's reveal the camera is: 0 before and after, 1 while it holds. */
-function revealWeight(age: number): number {
-  if (age < 0 || age > REVEAL_S) return 0;
-  if (age < REVEAL_IN_S) return smooth01(age / REVEAL_IN_S);
-  if (age < REVEAL_IN_S + REVEAL_HOLD_S) return 1;
-  return 1 - smooth01((age - REVEAL_IN_S - REVEAL_HOLD_S) / REVEAL_OUT_S);
+/** Smoother at both ends than `smooth01`: a camera that starts and lands without a jolt. */
+function smoother01(x: number): number {
+  const c = Math.min(1, Math.max(0, x));
+  return c * c * c * (c * (c * 6 - 15) + 10);
 }
 
 const SKY = new Vector3(SATELLITE_SKY.x, SATELLITE_SKY.y, SATELLITE_SKY.z).normalize();
-const _end = new Vector3();
-const _toRover = new Vector3();
-const _toEnd = new Vector3();
-const _aim = new Vector3();
-/** The furthest the rover may sit from the middle of a reveal, so it stays in the clear part of the screen. */
-const REVEAL_ROVER_MAX = 15 * (Math.PI / 180);
-/** Metres around a cutting in which a reveal keeps to the road, clear of the walls and banks. */
-const CUTTING_MARGIN_M = 30;
 
-/**
- * Toward the other end of `network`'s link - the access point, the mast, or
- * the sky the satellite link climbs into - with the rover in the frame.
- *
- * The camera stands back from the rover and a little above it, part-way
- * between behind it on the road and over its shoulder away from the far end,
- * so the rover and the far end line up near the middle of the screen - a mast
- * far off to one side otherwise sat behind a side panel - and low enough that
- * the rover below and the antenna beyond both fit between the status cards
- * and the dock. Near a cutting, and for satellite,
- * it keeps to the road - a camera off to the side stood inside the walls.
- * When the far end is behind the rover, the camera looks back from in front.
- * False when there is nothing to show - the cable, at the dock.
- */
-function revealShot(state: SceneState, network: AccessNetworkId, out: Shot, zones: readonly DeadZone[]): boolean {
+/** One link, as the flight sees it: the rover's end, the far end, and the arc the beam draws between. */
+interface LinkPath {
+  sky: boolean;
+  rover: Vector3;
+  far: Vector3;
+  /** The beam's upward bow at its middle, metres, as `Network.tsx` draws it. */
+  sag: number;
+  span: number;
+  /** Flat unit vectors: from the rover toward the far end, and to its left. */
+  dir: { x: number; z: number };
+  side: { x: number; z: number };
+  /** The rover's facing, flat. */
+  forward: { x: number; z: number };
+}
+
+const _path: LinkPath = {
+  sky: false,
+  rover: new Vector3(),
+  far: new Vector3(),
+  sag: 0,
+  span: 1,
+  dir: { x: 1, z: 0 },
+  side: { x: 0, z: -1 },
+  forward: { x: 1, z: 0 },
+};
+
+/** The link the rover now uses on `network`, or false when there is nothing to fly to (the cable). */
+function linkPath(state: SceneState, network: AccessNetworkId, out: LinkPath): boolean {
   if (network === 'wired') return false;
-  const rover = state.vehicle.position;
+  const vehicle = state.vehicle;
+  out.rover.set(vehicle.position.x, vehicle.position.y + ROOF_M, vehicle.position.z);
+  out.forward.x = Math.cos(vehicle.heading);
+  out.forward.z = -Math.sin(vehicle.heading);
   if (network === 'satellite') {
-    _end.set(rover.x + SKY.x * 10, rover.y + 2 + SKY.y * 10, rover.z + SKY.z * 10);
+    out.sky = true;
+    out.far.copy(out.rover).addScaledVector(SKY, SKY_REACH_M);
   } else {
-    const site = siteForNetwork(network, rover.x, rover.z);
+    const site = siteForNetwork(network, vehicle.position.x, vehicle.position.z);
     if (!site) return false;
     const ax = site.x + (site.linkOffset?.[0] ?? 0);
     const az = site.z + (site.linkOffset?.[1] ?? 0);
-    _end.set(ax, terrain.height(ax, az) + (site.linkHeight ?? 3), az);
+    out.sky = false;
+    out.far.set(ax, terrain.height(ax, az) + (site.linkHeight ?? 3), az);
   }
-  const along = state.vehicle.distance;
-  const heading = travelHeading(along, state.vehicle.direction ?? 1, 20);
-  const forwardX = Math.cos(heading);
-  const forwardZ = -Math.sin(heading);
-  const offX = _end.x - rover.x;
-  const offZ = _end.z - rover.z;
-  const across = Math.hypot(offX, offZ);
-  const ahead = offX * forwardX + offZ * forwardZ;
-  const behind = ahead < -0.5 * across;
-  const nearCutting = zones.some(
-    (zone) => along > zone.from - zone.ramp - CUTTING_MARGIN_M && along < zone.to + zone.ramp + CUTTING_MARGIN_M,
-  );
-  const onRoad = network === 'satellite' || nearCutting || across < 2;
-  // Which way from the rover the camera stands, flat: behind it on the road
-  // (or in front, when the far end is behind), turned toward over-the-shoulder.
-  let dx = behind ? forwardX : -forwardX;
-  let dz = behind ? forwardZ : -forwardZ;
-  if (!onRoad) {
-    const share = behind ? 1 : 0.4;
-    dx = dx * (1 - share) - (offX / across) * share;
-    dz = dz * (1 - share) - (offZ / across) * share;
-    const length = Math.hypot(dx, dz) || 1;
-    dx /= length;
-    dz /= length;
+  out.span = Math.max(1, out.rover.distanceTo(out.far));
+  out.sag = out.sky ? 0 : Math.min(14, out.span * 0.11);
+  let dx = out.far.x - out.rover.x;
+  let dz = out.far.z - out.rover.z;
+  const flat = Math.hypot(dx, dz);
+  if (flat < 1e-3) {
+    dx = out.forward.x;
+    dz = out.forward.z;
+  } else {
+    dx /= flat;
+    dz /= flat;
   }
-  out.position.set(rover.x + dx * 16, rover.y + 5, rover.z + dz * 16);
-  // Between the rover and the far end, leaning to the far end - but never so
-  // far that the rover leaves the middle of the frame.
-  _toRover.set(rover.x, rover.y + 1, rover.z).sub(out.position).normalize();
-  _toEnd.copy(_end).sub(out.position).normalize();
-  _aim.copy(_toRover).multiplyScalar(0.45).addScaledVector(_toEnd, 0.55).normalize();
-  const apart = _aim.angleTo(_toRover);
-  if (apart > REVEAL_ROVER_MAX) _aim.lerpVectors(_toRover, _aim, REVEAL_ROVER_MAX / apart).normalize();
-  out.target.copy(out.position).addScaledVector(_aim, 20);
-  out.fov = 50;
+  out.dir.x = dx;
+  out.dir.z = dz;
+  // Left of a flat direction (x, z) is (z, -x): +X's left is -Z.
+  out.side.x = dz;
+  out.side.z = -dx;
   return true;
 }
 
-const _reveal: Shot = { position: new Vector3(), target: new Vector3(), fov: 40 };
-
-/**
- * Moves `shot` toward `reveal` by `weight` round the rover rather than through
- * it: distance and bearing from the rover are blended - the bearing the short
- * way round - and the height straight. A straight line between a camera behind
- * the rover and one in front of it, as when the far end of the new link is
- * behind, passed over the rover's roof mid-turn.
- */
-function mixRound(shot: Shot, reveal: Shot, weight: number, centre: { x: number; z: number }): void {
-  const ax = shot.position.x - centre.x;
-  const az = shot.position.z - centre.z;
-  const bx = reveal.position.x - centre.x;
-  const bz = reveal.position.z - centre.z;
-  const from = Math.atan2(az, ax);
-  let turn = Math.atan2(bz, bx) - from;
-  while (turn > Math.PI) turn -= 2 * Math.PI;
-  while (turn < -Math.PI) turn += 2 * Math.PI;
-  const radius = Math.hypot(ax, az) + (Math.hypot(bx, bz) - Math.hypot(ax, az)) * weight;
-  const bearing = from + turn * weight;
-  shot.position.x = centre.x + Math.cos(bearing) * radius;
-  shot.position.z = centre.z + Math.sin(bearing) * radius;
-  shot.position.y += (reveal.position.y - shot.position.y) * weight;
-  shot.target.lerp(reveal.target, weight);
-  shot.fov += (reveal.fov - shot.fov) * weight;
+/** A point on the beam: 0 at the rover, 1 at the far end, bowed as the beam is drawn. */
+function pathPoint(path: LinkPath, t: number, out: Vector3): Vector3 {
+  out.lerpVectors(path.rover, path.far, t);
+  out.y += Math.sin(t * Math.PI) * path.sag;
+  return out;
 }
 
 /**
- * Mixes the reveal of the latest change - and, while it fades, the one before
- * it - into `shot`. A change that comes while the last one is still on screen
- * takes over from it rather than cutting back to the rover first.
+ * The far end of a ground link: past the antenna from the rover and off to
+ * one side, a little above it, looking back down the beam - the mast in the
+ * foreground, its link leaving for the rover in the distance.
+ *
+ * For satellite the far end is the sky, and the camera goes up there: high
+ * on the rover's beam, off to one side of it, looking down it at the island
+ * and the rover at its foot - the satellite's view of the link.
  */
-function applyReveals(state: SceneState, time: number, shot: Shot, zones: readonly DeadZone[]): void {
+function sourceShot(path: LinkPath, out: Shot): Shot {
+  if (path.sky) return rideShot(path, 0, out);
+  const back = clamp(path.span * 0.14, 9, 28);
+  const aside = back * 0.5;
+  const lift = clamp(path.span * 0.05, 2.5, 8);
+  out.position.set(
+    path.far.x + path.dir.x * back + path.side.x * aside,
+    path.far.y + lift,
+    path.far.z + path.dir.z * back + path.side.z * aside,
+  );
+  pathPoint(path, 0.84, out.target);
+  out.target.y -= 1.5;
+  out.fov = 46;
+  return out;
+}
+
+const _near = new Vector3();
+/** Where a ride ends: this far from the rover along the beam, metres, so it lands beside it, not on its roof. */
+const RIDE_END_M = 15;
+
+/**
+ * Riding the beam down to the rover, `k` from 0 to 1: from just off the
+ * antenna - or high up the satellite's beam - beside the beam and a little
+ * above it, looking down it and, near the end, at the rover.
+ */
+function rideShot(path: LinkPath, k: number, out: Shot): Shot {
+  const eased = smooth01(k);
+  const start = path.sky ? 0.62 : 0.9;
+  const end = clamp(RIDE_END_M / path.span, 0.06, 0.45);
+  const u = start + (end - start) * eased;
+  const off = path.sky ? 8 * (1 - eased) + 3 : clamp(path.span * 0.03, 1.6, 4);
+  pathPoint(path, u, out.position);
+  out.position.x += path.side.x * off;
+  out.position.z += path.side.z * off;
+  // Just under the satellite's beam, so it runs from the top of the frame
+  // down to the rover; just over a ground link's.
+  out.position.y += path.sky ? -12 * (1 - eased) : 2.2;
+  _near.set(path.rover.x, path.rover.y - 1.0, path.rover.z);
+  if (path.sky) {
+    // Down the beam the whole way: the rover at its foot.
+    out.target.copy(_near);
+    out.fov = 50;
+    return out;
+  }
+  pathPoint(path, Math.max(0, u - 0.22), out.target);
+  // The last stretch looks at the rover itself.
+  out.target.lerp(_near, smooth01((0.55 - u) / 0.4));
+  out.fov = 50;
+  return out;
+}
+
+function copyShot(from: Shot, to: Shot): Shot {
+  to.position.copy(from.position);
+  to.target.copy(from.target);
+  to.fov = from.fov;
+  return to;
+}
+
+/**
+ * `a` to `b` by `k`, the camera lifting on the way - a swoop, not a slide
+ * along the ground. The lift grows with the distance covered.
+ */
+function swoop(a: Shot, b: Shot, k: number, out: Shot): Shot {
+  const lift = clamp(a.position.distanceTo(b.position) * 0.22, 2, 36);
+  out.position.lerpVectors(a.position, b.position, k);
+  out.position.y += Math.sin(k * Math.PI) * lift;
+  out.target.lerpVectors(a.target, b.target, k);
+  out.fov = a.fov + (b.fov - a.fov) * k;
+  return out;
+}
+
+const _source: Shot = { position: new Vector3(), target: new Vector3(), fov: 50 };
+const _ride: Shot = { position: new Vector3(), target: new Vector3(), fov: 50 };
+/**
+ * Above the ground, metres, a flying camera keeps to: clear of the masts'
+ * own yards while it holds, and over the crowns of the palm avenue - which a
+ * camera riding a Wi-Fi beam down at mast height went straight through - for
+ * the ride's second half and the start of the way home. It comes down from
+ * it only as it lands behind the rover, on the road.
+ */
+const FLIGHT_FLOOR_M = 10;
+const RIDE_FLOOR_M = 16;
+
+/**
+ * Where a flight puts the camera `age` seconds into it: from `from` (where
+ * the camera was) out to the far end, a hold there, the ride back along the
+ * beam, and home to `home` (where it would otherwise be). False for a link
+ * with nothing to fly to.
+ */
+function flightPose(state: SceneState, network: AccessNetworkId, age: number, from: Shot, home: Shot, out: Shot): boolean {
+  if (!linkPath(state, network, _path)) return false;
+  sourceShot(_path, _source);
+  // A slow drift while it holds, so the far end reads in depth.
+  const held = clamp(age - FLIGHT_OUT_S, 0, FLIGHT_HOLD_S);
+  _source.position.x += _path.side.x * held * 0.9;
+  _source.position.z += _path.side.z * held * 0.9;
+  _source.position.y += held * 0.4;
+  let floor = FLIGHT_FLOOR_M;
+  if (age < FLIGHT_OUT_S) {
+    const k = smoother01(age / FLIGHT_OUT_S);
+    swoop(from, _source, k, out);
+    floor = FLIGHT_FLOOR_M * smooth01(age / (FLIGHT_OUT_S * 0.45));
+  } else if (age < FLIGHT_OUT_S + FLIGHT_HOLD_S) {
+    copyShot(_source, out);
+  } else if (age < FLIGHT_OUT_S + FLIGHT_HOLD_S + FLIGHT_RIDE_S) {
+    const k = (age - FLIGHT_OUT_S - FLIGHT_HOLD_S) / FLIGHT_RIDE_S;
+    rideShot(_path, k, _ride);
+    // Off the hold and onto the beam over the first stretch of the ride.
+    const w = smoother01(k / 0.35);
+    out.position.lerpVectors(_source.position, _ride.position, w);
+    out.target.lerpVectors(_source.target, _ride.target, w);
+    out.fov = _source.fov + (_ride.fov - _source.fov) * w;
+    floor = FLIGHT_FLOOR_M + (RIDE_FLOOR_M - FLIGHT_FLOOR_M) * smooth01((k - 0.25) / 0.45);
+  } else {
+    const k = (age - FLIGHT_OUT_S - FLIGHT_HOLD_S - FLIGHT_RIDE_S) / FLIGHT_HOME_S;
+    rideShot(_path, 1, _ride);
+    swoop(_ride, home, smoother01(k), out);
+    floor = RIDE_FLOOR_M * (1 - smooth01((k - 0.3) / 0.62));
+  }
+  const ground = terrain.surfaceHeight(out.position.x, out.position.z) + floor;
+  if (out.position.y < ground) out.position.y = ground;
+  return true;
+}
+
+const _base: Shot = { position: new Vector3(), target: new Vector3(), fov: 40 };
+const _earlier: Shot = { position: new Vector3(), target: new Vector3(), fov: 40 };
+const _flown: Shot = { position: new Vector3(), target: new Vector3(), fov: 40 };
+
+/**
+ * Flies `shot` - the camera's own framing on entry - out to the newest change
+ * of link while that flight lasts. A change that comes while the last one is
+ * still being flown takes over from wherever that flight has the camera, so
+ * the camera never cuts back to the rover first. `pace` stretches every beat
+ * by the run's playback rate.
+ */
+function applyFlights(state: SceneState, time: number, pace: number, shot: Shot): void {
   const latest = state.handoff ?? null;
   if (!latest) return;
   const before = state.handoffBefore ?? null;
-  const w1 = revealWeight(time - latest.at);
-  let w0 = before ? revealWeight(time - before.at) : 0;
-  if (w0 > 0 && time >= latest.at) w0 *= 1 - smooth01((time - latest.at) / REVEAL_IN_S);
-  if (w0 <= 1e-4 && w1 <= 1e-4) return;
-  const rover = state.vehicle.position;
-  if (before && w0 > 1e-4 && revealShot(state, before.to, _reveal, zones)) mixRound(shot, _reveal, w0, rover);
-  if (w1 > 1e-4 && revealShot(state, latest.to, _reveal, zones)) mixRound(shot, _reveal, w1, rover);
+  const ageOf = (mark: HandoffMark) => (time - mark.at) / pace;
+  const flying = (mark: HandoffMark) => mark.reveal !== false && ageOf(mark) >= 0 && ageOf(mark) <= FLIGHT_S;
+  copyShot(shot, _base);
+  if (flying(latest)) {
+    let from = _base;
+    if (before && flying(before) && flightPose(state, before.to, ageOf(before), _base, _base, _earlier)) from = _earlier;
+    if (flightPose(state, latest.to, ageOf(latest), from, _base, _flown)) copyShot(_flown, shot);
+    return;
+  }
+  // The newest change is not flown (a driven rover backing over it): let the
+  // flight before it finish.
+  if (latest.reveal === false && before && flying(before) && flightPose(state, before.to, ageOf(before), _base, _base, _flown)) {
+    copyShot(_flown, shot);
+  }
 }
 
-const NO_ZONES: readonly DeadZone[] = [];
+// ---------------------------------------------------------------------------
+// Drive: behind the rover while the viewer steers it
+// ---------------------------------------------------------------------------
+
+/** What the drive camera remembers between frames: the heading it has eased to. */
+interface ChaseMemory {
+  heading: number;
+  at: number;
+}
+
+/**
+ * Behind and above the rover, turning after it as it turns. The one rig that
+ * is not a pure function of time: it eases toward the rover's heading over a
+ * third of a second, as a chase camera does - a driven rover is not captured.
+ * Further back and wider as it speeds up.
+ */
+function driveShot(state: SceneState, time: number, memory: ChaseMemory, out: Shot): Shot {
+  const vehicle = state.vehicle;
+  const elapsed = time - memory.at;
+  if (memory.at < 0 || elapsed < 0 || elapsed > 1) memory.heading = vehicle.heading;
+  else memory.heading += angleDelta(memory.heading, vehicle.heading) * (1 - Math.exp(-elapsed / 0.3));
+  memory.at = time;
+  const cos = Math.cos(memory.heading);
+  const sin = Math.sin(memory.heading);
+  const speed = Math.abs(vehicle.speedMps);
+  const back = 12.5 + speed * 0.12;
+  const p = vehicle.position;
+  out.position.set(p.x - cos * back, p.y + 5 + speed * 0.05, p.z + sin * back);
+  out.target.set(p.x + cos * 7, p.y + 1.3, p.z - sin * 7);
+  out.fov = 44 + Math.min(8, speed * 0.45);
+  return out;
+}
 
 export function SceneCameras({
   mode,
   story,
   inset,
-  zones = NO_ZONES,
+  flights = true,
+  pace = 1,
 }: {
   mode: CameraMode;
   story?: StoryShot;
   /** The page's panels over the canvas, top and bottom, in CSS pixels. */
   inset?: { top: number; bottom: number };
-  /** The scenario's cuttings, where a reveal keeps to the road. */
+  /** The scenario's cuttings. Kept for callers; a flight now keeps clear of them by flying. */
   zones?: readonly DeadZone[];
+  /** Fly out to each new link (follow, close-up and drive cameras). */
+  flights?: boolean;
+  /** The run's playback rate: a flight's beats last this many scene seconds per second. */
+  pace?: number;
 }) {
   const { clock, frame } = useSceneRuntime();
   const camera = useThree((state) => state.camera) as PerspectiveCamera;
@@ -507,12 +674,14 @@ export function SceneCameras({
     [],
   );
   const lookTarget = useRef(new Vector3());
+  const chase = useRef<ChaseMemory>({ heading: 0, at: -1 });
 
   useFrame(() => {
     const state = frame.current;
     const distance = state.vehicle.distance;
     const dir = state.vehicle.direction ?? 1;
     const time = clock.time;
+    const flightPace = Math.max(1, pace);
 
     switch (mode) {
       case 'turntable':
@@ -520,7 +689,7 @@ export function SceneCameras({
         break;
       case 'closeup':
         closeupShot(distance, dir, time, shot);
-        applyReveals(state, time, shot, zones);
+        if (flights) applyFlights(state, time, flightPace, shot);
         break;
       case 'overview':
         overviewShot(distance, dir, time, shot);
@@ -532,10 +701,14 @@ export function SceneCameras({
         if (story) storyShot(story, distance, dir, time, shot);
         else followShot(distance, dir, shot);
         break;
+      case 'drive':
+        driveShot(state, time, chase.current, shot);
+        if (flights) applyFlights(state, time, flightPace, shot);
+        break;
       case 'follow':
       default:
         followShot(distance, dir, shot);
-        applyReveals(state, time, shot, zones);
+        if (flights) applyFlights(state, time, flightPace, shot);
         break;
     }
 

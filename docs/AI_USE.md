@@ -86,10 +86,22 @@ What that does **not** change:
 
 ## 5. Synthesised narration in the demo video
 
-The video's voice-over is **synthesised speech**, produced locally by the
-Windows speech API (`System.Speech.Synthesis`, voice "Microsoft David Desktop",
-en-US) through `scripts/speak.ps1`. This is stated here because a viewer has a
-right to know they are not listening to a person.
+The video's voice-over is **synthesised speech**. This is stated here because a
+viewer has a right to know they are not listening to a person.
+
+**Re-voiced on 2026-10-07.** The team found the Windows voice robotic. The
+shipped demo's audio track was replaced with the films' narrator - Chatterbox,
+in a voice cloned from Kokoro-82M's stock "am_michael" (see *The 30-second
+intro and the two-minute walkthrough* below) - speaking the same fourteen cues,
+from `video/timeline.json`, at the same times
+(`brag-output-2026-10-06-230856/work/revoice_demo.py`). Every take was
+transcribed and checked against its cue; the subtitles are unchanged; the
+picture is the same video stream, copied, not re-encoded. The Windows-voiced
+original is in the repository's history. What follows describes how that
+original narration was made, which `scripts/build-narration.mjs` still does.
+
+It was produced locally by the Windows speech API (`System.Speech.Synthesis`,
+voice "Microsoft David Desktop", en-US) through `scripts/speak.ps1`.
 
 What that involved, precisely:
 
@@ -116,11 +128,43 @@ Nothing else in the video is generated. The 3D vehicle, the world, the caption
 cards and the interface are all this repository's own work, and every figure on
 screen is read from a recorded run.
 
-### The story film on the public site
+### The 30-second intro and the two-minute walkthrough
 
-The one-minute film the site's `?story` link opens
-(`apps/web/public/video/story.mp4`) is a separate, shorter cut. Its plan,
-storyboard and claim ledger are in `brag-output/brag-plan.md`.
+Since 2026-10-06 the film the site's `?story` link and the landing's **Watch
+the intro** open (`apps/web/public/video/story.mp4`) is a 30-second intro, and
+a two-minute narrated walkthrough of the whole app sits in `deliverables/`.
+Their plan, storyboard, claim ledger and script are in
+`brag-output-2026-10-06-230856/brag-plan.md`.
+
+* **The picture is the app.** Both are the public build replaying recorded
+  runs, captured frame by frame on a fake clock
+  (`brag-output-2026-10-06-230856/work/capture.mjs`). What the edit adds - the
+  titles, the key caps, the rings around the app's own cards - is drawn over
+  the footage and never changes a figure; the flight card says "a recorded run
+  · software simulation".
+* **The script was drafted by the AI coding assistant (Claude)** and checked
+  against the claim ledger; `voice.py` refuses a line with a banned phrase.
+* **The voice is synthetic and local.** It is Chatterbox, Resemble AI's
+  open-weight text-to-speech model (MIT licence), run on this machine's CPU.
+  Chatterbox speaks in the voice of a short reference clip; the clip is the
+  open-weight Kokoro-82M model's stock "am_michael" voice reading one neutral
+  sentence (`voice.py`), so the narrator is a synthetic voice - no real
+  person's voice was sampled or imitated. Chatterbox marks its output with
+  Resemble's imperceptible Perth watermark. No text or audio was sent to a
+  service; the weights were downloaded once.
+* **Every take is checked.** Chatterbox samples, so a take can drop or add a
+  word. Each one is transcribed locally (Whisper base.en) and compared with the
+  script word for word; only a take that says the script is kept, and every
+  take's transcript is logged (`vo/*/takes.json`). Kokoro's own `am_michael`
+  remains a switch away (`--engine kokoro`).
+* **Music and effects are not generated.** The bed is "Happy Beats / Business
+  Moves" by ende.app (CC BY 4.0); the clicks and accents are Kenney's (CC0).
+
+### The first story film (replaced)
+
+The one-minute film the `?story` link opened until 2026-10-06 was a separate,
+shorter cut. Its plan, storyboard and claim ledger are in
+`brag-output/brag-plan.md`.
 
 * **The picture is the app.** Every story shot is the public build replaying
   runs `run-2172746704` and `run-0cc2022cf4`, captured frame by frame

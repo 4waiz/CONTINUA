@@ -76,7 +76,11 @@ function SceneDriver({ frozen }: { frozen: boolean }) {
   const { clock, source, frame } = useSceneRuntime();
   const lastFrame = useRef<number | null>(null);
   useFrame((_, delta) => {
+    const before = clock.time;
     clock.advance(frameDelta(lastFrame, delta));
+    // A rover under the viewer's keys moves by the frame's own step; a
+    // recording has no `step` and is sampled as it always was.
+    if (!frozen) source.step?.(clock.time, Math.max(0, clock.time - before));
     frame.current = source.sampleAt(frozen ? INSPECT_TIME : clock.time);
   }, -1);
   return null;
@@ -327,6 +331,8 @@ function SceneContents({
         story={settings.storyShot}
         inset={settings.viewInset}
         zones={settings.deadZones}
+        flights={settings.linkFlights}
+        pace={settings.flightPace}
       />
       {quality === 'low' && <BakeShadows />}
       {quality === 'high' && <PostEffects />}

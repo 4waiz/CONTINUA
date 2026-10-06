@@ -1,0 +1,253 @@
+{
+ "w01": [
+  {
+   "seed": 1000,
+   "seconds": 4.205,
+   "errors": 0,
+   "names": true,
+   "heard": "This is Continua. The network changes. The session doesn't.",
+   "faithful": true,
+   "fits": true,
+   "took": 137.7,
+   "kept": true
+  }
+ ],
+ "w02": [
+  {
+   "seed": 1001,
+   "seconds": 7.365,
+   "errors": 1,
+   "names": false,
+   "heard": "Two rescue rovers. One island road. Four networks. One runs continuous. The other waits for its network to break.",
+   "faithful": false,
+   "fits": true,
+   "took": 63.2
+  },
+  {
+   "seed": 1102,
+   "seconds": 7.42,
+   "errors": 1,
+   "names": false,
+   "heard": "Two rescue rovers, one island road, four networks, one runs continuous, the other waits for its network to break.",
+   "faithful": false,
+   "fits": true,
+   "took": 211.1
+  },
+  {
+   "seed": 1203,
+   "seconds": 7.649,
+   "errors": 0,
+   "names": true,
+   "heard": "Two rescue rovers, one island road, four networks. One runs Continua. The other waits for its network to break.",
+   "faithful": true,
+   "fits": true,
+   "took": 117.6,
+   "kept": true
+  }
+ ],
+ "w03": [
+  {
+   "seed": 1002,
+   "seconds": 7.021,
+   "errors": 1,
+   "names": true,
+   "heard": "Watch a hand off. The camera flies out to the access point the new link comes from then rides the bean back to the rover.",
+   "faithful": true,
+   "fits": true,
+   "took": 75.1,
+   "kept": true
+  }
+ ],
+ "w04": [
+  {
+   "seed": 1003,
+   "seconds": 4.418,
+   "errors": 0,
+   "names": true,
+   "heard": "Let's slow it down and switch on coverage to see where every network reaches.",
+   "faithful": true,
+   "fits": true,
+   "took": 75.7,
+   "kept": true
+  }
+ ],
+ "w05": [
+  {
+   "seed": 1004,
+   "seconds": 10.926,
+   "errors": 2,
+   "names": true,
+   "heard": "Now the clever part. Continua carries a road map from earlier drives. 79 meters before the cutting, it starts satellite before Wi-Fi and cellular dropout together.",
+   "faithful": true,
+   "fits": true,
+   "took": 156.6,
+   "kept": true
+  }
+ ],
+ "w06": [
+  {
+   "seed": 5005,
+   "seconds": 6.394,
+   "errors": 0,
+   "names": true,
+   "heard": "Satellite was already up, so Continua keeps the link. The normal rover is cut off and has to stop.",
+   "faithful": true,
+   "fits": true,
+   "took": 55.0,
+   "kept": true
+  }
+ ],
+ "w07": [
+  {
+   "seed": 1006,
+   "seconds": 6.628,
+   "errors": 0,
+   "names": true,
+   "heard": "Your turn. Press W and you're driving. A and D steer. S brakes and the road keeps you on it.",
+   "faithful": true,
+   "fits": true,
+   "took": 67.9,
+   "kept": true
+  }
+ ],
+ "w08": [
+  {
+   "seed": 1007,
+   "seconds": 9.098,
+   "errors": 0,
+   "names": true,
+   "heard": "Every network and handoff you see is the recorded run at your exact point on the road. Drive on, it plays forward, back up, it plays back.",
+   "faithful": true,
+   "fits": true,
+   "took": 90.3,
+   "kept": true
+  }
+ ],
+ "w09": [
+  {
+   "seed": 1008,
+   "seconds": 6.395,
+   "errors": 0,
+   "names": true,
+   "heard": "Escape hands it back to autopilot. Details opens every measurement down to each kind of traffic.",
+   "faithful": true,
+   "fits": true,
+   "took": 55.8,
+   "kept": true
+  }
+ ],
+ "w10": [
+  {
+   "seed": 1009,
+   "seconds": 9.533,
+   "errors": 1,
+   "names": false,
+   "heard": "The results, every strategy, the same road, 20 drives each. Continuous kept the link every time, at about a third of the cost of keeping every network on.",
+   "faithful": false,
+   "fits": true,
+   "took": 67.5,
+   "unverified": true,
+   "kept": true
+  },
+  {
+   "seed": 1110,
+   "seconds": 9.556,
+   "errors": 3,
+   "names": false,
+   "heard": "The results, every strategy, the same road, 20 drives each. Continue will keep the link every time at about a third of the cost of keeping every network on.",
+   "faithful": false,
+   "fits": true,
+   "took": 74.0
+  },
+  {
+   "seed": 1211,
+   "seconds": 10.265,
+   "errors": 2,
+   "names": false,
+   "heard": "The results, every strategy, the same road, 20 drives each. Continue a kept the link every time at about a third of the cost of keeping every network on.",
+   "faithful": false,
+   "fits": true,
+   "took": 78.8
+  },
+  {
+   "seed": 1312,
+   "seconds": 10.013,
+   "errors": 2,
+   "names": false,
+   "heard": "The results, every strategy, the same road, 20 drives each. Continue what kept the link every time at about a third of the cost of keeping every network on.",
+   "faithful": false,
+   "fits": true,
+   "took": 191.5
+  }
+ ],
+ "w11": [
+  {
+   "seed": 1010,
+   "seconds": 4.17,
+   "errors": 0,
+   "names": true,
+   "heard": "The Decision Log shows every choice the controller made and why.",
+   "faithful": true,
+   "fits": true,
+   "took": 33.9,
+   "kept": true
+  }
+ ],
+ "w12": [
+  {
+   "seed": 1011,
+   "seconds": 6.696,
+   "errors": 0,
+   "names": true,
+   "heard": "The brief page maps each of the challenge's success criteria to its evidence, including where prediction didn't pay.",
+   "faithful": true,
+   "fits": true,
+   "took": 49.2,
+   "kept": true
+  }
+ ],
+ "w13": [
+  {
+   "seed": 1012,
+   "seconds": 4.769,
+   "errors": 2,
+   "names": false,
+   "heard": "Continue by Team Conban. The network changes. The session doesn't.",
+   "faithful": false,
+   "fits": true,
+   "took": 40.6
+  },
+  {
+   "seed": 1113,
+   "seconds": 4.822,
+   "errors": 1,
+   "names": false,
+   "heard": "Continue by Team Kanban. The network changes. The session doesn't.",
+   "faithful": false,
+   "fits": true,
+   "took": 40.4
+  },
+  {
+   "seed": 1214,
+   "seconds": 4.535,
+   "errors": 1,
+   "names": false,
+   "heard": "Continue by team Kanban. The network changes. The session doesn't.",
+   "faithful": false,
+   "fits": true,
+   "took": 36.8,
+   "unverified": true,
+   "kept": true
+  },
+  {
+   "seed": 1315,
+   "seconds": 5.304,
+   "errors": 1,
+   "names": false,
+   "heard": "Continue by Team Kanban. The network changes. The session doesn't.",
+   "faithful": false,
+   "fits": true,
+   "took": 45.4
+  }
+ ]
+}

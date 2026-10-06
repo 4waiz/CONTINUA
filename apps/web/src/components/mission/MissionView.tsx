@@ -4,16 +4,21 @@
  * The Mission page - the flagship view.
  *
  * * **Landing.** What this is, in two sentences, over a still island; one way
- *   in. Nothing moves until it is pressed.
+ *   in, and the thirty-second intro beside it. Nothing moves until one is
+ *   pressed.
  * * **Drive.** The run that shows what CONTINUA is for - the shadowed route,
  *   CONTINUA with its road map beside the normal rover - starts at once, and
  *   is then yours to change and scrub: in plain words by default, every
  *   measurement one toggle away (Details). Each change of network is shown -
- *   the camera turns to where the new link comes from - and said aloud.
- * * **The story** (`?story` only, the link to send someone). The one-minute
- *   film (`StoryFilm.tsx`); its "Replay it in 3D" plays the same run as a
- *   guided minute (`story.tsx`): captions read aloud, the framing chosen for
- *   each chapter, and the stored twenty-trial comparison at the end.
+ *   the camera flies out to where the new link comes from and back along it
+ *   to the rover - and said aloud. W A S D take the wheel (`useDrive.ts`): the
+ *   rover goes where it is steered, on the road, and every panel shows the
+ *   recorded run at the rover's point of the road.
+ * * **The story** (`?story`, the link to send someone, or the landing's second
+ *   button). The thirty-second intro (`StoryFilm.tsx`); its "Replay it in 3D"
+ *   plays the same run as a guided minute (`story.tsx`): captions read aloud,
+ *   the framing chosen for each chapter, and the stored twenty-trial
+ *   comparison at the end.
  *
  * The world is the interface in all three: the 3D scene runs edge to edge
  * under a slim top bar, and everything else floats over it.
@@ -31,6 +36,7 @@
 import { api, EngineApiError, type PolicySpec, type ScenarioSpec } from '@/lib/api';
 import { useEngineRun } from '@/lib/useEngineRun';
 import { EngineStatus } from '@/components/ui/EngineStatus';
+import { Chip } from '@/components/ui/primitives';
 import { IS_PUBLIC_PREVIEW } from '@/lib/deployment';
 import { demoIndex, findDemoRun, type DemoRunSummary } from '@/lib/staticDemo';
 import {
@@ -40,14 +46,27 @@ import {
   controlModeOf,
   type EngineEvent,
   type EngineLinkId,
+  type EngineRunState,
   type PolicyIdString,
 } from '@continua/contracts/engine';
-import { deadZonesFromFaults, MISSION_ZONES, NETWORK_COLOR, route } from '@continua/scene';
+import { deadZonesFromFaults, MISSION_ZONES, NETWORK_COLOR, route, SITES } from '@continua/scene';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { AppShell, RunStatusBar } from '../AppShell';
-import { CinematicIcon, CloseupIcon, FollowIcon, NetworkIcon, OverviewIcon, SpeakerIcon, SpeakerOffIcon } from '../ui/icons';
+import {
+  CinematicIcon,
+  CloseupIcon,
+  CoverageIcon,
+  FlightIcon,
+  FollowIcon,
+  NetworkIcon,
+  OverviewIcon,
+  SpeakerIcon,
+  SpeakerOffIcon,
+  SteeringIcon,
+} from '../ui/icons';
 import { ApplicationPanel } from './ApplicationPanel';
 import { CameraFeed } from './CameraFeed';
+import { DriveHud } from './DriveHud';
 import { FullscreenButton } from './FullscreenButton';
 import { HeadToHead } from './HeadToHead';
 import { LinkStack } from './LinkStack';
@@ -62,7 +81,13 @@ import { RunSummary } from './RunSummary';
 import { StoryBar, STORY_POLICY, STORY_SCENARIO, useStoryDirector } from './story';
 import { proofSentence, StoryLanding, StoryProof, useProofRows } from './StoryCards';
 import { StoryFilm } from './StoryFilm';
+import { useDrive } from './useDrive';
 import { narrator, useNarrator } from './voice';
+
+/** Whoever asked the system for less motion gets no camera flights until they turn them on. */
+function prefersReducedMotion(): boolean {
+  return typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true;
+}
 
 const ZONE_LABEL: Record<string, string> = Object.fromEntries(MISSION_ZONES.map((zone) => [zone.id, zone.label]));
 
@@ -156,6 +181,10 @@ export function MissionView() {
   const [storyPaused, setStoryPaused] = useState(false);
   const [skippingFrom, setSkippingFrom] = useState<string | null>(null);
   const [storyTake, setStoryTake] = useState(0);
+  // The camera flies out to each new link - unless the system asks for less motion.
+  const [flights, setFlights] = useState(() => !prefersReducedMotion());
+  // Where each network reaches, drawn on the ground.
+  const [coverage, setCoverage] = useState(false);
 
   /**
    * Which run is on screen. Locally that is whichever one the operator started.
@@ -218,11 +247,7 @@ export function MissionView() {
     };
   }, []);
 
-  // Follow the carrying link unless the operator has pinned one. Derived during
-  // render rather than synchronised from an effect.
-  const carrying = run.latest?.carrying ?? null;
   const [pinned, setPinned] = useState(false);
-  const activeLink: EngineLinkId = pinned ? selectedLink : (carrying ?? selectedLink);
 
   // A confirmation is worth one glance, not the rest of the session.
   useEffect(() => {
@@ -471,24 +496,6 @@ export function MissionView() {
   }, [baselineId, baselineCompleted]);
   const baselineMetrics = baselineSummary !== null && baselineSummary.runId === baselineId ? baselineSummary.metrics : null;
 
-  // The baseline as it was at this run's moment - its own buffer, read at this
-  // run's time, so the two are compared at the same point of the route.
-  const baselineEvent = useMemo(
-    () => (baselineId && run.latest ? baseline.source.eventAt(run.latest.t) : null),
-    // `baseline.latest` changes whenever the baseline's buffer grows.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [baselineId, baseline.source, baseline.latest, run.latest],
-  );
-  // Each run's whole timeline for the dock's tracks; `latest` changes as it grows.
-  const runTrack = useMemo(
-    () => (runId ? { events: run.source.timeline, version: run.latest?.seq ?? 0 } : null),
-    [runId, run.source, run.latest],
-  );
-  const baselineTrack = useMemo(
-    () => (baselineId ? { events: baseline.source.timeline, version: baseline.latest?.seq ?? 0 } : null),
-    [baselineId, baseline.source, baseline.latest],
-  );
-
   const scenario = useMemo(
     () => scenarios.find((s) => s.id === (run.state?.scenario_id ?? scenarioId)),
     [scenarios, run.state?.scenario_id, scenarioId],
@@ -503,6 +510,106 @@ export function MissionView() {
     run.source.setReverse(reverse);
     baseline.source.setReverse(reverse);
   }, [run.source, baseline.source, reverse]);
+
+  // --- the rover under the viewer's keys --------------------------------------------
+  // Taking the wheel holds the recording; the camera goes behind the rover.
+  const onTakeWheel = useCallback(() => {
+    setCamera('drive');
+    setSettingsOpen(false);
+    setPinned(false);
+    narrator.say(spokenLines.tookWheel, { kind: 'announcement' });
+    if (runId) {
+      const ids = [runId, baselineId].filter((id): id is string => Boolean(id));
+      void Promise.all(ids.map((id) => api.controlRun(id, { action: 'pause' }))).catch(() => undefined);
+    }
+  }, [runId, baselineId]);
+  // Handing back plays the recording on from the rover's point of the road.
+  // On the public build that is the recording itself; locally the drive had
+  // the engine finish the run, so a replay of it - badged as one - plays on.
+  const onReleaseWheel = useCallback(
+    (at: number) => {
+      setCamera('follow');
+      narrator.say(spokenLines.handedBack, { kind: 'announcement' });
+      if (!runId) return;
+      void act(async () => {
+        const ids = [runId, baselineId].filter((id): id is string => Boolean(id));
+        if (IS_PUBLIC_PREVIEW) {
+          await Promise.all(
+            ids.map(async (id) => {
+              await api.controlRun(id, { action: 'seek', t: at });
+              await api.controlRun(id, { action: 'play', speed: 1 });
+            }),
+          );
+          return;
+        }
+        const recordingOf = (id: string, state: EngineRunState | null) => (state?.mode === 'replay' ? (state.source?.run_id ?? id) : id);
+        const [response, baselineResponse] = await Promise.all([
+          api.replay(recordingOf(runId, run.state)),
+          baselineId ? api.replay(recordingOf(baselineId, baseline.state)) : Promise.resolve(null),
+        ]);
+        setStartedRunId(response.run_id);
+        setStartedBaselineId(baselineResponse?.run_id ?? null);
+        retire([runId, baselineId], [response.run_id, baselineResponse?.run_id ?? null]);
+        const replays = [response.run_id, baselineResponse?.run_id].filter((id): id is string => Boolean(id));
+        await Promise.all(replays.map((id) => api.controlRun(id, { action: 'seek', t: at })));
+      });
+    },
+    [runId, baselineId, act, retire, run.state, baseline.state],
+  );
+  const drive = useDrive({
+    enabled: view === 'drive' && Boolean(runId),
+    runId,
+    runState: run.state,
+    baselineId,
+    baselineState: baseline.state,
+    reverse,
+    onTake: onTakeWheel,
+    onRelease: onReleaseWheel,
+  });
+  const driving = drive.session !== null;
+  const driveFeed = driving ? drive.feed : null;
+
+  // --- what the panels read: the run as it streams, or, while driving, the
+  // recording at the rover's point of the road ----------------------------------------
+  const latest = driveFeed ? driveFeed.latest : run.latest;
+  const decisions = driveFeed ? driveFeed.decisions : run.decisions;
+  const history = driveFeed ? driveFeed.history : run.history;
+  const mainSource = drive.session ? drive.session.main.source : run.source;
+
+  // The baseline as it was at this run's moment - its own buffer, read at this
+  // run's time, so the two are compared at the same point of the route.
+  const streamedBaseline = useMemo(
+    () => (baselineId && run.latest ? baseline.source.eventAt(run.latest.t) : null),
+    // `baseline.latest` changes whenever the baseline's buffer grows.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [baselineId, baseline.source, baseline.latest, run.latest],
+  );
+  const baselineEvent = driveFeed ? driveFeed.baseline : streamedBaseline;
+  const baselineSource = drive.session?.baseline ? drive.session.baseline.source : baseline.source;
+  // Each run's whole timeline for the dock's tracks; `latest` changes as it grows.
+  const runTrack = useMemo(
+    () =>
+      drive.session
+        ? { events: drive.session.main.events, version: -1 }
+        : runId
+          ? { events: run.source.timeline, version: run.latest?.seq ?? 0 }
+          : null,
+    [drive.session, runId, run.source, run.latest],
+  );
+  const baselineTrack = useMemo(
+    () =>
+      drive.session?.baseline
+        ? { events: drive.session.baseline.events, version: -1 }
+        : baselineId
+          ? { events: baseline.source.timeline, version: baseline.latest?.seq ?? 0 }
+          : null,
+    [drive.session, baselineId, baseline.source, baseline.latest],
+  );
+
+  // Follow the carrying link unless the operator has pinned one. Derived during
+  // render rather than synchronised from an effect.
+  const carrying = latest?.carrying ?? null;
+  const activeLink: EngineLinkId = pinned ? selectedLink : (carrying ?? selectedLink);
 
   const story = useStoryDirector({
     active: view === 'story' && Boolean(runId),
@@ -538,54 +645,56 @@ export function MissionView() {
   // --- what the panels read ------------------------------------------------------
 
   const duration = run.state?.duration_s ?? scenario?.duration_s ?? 100;
-  const t = run.state?.t ?? 0;
-  const controlMode = controlModeOf(run.latest);
-  const zone = run.latest?.vehicle?.zone ? (ZONE_LABEL[run.latest.vehicle.zone] ?? run.latest.vehicle.zone) : null;
-  const handoff = useMemo(() => recentHandoff(run.decisions, run.latest), [run.decisions, run.latest]);
+  const t = driving ? drive.t : (run.state?.t ?? 0);
+  const controlMode = controlModeOf(latest);
+  const zone = latest?.vehicle?.zone ? (ZONE_LABEL[latest.vehicle.zone] ?? latest.vehicle.zone) : null;
+  const handoff = useMemo(() => recentHandoff(decisions, latest), [decisions, latest]);
   const runPolicy = (run.state?.policy_id ?? policyId) as PolicyIdString;
 
   // The road strip: the policy's road map, the rover on it, and its horizon.
   const radioMap = useRadioMap(runId || view !== 'landing' ? (scenario?.radio_map ?? 'baseline-journey') : null);
-  const travelled = run.latest?.vehicle?.distance_m ?? null;
-  const position = travelled === null ? null : reverse ? route.length - travelled : travelled;
+  const travelled = latest?.vehicle?.distance_m ?? null;
+  const position =
+    driving && drive.readout ? drive.readout.along : travelled === null ? null : reverse ? route.length - travelled : travelled;
   const preparedAt = useMemo(() => {
-    for (let i = run.decisions.length - 1; i >= 0; i -= 1) {
-      if (/^Preparing /.test(run.decisions[i]!.reason ?? '')) return run.decisions[i]!.t;
+    for (let i = decisions.length - 1; i >= 0; i -= 1) {
+      if (/^Preparing /.test(decisions[i]!.reason ?? '')) return decisions[i]!.t;
     }
     return null;
-  }, [run.decisions]);
+  }, [decisions]);
   const preparing =
     preparedAt !== null &&
-    run.latest !== null &&
-    run.latest.t - preparedAt < 10 &&
-    run.latest.carrying !== 'satellite';
+    latest !== null &&
+    latest.t - preparedAt < 10 &&
+    latest.carrying !== 'satellite';
   // When the road map's warning started a network: what the voice announces,
   // once - the decisions after it give the same reason for what they hold back.
   const warnedAt = useMemo(() => {
-    for (let i = run.decisions.length - 1; i >= 0; i -= 1) {
-      const event = run.decisions[i]!;
+    for (let i = decisions.length - 1; i >= 0; i -= 1) {
+      const event = decisions[i]!;
       if (/^Preparing /.test(event.reason ?? '') && actionsOf(event).some((action) => action.kind === 'activate_backup')) return event.t;
     }
     return null;
-  }, [run.decisions]);
+  }, [decisions]);
   // The road map's warning while it stands: from the decision that started a
   // network for a known gap until that network carries the link, or a few
   // seconds pass.
   const warning = useMemo(() => {
-    const now = run.latest;
+    const now = latest;
     if (!now) return null;
-    for (let i = run.decisions.length - 1; i >= 0; i -= 1) {
-      const event = run.decisions[i]!;
+    for (let i = decisions.length - 1; i >= 0; i -= 1) {
+      const event = decisions[i]!;
       if (event.t > now.t + 0.05) continue;
       if (now.t - event.t > WARNING_VISIBLE_S) return null;
       const words = warningWords(event);
       if (words) return now.carrying === words.link ? null : { event, words };
     }
     return null;
-  }, [run.decisions, run.latest]);
+  }, [decisions, latest]);
   // The one thing that just happened, for the banner: the more recent of the
   // warning and the last change of network. Whether the new network was
-  // already up is its recorded phase just before the switch.
+  // already up is its recorded phase just before the switch; where the new
+  // link comes from is the site of that network nearest the rover.
   const moment = useMemo((): MomentSpec | null => {
     if (view !== 'drive') return null;
     if (warning && (!handoff || warning.event.t > handoff.at)) {
@@ -593,17 +702,23 @@ export function MissionView() {
     }
     if (!handoff) return null;
     const why = handoffWhy(handoff.event, handoff.from);
-    const ready = run.source.eventAt(handoff.at - 0.05)?.links[handoff.to]?.phase === 'active';
-    const detail = [why, ready ? `${NETWORK[handoff.to].name} was already up` : null].filter(Boolean).join(' · ');
+    const ready = mainSource.eventAt(handoff.at - 0.05)?.links[handoff.to]?.phase === 'active';
+    const along = handoff.event.vehicle ? (reverse ? route.length - handoff.event.vehicle.distance_m : handoff.event.vehicle.distance_m) : null;
+    const where = along === null ? null : linkSource(handoff.to, along);
+    const detail = [where, why, ready ? `${NETWORK[handoff.to].name} was already up` : null].filter(Boolean).join(' · ');
     return { kind: 'handoff', key: `h${handoff.seq}`, at: handoff.at, from: handoff.from, to: handoff.to, detail: detail || null };
-  }, [view, warning, handoff, run.source]);
+  }, [view, warning, handoff, mainSource, reverse]);
+  // While driving, a moment holds for a few seconds of the viewer's time, not
+  // the recording's: a rover stopped just past a change would hold it forever.
+  const momentShown = useHeldFor(driving ? (moment?.key ?? null) : null, HANDOFF_VISIBLE_S * 1000);
+  const shownMoment = driving && !momentShown ? null : moment;
 
   const roadAhead = (
     <RoadAhead
       map={radioMap}
       position={position}
       direction={reverse ? -1 : 1}
-      speedMps={run.latest?.vehicle?.speed_mps ?? 0}
+      speedMps={driving && drive.readout ? drive.readout.speedKmh / 3.6 : (latest?.vehicle?.speed_mps ?? 0)}
       lookahead={runPolicy === 'P3'}
       preparing={preparing}
       deadZones={deadZones}
@@ -639,7 +754,10 @@ export function MissionView() {
   // beside the normal rover - has a stored twenty-drive comparison; its
   // summary says what that found.
   const featuredRun = (run.state?.scenario_id ?? scenarioId) === STORY_SCENARIO && runPolicy === STORY_POLICY && Boolean(baselineId);
-  const { rows: proofRows } = useProofRows(showSummary && featuredRun);
+  // The run's end card waits while the viewer drives: locally, taking the
+  // wheel has the engine finish the run, and that is not the end of the drive.
+  const summaryShown = showSummary && !driving;
+  const { rows: proofRows } = useProofRows(summaryShown && featuredRun);
   // The road strip says something only where there is a cutting to point at
   // or a road map steering the run; elsewhere it was one more band of text.
   const showRoad = deadZones.length > 0 || runPolicy === 'P3';
@@ -673,12 +791,17 @@ export function MissionView() {
 
   // The bar steps aside after a few seconds with nothing touched, while a run
   // plays; the picture is the point. Moving over the scene, or any key, brings
-  // it back at once.
+  // it back at once - except the keys that drive, while driving.
+  const drivingRef = useRef(false);
+  useEffect(() => {
+    drivingRef.current = driving;
+  }, [driving]);
   useEffect(() => {
     if (view !== 'drive') return undefined;
     const stage = stageRef.current;
     let timer = setTimeout(() => setBarIdle(true), BAR_IDLE_MS);
-    const wake = () => {
+    const wake = (event?: Event) => {
+      if (drivingRef.current && event instanceof KeyboardEvent && /^(Key[WASD]|Arrow|Space)/.test(event.code)) return;
       setBarIdle(false);
       clearTimeout(timer);
       timer = setTimeout(() => setBarIdle(true), BAR_IDLE_MS);
@@ -734,8 +857,17 @@ export function MissionView() {
   // together; the reasons are in the dock's last decision, to read.
   const handoffKey = view === 'drive' && handoff ? `${runId}:${handoff.seq}` : null;
   const handoffLine = handoff ? spokenLines.movedTo(handoff.to) : null;
+  // Driving back and forth over a change says it the first time only.
+  const saidWhileDriving = useRef(new Set<string>());
+  useEffect(() => {
+    if (!driving) saidWhileDriving.current.clear();
+  }, [driving]);
   useEffect(() => {
     if (!handoffKey || !handoffLine) return undefined;
+    if (driving) {
+      if (saidWhileDriving.current.has(handoffKey)) return undefined;
+      saidWhileDriving.current.add(handoffKey);
+    }
     const timer = setTimeout(() => narrator.say(handoffLine, { kind: 'announcement' }), 250);
     return () => clearTimeout(timer);
     // Keyed on the handoff, not its words: the same move can come twice.
@@ -747,7 +879,7 @@ export function MissionView() {
     const timer = setTimeout(() => narrator.say(spokenLines.gapAhead, { kind: 'announcement' }), 250);
     return () => clearTimeout(timer);
   }, [warningKey]);
-  const mainUp = view === 'drive' && runId ? connectionState(run.latest).up : null;
+  const mainUp = view === 'drive' && runId ? connectionState(latest).up : null;
   const baseUp = view === 'drive' && baselineId ? connectionState(baselineEvent).up : null;
   const heardUp = useRef<{ run: string | null; main: boolean | null; base: boolean | null }>({ run: null, main: null, base: null });
   useEffect(() => {
@@ -771,7 +903,22 @@ export function MissionView() {
   return (
     <AppShell
       variant="immersive"
-      bar={<RunStatusBar state={run.state} connection={run.connection} stale={run.stale} dropped={run.droppedSequences} />}
+      bar={
+        <RunStatusBar
+          state={run.state}
+          connection={run.connection}
+          // Driving, nothing streams: the whole recording is already here.
+          stale={run.stale && !driving}
+          dropped={run.droppedSequences}
+          actions={
+            driving ? (
+              <Chip tone="blue" title="You are driving the rover. Every network figure on screen is the recorded run at the rover's point of the road.">
+                <SteeringIcon size={13} /> DRIVING
+              </Chip>
+            ) : undefined
+          }
+        />
+      }
     >
       <div
         ref={stageRef}
@@ -782,24 +929,27 @@ export function MissionView() {
       >
         <MissionScene
           source={run.source}
+          driven={drive.session?.source ?? null}
           t={t}
           duration={duration}
           playing={playing && !run.stale}
           className="scene-shell-bleed absolute inset-0 h-full w-full"
           preview={!runId}
-          camera={view === 'story' && runId ? 'story' : camera}
+          camera={view === 'story' && runId ? 'story' : driving ? (camera === 'follow' ? 'drive' : camera) : camera === 'drive' ? 'follow' : camera}
           storyShot={story.shot}
           speed={run.state?.speed ?? 1}
           deadZones={deadZones}
           inset={landing ? undefined : inset}
           still={landing}
+          flights={flights && view !== 'story'}
+          coverage={coverage && view === 'drive'}
         />
 
         {/* --- top centre: can each operator reach their rover? --------------- */}
         {/* The run's ending says how it went; the live status steps aside for it. */}
         <div
           className="pointer-events-none absolute top-3 left-1/2 z-10 flex -translate-x-1/2 flex-col items-center gap-2 transition-opacity duration-300"
-          style={showSummary ? { opacity: 0 } : undefined}
+          style={summaryShown ? { opacity: 0 } : undefined}
         >
           <div ref={topRef} className="flex flex-col items-center gap-2">
           {landing ? null : !runId ? (
@@ -815,15 +965,15 @@ export function MissionView() {
             </div>
           ) : (
             <RoverStatus
-              main={run.latest}
+              main={latest}
               mainName={mainName}
-              mainTimeline={run.source.timeline}
+              mainTimeline={mainSource.timeline}
               baseline={baselineId ? baselineEvent : undefined}
-              baselineTimeline={baselineId ? baseline.source.timeline : undefined}
+              baselineTimeline={baselineId ? baselineSource.timeline : undefined}
               totals={view === 'drive' && detail}
             />
           )}
-          {runId && run.latest && view === 'drive' && detail && (
+          {runId && latest && view === 'drive' && detail && (
             <div className="flex items-center gap-2">
               <span
                 className="hud-chip"
@@ -845,15 +995,28 @@ export function MissionView() {
           </div>
 
           {/* What just happened, said once - the story says it in its caption. */}
-          {moment && (
-            <Moment moment={moment} holdSeconds={moment.kind === 'warning' ? WARNING_VISIBLE_S : HANDOFF_VISIBLE_S} />
+          {shownMoment && (
+            <Moment moment={shownMoment} holdSeconds={shownMoment.kind === 'warning' ? WARNING_VISIBLE_S : HANDOFF_VISIBLE_S} />
           )}
         </div>
+
+        {/* --- bottom left: take the wheel, or the driver's card ----------------------- */}
+        {view === 'drive' && runId && latest && !summaryShown && (
+          <DriveHud
+            driving={driving}
+            preparing={drive.preparing}
+            error={drive.error}
+            readout={drive.readout}
+            runId={run.state?.source?.run_id ?? runId}
+            onTake={() => void drive.take()}
+            onRelease={drive.release}
+          />
+        )}
 
         {/* --- the landing: what this is, and the one way in ------------------------- */}
         {landing && (
           <div className={`absolute inset-x-0 z-10 flex justify-center px-3 ${bootError ? 'top-[30%]' : 'top-[14%]'}`}>
-            <StoryLanding onDrive={startDrive} busy={busy} />
+            <StoryLanding onDrive={startDrive} onWatch={() => setFilmOpen(true)} busy={busy} />
           </div>
         )}
 
@@ -885,7 +1048,7 @@ export function MissionView() {
           </div>
         )}
 
-        {showSummary && runId && (
+        {summaryShown && summary && runId && (
           <RunSummary
             baseline={baselineMetrics ? { metrics: baselineMetrics, policy: BASELINE_POLICY } : null}
             metrics={summary.metrics}
@@ -914,8 +1077,8 @@ export function MissionView() {
         {view === 'drive' && (
           <aside className="mission-side mission-left scroll-y enter">
             <LinkStack
-              event={run.latest}
-              history={run.history}
+              event={latest}
+              history={history}
               selected={activeLink}
               simple={!detail}
               title={`${mainName}'s networks`}
@@ -940,16 +1103,16 @@ export function MissionView() {
         {/* --- right: the two rovers head to head; Details adds the measurements ------- */}
         {/* Nothing here before a run: the totals and the cameras enter with its
             first event, rather than as empty gauges and "no stream". */}
-        {(view === 'drive' || (view === 'story' && runId && !story.finished)) && run.latest && (
+        {(view === 'drive' || (view === 'story' && runId && !story.finished)) && latest && (
           <aside className="mission-side mission-right scroll-y enter-late flex flex-col gap-3 *:shrink-0">
             <HeadToHead
-              main={run.latest}
+              main={latest}
               baseline={baselineId ? baselineEvent : undefined}
               mainName={mainName}
               camera={
                 detail && view === 'drive' ? undefined : (
                   <CameraFeed
-                    event={run.latest}
+                    event={latest}
                     baseline={baselineId ? baselineEvent : undefined}
                     baselineLabel="Normal rover"
                     mainLabel={mainName}
@@ -962,18 +1125,18 @@ export function MissionView() {
             {view === 'drive' && detail && (
               <>
                 <div className="enter">
-                  <ApplicationPanel event={run.latest} />
+                  <ApplicationPanel event={latest} />
                 </div>
                 <div className="enter-late">
                   <CameraFeed
-                    event={run.latest}
+                    event={latest}
                     baseline={baselineId ? baselineEvent : undefined}
                     baselineLabel="Normal rover"
                     mainLabel={mainName}
                     defaultOpen={false}
                   />
                 </div>
-                <RouteMap event={run.latest} events={run.decisions} reverse={reverse} />
+                <RouteMap event={latest} events={decisions} reverse={reverse} />
               </>
             )}
           </aside>
@@ -1035,15 +1198,17 @@ export function MissionView() {
               speed={run.state?.speed ?? 1}
               t={t}
               duration={duration}
-              latest={run.latest}
-              decisions={run.decisions}
-              history={run.history}
+              latest={latest}
+              decisions={decisions}
+              history={history}
               onStart={start}
-              onToggle={() => control(playing ? 'pause' : 'play')}
-              onReset={() => control('reset')}
+              onToggle={() => (driving ? drive.release() : control(playing ? 'pause' : 'play'))}
+              onReset={() => (driving ? drive.session?.source.placeAt(0) : control('reset'))}
               onReplay={replay}
               onSpeed={(speed) => control('speed', { speed })}
-              onSeek={seek}
+              // While driving, a moment on the timeline puts the rover where the recording had it then.
+              onSeek={(to) => (driving ? drive.session?.source.placeAt(to) : seek(to))}
+              driving={driving}
               compare={comparing}
               onCompare={setCompare}
               track={runTrack}
@@ -1063,7 +1228,25 @@ export function MissionView() {
                     onToggle={() => narrator.setMuted(!voice.muted)}
                     onUnblock={() => narrator.unblock()}
                   />
-                  <CameraSwitch value={camera} onChange={setCamera} />
+                  <CameraSwitch value={driving && camera === 'follow' ? 'drive' : camera} onChange={setCamera} driving={driving} />
+                  <SceneToggle
+                    on={flights}
+                    onToggle={() => setFlights((value) => !value)}
+                    Icon={FlightIcon}
+                    label={flights ? 'Camera flies to each new link' : 'Camera stays with the rover'}
+                    title={
+                      flights
+                        ? 'On: at each change of network the camera flies out to where the new link comes from - the access point, the mast, the satellite - and back along it to the rover. Click to keep the camera with the rover.'
+                        : 'Off: the camera stays with the rover. Click to fly out to each new link.'
+                    }
+                  />
+                  <SceneToggle
+                    on={coverage}
+                    onToggle={() => setCoverage((value) => !value)}
+                    Icon={CoverageIcon}
+                    label={coverage ? 'Hide where each network reaches' : 'Show where each network reaches'}
+                    title="Where each network reaches, on the ground: the model's coverage of each access point and the mast - not a measurement, and not the link in use."
+                  />
                   <FullscreenButton target={stageRef} />
                 </>
               }
@@ -1136,15 +1319,84 @@ const CAMERAS: { id: MissionCamera; label: string; Icon: typeof FollowIcon }[] =
   { id: 'closeup', label: 'Close-up camera', Icon: CloseupIcon },
 ];
 
+/** While driving, the follow camera is the one behind the rover as it is steered. */
+const DRIVE_CAMERAS: typeof CAMERAS = CAMERAS.map((entry) =>
+  entry.id === 'follow' ? { id: 'drive', label: 'Driver camera, behind the rover', Icon: SteeringIcon } : entry,
+);
+
+/**
+ * Where a new link comes from, in a few words, for the moment banner: the
+ * site of that network nearest the rover - the end of the link the scene
+ * draws, and the one the camera flies to. Null for satellite, whose far end
+ * is the sky.
+ */
+function linkSource(link: EngineLinkId, along: number): string | null {
+  if (link === 'satellite') return null;
+  if (link === 'wired') return 'From the dock';
+  const at = route.at(along);
+  let best: (typeof SITES)[number] | null = null;
+  let bestDistance = Infinity;
+  for (const site of SITES) {
+    if (site.network !== link) continue;
+    const distance = Math.hypot(site.x - at.x, site.z - at.z);
+    if (distance < bestDistance) {
+      bestDistance = distance;
+      best = site;
+    }
+  }
+  if (!best) return null;
+  return link === 'wifi' ? `From ${best.label.replace(/^Wi-Fi /, '')}` : 'From the cell mast';
+}
+
+/** True while `key` has been the same for less than `ms` - a moment shown for a while of the viewer's time. */
+function useHeldFor(key: string | null, ms: number): boolean {
+  const [expired, setExpired] = useState<string | null>(null);
+  useEffect(() => {
+    if (!key) return undefined;
+    const timer = setTimeout(() => setExpired(key), ms);
+    return () => clearTimeout(timer);
+  }, [key, ms]);
+  return key !== null && expired !== key;
+}
+
+/** One of the scene's switches in the bar: an icon that is on or off. */
+function SceneToggle({
+  on,
+  onToggle,
+  Icon,
+  label,
+  title,
+}: {
+  on: boolean;
+  onToggle: () => void;
+  Icon: typeof FollowIcon;
+  label: string;
+  title: string;
+}) {
+  return (
+    <button type="button" className="icon-btn shrink-0" onClick={onToggle} aria-pressed={on} aria-label={label} title={title} data-active={on}>
+      <Icon size={16} />
+    </button>
+  );
+}
+
 /** Four viewpoints on the same run. A camera changes the picture, never the data. */
-function CameraSwitch({ value, onChange }: { value: MissionCamera; onChange: (camera: MissionCamera) => void }) {
+function CameraSwitch({
+  value,
+  onChange,
+  driving = false,
+}: {
+  value: MissionCamera;
+  onChange: (camera: MissionCamera) => void;
+  driving?: boolean;
+}) {
   return (
     <div
       role="group"
       aria-label="Camera"
       className="pointer-events-auto flex shrink-0 items-center gap-0.5 rounded-[11px] border border-[color:var(--color-line)] bg-[color:var(--color-surface)] p-[2px]"
     >
-      {CAMERAS.map(({ id, label, Icon }) => (
+      {(driving ? DRIVE_CAMERAS : CAMERAS).map(({ id, label, Icon }) => (
         <button
           key={id}
           type="button"

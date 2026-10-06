@@ -101,3 +101,28 @@ brag-output/work/*.jpg
 brag-output/work/*.log
 brag-output/work/loud*.json
 brag-output/work/telemetry-proof.json
+
+# ---- the intro and the walkthrough (/brag, 2026-10-06) ------------------------
+# Plan, brief, share copy, poster, both compositions, captions, scripts and
+# timings are tracked; the site's copy of the intro is in apps/web/public/video.
+# Footage, frames, voice stems, renders and review images are regenerable from
+# those scripts and stay local.
+brag-output-2026-10-06-230856/*.mp4
+brag-output-2026-10-06-230856/composition/assets/*
+!brag-output-2026-10-06-230856/composition/assets/continua-logo.png
+brag-output-2026-10-06-230856/composition/snapshots/
+brag-output-2026-10-06-230856/walkthrough/assets/
+brag-output-2026-10-06-230856/work/frames/
+# Voice: the clips stay local; each set's take record (every take's transcript) is kept.
+brag-output-2026-10-06-230856/work/vo/*
+!brag-output-2026-10-06-230856/work/vo/intro/
+!brag-output-2026-10-06-230856/work/vo/walkthrough/
+!brag-output-2026-10-06-230856/work/vo/demo/
+brag-output-2026-10-06-230856/work/vo/*/*
+!brag-output-2026-10-06-230856/work/vo/*/takes.json
+brag-output-2026-10-06-230856/work/*.wav
+brag-output-2026-10-06-230856/work/*.jpg
+brag-output-2026-10-06-230856/work/*.log
+brag-output-2026-10-06-230856/work/*.mp4
+**/.brag.hf-transaction-*/
+
