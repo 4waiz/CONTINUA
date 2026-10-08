@@ -130,7 +130,7 @@ export function CreditsView() {
               </li>
               <li>
                 <strong>The voices are synthetic.</strong> The lines the app says aloud were recorded on the development machine
-                with a voice that ships with Windows. The intro and the walkthrough are narrated by the open-weight Chatterbox
+                with a voice that ships with Windows. The project&apos;s demo films are narrated by the open-weight Chatterbox
                 model, run locally, in a voice taken from the open Kokoro-82M model&apos;s stock voice - not a real
                 person&apos;s - and every take was transcribed and checked against the script.
               </li>

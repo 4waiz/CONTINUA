@@ -24,8 +24,6 @@ export { SceneClock } from './core/clock';
 // --- state sources ---------------------------------------------------------
 export { PreviewSceneStateSource, previewSource, VEHICLE } from './preview/previewSource';
 export { EngineSceneStateSource } from './engine/engineSource';
-export { DrivenSceneStateSource, RoadClock } from './drive/drivenSource';
-export { DriveModel, NO_INPUT, surfaceDistance, type DriveInput, type DrivePose } from './drive/driveModel';
 
 // --- world model -----------------------------------------------------------
 export { Route, route, ROUTE_CONTROL_POINTS, type RouteSample } from './world/route';

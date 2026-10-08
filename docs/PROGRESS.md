@@ -1668,3 +1668,24 @@ more than 8 are required - that passed alone (10 frames, 2.2 fps). Nothing new
 renders on `/scene-lab`; this laptop's software rasteriser sits at that line.
 Viewed at 1920×1080 (the stills) and at 1440×900 and 1280×720 (landing and
 Credits).
+
+# Driving by hand and the intro film, taken out
+
+The team asked for both to go. **Driving by hand is gone:** no "Take the wheel"
+card, no W A S D, no driver camera, no "You have the wheel" lines (their two
+recordings are deleted from `apps/web/public/voice/`), and the scene package's
+`drive/` model and driven source with them - with the contract fields only it
+used (`SceneStateSource.step`, `HandoffMark.reveal`, the `drive` camera). The
+Mission page reads the run's own stream again everywhere the driving feed had
+stood in for it. **The intro film is off the site:** the landing has its one
+button back, The brief lost its "30-second intro" link and its "Drive the rover
+with W A S D" card, and `apps/web/public/video/story.*` is deleted (the worker
+for `/video/*` stays; `cards.json` lives there). `?story` plays the story in
+the app again, as it did before there was a film. The camera's flights, the
+coverage overlay, The brief and the credits stay.
+
+The October intro and walkthrough in `deliverables/` were recorded while
+driving was in the app and show it; they are left as made, and the docs say so.
+
+**Checks.** lint and typecheck clean; build clean; test:phase2 11/11;
+test:smoke 11 passed and 10 skipped by design. The engine was not touched.

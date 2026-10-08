@@ -256,17 +256,6 @@ export function RoadMapIcon(props: IconProps) {
   );
 }
 
-/** A steering wheel: the viewer drives the rover. */
-export function SteeringIcon(props: IconProps) {
-  return (
-    <Svg {...props}>
-      <circle cx="12" cy="12" r="8.5" />
-      <circle cx="12" cy="12" r="2.2" />
-      <path d="M3.8 10.5c2.7-.9 5.4-.9 6.1 0M20.2 10.5c-2.7-.9-5.4-.9-6.1 0M12 14.2v6.2" />
-    </Svg>
-  );
-}
-
 /** Rings spreading from a mast: where each network reaches. */
 export function CoverageIcon(props: IconProps) {
   return (
@@ -285,16 +274,6 @@ export function FlightIcon(props: IconProps) {
       <path d="M4 18c2-8 9-12 15-11" />
       <path d="m16 4.5 3 2.5-2.6 2.9" />
       <circle cx="4.5" cy="18.5" r="1.6" fill="currentColor" stroke="none" />
-    </Svg>
-  );
-}
-
-/** A small keyboard: the keys that drive. */
-export function KeyboardIcon(props: IconProps) {
-  return (
-    <Svg {...props}>
-      <rect x="2.5" y="6" width="19" height="12" rx="2.2" />
-      <path d="M6.5 10h.01M10 10h.01M14 10h.01M17.5 10h.01M8 14h8" strokeWidth={2.2} />
     </Svg>
   );
 }

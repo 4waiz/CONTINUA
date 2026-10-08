@@ -130,11 +130,11 @@ screen is read from a recorded run.
 
 ### The 30-second intro and the two-minute walkthrough
 
-Since 2026-10-06 the film the site's `?story` link and the landing's **Watch
-the intro** open (`apps/web/public/video/story.mp4`) is a 30-second intro, and
-a two-minute narrated walkthrough of the whole app sits in `deliverables/`.
-Their plan, storyboard, claim ledger and script are in
-`brag-output-2026-10-06-230856/brag-plan.md`.
+A 30-second intro and a two-minute narrated walkthrough of the whole app,
+made on 2026-10-06, are in `deliverables/`. The intro played on the site, from
+`?story` and the landing, until 2026-10-08, when it was taken off along with
+driving by hand (W A S D), which both films show. Their plan, storyboard, claim
+ledger and script are in `brag-output-2026-10-06-230856/brag-plan.md`.
 
 * **The picture is the app.** Both are the public build replaying recorded
   runs, captured frame by frame on a fake clock
@@ -163,7 +163,7 @@ Their plan, storyboard, claim ledger and script are in
 ### The first story film (replaced)
 
 The one-minute film the `?story` link opened until 2026-10-06 was a separate,
-shorter cut. Its plan, storyboard and claim ledger are in
+shorter cut. Since 2026-10-08 `?story` plays the story in the app instead. Its plan, storyboard and claim ledger are in
 `brag-output/brag-plan.md`.
 
 * **The picture is the app.** Every story shot is the public build replaying

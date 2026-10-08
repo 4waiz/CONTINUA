@@ -6,9 +6,7 @@
  * Every camera is a pure function of `clock.time` - no springs, no smoothing
  * over previous frames. That means scrubbing to a timestamp reproduces exactly
  * the frame you would have got by playing to it, which Phase 3 capture needs,
- * and it also removes the jitter a naive lerp-to-target introduces. The one
- * exception is the drive camera, behind a rover the viewer is steering, which
- * is never captured.
+ * and it also removes the jitter a naive lerp-to-target introduces.
  *
  * Smoothness comes instead from sampling the route's *smoothed* heading over a
  * window, which is inherently continuous.
@@ -18,7 +16,7 @@ import { useFrame, useThree } from '@react-three/fiber';
 import { useMemo, useRef } from 'react';
 import { Vector3, type PerspectiveCamera } from 'three';
 import type { AccessNetworkId, CameraMode, HandoffMark, SceneState, StoryShot, StoryShotId } from '@continua/contracts';
-import { angleDelta, clamp } from '../math/noise';
+import { clamp } from '../math/noise';
 import { useSceneRuntime } from '../runtime/SceneRuntime';
 import { route } from '../world/route';
 import { roadSurfaceY } from '../world/road';
@@ -344,7 +342,7 @@ const DEG = Math.PI / 180;
 // ---------------------------------------------------------------------------
 
 /**
- * When the carrying network changes, the follow, close-up and drive cameras
+ * When the carrying network changes, the follow and close-up cameras
  * leave the rover and fly to the far end of the new link - the access point,
  * the mast - hold there with the beam leaving it for the rover, ride the beam
  * back down to the rover and settle behind it again. For satellite, whose far
@@ -600,52 +598,13 @@ function applyFlights(state: SceneState, time: number, pace: number, shot: Shot)
   if (!latest) return;
   const before = state.handoffBefore ?? null;
   const ageOf = (mark: HandoffMark) => (time - mark.at) / pace;
-  const flying = (mark: HandoffMark) => mark.reveal !== false && ageOf(mark) >= 0 && ageOf(mark) <= FLIGHT_S;
+  const flying = (mark: HandoffMark) => ageOf(mark) >= 0 && ageOf(mark) <= FLIGHT_S;
   copyShot(shot, _base);
   if (flying(latest)) {
     let from = _base;
     if (before && flying(before) && flightPose(state, before.to, ageOf(before), _base, _base, _earlier)) from = _earlier;
     if (flightPose(state, latest.to, ageOf(latest), from, _base, _flown)) copyShot(_flown, shot);
-    return;
   }
-  // The newest change is not flown (a driven rover backing over it): let the
-  // flight before it finish.
-  if (latest.reveal === false && before && flying(before) && flightPose(state, before.to, ageOf(before), _base, _base, _flown)) {
-    copyShot(_flown, shot);
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Drive: behind the rover while the viewer steers it
-// ---------------------------------------------------------------------------
-
-/** What the drive camera remembers between frames: the heading it has eased to. */
-interface ChaseMemory {
-  heading: number;
-  at: number;
-}
-
-/**
- * Behind and above the rover, turning after it as it turns. The one rig that
- * is not a pure function of time: it eases toward the rover's heading over a
- * third of a second, as a chase camera does - a driven rover is not captured.
- * Further back and wider as it speeds up.
- */
-function driveShot(state: SceneState, time: number, memory: ChaseMemory, out: Shot): Shot {
-  const vehicle = state.vehicle;
-  const elapsed = time - memory.at;
-  if (memory.at < 0 || elapsed < 0 || elapsed > 1) memory.heading = vehicle.heading;
-  else memory.heading += angleDelta(memory.heading, vehicle.heading) * (1 - Math.exp(-elapsed / 0.3));
-  memory.at = time;
-  const cos = Math.cos(memory.heading);
-  const sin = Math.sin(memory.heading);
-  const speed = Math.abs(vehicle.speedMps);
-  const back = 12.5 + speed * 0.12;
-  const p = vehicle.position;
-  out.position.set(p.x - cos * back, p.y + 5 + speed * 0.05, p.z + sin * back);
-  out.target.set(p.x + cos * 7, p.y + 1.3, p.z - sin * 7);
-  out.fov = 44 + Math.min(8, speed * 0.45);
-  return out;
 }
 
 export function SceneCameras({
@@ -661,7 +620,7 @@ export function SceneCameras({
   inset?: { top: number; bottom: number };
   /** The scenario's cuttings. Kept for callers; a flight now keeps clear of them by flying. */
   zones?: readonly DeadZone[];
-  /** Fly out to each new link (follow, close-up and drive cameras). */
+  /** Fly out to each new link (follow and close-up cameras). */
   flights?: boolean;
   /** The run's playback rate: a flight's beats last this many scene seconds per second. */
   pace?: number;
@@ -674,7 +633,6 @@ export function SceneCameras({
     [],
   );
   const lookTarget = useRef(new Vector3());
-  const chase = useRef<ChaseMemory>({ heading: 0, at: -1 });
 
   useFrame(() => {
     const state = frame.current;
@@ -700,10 +658,6 @@ export function SceneCameras({
       case 'story':
         if (story) storyShot(story, distance, dir, time, shot);
         else followShot(distance, dir, shot);
-        break;
-      case 'drive':
-        driveShot(state, time, chase.current, shot);
-        if (flights) applyFlights(state, time, flightPace, shot);
         break;
       case 'follow':
       default:

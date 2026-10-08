@@ -337,14 +337,6 @@ test.describe('failure handling', () => {
     // shows a placeholder rather than a value. The reason is on the
     // placeholder's accessible name - the dashboard does not repeat the same
     // sentence down a column of four cards.
-    // The story film is a file and plays without the engine - the `?story`
-    // link opens it; replaying the story in 3D needs the engine's runs.
-    await page.goto('/?story', { waitUntil: 'domcontentloaded' });
-    const film = page.getByRole('dialog', { name: /thirty-second film/ });
-    await expect(film).toBeVisible();
-    await expect(film.getByRole('button', { name: 'Replay it in 3D' })).toBeDisabled();
-    await page.keyboard.press('Escape');
-    await expect(film).toHaveCount(0);
     // The landing has one way in. With no engine it opens the panels, waiting,
     // over a scene badged as a preview.
     await openDrive(page);

@@ -25,7 +25,7 @@ npm run build && npm start  # app on localhost:3000
 | URL | Section |
 | --- | --- |
 | <http://localhost:3000> | **Mission** - opens on what this is and one way in, **Drive it yourself**: the shadowed route, CONTINUA beside the normal rover, then any scenario and strategy - in plain words, said aloud, with every measurement behind **Details** |
-| <http://localhost:3000/?story> | The 30-second intro film - the link to send someone; "Replay it in 3D" plays the story in the app |
+| <http://localhost:3000/?story> | The story - the link to send someone: the same run in the app as a narrated minute with chapter captions |
 | <http://localhost:3000/experiments> | **Results** - every paired comparison, twenty drives a strategy at a glance, then the full tables and the execution-capability report |
 | <http://localhost:3000/decision-log> | **Decision log** - every controller action, with its observations, reason and the run's recorded outcome |
 | <http://localhost:3000/scenario-lab> | **Scenario builder** - inject failures and congestion, change speed and workload |
@@ -97,25 +97,16 @@ While a run plays the screen holds four things, and nothing else:
   (road, strategy, comparison, seed, speed) and **Details**. It steps aside
   while a run plays untouched; any movement brings it back.
 
-**Take the wheel.** Press W (or any arrow) and you drive CONTINUA's rover:
-W and S for throttle and brake, A and D to steer, Space to hold, Esc hands it
-back to the autopilot. A kinematic model keeps the rover on the drivable
-surface - the road, the dock bay and the turning circle - pushing back off the
-kerb, and lightly assists along the lane when nothing is steered
-(`packages/scene/src/drive/`). Driving never invents network state: every
-link, handoff and measurement shown is the recorded run **at the rover's
-position on the road**, so driving on plays the recording forward and backing
-up plays it back; the camera still flies at each change of network you drive
-into. **Coverage** in the bar draws where the dock's cable, each Wi-Fi access
-point and the cell mast reach - kept apart from the route and the active link.
+**Coverage** in the bar draws where the dock's cable, each Wi-Fi access point
+and the cell mast reach - kept apart from the route and the active link.
 
 The end card puts the same four totals side by side and, in the same card,
 what acting early cost: more changes of network, and big uploads held back.
 Every measurement stays one click away under **Details**.
-`/?story` opens the 30-second intro film (below); its "Replay it in
-3D" plays it in the app as a narrated minute with chapter captions, ending on
-the stored comparison (`apps/web/src/components/mission/story.tsx`). Nothing in
-either is scripted: every number is read from the runs' own events.
+`/?story` plays the same run in the app as a narrated minute with chapter
+captions, ending on the stored comparison
+(`apps/web/src/components/mission/story.tsx`). Nothing in it is scripted:
+every number is read from the runs' own events.
 
 ![Inside the cutting: CONTINUA on satellite, the normal rover cut off](assets/previews/browser/mission-cutting.png)
 
@@ -191,18 +182,15 @@ workload overrides are hidden there, and the page says so.
 | `node scripts/build-brand-logo.mjs` | Un-matte `logo.png` to a transparent wordmark |
 | `npm run deploy` | Static export into `apps/web/out/` in public-preview mode, checked, then published to Cloudflare (`-- --dry` stops before publishing) |
 
-The `?story` link and the landing's **Watch the intro · 30 s** play a
-30-second film (`apps/web/public/video/story.mp4`): the app itself replaying
-the two story runs - the camera's flight at a handoff, the dead zone, driving
-by hand - captured frame by frame, then the stored twenty-drive result, with a
-narrator and captions. Its storyboard, claim ledger and voice script are in
-`brag-output-2026-10-06-230856/brag-plan.md`; the frame-exact capture, voice,
-edit and stills scripts are in `brag-output-2026-10-06-230856/work/`, and the
-same capture with the same voice makes a two-minute narrated walkthrough of
-the whole app (`brag-output-2026-10-06-230856/walkthrough/`). The previous
-one-minute film's sources stay in `brag-output/`. The asset store does not answer byte
-ranges, which Safari needs to play video at all, so `edge/worker.js` serves
-`/video/*` with 206 responses; everything else is plain static assets.
+The site plays no film. The 30-second intro and the two-minute narrated
+walkthrough made in October are files in `deliverables/`; their storyboard,
+claim ledger and voice script are in `brag-output-2026-10-06-230856/brag-plan.md`,
+and the frame-exact capture, voice, edit and stills scripts in
+`brag-output-2026-10-06-230856/work/`. Both were recorded while the Mission page
+still offered driving by hand (W A S D), which has since been taken out. The
+earlier one-minute film's sources stay in `brag-output/`. `edge/worker.js` still
+answers byte ranges for `/video/*`, which Safari needs to play a video at all;
+everything else is plain static assets.
 
 Run files are columnar: one array per field path rather than one object per
 event, which is the same data at a third of the size. `decodeRun` in

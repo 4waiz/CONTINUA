@@ -17,9 +17,9 @@ Repository: <https://github.com/4waiz/CONTINUA>
 | `deliverables/CONTINUA_Demo_Poster_1024x576.png` | Poster frame | `qa-demo.mjs` checks the dimensions |
 | `deliverables/CONTINUA_Demo_Contact_Sheet.jpg` | One frame from each of the ten shots | Built by `scripts/build-demo.mjs` |
 | `video/manifest.json` | What went into the build: run IDs, experiments, commit, capture settings, attribution | Written by `scripts/build-demo.mjs` |
-| `deliverables/CONTINUA_Team_Kanban_Walkthrough.mp4` | The two-minute narrated walkthrough of the whole app (Oct 2026): a drive with its camera flights, the dead zone, driving by hand, Details, Results, the Decision log, the brief, the credits | `brag-output-2026-10-06-230856/work/` - frame-exact capture (`capture.mjs`), narration (`voice.py`), composition (`build.mjs walkthrough`); ffprobe in `docs/PROGRESS.md` |
+| `deliverables/CONTINUA_Team_Kanban_Walkthrough.mp4` | The two-minute narrated walkthrough of the whole app (Oct 2026): a drive with its camera flights, the dead zone, driving by hand (since taken out of the app), Details, Results, the Decision log, the brief, the credits | `brag-output-2026-10-06-230856/work/` - frame-exact capture (`capture.mjs`), narration (`voice.py`), composition (`build.mjs walkthrough`); ffprobe in `docs/PROGRESS.md` |
 | `deliverables/CONTINUA_Team_Kanban_Walkthrough.srt` | Its subtitles, from the same timings as the narration | `build.mjs walkthrough` |
-| `deliverables/CONTINUA_Team_Kanban_Intro.mp4` | The 30-second intro - the same file as the site's `apps/web/public/video/story.mp4` | `build.mjs intro`, rendered with HyperFrames |
+| `deliverables/CONTINUA_Team_Kanban_Intro.mp4` | The 30-second intro - on the site until 2026-10-08; shows driving by hand, since taken out of the app | `build.mjs intro`, rendered with HyperFrames |
 | `deliverables/screenshots/` | Ten stills of the app running, 1920×1080, each with what it shows (`stills.json`) | `brag-output-2026-10-06-230856/work/stills.mjs` |
 
 ## 2. The claim trail

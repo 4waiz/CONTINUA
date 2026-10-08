@@ -18,7 +18,7 @@ import { AppShell } from './AppShell';
 import { AtAGlance } from './experiments/AtAGlance';
 import { PROOF_EXPERIMENT, useProofRows } from './mission/StoryCards';
 import { REPO_URL } from '@/lib/deployment';
-import { CompareIcon, FlightIcon, NetworkIcon, PlayIcon, RoadMapIcon, SteeringIcon } from './ui/icons';
+import { CompareIcon, FlightIcon, NetworkIcon, PlayIcon, RoadMapIcon } from './ui/icons';
 
 const doc = (path: string) => `${REPO_URL}/blob/main/${path}`;
 
@@ -47,7 +47,7 @@ const CRITERIA: readonly {
   {
     n: '03',
     asked: 'Simulate, emulate or prototype it.',
-    done: 'A deterministic engine models four access paths - queues, capacity, delay, jitter, burst loss, activation delay and per-byte cost - carrying five real traffic classes, and a 3D world shows the rover, its links and every handoff. You can drive the rover yourself.',
+    done: 'A deterministic engine models four access paths - queues, capacity, delay, jitter, burst loss, activation delay and per-byte cost - carrying five real traffic classes, and a 3D world shows the rover, its links and every handoff.',
     where: [
       { label: 'Drive it yourself', href: '/' },
       { label: 'Build a scenario', href: '/scenario-lab' },
@@ -216,13 +216,10 @@ export function ChallengeView() {
             </p>
             <div className="doc-actions">
               <Link href="/" className="control control-primary no-underline">
-                <SteeringIcon size={15} /> Drive it yourself
+                <PlayIcon size={15} /> Drive it yourself
               </Link>
               <Link href="/experiments" className="control no-underline">
                 <CompareIcon size={15} /> Every result
-              </Link>
-              <Link href="/?story" className="control no-underline">
-                <PlayIcon size={13} /> The 30-second intro
               </Link>
             </div>
           </header>
@@ -331,7 +328,7 @@ export function ChallengeView() {
 
           <section aria-labelledby="sim-title" className="doc-section">
             <h2 id="sim-title" className="doc-h2">
-              03 · Simulated, and yours to drive
+              03 · Simulated, and shown as it happens
             </h2>
             <div className="doc-grid">
               <div className="doc-card glass">
@@ -341,14 +338,6 @@ export function ChallengeView() {
                   Cable, Wi-Fi, cellular and satellite, each with finite queues, capacity, delay, jitter, correlated burst loss,
                   activation delay, competing demand and per-byte cost - carrying steering commands, telemetry, video, voice
                   and bulk uploads. Deterministic: the same scenario and seed give the same run.
-                </p>
-              </div>
-              <div className="doc-card glass">
-                <SteeringIcon size={18} />
-                <strong>Drive the rover with W A S D</strong>
-                <p>
-                  Take the wheel on the Mission page: the road keeps the rover on it, and what the network does at each
-                  point of the road is the recorded run&apos;s - drive forward and it plays on, back up and it plays back.
                 </p>
               </div>
               <div className="doc-card glass">

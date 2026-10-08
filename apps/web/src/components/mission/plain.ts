@@ -230,9 +230,6 @@ export const spokenLines = {
   gapAhead: 'Gap ahead: getting satellite ready.',
   /** A status card turning red, or green again. */
   connection: (rover: string, up: boolean): string => (up ? `${rover}: connected again.` : `${rover}: connection lost.`),
-  /** The viewer takes the wheel, and hands it back. */
-  tookWheel: 'You have the wheel.',
-  handedBack: 'Autopilot. The recording drives on from here.',
 } as const;
 
 /** The connection as the operator experiences it, from the receiver's report. */
