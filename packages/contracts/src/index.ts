@@ -199,6 +199,18 @@ export interface SceneState {
    * `handoff`.
    */
   readonly handoffBefore?: HandoffMark | null;
+  /**
+   * The receiver reports that no path is carrying the session (`app.in_outage`):
+   * the operator cannot reach the rover. Optional: a source that cannot say
+   * leaves it out.
+   */
+  readonly sessionDown?: boolean;
+  /**
+   * How far the rover is being held still because its link is down, 0..1: 0
+   * driving, 1 standing. Drawn, not measured - see `EngineSceneStateSource`'s
+   * hold. Optional; absent means driving.
+   */
+  readonly held?: number;
 }
 
 /**

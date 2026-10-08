@@ -6,7 +6,9 @@
  *
  * Two rovers drive the shadowed route side by side, on the same seed - one on
  * CONTINUA with the road map (P3), one that only switches after its network
- * fails (B0) - exactly as Mission's "Compare" runs them. The story never
+ * fails (B0) - exactly as Mission's "Compare" runs them, and both are drawn:
+ * the normal rover in grey in the other lane, standing still while its link
+ * is down. The story never
  * scripts what happens. Each chapter begins when the run reaches it (the
  * rover's place on the route, or a decision the engine actually logged), and
  * every number in a caption is read from the two runs' events at that moment:
@@ -232,11 +234,10 @@ export function useStoryDirector({
         };
       }
       case 'two':
-        // The scene draws one rover - the two share every metre of the road -
-        // so the caption says where the other one is shown.
+        // Both are drawn, a lane each: the caption says which is which.
         return {
           chapter,
-          text: 'A normal rover without CONTINUA drives this same road at the same moment. Its status is beside ours, at the top.',
+          text: 'Beside it, in grey, a normal rover without CONTINUA drives the same road at the same moment.',
         };
       case 'ahead':
         return { chapter, text: 'Ahead, a cutting blocks Wi-Fi and cellular. Only satellite gets through.' };

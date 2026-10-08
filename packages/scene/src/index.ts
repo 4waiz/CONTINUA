@@ -23,7 +23,7 @@ export { SceneClock } from './core/clock';
 
 // --- state sources ---------------------------------------------------------
 export { PreviewSceneStateSource, previewSource, VEHICLE } from './preview/previewSource';
-export { EngineSceneStateSource } from './engine/engineSource';
+export { EngineSceneStateSource, HOLD, type DownSpan } from './engine/engineSource';
 
 // --- world model -----------------------------------------------------------
 export { Route, route, ROUTE_CONTROL_POINTS, type RouteSample } from './world/route';
@@ -54,14 +54,15 @@ export {
   type ShadowFaultLike,
 } from './world/deadZones';
 export { GATE_DISTANCE } from './world/layout';
+export { LANES, laneOffset, type RoverLane } from './world/lanes';
 
 // --- components ------------------------------------------------------------
 export { ContinuaScene, qualityCeiling, type ContinuaSceneProps } from './components/ContinuaScene';
 export { Ground } from './components/Ground';
 export { Lighting } from './components/Lighting';
-export { Rover, ROVER_MODEL_URL, ROVER_MODEL_LOD1_URL } from './components/Rover';
+export { Rover, ROVER_MODEL_URL, ROVER_MODEL_LOD1_URL, type RoverVariant } from './components/Rover';
 export { WorldProps, PROPS_MODEL_URL } from './components/WorldProps';
-export { CoverageOverlay, LinkBeams } from './components/Network';
+export { CompanionLinkBeams, CoverageOverlay, LinkBeams } from './components/Network';
 export { SceneCameras } from './components/Cameras';
 export {
   ROVER_CAM_HEIGHT,

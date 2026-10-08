@@ -49,7 +49,7 @@ async function requireEngine(page: Page): Promise<void> {
  * run and shows the controls, which can start another.
  */
 async function openDrive(page: Page): Promise<void> {
-  await page.getByRole('button', { name: 'Drive it yourself' }).click({ timeout: 60_000 });
+  await page.getByRole('button', { name: 'Watch the two rovers' }).click({ timeout: 60_000 });
 }
 
 /** Start a run through the UI and wait until events are flowing. */
@@ -180,6 +180,90 @@ test.describe('Mission dashboard', () => {
     // Seek forward.
     await page.locator('input[aria-label="Run timeline"]').fill('40');
     await expect.poll(async () => Number(await clockText()), { timeout: 15_000 }).toBeGreaterThan(35);
+  });
+
+  test('draws the normal rover beside the run, standing while its own link is down', async ({ page }) => {
+    const errors = consoleErrors(page);
+    await requireEngine(page);
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
+    // The way in starts the featured pair: the shadowed route, CONTINUA beside the normal rover.
+    await openDrive(page);
+
+    type Span = { from: number; to: number };
+    type Sample = { held?: number; sessionDown?: boolean; vehicle: { distance: number; speedMps: number } };
+    type Source = { runId: string; sampleAt: (t: number) => Sample; downSpans: () => Span[] };
+    type Api = {
+      source: Source;
+      settings: { get: () => { companion: Source | null } };
+      three?: { scene?: { traverse: (visit: (node: { name: string }) => void) => void } };
+    };
+
+    // Both rovers are in the scene, and the second one is the normal rover's own run.
+    const ids = await page
+      .waitForFunction(
+        () => {
+          const api = (window as unknown as { __CONTINUA__?: Api }).__CONTINUA__;
+          const companion = api?.settings.get().companion;
+          let drawn = false;
+          api?.three?.scene?.traverse((node) => {
+            if (node.name === 'CONTINUA_Rover_Normal') drawn = true;
+          });
+          return api && companion && drawn ? { main: api.source.runId, base: companion.runId } : null;
+        },
+        undefined,
+        { timeout: 120_000 },
+      )
+      .then((handle) => handle.jsonValue());
+    expect(ids.base).not.toBe(ids.main);
+
+    // Hurry both runs past the cutting, through the engine's own control.
+    for (const id of [ids.main, ids.base]) {
+      await page.request.post(`${ENGINE}/api/runs/${id}/control`, { data: { action: 'speed', speed: 8 } });
+    }
+
+    // The normal rover's receiver reports its link down for more than two
+    // seconds in the cutting...
+    const span = await page
+      .waitForFunction(
+        () => {
+          const companion = (window as unknown as { __CONTINUA__?: Api }).__CONTINUA__?.settings.get().companion;
+          return companion?.downSpans().find((down) => down.to !== Infinity && down.to - down.from > 2) ?? null;
+        },
+        undefined,
+        { timeout: 90_000 },
+      )
+      .then((handle) => handle.jsonValue());
+
+    // ...and the scene draws it standing then, while CONTINUA drives on, and
+    // moving again once its link is back.
+    const seen = await page.evaluate(({ from, to }) => {
+      const api = (window as unknown as { __CONTINUA__: Api }).__CONTINUA__;
+      const companion = api.settings.get().companion!;
+      // Half-way through, and past the watchdog's grace and the braking.
+      const mid = Math.max((from + to) / 2, from + 1.7);
+      const standing = companion.sampleAt(mid);
+      const main = api.source.sampleAt(mid);
+      const after = companion.sampleAt(to + 3);
+      return {
+        held: standing.held ?? 0,
+        speed: standing.vehicle.speedMps,
+        down: standing.sessionDown === true,
+        mainDown: main.sessionDown === true,
+        mainSpeed: main.vehicle.speedMps,
+        ahead: main.vehicle.distance - standing.vehicle.distance,
+        afterHeld: after.held ?? 0,
+        afterSpeed: after.vehicle.speedMps,
+      };
+    }, span);
+    expect(seen.down, 'the normal rover is cut off then').toBe(true);
+    expect(seen.held, 'and drawn standing').toBe(1);
+    expect(seen.speed).toBe(0);
+    expect(seen.mainDown, 'CONTINUA keeps its link').toBe(false);
+    expect(seen.mainSpeed, 'and drives on').toBeGreaterThan(1);
+    expect(seen.ahead, 'so it is drawn ahead').toBeGreaterThan(5);
+    expect(seen.afterHeld, 'the normal rover pulls away once its link is back').toBeLessThan(0.01);
+    expect(seen.afterSpeed).toBeGreaterThan(1);
+    expect(errors).toEqual([]);
   });
 
   test('replay identifies its source run and mode', async ({ page }, testInfo) => {

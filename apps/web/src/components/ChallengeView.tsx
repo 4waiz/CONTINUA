@@ -49,7 +49,7 @@ const CRITERIA: readonly {
     asked: 'Simulate, emulate or prototype it.',
     done: 'A deterministic engine models four access paths - queues, capacity, delay, jitter, burst loss, activation delay and per-byte cost - carrying five real traffic classes, and a 3D world shows the rover, its links and every handoff.',
     where: [
-      { label: 'Drive it yourself', href: '/' },
+      { label: 'Watch the two rovers', href: '/' },
       { label: 'Build a scenario', href: '/scenario-lab' },
     ],
   },
@@ -216,7 +216,7 @@ export function ChallengeView() {
             </p>
             <div className="doc-actions">
               <Link href="/" className="control control-primary no-underline">
-                <PlayIcon size={15} /> Drive it yourself
+                <PlayIcon size={15} /> Watch the two rovers
               </Link>
               <Link href="/experiments" className="control no-underline">
                 <CompareIcon size={15} /> Every result

@@ -349,7 +349,8 @@ def prop_wifi_mast(m: dict) -> bpy.types.Object:
     return k.finish(smooth_angle=45.0)
 
 
-def prop_dock_station(m: dict) -> bpy.types.Object:
+def prop_dock_station(m: dict, name: str = "PROP_DockStation", number: str = "DOCK 01",
+                      equipment: bool = True) -> bpy.types.Object:
     """The wired dock: the rover's bay and its launch gantry.
 
     A charcoal epoxy bay with the dock's number painted behind the rover; a
@@ -367,8 +368,14 @@ def prop_dock_station(m: dict) -> bpy.types.Object:
     parking spot. The scene attaches the wired tether at DOCK_TETHER. With
     that yaw, authored +X is world -X (the gantry's +X face looks back at the
     follow camera) and authored +Y is world +Z.
+
+    `number` is the lettering on the beam and the floor. With `equipment`
+    off it is the second bay, DOCK 02 (build_dock_two.py), where the normal
+    rover starts when it drives beside CONTINUA: the bay, its gantry and its
+    tether, without the pillar, the cabinet and the floodlights - the first
+    dock's serve the yard, and they would stand on the second bay's far kerb.
     """
-    k = Kit("PROP_DockStation", m)
+    k = Kit(name, m)
     cx, cy = DOCK_BAY
     # Bay floor with cyan lane markings; the rover's long axis runs along X.
     # The floor's top is the road deck's height (ROAD_SURFACE_OFFSET in
@@ -417,7 +424,8 @@ def prop_dock_station(m: dict) -> bpy.types.Object:
     cylinder(k["graphite"], (gx, cy, top + 0.05), 0.13, 0.1, 14)
     cylinder(k["amber"], (gx, cy, top + 0.17), 0.1, 0.16, 14)
     # Conduit up the outside of the equipment-side leg to the beam.
-    geo.tube(k["galv"], [(gx, cy + span + 0.29, 0.3), (gx, cy + span + 0.29, clear + 0.3)], 0.045, 8)
+    if equipment:
+        geo.tube(k["galv"], [(gx, cy + span + 0.29, 0.3), (gx, cy + span + 0.29, clear + 0.3)], 0.045, 8)
     # Tether: a carriage under the beam, a drop tube with a strain relief, and
     # the head over the rover's roof port.
     tx, ty, tz = DOCK_TETHER
@@ -426,55 +434,58 @@ def prop_dock_station(m: dict) -> bpy.types.Object:
     cylinder(k["graphite"], (tx, ty, tz + 0.42), 0.075, 0.3, 10)
     slab(k["panel_grey"], (tx, ty, tz + 0.12), (0.36, 0.36, 0.26), cell=0.5)
     cylinder(k["accent_cyan"], (tx, ty, tz - 0.03), 0.07, 0.06, 12)
-    # Data/power pillar beside the bay, its screen facing the bay.
-    px, py = cx - 2.6, cy + 3.3
-    slab(k["panel_grey"], (px, py, 1.25), (0.8, 0.7, 2.5), cell=1.0)
-    box(k["graphite"], (px, py - 0.355, 1.6), (0.64, 0.02, 0.5))
-    box(k["screen"], (px, py - 0.37, 1.6), (0.55, 0.02, 0.4))
-    box(k["accent_cyan"], (px, py, 2.54), (0.85, 0.75, 0.08))
-    # Utility cabinet at the site origin; a cover plate over the cable trench
-    # to the pillar, on the yard's surface.
-    slab(k["panel"], (0.0, 0.0, 0.9), (1.4, 0.8, 1.8), cell=1.0)
-    box(k["graphite"], (0.0, 0.0, 1.83), (1.5, 0.9, 0.06))
-    for x in (-0.35, 0.35):
-        box(k["steel_dark"], (x, -0.405, 1.0), (0.5, 0.02, 1.3))
-    box(k["steel_dark"], (px / 2, py / 2, BAY_FLOOR + 0.006), (0.5, abs(py) - 0.2, 0.012))
+    if equipment:
+        # Data/power pillar beside the bay, its screen facing the bay.
+        px, py = cx - 2.6, cy + 3.3
+        slab(k["panel_grey"], (px, py, 1.25), (0.8, 0.7, 2.5), cell=1.0)
+        box(k["graphite"], (px, py - 0.355, 1.6), (0.64, 0.02, 0.5))
+        box(k["screen"], (px, py - 0.37, 1.6), (0.55, 0.02, 0.4))
+        box(k["accent_cyan"], (px, py, 2.54), (0.85, 0.75, 0.08))
+        # Utility cabinet at the site origin; a cover plate over the cable trench
+        # to the pillar, on the yard's surface.
+        slab(k["panel"], (0.0, 0.0, 0.9), (1.4, 0.8, 1.8), cell=1.0)
+        box(k["graphite"], (0.0, 0.0, 1.83), (1.5, 0.9, 0.06))
+        for x in (-0.35, 0.35):
+            box(k["steel_dark"], (x, -0.405, 1.0), (0.5, 0.02, 1.3))
+        box(k["steel_dark"], (px / 2, py / 2, BAY_FLOOR + 0.006), (0.5, abs(py) - 0.2, 0.012))
     # Bollards: in front of each gantry leg, toward the yard, and along the
     # front of the equipment.
-    for wx, wz in ((-25.25, -3.05), (-25.25, 3.05), (-22.0, 3.6), (-22.0, 5.7), (-22.0, 7.8)):
+    bollards = ((-25.25, -3.05), (-25.25, 3.05)) + (((-22.0, 3.6), (-22.0, 5.7), (-22.0, 7.8)) if equipment else ())
+    for wx, wz in bollards:
         bx, by = _dock_local(wx, wz)
         cylinder(k["graphite"], (bx, by, 0.55), 0.11, 1.1, 12)
         for z in (0.78, 0.98):
             cylinder(k["amber"], (bx, by, z), 0.112, 0.08, 12)
-    # Floodlight masts either side of the yard, two lamps each aimed down at
-    # the bay. Clear of every camera's path round the docked rover: the
-    # inspection turntable orbits at 10.6 m, the close-up at 7.4 m.
-    for wz in (11.0, -11.0):
-        mx, my = _dock_local(-17.0, wz)
-        cylinder(k["concrete"], (mx, my, 0.3), 0.42, 0.6, 14)
-        geo.sweep(k["galv"], geo.circle(0.16, 12), [(mx, my, 0.55), (mx, my, 11.2)], cap=True,
-                  scale=lambda t: 1.0 - 0.4 * t)
-        aim = math.atan2(cy - my, cx - mx)
-        ax, ay = math.cos(aim), math.sin(aim)
-        px_, py_ = -ay, ax
-        box(k["galv"], (mx + ax * 0.12, my + ay * 0.12, 11.05), (0.12, 1.9, 0.12),
-            rotation=Matrix.Rotation(aim, 4, "Z"))
-        turn = Matrix.Rotation(aim, 4, "Z") @ Matrix.Rotation(0.75, 4, "Y")
-        normal = turn @ Vector((1.0, 0.0, 0.0))
-        for s in (-1, 1):
-            c = Vector((mx + ax * 0.32 + px_ * s * 0.58, my + ay * 0.32 + py_ * s * 0.58, 10.82))
-            box(k["graphite"], c, (0.14, 0.78, 0.5), rotation=turn)
-            box(k["lamp"], c + normal * 0.075, (0.02, 0.7, 0.42), rotation=turn)
+    if equipment:
+        # Floodlight masts either side of the yard, two lamps each aimed down at
+        # the bay. Clear of every camera's path round the docked rover: the
+        # inspection turntable orbits at 10.6 m, the close-up at 7.4 m.
+        for wz in (11.0, -11.0):
+            mx, my = _dock_local(-17.0, wz)
+            cylinder(k["concrete"], (mx, my, 0.3), 0.42, 0.6, 14)
+            geo.sweep(k["galv"], geo.circle(0.16, 12), [(mx, my, 0.55), (mx, my, 11.2)], cap=True,
+                      scale=lambda t: 1.0 - 0.4 * t)
+            aim = math.atan2(cy - my, cx - mx)
+            ax, ay = math.cos(aim), math.sin(aim)
+            px_, py_ = -ay, ax
+            box(k["galv"], (mx + ax * 0.12, my + ay * 0.12, 11.05), (0.12, 1.9, 0.12),
+                rotation=Matrix.Rotation(aim, 4, "Z"))
+            turn = Matrix.Rotation(aim, 4, "Z") @ Matrix.Rotation(0.75, 4, "Y")
+            normal = turn @ Vector((1.0, 0.0, 0.0))
+            for s in (-1, 1):
+                c = Vector((mx + ax * 0.32 + px_ * s * 0.58, my + ay * 0.32 + py_ * s * 0.58, 10.82))
+                box(k["graphite"], c, (0.14, 0.78, 0.5), rotation=turn)
+                box(k["lamp"], c + normal * 0.075, (0.02, 0.7, 0.42), rotation=turn)
     dock = k.finish(smooth_angle=45.0)
     # Lettering: on both faces of the beam, and painted on the bay's floor
     # behind the rover, reading the right way up from the follow camera.
     signs = [
-        arch.sign_text(f"PROP_Dock_sign_{facing}", "DOCK 01", (gx + side * (depth / 2 + 0.045), cy, clear + 0.5),
+        arch.sign_text(f"PROP_Dock_sign_{facing}", number, (gx + side * (depth / 2 + 0.045), cy, clear + 0.5),
                        arch.FACING[facing], 0.3, m["paint_line"], extrude=0.012)
         for facing, side in (("+x", 1), ("-x", -1))
     ]
     at = Vector((cx + 3.2, cy, BAY_FLOOR + 0.003))
-    floor = arch.sign_text("PROP_Dock_floor_number", "DOCK 01", at, (0.0, 0.0, math.pi / 2), 0.78,
+    floor = arch.sign_text("PROP_Dock_floor_number", number, at, (0.0, 0.0, math.pi / 2), 0.78,
                            m["paint_line"], extrude=0.0)
     # Between the bay's long lines, with a margin either side.
     ys = [v.co.y for v in floor.data.vertices]

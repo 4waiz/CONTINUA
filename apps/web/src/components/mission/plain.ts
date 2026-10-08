@@ -219,18 +219,10 @@ export function warningWords(event: EngineEvent): { title: string; detail: strin
 }
 
 /**
- * What the voice says while driving - the short words already on screen, so a
- * run of changes close together, as at the cutting, is still said as it
- * happens. The reasons stay in the dock's last decision, to read.
+ * The road strip's words while the road map's warning stands. (What the voice
+ * says while driving is commentary.ts.)
  */
-export const spokenLines = {
-  /** The handoff toast: "Moved to Satellite". */
-  movedTo: (link: EngineLinkId): string => `Moved to ${NETWORK[link].name}.`,
-  /** The road strip, while the road map's warning stands. */
-  gapAhead: 'Gap ahead: getting satellite ready.',
-  /** A status card turning red, or green again. */
-  connection: (rover: string, up: boolean): string => (up ? `${rover}: connected again.` : `${rover}: connection lost.`),
-} as const;
+export const GAP_AHEAD = 'Gap ahead: getting satellite ready';
 
 /** The connection as the operator experiences it, from the receiver's report. */
 export function connectionState(event: EngineEvent | null | undefined): {

@@ -24,7 +24,7 @@ import type { EngineLinkId } from '@continua/contracts/engine';
 import { MISSION_ZONES, NETWORK_COLOR, route, type DeadZone } from '@continua/scene';
 import { useEffect, useMemo, useState } from 'react';
 import { InfoTip } from '../ui/InfoTip';
-import { NETWORK, spokenLines } from './plain';
+import { GAP_AHEAD, NETWORK } from './plain';
 
 /** The route-aware policy's look-ahead, seconds (controller `route_horizon_s`). */
 export const LOOKAHEAD_S = 8;
@@ -216,7 +216,7 @@ export function RoadAhead({
                 ...(direction > 0 ? { left: 0 } : { right: 0 }),
               }}
             >
-              {preparing ? spokenLines.gapAhead.replace(/\.$/, '') : `Next ${LOOKAHEAD_S} s`}
+              {preparing ? GAP_AHEAD : `Next ${LOOKAHEAD_S} s`}
             </span>
           </div>
         )}

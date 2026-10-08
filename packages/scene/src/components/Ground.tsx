@@ -41,6 +41,7 @@ import {
   PARKING,
   ROAD_START,
   dockBayOutline,
+  DOCK_BAY_TWO,
   dockYardOutline,
 } from '../world/dock';
 import { buildKerbRuns, KERB, type KerbRun } from '../world/kerbs';
@@ -227,6 +228,7 @@ function buildYardGeometry(): BufferGeometry {
   // Shape space is (x, -z): turned down onto the ground, its faces look up.
   const shape = new Shape(dockYardOutline().map(([x, z]) => new Vector2(x, -z)));
   shape.holes.push(new Path(dockBayOutline(0.01).map(([x, z]) => new Vector2(x, -z))));
+  shape.holes.push(new Path(dockBayOutline(0.01, DOCK_BAY_TWO).map(([x, z]) => new Vector2(x, -z))));
   const geometry = new ShapeGeometry(shape, 1);
   geometry.rotateX(-Math.PI / 2);
   const position = geometry.getAttribute('position');

@@ -7,154 +7,874 @@
   },
   "lines": [
     {
-      "text": "Moved to Cable.",
-      "spoken": "Moved to Cable.",
-      "file": "7c59e3c16f25.mp3",
-      "seconds": 1.62
+      "text": "Backup-after-trouble rover: back after 11 s stopped, on cellular.",
+      "spoken": "Backup-after-trouble rover: back after 11 seconds stopped, on cellular.",
+      "file": "e02b0e305c0d.mp3",
+      "seconds": 5.59
     },
     {
-      "text": "Moved to Wi-Fi.",
-      "spoken": "Moved to Wi-Fi.",
-      "file": "ace0596b6932.mp3",
-      "seconds": 1.72
+      "text": "Backup-after-trouble rover: back after 4.5 s stopped, on satellite.",
+      "spoken": "Backup-after-trouble rover: back after 4.5 seconds stopped, on satellite.",
+      "file": "1d2a5fed1af5.mp3",
+      "seconds": 6.06
     },
     {
-      "text": "Moved to Cellular.",
-      "spoken": "Moved to Cellular.",
-      "file": "3893593dc848.mp3",
-      "seconds": 1.8
+      "text": "Backup-after-trouble rover: back after 4.6 s stopped, on satellite.",
+      "spoken": "Backup-after-trouble rover: back after 4.6 seconds stopped, on satellite.",
+      "file": "9f2d4a344f18.mp3",
+      "seconds": 6.04
     },
     {
-      "text": "Moved to Satellite.",
-      "spoken": "Moved to Satellite.",
-      "file": "ac75ca6d9f0e.mp3",
-      "seconds": 1.81
+      "text": "Backup-after-trouble rover: connection lost. Cellular dropped and satellite wasn't ready.",
+      "spoken": "Backup-after-trouble rover: connection lost. Cellular dropped and satellite wasn't ready.",
+      "file": "207f7236092f.mp3",
+      "seconds": 6.61
     },
     {
-      "text": "Gap ahead: getting satellite ready.",
-      "spoken": "Gap ahead: getting satellite ready.",
-      "file": "82c8ac218fef.mp3",
-      "seconds": 2.94
+      "text": "Backup-after-trouble rover: connection lost. Cellular dropped and satellite wasn't ready. The normal rover is still connected.",
+      "spoken": "Backup-after-trouble rover: connection lost. Cellular dropped and satellite wasn't ready. The normal rover is still connected.",
+      "file": "f1b0845e3f12.mp3",
+      "seconds": 9.15
     },
     {
-      "text": "Normal rover: connection lost.",
-      "spoken": "Normal rover: connection lost.",
-      "file": "252bb116e56c.mp3",
-      "seconds": 2.92
+      "text": "Backup-after-trouble rover: connection lost. Cellular dropped.",
+      "spoken": "Backup-after-trouble rover: connection lost. Cellular dropped.",
+      "file": "6789e14dbda2.mp3",
+      "seconds": 5.45
     },
     {
-      "text": "Normal rover: connected again.",
-      "spoken": "Normal rover: connected again.",
-      "file": "f918cecd1636.mp3",
-      "seconds": 2.79
+      "text": "Backup-after-trouble rover: connection lost. Wi-Fi dropped and satellite wasn't ready.",
+      "spoken": "Backup-after-trouble rover: connection lost. Wi-Fi dropped and satellite wasn't ready.",
+      "file": "7ddff3954ae1.mp3",
+      "seconds": 6.52
     },
     {
-      "text": "Backup-after-trouble rover: connection lost.",
-      "spoken": "Backup-after-trouble rover: connection lost.",
-      "file": "64abc536a5d2.mp3",
-      "seconds": 3.65
+      "text": "Both leave the dock, still on the cable.",
+      "spoken": "Both leave the dock, still on the cable.",
+      "file": "1c8acb2ab5e5.mp3",
+      "seconds": 3.04
     },
     {
-      "text": "Backup-after-trouble rover: connected again.",
-      "spoken": "Backup-after-trouble rover: connected again.",
-      "file": "179f054d46bb.mp3",
-      "seconds": 3.5
+      "text": "Both leave the dock.",
+      "spoken": "Both leave the dock.",
+      "file": "273785cba01d.mp3",
+      "seconds": 1.85
     },
     {
-      "text": "Everything-on rover: connection lost.",
-      "spoken": "Everything-on rover: connection lost.",
-      "file": "495054127a15.mp3",
-      "seconds": 3.14
+      "text": "CONTINUA leaves the dock, still on the cable.",
+      "spoken": "CONTINUA leaves the dock, still on the cable.",
+      "file": "eafc19680c81.mp3",
+      "seconds": 3.35
     },
     {
-      "text": "Everything-on rover: connected again.",
-      "spoken": "Everything-on rover: connected again.",
-      "file": "4134f4808574.mp3",
-      "seconds": 2.99
+      "text": "CONTINUA leaves the dock.",
+      "spoken": "CONTINUA leaves the dock.",
+      "file": "a68b30624c32.mp3",
+      "seconds": 2.15
     },
     {
-      "text": "CONTINUA: connection lost.",
-      "spoken": "CONTINUA: connection lost.",
-      "file": "7935b36ad0d6.mp3",
-      "seconds": 2.79
+      "text": "CONTINUA moved to Wi-Fi before cellular could fail.",
+      "spoken": "CONTINUA moved to Wi-Fi before cellular could fail.",
+      "file": "9d5a0ff1acfc.mp3",
+      "seconds": 3.54
     },
     {
-      "text": "CONTINUA: connected again.",
-      "spoken": "CONTINUA: connected again.",
-      "file": "3dc12a303fc8.mp3",
-      "seconds": 2.66
+      "text": "CONTINUA moved to cellular.",
+      "spoken": "CONTINUA moved to cellular.",
+      "file": "465c88f9a046.mp3",
+      "seconds": 2.33
     },
     {
-      "text": "CONTINUA (no forecast): connection lost.",
-      "spoken": "CONTINUA (no forecast): connection lost.",
-      "file": "52d905824200.mp3",
-      "seconds": 3.64
+      "text": "CONTINUA moved to satellite.",
+      "spoken": "CONTINUA moved to satellite.",
+      "file": "fd1c70e6cbee.mp3",
+      "seconds": 2.34
     },
     {
-      "text": "CONTINUA (no forecast): connected again.",
-      "spoken": "CONTINUA (no forecast): connected again.",
-      "file": "e9c456cee3af.mp3",
-      "seconds": 3.51
+      "text": "CONTINUA's video pauses on the thinner satellite link, but the link holds.",
+      "spoken": "CONTINUA's video pauses on the thinner satellite link, but the link holds.",
+      "file": "92daf73ca451.mp3",
+      "seconds": 5.01
     },
     {
-      "text": "CONTINUA (no app priorities): connection lost.",
-      "spoken": "CONTINUA (no app priorities): connection lost.",
-      "file": "4bcad93a24c7.mp3",
-      "seconds": 4.01
+      "text": "CONTINUA: back after 11 s stopped, on cellular.",
+      "spoken": "CONTINUA: back after 11 seconds stopped, on cellular.",
+      "file": "70013e5d3b9e.mp3",
+      "seconds": 4.72
     },
     {
-      "text": "CONTINUA (no app priorities): connected again.",
-      "spoken": "CONTINUA (no app priorities): connected again.",
-      "file": "b271b7cfe49a.mp3",
-      "seconds": 3.86
+      "text": "CONTINUA: back after 4.5 s stopped, on satellite.",
+      "spoken": "CONTINUA: back after 4.5 seconds stopped, on satellite.",
+      "file": "07a2158d3fd8.mp3",
+      "seconds": 5.2
     },
     {
-      "text": "CONTINUA P2: connection lost.",
-      "spoken": "CONTINUA P2: connection lost.",
-      "file": "ad1cf52d69ea.mp3",
+      "text": "CONTINUA: back after 4.6 s stopped, on satellite.",
+      "spoken": "CONTINUA: back after 4.6 seconds stopped, on satellite.",
+      "file": "e271c07a2f85.mp3",
+      "seconds": 5.17
+    },
+    {
+      "text": "CONTINUA: connection lost. Cellular dropped and satellite wasn't ready.",
+      "spoken": "CONTINUA: connection lost. Cellular dropped and satellite wasn't ready.",
+      "file": "47bed759220d.mp3",
+      "seconds": 5.75
+    },
+    {
+      "text": "CONTINUA: connection lost. Cellular dropped and satellite wasn't ready. The normal rover is still connected.",
+      "spoken": "CONTINUA: connection lost. Cellular dropped and satellite wasn't ready. The normal rover is still connected.",
+      "file": "04c2ed0c17e5.mp3",
+      "seconds": 8.29
+    },
+    {
+      "text": "CONTINUA: connection lost. Cellular dropped.",
+      "spoken": "CONTINUA: connection lost. Cellular dropped.",
+      "file": "64bb231f2c34.mp3",
+      "seconds": 4.59
+    },
+    {
+      "text": "CONTINUA: connection lost. Wi-Fi dropped and satellite wasn't ready.",
+      "spoken": "CONTINUA: connection lost. Wi-Fi dropped and satellite wasn't ready.",
+      "file": "30d6421c1b76.mp3",
+      "seconds": 5.65
+    },
+    {
+      "text": "Cellular dropped out. CONTINUA moved to satellite with no gap.",
+      "spoken": "Cellular dropped out. CONTINUA moved to satellite with no gap.",
+      "file": "a2e93845f302.mp3",
+      "seconds": 4.93
+    },
+    {
+      "text": "Cellular dropped out. The everything-on rover moved to satellite with no gap.",
+      "spoken": "Cellular dropped out. The everything-on rover moved to satellite with no gap.",
+      "file": "f3fb0c568e14.mp3",
+      "seconds": 5.47
+    },
+    {
+      "text": "Cellular got too slow, so CONTINUA moved to Wi-Fi.",
+      "spoken": "Cellular got too slow, so CONTINUA moved to Wi-Fi.",
+      "file": "216ad7c3948c.mp3",
+      "seconds": 4.14
+    },
+    {
+      "text": "Cellular got too slow, so CONTINUA moved to satellite.",
+      "spoken": "Cellular got too slow, so CONTINUA moved to satellite.",
+      "file": "1325dbc248d3.mp3",
+      "seconds": 4.23
+    },
+    {
+      "text": "Cellular got too slow, so the backup-after-trouble rover moved to Wi-Fi.",
+      "spoken": "Cellular got too slow, so the backup-after-trouble rover moved to Wi-Fi.",
+      "file": "726c61d2b6a4.mp3",
+      "seconds": 5.15
+    },
+    {
+      "text": "Cellular got too slow, so the backup-after-trouble rover moved to satellite.",
+      "spoken": "Cellular got too slow, so the backup-after-trouble rover moved to satellite.",
+      "file": "f41b135b7fef.mp3",
+      "seconds": 5.23
+    },
+    {
+      "text": "Cellular got too slow, so the everything-on rover moved to Wi-Fi.",
+      "spoken": "Cellular got too slow, so the everything-on rover moved to Wi-Fi.",
+      "file": "5becc49355fc.mp3",
+      "seconds": 4.67
+    },
+    {
+      "text": "Cellular got too slow, so the everything-on rover moved to satellite.",
+      "spoken": "Cellular got too slow, so the everything-on rover moved to satellite.",
+      "file": "09beb0148a22.mp3",
+      "seconds": 4.75
+    },
+    {
+      "text": "Cellular is shadowed on this stretch.",
+      "spoken": "Cellular is shadowed on this stretch.",
+      "file": "0fc0388eb451.mp3",
+      "seconds": 2.77
+    },
+    {
+      "text": "Cellular is up and ready, before the dead zone.",
+      "spoken": "Cellular is up and ready, before the dead zone.",
+      "file": "1cef387520ea.mp3",
+      "seconds": 3.49
+    },
+    {
+      "text": "Dead zone 123 m ahead on the road map. CONTINUA is starting cellular now.",
+      "spoken": "Dead zone 123 metres ahead on the road map. CONTINUA is starting cellular now.",
+      "file": "6804e24b6b41.mp3",
+      "seconds": 6.71
+    },
+    {
+      "text": "Dead zone 78 m ahead on the road map. CONTINUA is starting Wi-Fi now.",
+      "spoken": "Dead zone 78 metres ahead on the road map. CONTINUA is starting Wi-Fi now.",
+      "file": "79977d696059.mp3",
+      "seconds": 5.99
+    },
+    {
+      "text": "Dead zone 79 m ahead on the road map. CONTINUA is starting satellite now.",
+      "spoken": "Dead zone 79 metres ahead on the road map. CONTINUA is starting satellite now.",
+      "file": "81fc1b922256.mp3",
+      "seconds": 6.1
+    },
+    {
+      "text": "Everything-on rover: back after 11 s stopped, on cellular.",
+      "spoken": "Everything-on rover: back after 11 seconds stopped, on cellular.",
+      "file": "00274316d594.mp3",
+      "seconds": 5.08
+    },
+    {
+      "text": "Everything-on rover: connection lost. Cellular dropped.",
+      "spoken": "Everything-on rover: connection lost. Cellular dropped.",
+      "file": "01e1dce6ea40.mp3",
+      "seconds": 4.94
+    },
+    {
+      "text": "Into the cutting: Wi-Fi and cellular fade out.",
+      "spoken": "Into the cutting: Wi-Fi and cellular fade out.",
+      "file": "64dbf09be36a.mp3",
+      "seconds": 3.41
+    },
+    {
+      "text": "Normal rover: back after 11 s stopped, on cellular.",
+      "spoken": "Normal rover: back after 11 seconds stopped, on cellular.",
+      "file": "17cf762764d5.mp3",
+      "seconds": 4.86
+    },
+    {
+      "text": "Normal rover: back after 4.5 s stopped, on satellite.",
+      "spoken": "Normal rover: back after 4.5 seconds stopped, on satellite.",
+      "file": "e9ce21507a8b.mp3",
+      "seconds": 5.32
+    },
+    {
+      "text": "Normal rover: back after 4.6 s stopped, on satellite.",
+      "spoken": "Normal rover: back after 4.6 seconds stopped, on satellite.",
+      "file": "803cbb6b3640.mp3",
+      "seconds": 5.3
+    },
+    {
+      "text": "Normal rover: connection lost. Cellular dropped and satellite wasn't ready.",
+      "spoken": "Normal rover: connection lost. Cellular dropped and satellite wasn't ready.",
+      "file": "a42dbfba9fba.mp3",
+      "seconds": 5.88
+    },
+    {
+      "text": "Normal rover: connection lost. Cellular dropped and satellite wasn't ready. CONTINUA is still connected.",
+      "spoken": "Normal rover: connection lost. Cellular dropped and satellite wasn't ready. CONTINUA is still connected.",
+      "file": "763563f34b3f.mp3",
+      "seconds": 8.18
+    },
+    {
+      "text": "Normal rover: connection lost. Cellular dropped and satellite wasn't ready. The backup-after-trouble rover is still connected.",
+      "spoken": "Normal rover: connection lost. Cellular dropped and satellite wasn't ready. The backup-after-trouble rover is still connected.",
+      "file": "375b2dfdb123.mp3",
+      "seconds": 9.17
+    },
+    {
+      "text": "Normal rover: connection lost. Cellular dropped and satellite wasn't ready. The everything-on rover is still connected.",
+      "spoken": "Normal rover: connection lost. Cellular dropped and satellite wasn't ready. The everything-on rover is still connected.",
+      "file": "cb3634a2b793.mp3",
+      "seconds": 8.69
+    },
+    {
+      "text": "Normal rover: connection lost. Cellular dropped.",
+      "spoken": "Normal rover: connection lost. Cellular dropped.",
+      "file": "c5b9f9bc5c63.mp3",
+      "seconds": 4.72
+    },
+    {
+      "text": "Normal rover: connection lost. Wi-Fi dropped and satellite wasn't ready.",
+      "spoken": "Normal rover: connection lost. Wi-Fi dropped and satellite wasn't ready.",
+      "file": "6d4639651c09.mp3",
+      "seconds": 5.78
+    },
+    {
+      "text": "Normal rover: connection lost. Wi-Fi dropped and satellite wasn't ready. CONTINUA is still connected.",
+      "spoken": "Normal rover: connection lost. Wi-Fi dropped and satellite wasn't ready. CONTINUA is still connected.",
+      "file": "2a185f3f347b.mp3",
+      "seconds": 8.09
+    },
+    {
+      "text": "Normal rover: connection lost. Wi-Fi dropped and satellite wasn't ready. The everything-on rover is still connected.",
+      "spoken": "Normal rover: connection lost. Wi-Fi dropped and satellite wasn't ready. The everything-on rover is still connected.",
+      "file": "63986d364e06.mp3",
+      "seconds": 8.6
+    },
+    {
+      "text": "Off the cable: CONTINUA is on Wi-Fi, with no gap.",
+      "spoken": "Off the cable: CONTINUA is on Wi-Fi, with no gap.",
+      "file": "08b66aaf4e7d.mp3",
+      "seconds": 4.28
+    },
+    {
+      "text": "Off the cable: the backup-after-trouble rover is on Wi-Fi.",
+      "spoken": "Off the cable: the backup-after-trouble rover is on Wi-Fi.",
+      "file": "d269457ce7f5.mp3",
+      "seconds": 4.19
+    },
+    {
+      "text": "Off the cable: the everything-on rover is on Wi-Fi, with no gap.",
+      "spoken": "Off the cable: the everything-on rover is on Wi-Fi, with no gap.",
+      "file": "29bb53c5d108.mp3",
+      "seconds": 4.78
+    },
+    {
+      "text": "Off the cable: the normal rover is on Wi-Fi.",
+      "spoken": "Off the cable: the normal rover is on Wi-Fi.",
+      "file": "6adea9fb6390.mp3",
+      "seconds": 3.44
+    },
+    {
+      "text": "Out of the cutting.",
+      "spoken": "Out of the cutting.",
+      "file": "5504fa0e3715.mp3",
+      "seconds": 1.57
+    },
+    {
+      "text": "Run complete. CONTINUA was cut off once, 11 s in all.",
+      "spoken": "Run complete. CONTINUA was cut off once, 11 seconds in all.",
+      "file": "176ec19f3951.mp3",
+      "seconds": 5.48
+    },
+    {
+      "text": "Run complete. CONTINUA was cut off once, 11 s in all. The normal rover was cut off 4 times, 18 s in all.",
+      "spoken": "Run complete. CONTINUA was cut off once, 11 seconds in all. The normal rover was cut off 4 times, 18 seconds in all.",
+      "file": "9a8d45e1227a.mp3",
+      "seconds": 9.96
+    },
+    {
+      "text": "Run complete. CONTINUA was cut off once, 4.5 s in all.",
+      "spoken": "Run complete. CONTINUA was cut off once, 4.5 seconds in all.",
+      "file": "b8dd383a394f.mp3",
+      "seconds": 5.95
+    },
+    {
+      "text": "Run complete. CONTINUA was cut off once, 4.5 s in all. The normal rover was cut off once, 4.6 s in all.",
+      "spoken": "Run complete. CONTINUA was cut off once, 4.5 seconds in all. The normal rover was cut off once, 4.6 seconds in all.",
+      "file": "af62c5e6deaa.mp3",
+      "seconds": 10.55
+    },
+    {
+      "text": "Run complete. CONTINUA was cut off once, 4.5 s in all. The normal rover was cut off twice, 5.5 s in all.",
+      "spoken": "Run complete. CONTINUA was cut off once, 4.5 seconds in all. The normal rover was cut off twice, 5.5 seconds in all.",
+      "file": "827a5702d533.mp3",
+      "seconds": 10.73
+    },
+    {
+      "text": "Run complete. CONTINUA was cut off once, 4.6 s in all.",
+      "spoken": "Run complete. CONTINUA was cut off once, 4.6 seconds in all.",
+      "file": "86553a926d58.mp3",
+      "seconds": 5.92
+    },
+    {
+      "text": "Run complete. CONTINUA was cut off once, 4.6 s in all. The normal rover was cut off twice, 5.5 s in all.",
+      "spoken": "Run complete. CONTINUA was cut off once, 4.6 seconds in all. The normal rover was cut off twice, 5.5 seconds in all.",
+      "file": "3bbb2cb77caa.mp3",
+      "seconds": 10.71
+    },
+    {
+      "text": "Run complete. CONTINUA was cut off twice, 9.0 s in all.",
+      "spoken": "Run complete. CONTINUA was cut off twice, 9.0 seconds in all.",
+      "file": "5cebc4112675.mp3",
+      "seconds": 6.04
+    },
+    {
+      "text": "Run complete. CONTINUA was cut off twice, 9.0 s in all. The normal rover was cut off once, 4.6 s in all.",
+      "spoken": "Run complete. CONTINUA was cut off twice, 9.0 seconds in all. The normal rover was cut off once, 4.6 seconds in all.",
+      "file": "14e325440f04.mp3",
+      "seconds": 10.64
+    },
+    {
+      "text": "Run complete. CONTINUA was never cut off.",
+      "spoken": "Run complete. CONTINUA was never cut off.",
+      "file": "f9fd1d0f1a46.mp3",
+      "seconds": 3.98
+    },
+    {
+      "text": "Run complete. CONTINUA was never cut off. The normal rover was cut off 3 times, 7.3 s in all.",
+      "spoken": "Run complete. CONTINUA was never cut off. The normal rover was cut off 3 times, 7.3 seconds in all.",
+      "file": "345cbced46cb.mp3",
+      "seconds": 8.95
+    },
+    {
+      "text": "Run complete. CONTINUA was never cut off. The normal rover was cut off 3 times, 7.4 s in all.",
+      "spoken": "Run complete. CONTINUA was never cut off. The normal rover was cut off 3 times, 7.4 seconds in all.",
+      "file": "c5e56d86b5c1.mp3",
+      "seconds": 8.95
+    },
+    {
+      "text": "Run complete. CONTINUA was never cut off. The normal rover was cut off twice, 5.5 s in all.",
+      "spoken": "Run complete. CONTINUA was never cut off. The normal rover was cut off twice, 5.5 seconds in all.",
+      "file": "0a7c956ecca8.mp3",
+      "seconds": 8.76
+    },
+    {
+      "text": "Run complete. The backup-after-trouble rover was cut off 3 times, 10 s in all.",
+      "spoken": "Run complete. The backup-after-trouble rover was cut off 3 times, 10 seconds in all.",
+      "file": "c0a04711e0e5.mp3",
+      "seconds": 6.67
+    },
+    {
+      "text": "Run complete. The backup-after-trouble rover was cut off 3 times, 10 s in all. The normal rover was cut off twice, 5.5 s in all.",
+      "spoken": "Run complete. The backup-after-trouble rover was cut off 3 times, 10 seconds in all. The normal rover was cut off twice, 5.5 seconds in all.",
+      "file": "fd2d69d89897.mp3",
+      "seconds": 11.45
+    },
+    {
+      "text": "Run complete. The backup-after-trouble rover was cut off 3 times, 14 s in all.",
+      "spoken": "Run complete. The backup-after-trouble rover was cut off 3 times, 14 seconds in all.",
+      "file": "7a1cc0379572.mp3",
+      "seconds": 6.94
+    },
+    {
+      "text": "Run complete. The backup-after-trouble rover was cut off 3 times, 14 s in all. The normal rover was cut off once, 4.6 s in all.",
+      "spoken": "Run complete. The backup-after-trouble rover was cut off 3 times, 14 seconds in all. The normal rover was cut off once, 4.6 seconds in all.",
+      "file": "a3a4ccaa96df.mp3",
+      "seconds": 11.54
+    },
+    {
+      "text": "Run complete. The backup-after-trouble rover was cut off once, 0.9 s in all.",
+      "spoken": "Run complete. The backup-after-trouble rover was cut off once, 0.9 seconds in all.",
+      "file": "095aec55a704.mp3",
+      "seconds": 7
+    },
+    {
+      "text": "Run complete. The backup-after-trouble rover was cut off once, 0.9 s in all. The normal rover was cut off 3 times, 7.3 s in all.",
+      "spoken": "Run complete. The backup-after-trouble rover was cut off once, 0.9 seconds in all. The normal rover was cut off 3 times, 7.3 seconds in all.",
+      "file": "32024d1b2853.mp3",
+      "seconds": 11.97
+    },
+    {
+      "text": "Run complete. The backup-after-trouble rover was cut off once, 0.9 s in all. The normal rover was cut off 3 times, 7.4 s in all.",
+      "spoken": "Run complete. The backup-after-trouble rover was cut off once, 0.9 seconds in all. The normal rover was cut off 3 times, 7.4 seconds in all.",
+      "file": "8d641e413749.mp3",
+      "seconds": 11.97
+    },
+    {
+      "text": "Run complete. The backup-after-trouble rover was cut off once, 4.6 s in all.",
+      "spoken": "Run complete. The backup-after-trouble rover was cut off once, 4.6 seconds in all.",
+      "file": "9f171e51ada0.mp3",
+      "seconds": 6.93
+    },
+    {
+      "text": "Run complete. The backup-after-trouble rover was cut off once, 4.6 s in all. The normal rover was cut off once, 4.6 s in all.",
+      "spoken": "Run complete. The backup-after-trouble rover was cut off once, 4.6 seconds in all. The normal rover was cut off once, 4.6 seconds in all.",
+      "file": "291343dc4650.mp3",
+      "seconds": 11.53
+    },
+    {
+      "text": "Run complete. The backup-after-trouble rover was cut off twice, 12 s in all.",
+      "spoken": "Run complete. The backup-after-trouble rover was cut off twice, 12 seconds in all.",
+      "file": "1881064c4aca.mp3",
+      "seconds": 6.54
+    },
+    {
+      "text": "Run complete. The backup-after-trouble rover was cut off twice, 12 s in all. The normal rover was cut off 4 times, 18 s in all.",
+      "spoken": "Run complete. The backup-after-trouble rover was cut off twice, 12 seconds in all. The normal rover was cut off 4 times, 18 seconds in all.",
+      "file": "cedd816e6176.mp3",
+      "seconds": 11.02
+    },
+    {
+      "text": "Run complete. The backup-after-trouble rover was cut off twice, 2.7 s in all.",
+      "spoken": "Run complete. The backup-after-trouble rover was cut off twice, 2.7 seconds in all.",
+      "file": "868c76edbc22.mp3",
+      "seconds": 7.01
+    },
+    {
+      "text": "Run complete. The backup-after-trouble rover was cut off twice, 2.7 s in all. The normal rover was cut off 3 times, 7.3 s in all.",
+      "spoken": "Run complete. The backup-after-trouble rover was cut off twice, 2.7 seconds in all. The normal rover was cut off 3 times, 7.3 seconds in all.",
+      "file": "3d9e35070f71.mp3",
+      "seconds": 11.98
+    },
+    {
+      "text": "Run complete. The backup-after-trouble rover was cut off twice, 2.8 s in all.",
+      "spoken": "Run complete. The backup-after-trouble rover was cut off twice, 2.8 seconds in all.",
+      "file": "34c3fb6be236.mp3",
+      "seconds": 6.88
+    },
+    {
+      "text": "Run complete. The backup-after-trouble rover was cut off twice, 2.8 s in all. The normal rover was cut off 3 times, 7.4 s in all.",
+      "spoken": "Run complete. The backup-after-trouble rover was cut off twice, 2.8 seconds in all. The normal rover was cut off 3 times, 7.4 seconds in all.",
+      "file": "847adfa13af6.mp3",
+      "seconds": 11.85
+    },
+    {
+      "text": "Run complete. The everything-on rover was cut off once, 11 s in all.",
+      "spoken": "Run complete. The everything-on rover was cut off once, 11 seconds in all.",
+      "file": "3e95297d9134.mp3",
+      "seconds": 6.02
+    },
+    {
+      "text": "Run complete. The everything-on rover was cut off once, 11 s in all. The normal rover was cut off 4 times, 18 s in all.",
+      "spoken": "Run complete. The everything-on rover was cut off once, 11 seconds in all. The normal rover was cut off 4 times, 18 seconds in all.",
+      "file": "69860e4d5456.mp3",
+      "seconds": 10.5
+    },
+    {
+      "text": "Run complete. The everything-on rover was cut off once, 4.6 s in all.",
+      "spoken": "Run complete. The everything-on rover was cut off once, 4.6 seconds in all.",
+      "file": "8601a794227f.mp3",
+      "seconds": 6.46
+    },
+    {
+      "text": "Run complete. The everything-on rover was cut off once, 4.6 s in all. The normal rover was cut off once, 4.6 s in all.",
+      "spoken": "Run complete. The everything-on rover was cut off once, 4.6 seconds in all. The normal rover was cut off once, 4.6 seconds in all.",
+      "file": "dd1c943a71cb.mp3",
+      "seconds": 11.06
+    },
+    {
+      "text": "Run complete. The everything-on rover was never cut off.",
+      "spoken": "Run complete. The everything-on rover was never cut off.",
+      "file": "e43a5f59b7d7.mp3",
+      "seconds": 4.51
+    },
+    {
+      "text": "Run complete. The everything-on rover was never cut off. The normal rover was cut off 3 times, 7.3 s in all.",
+      "spoken": "Run complete. The everything-on rover was never cut off. The normal rover was cut off 3 times, 7.3 seconds in all.",
+      "file": "753dbe4b9ea6.mp3",
+      "seconds": 9.48
+    },
+    {
+      "text": "Run complete. The everything-on rover was never cut off. The normal rover was cut off 3 times, 7.4 s in all.",
+      "spoken": "Run complete. The everything-on rover was never cut off. The normal rover was cut off 3 times, 7.4 seconds in all.",
+      "file": "b6e4b3b4f64a.mp3",
+      "seconds": 9.48
+    },
+    {
+      "text": "Run complete. The everything-on rover was never cut off. The normal rover was cut off twice, 5.5 s in all.",
+      "spoken": "Run complete. The everything-on rover was never cut off. The normal rover was cut off twice, 5.5 seconds in all.",
+      "file": "dd248e892ec7.mp3",
+      "seconds": 9.3
+    },
+    {
+      "text": "Run complete. The normal rover was cut off 3 times, 7.3 s in all.",
+      "spoken": "Run complete. The normal rover was cut off 3 times, 7.3 seconds in all.",
+      "file": "5fbd31d1ddce.mp3",
+      "seconds": 6.56
+    },
+    {
+      "text": "Run complete. The normal rover was cut off 3 times, 7.4 s in all.",
+      "spoken": "Run complete. The normal rover was cut off 3 times, 7.4 seconds in all.",
+      "file": "b2405efcbc22.mp3",
+      "seconds": 6.56
+    },
+    {
+      "text": "Run complete. The normal rover was cut off 4 times, 18 s in all.",
+      "spoken": "Run complete. The normal rover was cut off 4 times, 18 seconds in all.",
+      "file": "30298799087c.mp3",
+      "seconds": 6.07
+    },
+    {
+      "text": "Run complete. The normal rover was cut off once, 4.6 s in all.",
+      "spoken": "Run complete. The normal rover was cut off once, 4.6 seconds in all.",
+      "file": "148a0df863f0.mp3",
+      "seconds": 6.19
+    },
+    {
+      "text": "Run complete. The normal rover was cut off twice, 5.5 s in all.",
+      "spoken": "Run complete. The normal rover was cut off twice, 5.5 seconds in all.",
+      "file": "8d3fa3335fb7.mp3",
+      "seconds": 6.37
+    },
+    {
+      "text": "Satellite got too slow, so CONTINUA moved to Wi-Fi.",
+      "spoken": "Satellite got too slow, so CONTINUA moved to Wi-Fi.",
+      "file": "7b80f32041c2.mp3",
+      "seconds": 4.14
+    },
+    {
+      "text": "Satellite got too slow, so CONTINUA moved to cellular.",
+      "spoken": "Satellite got too slow, so CONTINUA moved to cellular.",
+      "file": "2051300d3345.mp3",
+      "seconds": 4.22
+    },
+    {
+      "text": "Satellite got too slow, so the backup-after-trouble rover moved to Wi-Fi.",
+      "spoken": "Satellite got too slow, so the backup-after-trouble rover moved to Wi-Fi.",
+      "file": "2256ec4ba2ce.mp3",
+      "seconds": 5.15
+    },
+    {
+      "text": "Satellite got too slow, so the backup-after-trouble rover moved to cellular.",
+      "spoken": "Satellite got too slow, so the backup-after-trouble rover moved to cellular.",
+      "file": "fe753ea9889f.mp3",
+      "seconds": 5.22
+    },
+    {
+      "text": "Satellite got too slow, so the everything-on rover moved to Wi-Fi.",
+      "spoken": "Satellite got too slow, so the everything-on rover moved to Wi-Fi.",
+      "file": "d23ae5156f35.mp3",
+      "seconds": 4.67
+    },
+    {
+      "text": "Satellite got too slow, so the everything-on rover moved to cellular.",
+      "spoken": "Satellite got too slow, so the everything-on rover moved to cellular.",
+      "file": "e27ec047ac22.mp3",
+      "seconds": 4.74
+    },
+    {
+      "text": "Satellite is up and ready, before the dead zone.",
+      "spoken": "Satellite is up and ready, before the dead zone.",
+      "file": "ecbaee5081a3.mp3",
+      "seconds": 3.49
+    },
+    {
+      "text": "The backup-after-trouble rover leaves the dock, still on the cable.",
+      "spoken": "The backup-after-trouble rover leaves the dock, still on the cable.",
+      "file": "295a70f47887.mp3",
+      "seconds": 4.36
+    },
+    {
+      "text": "The backup-after-trouble rover leaves the dock.",
+      "spoken": "The backup-after-trouble rover leaves the dock.",
+      "file": "3d741dec68a1.mp3",
       "seconds": 3.17
     },
     {
-      "text": "CONTINUA P2: connected again.",
-      "spoken": "CONTINUA P2: connected again.",
-      "file": "ab8d4063ba80.mp3",
-      "seconds": 3.02
+      "text": "The backup-after-trouble rover lost its link for 0.9 s coming off the cable.",
+      "spoken": "The backup-after-trouble rover lost its link for 0.9 seconds coming off the cable.",
+      "file": "c840f1be1403.mp3",
+      "seconds": 5.53
     },
     {
-      "text": "CONTINUA P2 (no routing): connection lost.",
-      "spoken": "CONTINUA P2 (no routing): connection lost.",
-      "file": "11589a56b904.mp3",
-      "seconds": 3.78
+      "text": "The backup-after-trouble rover lost its link for 1.8 s moving to cellular.",
+      "spoken": "The backup-after-trouble rover lost its link for 1.8 seconds moving to cellular.",
+      "file": "307f89666863.mp3",
+      "seconds": 5.35
     },
     {
-      "text": "CONTINUA P2 (no routing): connected again.",
-      "spoken": "CONTINUA P2 (no routing): connected again.",
-      "file": "0746c0450f3c.mp3",
-      "seconds": 3.65
+      "text": "The backup-after-trouble rover lost its link for 1.9 s moving to cellular.",
+      "spoken": "The backup-after-trouble rover lost its link for 1.9 seconds moving to cellular.",
+      "file": "a8790e0ed3ca.mp3",
+      "seconds": 5.42
     },
     {
-      "text": "CONTINUA P2 (no modes): connection lost.",
-      "spoken": "CONTINUA P2 (no modes): connection lost.",
-      "file": "b4f21d47cc08.mp3",
-      "seconds": 3.83
+      "text": "The backup-after-trouble rover moved to cellular.",
+      "spoken": "The backup-after-trouble rover moved to cellular.",
+      "file": "bacf50fb176a.mp3",
+      "seconds": 3.36
     },
     {
-      "text": "CONTINUA P2 (no modes): connected again.",
-      "spoken": "CONTINUA P2 (no modes): connected again.",
-      "file": "bf19b0dc6d0f.mp3",
-      "seconds": 3.7
+      "text": "The backup-after-trouble rover moved to satellite.",
+      "spoken": "The backup-after-trouble rover moved to satellite.",
+      "file": "130b439f9ec3.mp3",
+      "seconds": 3.37
     },
     {
-      "text": "CONTINUA P2 (late modes): connection lost.",
-      "spoken": "CONTINUA P2 (late modes): connection lost.",
-      "file": "2a2eb43f915f.mp3",
-      "seconds": 3.87
+      "text": "The backup-after-trouble rover's video pauses on the thinner satellite link, but the link holds.",
+      "spoken": "The backup-after-trouble rover's video pauses on the thinner satellite link, but the link holds.",
+      "file": "c202bd49ea88.mp3",
+      "seconds": 6.07
     },
     {
-      "text": "CONTINUA P2 (late modes): connected again.",
-      "spoken": "CONTINUA P2 (late modes): connected again.",
-      "file": "2524add913da.mp3",
-      "seconds": 3.74
+      "text": "The everything-on rover leaves the dock, still on the cable.",
+      "spoken": "The everything-on rover leaves the dock, still on the cable.",
+      "file": "0423188da159.mp3",
+      "seconds": 3.88
+    },
+    {
+      "text": "The everything-on rover leaves the dock.",
+      "spoken": "The everything-on rover leaves the dock.",
+      "file": "4bcbf2e5c5aa.mp3",
+      "seconds": 2.69
+    },
+    {
+      "text": "The everything-on rover moved to cellular.",
+      "spoken": "The everything-on rover moved to cellular.",
+      "file": "b7446c549e34.mp3",
+      "seconds": 2.88
+    },
+    {
+      "text": "The everything-on rover moved to satellite.",
+      "spoken": "The everything-on rover moved to satellite.",
+      "file": "468e08f6fa06.mp3",
+      "seconds": 2.89
+    },
+    {
+      "text": "The everything-on rover's video pauses on the thinner cellular link, but the link holds.",
+      "spoken": "The everything-on rover's video pauses on the thinner cellular link, but the link holds.",
+      "file": "99f357281b31.mp3",
+      "seconds": 5.59
+    },
+    {
+      "text": "The everything-on rover's video pauses on the thinner satellite link, but the link holds.",
+      "spoken": "The everything-on rover's video pauses on the thinner satellite link, but the link holds.",
+      "file": "543926026f9e.mp3",
+      "seconds": 5.58
+    },
+    {
+      "text": "The normal rover leaves the dock, still on the cable.",
+      "spoken": "The normal rover leaves the dock, still on the cable.",
+      "file": "e22353d8b229.mp3",
+      "seconds": 3.61
+    },
+    {
+      "text": "The normal rover leaves the dock.",
+      "spoken": "The normal rover leaves the dock.",
+      "file": "259501b71ed8.mp3",
+      "seconds": 2.41
+    },
+    {
+      "text": "The normal rover lost its link for 0.9 s coming off the cable.",
+      "spoken": "The normal rover lost its link for 0.9 seconds coming off the cable.",
+      "file": "2c70a2749276.mp3",
+      "seconds": 4.77
+    },
+    {
+      "text": "The normal rover lost its link for 0.9 s coming off the cable. CONTINUA didn't.",
+      "spoken": "The normal rover lost its link for 0.9 seconds coming off the cable. CONTINUA didn't.",
+      "file": "437329521782.mp3",
+      "seconds": 6.52
+    },
+    {
+      "text": "The normal rover lost its link for 0.9 s coming off the cable. The everything-on rover didn't.",
+      "spoken": "The normal rover lost its link for 0.9 seconds coming off the cable. The everything-on rover didn't.",
+      "file": "25a0d5c914a4.mp3",
+      "seconds": 7.07
+    },
+    {
+      "text": "The normal rover lost its link for 1.8 s moving to cellular.",
+      "spoken": "The normal rover lost its link for 1.8 seconds moving to cellular.",
+      "file": "7e3651e5d7ae.mp3",
+      "seconds": 4.6
+    },
+    {
+      "text": "The normal rover lost its link for 1.8 s moving to cellular. CONTINUA didn't.",
+      "spoken": "The normal rover lost its link for 1.8 seconds moving to cellular. CONTINUA didn't.",
+      "file": "8b8d9920c1a0.mp3",
+      "seconds": 6.34
+    },
+    {
+      "text": "The normal rover lost its link for 1.8 s moving to cellular. The backup-after-trouble rover didn't.",
+      "spoken": "The normal rover lost its link for 1.8 seconds moving to cellular. The backup-after-trouble rover didn't.",
+      "file": "7f313a5c3dbf.mp3",
+      "seconds": 7.37
+    },
+    {
+      "text": "The normal rover lost its link for 1.8 s moving to cellular. The everything-on rover didn't.",
+      "spoken": "The normal rover lost its link for 1.8 seconds moving to cellular. The everything-on rover didn't.",
+      "file": "6d8f237eef1e.mp3",
+      "seconds": 6.89
+    },
+    {
+      "text": "The normal rover lost its link for 1.9 s moving to cellular.",
+      "spoken": "The normal rover lost its link for 1.9 seconds moving to cellular.",
+      "file": "2cf8b518ddf0.mp3",
+      "seconds": 4.67
+    },
+    {
+      "text": "The normal rover lost its link for 1.9 s moving to cellular. CONTINUA didn't.",
+      "spoken": "The normal rover lost its link for 1.9 seconds moving to cellular. CONTINUA didn't.",
+      "file": "a9ef0cd1b842.mp3",
+      "seconds": 6.41
+    },
+    {
+      "text": "The normal rover lost its link for 1.9 s moving to cellular. The everything-on rover didn't.",
+      "spoken": "The normal rover lost its link for 1.9 seconds moving to cellular. The everything-on rover didn't.",
+      "file": "ad4538aad076.mp3",
+      "seconds": 6.96
+    },
+    {
+      "text": "The normal rover moved to cellular.",
+      "spoken": "The normal rover moved to cellular.",
+      "file": "a5eb1cedb896.mp3",
+      "seconds": 2.61
+    },
+    {
+      "text": "The normal rover moved to satellite.",
+      "spoken": "The normal rover moved to satellite.",
+      "file": "ef996a0c73cc.mp3",
+      "seconds": 2.62
+    },
+    {
+      "text": "The normal rover stays on satellite: it only moves when its network fails.",
+      "spoken": "The normal rover stays on satellite: it only moves when its network fails.",
+      "file": "f29839685861.mp3",
+      "seconds": 5
+    },
+    {
+      "text": "The normal rover's video pauses on the thinner cellular link, but the link holds.",
+      "spoken": "The normal rover's video pauses on the thinner cellular link, but the link holds.",
+      "file": "f9a02c3cb262.mp3",
+      "seconds": 5.31
+    },
+    {
+      "text": "The normal rover's video pauses on the thinner satellite link, but the link holds.",
+      "spoken": "The normal rover's video pauses on the thinner satellite link, but the link holds.",
+      "file": "d40489ac63bd.mp3",
+      "seconds": 5.31
+    },
+    {
+      "text": "Two rovers, one road: CONTINUA in white, and a normal rover in grey beside it.",
+      "spoken": "Two rovers, one road: CONTINUA in white, and a normal rover in grey beside it.",
+      "file": "bdb932836a1e.mp3",
+      "seconds": 6.01
+    },
+    {
+      "text": "Two rovers, one road: the backup-after-trouble rover in white, and a normal rover in grey beside it.",
+      "spoken": "Two rovers, one road: the backup-after-trouble rover in white, and a normal rover in grey beside it.",
+      "file": "f59666cd6c7a.mp3",
+      "seconds": 6.98
+    },
+    {
+      "text": "Two rovers, one road: the everything-on rover in white, and a normal rover in grey beside it.",
+      "spoken": "Two rovers, one road: the everything-on rover in white, and a normal rover in grey beside it.",
+      "file": "fdb5157b7410.mp3",
+      "seconds": 6.49
+    },
+    {
+      "text": "Wi-Fi dropped out. CONTINUA moved to cellular with no gap.",
+      "spoken": "Wi-Fi dropped out. CONTINUA moved to cellular with no gap.",
+      "file": "c22128e88ebf.mp3",
+      "seconds": 4.84
+    },
+    {
+      "text": "Wi-Fi dropped out. CONTINUA moved to satellite with no gap.",
+      "spoken": "Wi-Fi dropped out. CONTINUA moved to satellite with no gap.",
+      "file": "35f8edd147bc.mp3",
+      "seconds": 4.85
+    },
+    {
+      "text": "Wi-Fi dropped out. The everything-on rover moved to cellular with no gap.",
+      "spoken": "Wi-Fi dropped out. The everything-on rover moved to cellular with no gap.",
+      "file": "890406afbcc9.mp3",
+      "seconds": 5.39
+    },
+    {
+      "text": "Wi-Fi dropped out. The everything-on rover moved to satellite with no gap.",
+      "spoken": "Wi-Fi dropped out. The everything-on rover moved to satellite with no gap.",
+      "file": "08c12e8aade1.mp3",
+      "seconds": 5.4
+    },
+    {
+      "text": "Wi-Fi got too slow, so CONTINUA moved to cellular.",
+      "spoken": "Wi-Fi got too slow, so CONTINUA moved to cellular.",
+      "file": "89e1ca5dcef9.mp3",
+      "seconds": 4.11
+    },
+    {
+      "text": "Wi-Fi got too slow, so CONTINUA moved to the cable.",
+      "spoken": "Wi-Fi got too slow, so CONTINUA moved to the cable.",
+      "file": "92c4c0ab969a.mp3",
+      "seconds": 4.01
+    },
+    {
+      "text": "Wi-Fi got too slow, so the backup-after-trouble rover moved to cellular.",
+      "spoken": "Wi-Fi got too slow, so the backup-after-trouble rover moved to cellular.",
+      "file": "0c0edf376236.mp3",
+      "seconds": 5.12
+    },
+    {
+      "text": "Wi-Fi got too slow, so the everything-on rover moved to cellular.",
+      "spoken": "Wi-Fi got too slow, so the everything-on rover moved to cellular.",
+      "file": "d7172596327b.mp3",
+      "seconds": 4.64
+    },
+    {
+      "text": "Wi-Fi is up and ready, before the dead zone.",
+      "spoken": "Wi-Fi is up and ready, before the dead zone.",
+      "file": "a495bb5dcf7e.mp3",
+      "seconds": 3.42
     },
     {
       "text": "This rescue rover is driven from far away. Its operator must never lose the link.",
@@ -169,10 +889,10 @@
       "seconds": 4.28
     },
     {
-      "text": "A normal rover without CONTINUA drives this same road at the same moment. Its status is beside ours, at the top.",
-      "spoken": "A normal rover without CONTINUA drives this same road at the same moment. Its status is beside ours, at the top.",
-      "file": "e01f40b92d5e.mp3",
-      "seconds": 7.68
+      "text": "Beside it, in grey, a normal rover without CONTINUA drives the same road at the same moment.",
+      "spoken": "Beside it, in grey, a normal rover without CONTINUA drives the same road at the same moment.",
+      "file": "6b16f6f83059.mp3",
+      "seconds": 6.04
     },
     {
       "text": "Ahead, a cutting blocks Wi-Fi and cellular. CONTINUA's road map saw it 79 m out and is warming up satellite.",

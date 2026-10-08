@@ -15,8 +15,17 @@
 import { useFrame, useThree } from '@react-three/fiber';
 import { useMemo, useRef } from 'react';
 import { Vector3, type PerspectiveCamera } from 'three';
-import type { AccessNetworkId, CameraMode, HandoffMark, SceneState, StoryShot, StoryShotId } from '@continua/contracts';
-import { clamp } from '../math/noise';
+import type {
+  AccessNetworkId,
+  CameraMode,
+  HandoffMark,
+  SceneState,
+  SceneStateSource,
+  StoryShot,
+  StoryShotId,
+} from '@continua/contracts';
+import type { DownSpan } from '../engine/engineSource';
+import { clamp, lerp } from '../math/noise';
 import { useSceneRuntime } from '../runtime/SceneRuntime';
 import { route } from '../world/route';
 import { roadSurfaceY } from '../world/road';
@@ -607,12 +616,76 @@ function applyFlights(state: SceneState, time: number, pace: number, shot: Shot)
   }
 }
 
+// ---------------------------------------------------------------------------
+// The normal rover stops: a look back at it
+// ---------------------------------------------------------------------------
+
+/**
+ * When the normal rover beside the run loses its link for long enough to stand
+ * still, the follow and close-up cameras swing round to it: from behind it and
+ * off its outer side, over it and up the road to the run's rover driving on.
+ * They hold while it stands and ease back once it pulls away. A pure function
+ * of the clock and the normal rover's recorded outage, like every rig here;
+ * one that lasts less than `LOOK_AFTER_S` is never looked at, so a live run
+ * never starts a look it would have to abandon.
+ */
+const LOOK_AFTER_S = 1.2;
+const LOOK_IN_S = 1.1;
+/** After its link is back: long enough to see it pull away. */
+const LOOK_HOLD_AFTER_S = 1.3;
+const LOOK_OUT_S = 1.6;
+/** A long outage gets a look this long, then the camera goes back to the run. */
+const LOOK_MAX_S = 7;
+
+function smoothUnit(x: number): number {
+  const c = Math.min(1, Math.max(0, x));
+  return c * c * (3 - 2 * c);
+}
+
+/** How far into the look the camera is at `time`, 0..1. */
+function lookWeight(spans: readonly DownSpan[], time: number, pace: number): number {
+  let weight = 0;
+  for (const span of spans) {
+    const start = span.from + LOOK_AFTER_S * pace;
+    if (time < start || (span.to !== Infinity && span.to < start)) continue;
+    const end = Math.min(span.to + LOOK_HOLD_AFTER_S * pace, span.from + LOOK_MAX_S * pace);
+    const into = smoothUnit((time - start) / (LOOK_IN_S * pace));
+    const out = smoothUnit((time - end) / (LOOK_OUT_S * pace));
+    weight = Math.max(weight, into * (1 - out));
+  }
+  return weight;
+}
+
+/** Behind the normal rover and off its outer side, aimed past it up the road to the other. */
+function lookShot(companion: SceneState, main: SceneState, out: Shot): Shot {
+  const c = companion.vehicle.position;
+  const m = main.vehicle.position;
+  const heading = companion.vehicle.heading;
+  const fx = Math.cos(heading);
+  const fz = -Math.sin(heading);
+  // Left of a flat direction (x, z) is (z, -x). The outer side is the one
+  // away from the other rover.
+  const lx = fz;
+  const lz = -fx;
+  const outer = (m.x - c.x) * lx + (m.z - c.z) * lz > 0 ? -1 : 1;
+  // Aimed a little past the stopped rover toward the other, not half-way:
+  // the stopped one is the subject, the other the background.
+  const toward = Math.min(0.22, 9 / Math.max(1, Math.hypot(m.x - c.x, m.z - c.z)));
+  out.position.set(c.x - fx * 11 + lx * outer * 4.6, c.y + 4.6, c.z - fz * 11 + lz * outer * 4.6);
+  out.target.set(lerp(c.x, m.x, toward), lerp(c.y, m.y, toward) + 1.2, lerp(c.z, m.z, toward));
+  out.fov = 50;
+  return out;
+}
+
+const _look: Shot = { position: new Vector3(), target: new Vector3(), fov: 46 };
+
 export function SceneCameras({
   mode,
   story,
   inset,
   flights = true,
   pace = 1,
+  companion = null,
 }: {
   mode: CameraMode;
   story?: StoryShot;
@@ -620,12 +693,14 @@ export function SceneCameras({
   inset?: { top: number; bottom: number };
   /** The scenario's cuttings. Kept for callers; a flight now keeps clear of them by flying. */
   zones?: readonly DeadZone[];
-  /** Fly out to each new link (follow and close-up cameras). */
+  /** Fly out to each new link, and look back at the normal rover when it stops (follow and close-up cameras). */
   flights?: boolean;
   /** The run's playback rate: a flight's beats last this many scene seconds per second. */
   pace?: number;
+  /** The normal rover's run, when it drives beside this one. */
+  companion?: SceneStateSource | null;
 }) {
-  const { clock, frame } = useSceneRuntime();
+  const { clock, frame, companionFrame } = useSceneRuntime();
   const camera = useThree((state) => state.camera) as PerspectiveCamera;
   const size = useThree((state) => state.size);
   const shot = useMemo<Shot>(
@@ -633,6 +708,19 @@ export function SceneCameras({
     [],
   );
   const lookTarget = useRef(new Vector3());
+
+  /** Blends the look back at a stopped normal rover over whatever `shot` holds. */
+  const applyLook = (state: SceneState, time: number, lookPace: number) => {
+    const other = companionFrame.current;
+    const spans = (companion as { downSpans?: () => readonly DownSpan[] } | null)?.downSpans?.();
+    if (!other || !spans || spans.length === 0) return;
+    const weight = lookWeight(spans, time, lookPace);
+    if (weight <= 0) return;
+    lookShot(other, state, _look);
+    shot.position.lerp(_look.position, weight);
+    shot.target.lerp(_look.target, weight);
+    shot.fov += (_look.fov - shot.fov) * weight;
+  };
 
   useFrame(() => {
     const state = frame.current;
@@ -648,6 +736,7 @@ export function SceneCameras({
       case 'closeup':
         closeupShot(distance, dir, time, shot);
         if (flights) applyFlights(state, time, flightPace, shot);
+        if (flights) applyLook(state, time, flightPace);
         break;
       case 'overview':
         overviewShot(distance, dir, time, shot);
@@ -663,6 +752,7 @@ export function SceneCameras({
       default:
         followShot(distance, dir, shot);
         if (flights) applyFlights(state, time, flightPace, shot);
+        if (flights) applyLook(state, time, flightPace);
         break;
     }
 

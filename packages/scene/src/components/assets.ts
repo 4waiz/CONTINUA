@@ -20,3 +20,4 @@ useGLTF.setDecoderPath(DRACO_DECODER_PATH);
 export const ROVER_MODEL_URL = `/models/continua_rover.glb?v=${MODEL_VERSIONS.rover}`;
 export const ROVER_MODEL_LOD1_URL = `/models/continua_rover_lod1.glb?v=${MODEL_VERSIONS.roverLod1}`;
 export const PROPS_MODEL_URL = `/models/continua_props.glb?v=${MODEL_VERSIONS.props}`;
+export const DOCK_TWO_MODEL_URL = `/models/continua_dock02.glb?v=${MODEL_VERSIONS.dockTwo}`;

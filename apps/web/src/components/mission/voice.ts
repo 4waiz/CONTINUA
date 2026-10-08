@@ -22,8 +22,9 @@
  * sentence cut off half-way is worse than one a second late. A caption, which
  * describes what is on screen now, replaces any caption still waiting, and is
  * dropped if the screen has moved past it. An announcement - something that
- * happened - waits its turn behind the others, unless it has waited too long,
- * and "connected again" withdraws a "connection lost" that was never said.
+ * happened - waits for its turn, unless it has waited longer than it is worth
+ * (its own `keepMs`), and when several wait the most important goes first: at
+ * the cutting, a rover losing its link outranks the road going into it.
  * Skipping a chapter, pausing and leaving act on the voice too.
  */
 
@@ -56,6 +57,18 @@ export interface SayOptions {
   kind?: 'caption' | 'announcement';
   /** An announcement this one makes moot if it is still waiting: both are dropped. */
   cancels?: string;
+  /** Among announcements waiting together, the higher is said first. */
+  priority?: number;
+  /** How long an announcement stays worth saying while it waits, ms. */
+  keepMs?: number;
+}
+
+interface Waiting {
+  text: string;
+  at: number;
+  kind: 'caption' | 'announcement';
+  priority: number;
+  keepMs: number;
 }
 
 /** Units as they are said, not as they are written: "4.5 s" is "4.5 seconds". */
@@ -90,7 +103,7 @@ class Narrator {
   private audio: HTMLAudioElement | null = null;
   private utterance: SpeechSynthesisUtterance | null = null;
   /** Lines waiting for the current one to end, oldest first. */
-  private waiting: { text: string; at: number; kind: 'caption' | 'announcement' }[] = [];
+  private waiting: Waiting[] = [];
   /** The newest line asked for: what unmuting or unblocking reads. */
   private last: string | null = null;
   /** What the page shows now; a waiting line that no longer matches it is dropped. */
@@ -164,7 +177,14 @@ class Narrator {
       return;
     }
     if (kind === 'caption') this.waiting = this.waiting.filter((line) => line.kind !== 'caption');
-    this.waiting.push({ text, at: performance.now(), kind });
+    if (this.waiting.some((line) => line.text === text)) return;
+    this.waiting.push({
+      text,
+      at: performance.now(),
+      kind,
+      priority: options.priority ?? 0,
+      keepMs: options.keepMs ?? MAX_WAIT_MS,
+    });
   }
 
   private async play(text: string) {
@@ -227,17 +247,21 @@ class Narrator {
     this.audio = null;
     this.utterance = null;
     this.busy = false;
-    // The next line still worth saying: an announcement that has not waited
-    // too long, a caption the page still shows.
+    // The next line still worth saying - an announcement that has not waited
+    // longer than it is worth, a caption the page still shows - the most
+    // important first, and of those the oldest.
     const now = performance.now();
-    while (this.waiting.length > 0 && !this.state.muted) {
-      const next = this.waiting.shift()!;
-      const fresh =
-        next.kind === 'announcement' ? now - next.at < MAX_WAIT_MS : this.screen === null || next.text === this.screen;
-      if (fresh) {
-        void this.play(next.text);
-        return;
+    this.waiting = this.waiting.filter((line) =>
+      line.kind === 'announcement' ? now - line.at < line.keepMs : this.screen === null || line.text === this.screen,
+    );
+    if (this.waiting.length > 0 && !this.state.muted) {
+      let best = 0;
+      for (let i = 1; i < this.waiting.length; i += 1) {
+        if (this.waiting[i]!.priority > this.waiting[best]!.priority) best = i;
       }
+      const [next] = this.waiting.splice(best, 1);
+      void this.play(next!.text);
+      return;
     }
     this.update({ speaking: false });
   }

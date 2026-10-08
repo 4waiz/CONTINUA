@@ -17,6 +17,7 @@
  */
 
 import { DOCK_BAY_HALF_LENGTH, ROAD_HALF_WIDTH } from './carriageway';
+import { LANES } from './lanes';
 import { route } from './route';
 
 const start = route.at(0);
@@ -30,6 +31,20 @@ export const DOCK_BAY = {
   /** The bay's painted long lines, off its centre line. */
   laneOffset: 2.2,
 } as const;
+
+/**
+ * The second bay, DOCK 02 (scripts/blender/build_dock_two.py): the first
+ * bay's twin across the route from the dock's equipment, where the normal
+ * rover starts when it drives beside CONTINUA (`lanes.ts`). The route runs
+ * along +X here, so across it is Z.
+ */
+export const DOCK_BAY_TWO = { ...DOCK_BAY, z: DOCK_BAY.z + LANES.bayTwo } as const;
+
+/**
+ * Where its prop stands: the dock site's origin, moved across by the same
+ * offset, at the dock's own yaw - so its bay and tether land on DOCK_BAY_TWO.
+ */
+export const DOCK_TWO_PLACEMENT = { x: -24, z: 7.0 + LANES.bayTwo, yaw: Math.PI } as const;
 
 /**
  * The rover's garage (world_industry.py, prop_rover_garage), on the line of
@@ -152,9 +167,9 @@ export function onDockYard(x: number, z: number): boolean {
   return insideLoop(OUTLINE, x, z);
 }
 
-/** The bay's outline, grown by `grow` metres: the hole the yard leaves for it. */
-export function dockBayOutline(grow = 0): Point[] {
-  const { x, z, halfLength, halfWidth } = DOCK_BAY;
+/** A bay's outline, grown by `grow` metres: the hole the yard leaves for it. */
+export function dockBayOutline(grow = 0, bay: { x: number; z: number; halfLength: number; halfWidth: number } = DOCK_BAY): Point[] {
+  const { x, z, halfLength, halfWidth } = bay;
   const hx = halfLength + grow;
   const hz = halfWidth + grow;
   return [

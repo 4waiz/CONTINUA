@@ -19,6 +19,11 @@
  * There is never a chain from wired to Wi-Fi to cellular to satellite: they are
  * alternative links to one gateway, and at most one carries the session.
  * Wired is drawn only while the rover is actually tethered at the dock.
+ *
+ * While the receiver reports the session down, nothing carries it: the link
+ * the rover is bringing up is drawn starting up, not carrying. When the normal
+ * rover drives beside the run, its own link is drawn the same way, thinner and
+ * without the halo, so CONTINUA's stays the one the eye follows.
  */
 
 import { Line } from '@react-three/drei';
@@ -40,7 +45,8 @@ import {
 import type { AccessNetworkId } from '@continua/contracts';
 import { NETWORK_COLOR } from '../theme';
 import { useSceneRuntime } from '../runtime/SceneRuntime';
-import { coverageAt, SATELLITE_SKY, siteForNetwork, SITES } from '../world/sites';
+import { LANES } from '../world/lanes';
+import { coverageAt, SATELLITE_SKY, siteForNetwork, SITES, type SiteMarker } from '../world/sites';
 import { terrain } from '../world/terrain';
 
 const BEAM_SEGMENTS = 32;
@@ -53,6 +59,13 @@ const SKY_BEAM_M = 520;
 const GATEWAY = SITES.find((site) => site.network === 'satellite') ?? null;
 /** The dish's feed horn sits this far out along its axis, which is SKY. */
 const GATEWAY_FEED_M = 2.5;
+/**
+ * The second bay's tether (DOCK 02, `world/lanes.ts`): the dock's own, moved
+ * across the route by the bay's offset - the route runs along +X there, so
+ * across it is Z. Where the normal rover's cable hangs while it is docked.
+ */
+const DOCK = SITES.find((site) => site.id === 'dock') ?? null;
+const DOCK_TWO: SiteMarker | null = DOCK ? { ...DOCK, id: 'dock-2', z: DOCK.z + LANES.bayTwo, selectable: false } : null;
 
 // ---------------------------------------------------------------------------
 // Coverage footprints
@@ -284,13 +297,18 @@ function Beam({
   network,
   role,
   anchor = 'rover',
+  companion = false,
 }: {
   network: AccessNetworkId;
   role: 'active' | 'warming';
   /** Which end the beam is drawn from: the rover, or (satellite only) the ground station's dish. */
   anchor?: 'rover' | 'gateway';
+  /** The normal rover's link, drawn beside the run's: thinner, no halo or pings. */
+  companion?: boolean;
 }) {
-  const { frame, clock } = useSceneRuntime();
+  const runtime = useSceneRuntime();
+  const { clock } = runtime;
+  const frame = companion ? runtime.companionFrame : runtime.frame;
   const camera = useThree((state) => state.camera);
   const viewport = useThree((state) => state.size);
   const ref = useRef<ComponentRef<typeof Line>>(null);
@@ -316,10 +334,6 @@ function Beam({
   useFrame(() => {
     const line = ref.current;
     if (!line) return;
-    const state = frame.current;
-    const status = state.links[network];
-    const now = clock.time;
-    const handoff = state.handoff ?? null;
     const packets = packetsRef.current;
     const halo = haloRef.current;
     const hide = () => {
@@ -331,12 +345,18 @@ function Beam({
       if (sitePingRef.current) sitePingRef.current.visible = false;
       if (roverPingRef.current) roverPingRef.current.visible = false;
     };
+    const state = frame.current;
+    if (!state) return hide();
+    const status = state.links[network];
+    const now = clock.time;
+    const handoff = state.handoff ?? null;
 
     let carrying = false;
     let ghost = false;
     let ghostAge = 0;
     if (role === 'active') {
-      carrying = state.active === network && status.state !== 'unavailable';
+      // Nothing carries a session that is down, whichever link it is on.
+      carrying = state.active === network && status.state !== 'unavailable' && state.sessionDown !== true;
       if (!carrying && handoff && handoff.from === network && handoff.to !== network) {
         ghostAge = now - handoff.at;
         ghost = ghostAge >= 0 && ghostAge < GHOST_S;
@@ -350,7 +370,11 @@ function Beam({
     const sky = network === 'satellite';
     const gateway = anchor === 'gateway';
     if (gateway && !GATEWAY) return hide();
-    const site = sky ? null : siteForNetwork(network, state.vehicle.position.x, state.vehicle.position.z);
+    const site = sky
+      ? null
+      : companion && network === 'wired'
+        ? DOCK_TWO
+        : siteForNetwork(network, state.vehicle.position.x, state.vehicle.position.z);
     if (!sky && !site) return hide();
     line.visible = true;
 
@@ -401,8 +425,10 @@ function Beam({
       material.opacity = 0.95 * fade;
     }
     // A wide, faint halo under the carrying beam, so a link to a tower 300 m
-    // away still reads as a link and not as a hairline.
-    if (halo) {
+    // away still reads as a link and not as a hairline. (Not the normal
+    // rover's: its link is there to be seen, not followed.)
+    if (halo && companion) halo.visible = false;
+    else if (halo) {
       halo.visible = true;
       halo.geometry.setPositions(points);
       (halo.material as { opacity: number }).opacity = 0.17 * fade;
@@ -432,7 +458,10 @@ function Beam({
       }
     }
 
-    if (role === 'active') {
+    if (role === 'active' && companion) {
+      placePing(sitePingRef.current, to, camera, perPixel, 0, 0);
+      placePing(roverPingRef.current, from, camera, perPixel, 0, 0);
+    } else if (role === 'active') {
       // Site: a burst when it takes the session, then a slow ping while it carries.
       // (A sky beam has no site at its far end; the satellite mark stands in.)
       const sinceTake = Number.isFinite(age) ? age : Infinity;
@@ -488,7 +517,7 @@ function Beam({
         points={initial}
         vertexColors={colours}
         color={colours ? '#ffffff' : colour}
-        lineWidth={role === 'active' ? 3 : 2.2}
+        lineWidth={companion ? (role === 'active' ? 1.8 : 1.5) : role === 'active' ? 3 : 2.2}
         transparent
         opacity={role === 'active' ? 0.95 : 0.45}
         dashed={role === 'warming'}
@@ -586,6 +615,20 @@ function SatelliteMark() {
         <meshBasicMaterial color={colour} toneMapped={false} transparent depthWrite={false} fog={false} />
       </mesh>
     </>
+  );
+}
+
+/** The normal rover's link, beside the run's: its own beams, no gateway or satellite mark. */
+export function CompanionLinkBeams() {
+  return (
+    <group name="CONTINUA_Links_Normal">
+      {(['wired', 'wifi', 'cellular', 'satellite'] as const).map((network) => (
+        <Beam key={`active-${network}`} network={network} role="active" companion />
+      ))}
+      {(['wifi', 'cellular', 'satellite'] as const).map((network) => (
+        <Beam key={`warm-${network}`} network={network} role="warming" companion />
+      ))}
+    </group>
   );
 }
 

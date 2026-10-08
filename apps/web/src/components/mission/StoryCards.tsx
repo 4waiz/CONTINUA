@@ -76,7 +76,7 @@ export function StoryLanding({ onDrive, busy }: { onDrive: () => void; busy: boo
       )}
       <div className="mt-5">
         <button type="button" className="control control-primary h-[44px] px-6 text-[15px]" onClick={onDrive} disabled={busy}>
-          <PlayIcon size={15} /> Drive it yourself
+          <PlayIcon size={15} /> Watch the two rovers
         </button>
       </div>
       <p className="story-landing-foot">A simulation, not a live network test.</p>
@@ -218,7 +218,7 @@ export function StoryProof({
           <ReplayIcon size={15} /> Watch again
         </button>
         <button type="button" className="control" onClick={onDrive}>
-          Drive it yourself
+          Explore the run
         </button>
         <Link href="/experiments" className="control no-underline">
           All the results

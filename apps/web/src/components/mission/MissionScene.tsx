@@ -173,6 +173,16 @@ function FlightSync({ on, pace }: { on: boolean; pace: number }) {
   return null;
 }
 
+/** Pushes the normal rover's run - the second rover, when comparing - and the run's own rover's name into the scene. */
+function CompanionSync({ source, name }: { source: EngineSceneStateSource | null; name: string }) {
+  const setSettings = useSetSceneSettings();
+  useEffect(() => {
+    setSettings({ companion: source, roverName: name });
+    return () => setSettings({ companion: null });
+  }, [source, name, setSettings]);
+  return null;
+}
+
 /** Pushes the coverage overlay - where each network reaches - into the scene. */
 function CoverageSync({ on }: { on: boolean }) {
   const setSettings = useSetSceneSettings();
@@ -247,8 +257,14 @@ export function MissionScene({
   still = false,
   flights = true,
   coverage = false,
+  companion = null,
+  roverName = 'CONTINUA',
 }: {
   source: EngineSceneStateSource;
+  /** The normal rover's run, drawn as a second rover beside this one; null for one rover. */
+  companion?: EngineSceneStateSource | null;
+  /** The run's own rover's name, for its tag when the normal rover drives beside it. */
+  roverName?: string;
   /** Fly the camera out to each new link. */
   flights?: boolean;
   /** Show where each network reaches. */
@@ -292,6 +308,7 @@ export function MissionScene({
       <ClockSync t={t} duration={duration} playing={playing} speed={speed} enabled={!preview} still={still} />
       <FlightSync on={flights} pace={speed} />
       <CoverageSync on={coverage} />
+      <CompanionSync source={preview ? null : companion} name={roverName} />
       <CameraSync camera={camera} />
       <DeadZoneSync zones={deadZones} />
       <StoryShotSync shot={storyShot} />

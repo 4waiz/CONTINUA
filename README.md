@@ -24,7 +24,7 @@ npm run build && npm start  # app on localhost:3000
 
 | URL | Section |
 | --- | --- |
-| <http://localhost:3000> | **Mission** - opens on what this is and one way in, **Drive it yourself**: the shadowed route, CONTINUA beside the normal rover, then any scenario and strategy - in plain words, said aloud, with every measurement behind **Details** |
+| <http://localhost:3000> | **Mission** - opens on what this is and one way in, **Watch the two rovers**: the shadowed route, CONTINUA and the normal rover side by side, then any scenario and strategy - in plain words, said aloud, with every measurement behind **Details** |
 | <http://localhost:3000/?story> | The story - the link to send someone: the same run in the app as a narrated minute with chapter captions |
 | <http://localhost:3000/experiments> | **Results** - every paired comparison, twenty drives a strategy at a glance, then the full tables and the execution-capability report |
 | <http://localhost:3000/decision-log> | **Decision log** - every controller action, with its observations, reason and the run's recorded outcome |
@@ -63,15 +63,21 @@ distribution at all, and nothing was executed).
 ### The Mission page
 
 The page opens on a still island, what the stored twenty-drive comparison
-found on the road it is about to drive, and one button, **Drive it
-yourself**, which starts the run that shows what CONTINUA is for: two
-identical rovers on the shadowed route, same seed - CONTINUA with its road
-map, and the normal rover that only switches network once the one it is on
-has failed. A cutting ahead blocks Wi-Fi and cellular together; CONTINUA's
-road map sees it 79 m out and starts satellite in time, and the normal rover
-loses its link for 4.5 s and has to stop - and then stays on satellite, the
-slow and costly link, for the rest of the road, because it only ever moves
-once its network has failed.
+found on the road it is about to drive, and one button, **Watch the two
+rovers**, which starts the run that shows what CONTINUA is for: two
+identical rovers on the shadowed route, same seed, both drawn - CONTINUA in
+white from DOCK 01, and in grey from DOCK 02 the normal rover, which only
+switches network once the one it is on has failed. Coming off the cable the
+normal rover loses its link for 0.9 s; CONTINUA does not. A cutting ahead
+blocks Wi-Fi and cellular together; CONTINUA's road map sees it 79 m out and
+starts satellite in time, and the normal rover loses its link for 4.5 s: it
+is drawn braking to a stand with its hazard lamps flashing, the camera
+looks back at it standing there while CONTINUA drives on, and it pulls away
+some 45 m behind - and then stays on satellite, the slow and costly link, for
+the rest of the road, because it only ever moves once its network has failed.
+(The engine moves both rovers along the same path whatever their links do,
+which keeps the comparison paired; the stop is drawn from the receiver's
+outage, not simulated - [assumptions](docs/ASSUMPTIONS.md).)
 
 While a run plays the screen holds four things, and nothing else:
 
@@ -85,9 +91,12 @@ While a run plays the screen holds four things, and nothing else:
   the beam arcing to the rover, then rides the beam back to it
   (`packages/scene/src/components/Cameras.tsx`; the flight is a pure function
   of the clock, so a capture replays it frame for frame, and a toggle in the
-  bar turns it off). A voice says the same short
-  words; the lines are recorded on this machine with a voice that ships with
-  Windows ([AI use](docs/AI_USE.md)), and a speaker button turns it off.
+  bar turns it off). A voice keeps a running commentary built from the two
+  runs' events - why each switch happened, what the road map saw, each rover
+  losing its link and what it was missing, how long the normal rover stood,
+  how the run ended (`apps/web/src/components/mission/commentary.ts`); the
+  lines are recorded on this machine with a voice that ships with Windows
+  ([AI use](docs/AI_USE.md)), and a speaker button turns it off.
 * **Head to head** - both operators' camera views, and four running totals
   read from each run's own events at the same moment of the road: time
   without a link, video frozen, steering commands late, data over satellite.
@@ -211,7 +220,7 @@ list and `docs/VIDEO_CLAIMS.md` is the gate.
 | `npm run video:claims` | Banned phrases, claim resolution, timeline integrity |
 | `npm run video:build` | Composite, encode, poster, contact sheet, manifest |
 | `npm run video:qa` | Inspect the finished MP4 and write `docs/VIDEO_QA.md` |
-| `npm run voice:lines` | List every line the page's voice can say: the drive's from the page's own wording, the story's from a run of it (app and engine running) |
+| `npm run voice:lines` | List every line the page's voice can say: the drive's by running its commentary over every recorded run, the story's from a run of it (app and engine running) |
 | `npm run voice:build` | Record those lines locally with a Windows voice, into `apps/web/public/voice/` |
 
 The shipped demo was re-voiced on 2026-10-07 with the films' narrator, its picture

@@ -160,7 +160,7 @@ async function main() {
       let suffix = '';
       if (withRun && (target.id === 'mission' || target.id === 'scenario-lab')) {
         // Mission opens on its introduction; the run's controls are one click in.
-        const drive = page.getByRole('button', { name: 'Drive it yourself' });
+        const drive = page.getByRole('button', { name: 'Watch the two rovers' });
         if (await drive.count()) await drive.click();
         const button = page.getByRole('button', { name: /start run|run scenario/i }).first();
         if (await button.count()) {

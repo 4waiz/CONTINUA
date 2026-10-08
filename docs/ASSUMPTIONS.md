@@ -52,6 +52,20 @@ and the capture frame.
 * **A session is considered lost** after 3.0 s with no carrying path
   (`SESSION_TIMEOUT_S`), at which point a reconnect is counted and safe-stop is
   entered.
+* **The vehicle's motion is exogenous.** Every rover in a scenario moves along
+  the same pre-computed path whatever happens to its link: that is what keeps
+  two strategies' runs paired. So in the engine a rover with no link keeps
+  rolling. **The Mission page draws it stopping instead** - a remotely driven
+  rover with no commands arriving brakes and waits - and that is drawing, not
+  modelling (`EngineSceneStateSource`'s hold, `packages/scene/src/engine/engineSource.ts`).
+  Once the receiver has reported the session down (`app.in_outage`) for 0.6 s,
+  a command watchdog's grace, the rover is drawn braking to a stand over 1 s,
+  standing until the receiver reports the session up, and pulling away over
+  1.4 s; it is drawn behind by the time it stood. Every figure on screen is
+  still the engine's at the scene's time - the link it is on, its outage, its
+  totals - and the engine, its traces and the stored comparisons are
+  untouched. The two rovers also drive a lane each and start in two bays,
+  which is drawing too.
 
 ## 4. Synthetic link profiles
 

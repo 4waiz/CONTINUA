@@ -64,7 +64,8 @@ import { LinkStack } from './LinkStack';
 import { MissionDock } from './MissionDock';
 import { MissionScene, type MissionCamera } from './MissionScene';
 import { Moment, type MomentSpec } from './Moment';
-import { connectionState, handoffWhy, NETWORK, spokenLines, STRATEGY, warningWords } from './plain';
+import { driveCommentary } from './commentary';
+import { handoffWhy, NETWORK, STRATEGY, warningWords } from './plain';
 import { RoadAhead, useRadioMap } from './RoadAhead';
 import { RouteMap } from './RouteMap';
 import { RoverStatus } from './RoverStatus';
@@ -520,6 +521,17 @@ export function MissionView() {
     run.source.setReverse(reverse);
     baseline.source.setReverse(reverse);
   }, [run.source, baseline.source, reverse]);
+  // With the normal rover beside the run, both rovers are drawn, a lane each.
+  // Either one is drawn braking to a stand while its own receiver reports its
+  // link down, as a remotely driven rover must - the hold in
+  // EngineSceneStateSource; where it is drawn is the only thing that changes.
+  const twoRovers = Boolean(baselineId);
+  useEffect(() => {
+    run.source.setHold(true);
+    baseline.source.setHold(true);
+    run.source.setLane(twoRovers ? 'main' : null);
+    baseline.source.setLane('companion');
+  }, [run.source, baseline.source, twoRovers]);
 
   const story = useStoryDirector({
     active: view === 'story' && Boolean(runId),
@@ -576,15 +588,6 @@ export function MissionView() {
     run.latest !== null &&
     run.latest.t - preparedAt < 10 &&
     run.latest.carrying !== 'satellite';
-  // When the road map's warning started a network: what the voice announces,
-  // once - the decisions after it give the same reason for what they hold back.
-  const warnedAt = useMemo(() => {
-    for (let i = run.decisions.length - 1; i >= 0; i -= 1) {
-      const event = run.decisions[i]!;
-      if (/^Preparing /.test(event.reason ?? '') && actionsOf(event).some((action) => action.kind === 'activate_backup')) return event.t;
-    }
-    return null;
-  }, [run.decisions]);
   // The road map's warning while it stands: from the decision that started a
   // network for a known gap until that network carries the link, or a few
   // seconds pass.
@@ -746,47 +749,51 @@ export function MissionView() {
     [view],
   );
 
-  // Driving, the voice says what changed, in the short words on screen: the
-  // toast when the network changes, the road strip's warning, and a status
-  // card when either rover loses or gets back its connection - once that has
-  // held for a second, so the session's first fifth of a second and other
-  // blips stay silent. Long sentences fell behind when changes came close
-  // together; the reasons are in the dock's last decision, to read.
-  const handoffKey = view === 'drive' && handoff ? `${runId}:${handoff.seq}` : null;
-  const handoffLine = handoff ? spokenLines.movedTo(handoff.to) : null;
-  useEffect(() => {
-    if (!handoffKey || !handoffLine) return undefined;
-    const timer = setTimeout(() => narrator.say(handoffLine, { kind: 'announcement' }), 250);
-    return () => clearTimeout(timer);
-    // Keyed on the handoff, not its words: the same move can come twice.
+  // Driving, the voice keeps a running commentary (commentary.ts): why each
+  // change of network happened, what the road map saw coming, each rover
+  // losing its link - and what it was missing - and getting it back, and how
+  // the run ended. Every line is built from the two runs' own events and said
+  // as the run reaches it; when several fall together, as at the cutting, the
+  // more important go first and the rest are dropped once they are old news.
+  const commentary = useMemo(
+    () =>
+      view === 'drive' && runId
+        ? driveCommentary({
+            main: run.source.timeline,
+            mainName,
+            baseline: baselineId ? baseline.source.timeline : null,
+            zones: deadZones,
+            reverse,
+            routeLength: route.length,
+            completed,
+          })
+        : [],
+    // The timelines grow in place; each run's `latest` says when.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [handoffKey]);
-  const warningKey = view === 'drive' && preparing && warnedAt !== null ? `${runId}:${warnedAt}` : null;
+    [view, runId, baselineId, run.latest, baseline.latest, mainName, deadZones, reverse, completed],
+  );
+  const said = useRef<{ run: string | null; keys: Set<string>; t: number }>({ run: null, keys: new Set(), t: 0 });
+  const nowT = run.latest?.t ?? 0;
   useEffect(() => {
-    if (!warningKey) return undefined;
-    const timer = setTimeout(() => narrator.say(spokenLines.gapAhead, { kind: 'announcement' }), 250);
-    return () => clearTimeout(timer);
-  }, [warningKey]);
-  const mainUp = view === 'drive' && runId ? connectionState(run.latest).up : null;
-  const baseUp = view === 'drive' && baselineId ? connectionState(baselineEvent).up : null;
-  const heardUp = useRef<{ run: string | null; main: boolean | null; base: boolean | null }>({ run: null, main: null, base: null });
-  useEffect(() => {
-    if (mainUp === null && baseUp === null) return undefined;
-    const timer = setTimeout(() => {
-      const heard = heardUp.current;
-      if (heard.run !== runId) Object.assign(heard, { run: runId, main: null, base: null });
-      const say = (name: string, previous: boolean | null, now: boolean | null) => {
-        if (previous === null || now === null || previous === now) return;
-        if (now) narrator.say(spokenLines.connection(name, true), { kind: 'announcement', cancels: spokenLines.connection(name, false) });
-        else narrator.say(spokenLines.connection(name, false), { kind: 'announcement' });
-      };
-      say(mainName, heard.main, mainUp);
-      say('Normal rover', heard.base, baseUp);
-      if (mainUp !== null) heard.main = mainUp;
-      if (baseUp !== null) heard.base = baseUp;
-    }, 1000);
-    return () => clearTimeout(timer);
-  }, [mainUp, baseUp, runId, mainName]);
+    const memory = said.current;
+    if (memory.run !== runId) {
+      // Another run - a new choice, a replay: what the last one was saying is moot.
+      if (memory.run !== null) narrator.stop();
+      Object.assign(memory, { run: runId, keys: new Set<string>(), t: 0 });
+    }
+    // Scrubbed back: what lies ahead may be said again when the run gets there.
+    if (nowT < memory.t - 1.5) {
+      for (const line of commentary) if (line.at > nowT) memory.keys.delete(line.key);
+    }
+    memory.t = nowT;
+    for (const line of commentary) {
+      if (line.at > nowT || memory.keys.has(line.key)) continue;
+      memory.keys.add(line.key);
+      // Long past - a seek forward, a replay - is not news.
+      if (nowT - line.at > line.keep) continue;
+      narrator.say(line.text, { kind: 'announcement', priority: line.priority, keepMs: line.keep * 1000 });
+    }
+  }, [commentary, nowT, runId]);
 
   return (
     <AppShell
@@ -815,6 +822,8 @@ export function MissionView() {
           still={landing}
           flights={flights && view !== 'story'}
           coverage={coverage && view === 'drive'}
+          companion={twoRovers ? baseline.source : null}
+          roverName={mainName}
         />
 
         {/* --- top centre: can each operator reach their rover? --------------- */}
@@ -1115,7 +1124,7 @@ export function MissionView() {
   );
 }
 
-/** The voice that says what changed: on, off, or waiting for a click the browser asked for. */
+/** The voice that says what is happening: on, off, or waiting for a click the browser asked for. */
 function VoiceSwitch({
   on,
   blocked,
@@ -1133,7 +1142,7 @@ function VoiceSwitch({
         type="button"
         className="control story-sound shrink-0"
         onClick={onUnblock}
-        title="The browser held the voice back until the page is clicked: click to hear each change said aloud"
+        title="The browser held the voice back until the page is clicked: click to hear what each rover does, said aloud"
       >
         <SpeakerIcon size={15} /> Sound
       </button>
@@ -1145,8 +1154,12 @@ function VoiceSwitch({
       className="icon-btn shrink-0"
       onClick={onToggle}
       aria-pressed={on}
-      aria-label={on ? 'Turn the voice off' : 'Say each change aloud'}
-      title={on ? 'Voice on: each change of network is said aloud. Click to turn it off.' : 'Voice off. Click to hear each change of network said aloud.'}
+      aria-label={on ? 'Turn the voice off' : 'Say what happens aloud'}
+      title={
+        on
+          ? 'Voice on: what each rover does - each change of network and why, each lost link and how long it lasted - is said aloud. Click to turn it off.'
+          : 'Voice off. Click to hear what each rover does, said aloud.'
+      }
       data-active={on}
     >
       {on ? <SpeakerIcon size={16} /> : <SpeakerOffIcon size={16} />}

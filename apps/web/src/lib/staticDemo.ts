@@ -52,7 +52,7 @@ export interface DemoIndex {
 }
 
 /** One run as it sits on disk: metadata plus a columnar event stream. */
-interface EncodedRun {
+export interface EncodedRun {
   run_id: string;
   blurb: string;
   manifest: Record<string, unknown>;
@@ -68,7 +68,7 @@ interface EncodedRun {
   };
 }
 
-interface DemoRunPayload {
+export interface DemoRunPayload {
   run_id: string;
   blurb: string;
   manifest: Record<string, unknown>;
@@ -89,7 +89,7 @@ interface DemoRunPayload {
  * are different facts, and a bag of null leaves cannot tell them apart, so the
  * exporter records presence separately and this walks it before the leaves.
  */
-function decodeRun(encoded: EncodedRun): DemoRunPayload {
+export function decodeRun(encoded: EncodedRun): DemoRunPayload {
   const { count, columns, objects } = encoded.events;
   const events: EngineEvent[] = [];
 

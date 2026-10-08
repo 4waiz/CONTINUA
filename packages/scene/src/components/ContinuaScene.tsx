@@ -23,7 +23,7 @@ import {
   type Scene,
   type WebGLRenderer,
 } from 'three';
-import type { QualityTier } from '@continua/contracts';
+import type { QualityTier, SceneStateSource } from '@continua/contracts';
 import { useFrame, useThree } from '@react-three/fiber';
 import { SCENE_COLOR } from '../theme';
 import {
@@ -37,9 +37,11 @@ import { Mountains, RoadsideScatter, Sea } from './Landscape';
 import { Lighting } from './Lighting';
 import { PostEffects } from './PostEffects';
 import { RoverCam } from './RoverCam';
-import { CoverageOverlay, LinkBeams } from './Network';
+import { CompanionLinkBeams, CoverageOverlay, LinkBeams } from './Network';
 import { DeadZoneWalls } from './DeadZone';
+import { DockTwo } from './DockTwo';
 import { Rover } from './Rover';
+import { RoverTags } from './RoverTags';
 import { SceneCameras } from './Cameras';
 import { WorldProps } from './WorldProps';
 
@@ -72,12 +74,15 @@ function frameDelta(last: { current: number | null }, fallback: number): number 
   return seconds > 0.25 ? 1 / 60 : Math.max(0, seconds);
 }
 
-function SceneDriver({ frozen }: { frozen: boolean }) {
-  const { clock, source, frame } = useSceneRuntime();
+function SceneDriver({ frozen, companion }: { frozen: boolean; companion: SceneStateSource | null }) {
+  const { clock, source, frame, companionFrame } = useSceneRuntime();
   const lastFrame = useRef<number | null>(null);
   useFrame((_, delta) => {
     clock.advance(frameDelta(lastFrame, delta));
-    frame.current = source.sampleAt(frozen ? INSPECT_TIME : clock.time);
+    const t = frozen ? INSPECT_TIME : clock.time;
+    frame.current = source.sampleAt(t);
+    // The normal rover, when it drives beside the run: its own run at the same moment.
+    companionFrame.current = companion && !frozen ? companion.sampleAt(t) : null;
   }, -1);
   return null;
 }
@@ -296,7 +301,9 @@ function SceneContents({
 }) {
   const settings = useSceneSettings();
   const setSettings = useSetSceneSettings();
+  const { companionFrame } = useSceneRuntime();
   const inspect = settings.mode === 'inspect';
+  const companion = inspect ? null : settings.companion;
 
   const onSelectSite = useCallback(
     (id: string) => setSettings({ selectedSiteId: settings.selectedSiteId === id ? null : id }),
@@ -305,7 +312,7 @@ function SceneContents({
 
   return (
     <>
-      <SceneDriver frozen={inspect} />
+      <SceneDriver frozen={inspect} companion={companion} />
       <Lighting quality={quality} />
       <Ground quality={quality} />
       <Mountains quality={quality} />
@@ -319,9 +326,13 @@ function SceneContents({
         deadZones={settings.deadZones}
       />
       <DeadZoneWalls zones={settings.deadZones} lite={quality === 'low'} />
+      <DockTwo />
       <Rover lod={quality === 'low'} />
+      {companion && <Rover lod={quality === 'low'} variant="normal" source={companion} frame={companionFrame} />}
       <CoverageOverlay visible={settings.showCoverage && !inspect} />
       {!inspect && <LinkBeams />}
+      {companion && <CompanionLinkBeams />}
+      {companion && <RoverTags mainName={settings.roverName} />}
       <SceneCameras
         mode={inspect ? 'turntable' : settings.camera}
         story={settings.storyShot}
@@ -329,6 +340,7 @@ function SceneContents({
         zones={settings.deadZones}
         flights={settings.linkFlights}
         pace={settings.flightPace}
+        companion={companion}
       />
       {quality === 'low' && <BakeShadows />}
       {quality === 'high' && <PostEffects />}

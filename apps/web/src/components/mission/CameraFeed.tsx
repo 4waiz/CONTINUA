@@ -14,9 +14,11 @@
  * Beside a reactive baseline (compare mode) the tile splits: the same view,
  * the left half CONTINUA's stream and the right half the baseline's - the
  * order of the status cards at the top - each moving only while its own run's
- * video does. The rover is in the same place
- * in both - the route and its timing are generated before any policy runs -
- * so where the halves stop meeting at the divider, one stream has stalled.
+ * video does. In the engine both rovers are in the same place - the route and
+ * its timing are generated before any policy runs - so where the halves stop
+ * meeting at the divider, one stream has stalled. (The scene draws the normal
+ * rover standing while its link is down, and so behind; the picture is still
+ * rendered from the run's rover, and only its half's motion is the baseline's.)
  */
 
 import type { EngineEvent } from '@continua/contracts/engine';

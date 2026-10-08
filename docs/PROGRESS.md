@@ -1689,3 +1689,93 @@ driving was in the app and show it; they are left as made, and the docs say so.
 
 **Checks.** lint and typecheck clean; build clean; test:phase2 11/11;
 test:smoke 11 passed and 10 skipped by design. The engine was not touched.
+
+# Two rovers on the road, and a voice that says what is happening
+
+The owner asked, on 2026-10-08, for four things: W A S D gone; a voice that
+says more than "Cellular", "Wi-Fi"; more difference between the normal rover
+and CONTINUA - the normal one should be seen losing its link, more often; and
+two rovers, with the normal one seen stopped.
+
+**W A S D.** Driving by hand had already been taken out (above), and the live
+site's scripts carry none of it. What was left was the landing's button,
+**Drive it yourself**, which promised it: it is now **Watch the two rovers**
+(the brief's links too, and the story's closing card says **Explore the
+run**).
+
+**Two rovers.** With the normal rover beside the run (the default), the scene
+draws it: the same Mk2 rover in a grey livery with no CONTINUA blue and no
+wordmark (`Rover.tsx`, `NORMAL_LIVERY`), in a second bay, **DOCK 02**, across
+the route from the dock's equipment - DOCK 01 lettered DOCK 02, without the
+pillar, cabinet and floodlights, built headless by
+`scripts/blender/build_dock_two.py` into `continua_dock02.glb` (42 KB, 2,542
+triangles; `prop_dock_station` gained a number and an `equipment` switch, its
+default output unchanged). The two pull out of their bays into a lane each
+(`world/lanes.ts`) and drive abreast; each has its own link beam - the normal
+rover's thinner, without halo or pings - and a small tag, "CONTINUA" in blue,
+"Normal rover" in grey (`RoverTags.tsx`).
+
+**The normal rover is seen stopped - drawn, not simulated.** The engine moves
+every rover along the same pre-computed path whatever its link does; that is
+what pairs two strategies' runs, and it is untouched. The scene now draws a
+rover with no link the way a remotely driven one behaves (`EngineSceneStateSource`'s
+hold): 0.6 s after its receiver reports the session down - a command
+watchdog's grace - it brakes to a stand over a second, stands with its hazard
+lamps flashing until the receiver reports the session up, and pulls away over
+1.4 s, behind by the time it stood. Its tag turns red ("link lost", then
+"stopped, no link"), and the link it is bringing up is drawn starting up,
+never carrying - for either rover. With camera flights on, the follow and
+close-up cameras look back at it while it stands - from behind it, past it to
+CONTINUA driving on - and return once it pulls away. On the shadowed route it
+stands in the cutting from 32.0 s to 35.0 s and drives on 44-45 m behind.
+`docs/ASSUMPTIONS.md` says what is drawn and what is modelled.
+
+**"Disconnecting more" - what is real.** No disconnection was added. On the
+featured route the recorded normal rover loses its link twice: 0.9 s coming
+off the cable and 4.5 s in the cutting. The first used to pass in silence (the
+voice waited a second before reporting a loss, so a loss shorter than that was
+never said); it is now said - "The normal rover lost its link for 0.9 s
+coming off the cable. CONTINUA didn't." - and seen, as a brief slowing. On the
+plain journey and most other roads the recorded normal rover loses it three
+or four times, at every change of network; those runs are a click away under
+**Change the run**.
+
+**The voice.** It used to say three things. It now keeps a running commentary
+built from the two runs' events (`commentary.ts`): the two rovers leaving the
+dock; each change of network and why ("Wi-Fi got too slow, so CONTINUA moved to
+cellular"; "Wi-Fi dropped out. CONTINUA moved to satellite with no gap"); the
+road map's warning and satellite coming up in time; into and out of the
+cutting; a rover losing its link, and what it was missing ("Normal rover:
+connection lost. Wi-Fi dropped and satellite wasn't ready. CONTINUA is still
+connected."); how long it stood ("Normal rover: back after 4.5 s stopped, on
+satellite."); that the normal rover then stays on satellite; the video pausing
+on a thin link though the link holds; and the run's summary ("Run complete.
+CONTINUA was never cut off. The normal rover was cut off twice, 5.5 s in
+all."). Lines that fall together are ranked: the narrator says the most
+important waiting line next and drops the rest once they are old news.
+`scripts/voice-lines-drive.mts` runs the same function over every recorded run,
+alone and beside the normal rover's recording: 145 drive lines, recorded with
+the 10 story lines by `scripts/build-voice.mjs` (Microsoft Mark, WinRT, on this
+machine; 155 files, 5.9 MB: 146 new, 9 kept, and the 26 that no line uses any
+more removed). A wait for a first link that begins before a rover has moved -
+every rover's, on the reversed routes, where none starts on the cable - is
+counted in the summary, as the engine's metrics count it, but not announced as
+a loss. The
+story's second caption now says which rover is the normal one: "Beside it, in
+grey, a normal rover without CONTINUA drives the same road at the same
+moment."
+
+**Checks.** lint and typecheck clean; build clean, and the static export's dry
+run (`npm run deploy -- --dry`: 75 recorded runs, preview mode on);
+test:engine 162 passed (the engine was not touched); test:phase2 12/12
+against this build with an engine of its own on port 8011 - the new test,
+"draws the normal rover beside the run, standing while its own link is
+down", among them; test:smoke 11 passed and 10 skipped by design. The
+featured drive, played to its end, asked the voice for 23 lines, every one of
+them recorded. Viewed at 1920×1080, 1440×900, 1280×720 and the owner's
+1706×800 at 1.5 (1137×533): the two docks, the road abreast, the stop in the
+cutting with the camera looking back, the pull-away; the reversed route
+(both start far from the dock and park in their own bays), total loss (both
+stop - CONTINUA cannot survive every link failing either), B2 beside the
+normal rover, one rover with the comparison off, and the story. The public
+site was not redeployed by this change.

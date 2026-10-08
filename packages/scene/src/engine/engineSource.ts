@@ -10,6 +10,23 @@
  * The scene renders vehicle motion by interpolating between recorded distances.
  * It does **not** invent metrics: every link statistic, health figure and
  * decision comes straight from the event.
+ *
+ * Two presentation choices can be switched on by the page, neither of them a
+ * measurement:
+ *
+ * * **The hold** (`setHold`). The engine moves every rover along the same
+ *   pre-computed path whatever happens to its link - that is what keeps two
+ *   runs paired - so in the recording a rover with no link keeps rolling. A
+ *   remotely driven rover cannot: with no commands arriving it brakes and
+ *   waits. With the hold on, the rover is drawn braking to a stand once the
+ *   receiver has reported its session down (`app.in_outage`) for longer than a
+ *   command watchdog rides out, and pulling away when it comes back, so it
+ *   falls behind by the time it stood. Every link figure
+ *   is still the event's own at the scene's time; only where the rover is
+ *   drawn changes.
+ * * **A lane** (`setLane`), when two rovers share the road: a sideways offset
+ *   from the centre line, so they drive abreast instead of through each other
+ *   (`world/lanes.ts`).
  */
 
 import {
@@ -28,10 +45,42 @@ import type {
   EngineLinkId,
   LinkPhase,
 } from '@continua/contracts/engine';
-import { clamp, lerp } from '../math/noise';
+import { clamp, lerp, smoothstep } from '../math/noise';
+import { laneOffset, type RoverLane } from '../world/lanes';
 import { route } from '../world/route';
 import { terrain } from '../world/terrain';
 import { VEHICLE } from '../preview/previewSource';
+
+/** How a rover with no link is drawn - see the hold, above. */
+export const HOLD = {
+  /**
+   * Seconds it rolls on after its session drops before it starts to brake: a
+   * teleoperated vehicle's command watchdog rides out a blip, so a link that
+   * comes back within it barely slows the rover.
+   */
+  coast: 0.6,
+  /** Seconds it takes to brake to a stand once the watchdog gives up. */
+  brake: 1.0,
+  /** Seconds it takes to pull away again once its session is back. */
+  launch: 1.4,
+  /** The lost-time table's step, seconds. */
+  step: 0.02,
+} as const;
+
+/** A stretch of run time in which the receiver reported the session down. */
+export interface DownSpan {
+  readonly from: Seconds;
+  /** `Infinity` while it is still down at the newest event. */
+  readonly to: Seconds;
+}
+
+/** How far a rover is held at `t` by one span: rolling on, braking, standing, pulling away. */
+function heldBy(span: DownSpan, t: Seconds): number {
+  if (t <= span.from + HOLD.coast) return 0;
+  if (t <= span.to) return smoothstep(HOLD.coast, HOLD.coast + HOLD.brake, t - span.from);
+  const atEnd = smoothstep(HOLD.coast, HOLD.coast + HOLD.brake, span.to - span.from);
+  return atEnd * (1 - smoothstep(0, HOLD.launch, t - span.to));
+}
 
 const PHASE_TO_STATE: Record<LinkPhase, LinkState> = {
   unavailable: 'unavailable',
@@ -79,6 +128,127 @@ export class EngineSceneStateSource implements SceneStateSource {
     this.reverse = reverse;
   }
 
+  /** Draw the rover braking to a stand while its session is down - see the hold, above. */
+  hold = false;
+  /** Which lane the rover is drawn in when two share the road; null for the centre line. */
+  lane: RoverLane | null = null;
+
+  setHold(hold: boolean): void {
+    this.hold = hold;
+  }
+
+  setLane(lane: RoverLane | null): void {
+    this.lane = lane;
+  }
+
+  /** The down spans and lost-time table the hold reads, rebuilt only when the events change. */
+  private holdCache: {
+    events: number;
+    lastSeq: number;
+    spans: DownSpan[];
+    key: string;
+    lost: Float64Array;
+    end: Seconds;
+  } | null = null;
+
+  /**
+   * The stretches in which the receiver reported the session down, once the
+   * rover had started to move: the session's first fifth of a second, before
+   * the cable path is up, passes while every rover is still parked in its bay.
+   */
+  downSpans(): readonly DownSpan[] {
+    return this.holdTable().spans;
+  }
+
+  private holdTable() {
+    const events = this.events;
+    const lastSeq = events.length ? events[events.length - 1]!.seq : 0;
+    const cache = this.holdCache;
+    if (cache && cache.events === events.length && cache.lastSeq === lastSeq) return cache;
+
+    let departed: Seconds | null = null;
+    const spans: DownSpan[] = [];
+    let open: Seconds | null = null;
+    for (const event of events) {
+      if (departed === null && (event.vehicle?.distance_m ?? 0) > 0.05) departed = event.t;
+      const down = event.app?.in_outage === true;
+      if (down && open === null) open = event.t;
+      if (!down && open !== null) {
+        if (departed !== null) spans.push({ from: Math.max(open, departed), to: event.t });
+        open = null;
+      }
+    }
+    if (open !== null && departed !== null) spans.push({ from: Math.max(open, departed), to: Infinity });
+
+    const key = spans.map((span) => `${span.from}:${span.to}`).join('|');
+    if (cache && cache.key === key) {
+      cache.events = events.length;
+      cache.lastSeq = lastSeq;
+      return cache;
+    }
+    // Lost time, the integral of how far the rover is held, tabulated: a pure
+    // function of the spans, so the same events always draw the same frame.
+    const end = Math.max(this.duration, events.length ? events[events.length - 1]!.t : 0) + HOLD.launch + 1;
+    const steps = Math.ceil(end / HOLD.step) + 1;
+    const lost = new Float64Array(steps);
+    let previous = 0;
+    for (let i = 1; i < steps; i += 1) {
+      const t = i * HOLD.step;
+      let held = 0;
+      for (const span of spans) held = Math.max(held, heldBy(span, t));
+      lost[i] = lost[i - 1]! + ((previous + held) / 2) * HOLD.step;
+      previous = held;
+    }
+    this.holdCache = { events: events.length, lastSeq, spans, key, lost, end };
+    return this.holdCache;
+  }
+
+  /** How far the rover is held at `t`, 0 driving to 1 standing. Zero with the hold off. */
+  heldAt(t: Seconds): number {
+    if (!this.hold) return 0;
+    let held = 0;
+    for (const span of this.holdTable().spans) held = Math.max(held, heldBy(span, t));
+    return held;
+  }
+
+  /**
+   * The moment of the recorded drive the rover is drawn at, at scene time `t`:
+   * `t` less the time it has stood so far. Equal to `t` with the hold off.
+   */
+  driveTimeAt(t: Seconds): Seconds {
+    if (!this.hold) return t;
+    const table = this.holdTable();
+    if (table.spans.length === 0) return t;
+    const index = Math.min(Math.floor(Math.max(0, t) / HOLD.step), table.lost.length - 1);
+    const lost = table.lost[index]! + Math.max(0, t - index * HOLD.step) * this.heldAt(t);
+    return Math.max(0, t - lost);
+  }
+
+  /** Distance travelled and speed at `t`, interpolated between samples; a search of its own. */
+  private motionAt(t: Seconds): { distance: number; speed: number } {
+    const events = this.events;
+    let low = 0;
+    let high = events.length - 1;
+    if (t >= events[high]!.t) low = high;
+    else {
+      while (low < high) {
+        const mid = (low + high + 1) >> 1;
+        if (events[mid]!.t <= t) low = mid;
+        else high = mid - 1;
+      }
+    }
+    const event = events[low]!;
+    const next = events[low + 1];
+    let distance = event.vehicle?.distance_m ?? 0;
+    let speed = event.vehicle?.speed_mps ?? 0;
+    if (next && next.vehicle && event.vehicle && next.t > event.t) {
+      const alpha = clamp((t - event.t) / (next.t - event.t), 0, 1);
+      distance = lerp(event.vehicle.distance_m, next.vehicle.distance_m, alpha);
+      speed = lerp(event.vehicle.speed_mps, next.vehicle.speed_mps, alpha);
+    }
+    return { distance, speed };
+  }
+
   constructor(runId = 'engine', duration: Seconds = 100) {
     this.runId = runId;
     this.duration = Math.max(duration, 1);
@@ -109,6 +279,7 @@ export class EngineSceneStateSource implements SceneStateSource {
     this.cachedIndex = 0;
     this.newestReceivedAt = 0;
     this.switches = [];
+    this.holdCache = null;
     this.runId = runId;
     this.duration = Math.max(duration, 1);
   }
@@ -233,7 +404,15 @@ export class EngineSceneStateSource implements SceneStateSource {
     // the event: a smoothed metric would be a metric the engine never produced.
     let distance = event.vehicle?.distance_m ?? 0;
     let speed = event.vehicle?.speed_mps ?? 0;
-    if (next && next.vehicle && event.vehicle && next.t > event.t) {
+    // With the hold, the rover is drawn where the recording had it when it
+    // has driven as long as this rover has: the time it stood is taken out.
+    const held = this.heldAt(t);
+    const driveT = this.driveTimeAt(t);
+    if (driveT !== t) {
+      const motion = this.motionAt(driveT);
+      distance = motion.distance;
+      speed = motion.speed * (1 - held);
+    } else if (next && next.vehicle && event.vehicle && next.t > event.t) {
       const alpha = clamp((t - event.t) / (next.t - event.t), 0, 1);
       distance = lerp(event.vehicle.distance_m, next.vehicle.distance_m, alpha);
       speed = lerp(event.vehicle.speed_mps, next.vehicle.speed_mps, alpha);
@@ -250,7 +429,24 @@ export class EngineSceneStateSource implements SceneStateSource {
     // before, stepped every metre and shook the body on every hill.)
     const pitch = Math.atan(direction * terrain.gradeAtDistance(along, VEHICLE.wheelbase));
     const roll = 0;
+    // Its lane, when two rovers share the road: across the centre line by the
+    // lane's offset, turned by how fast the offset changes as it pulls out of
+    // its bay, its front wheels steering through the turn.
+    let x = sample.x;
+    let z = sample.z;
+    let laneTurn = 0;
+    let laneCurve = 0;
+    if (this.lane) {
+      const lane = laneOffset(this.lane, along);
+      x += -sample.tz * lane.offset;
+      z += sample.tx * lane.offset;
+      laneTurn = Math.atan(lane.slope);
+      laneCurve = lane.curve / (1 + lane.slope * lane.slope);
+    }
 
+    // The session is down: nothing reaches the rover, whichever link it is
+    // bringing up. That link is drawn starting up, not carrying.
+    const down = event.app?.in_outage === true;
     const links = {} as Record<AccessNetworkId, LinkStatus>;
     const warming: AccessNetworkId[] = [];
     const degraded: AccessNetworkId[] = [];
@@ -262,7 +458,9 @@ export class EngineSceneStateSource implements SceneStateSource {
       }
       const carrying = event.carrying === id;
       let state: LinkState = PHASE_TO_STATE[observation.phase];
-      if (carrying) {
+      if (carrying && down && (observation.phase === 'activating' || observation.phase === 'validating')) {
+        warming.push(id);
+      } else if (carrying) {
         const bad =
           (observation.rtt_ms !== null && observation.rtt_ms > 150) ||
           (observation.loss_pct !== null && observation.loss_pct > 3);
@@ -308,8 +506,8 @@ export class EngineSceneStateSource implements SceneStateSource {
       duration: this.duration,
       zone: (event.vehicle?.zone ?? 'facility') as SceneState['zone'],
       vehicle: {
-        position: { x: sample.x, y: roadY, z: sample.z },
-        heading: this.reverse ? sample.heading + Math.PI : sample.heading,
+        position: { x, y: roadY, z },
+        heading: (this.reverse ? sample.heading + Math.PI : sample.heading) - laneTurn,
         pitch,
         roll,
         // The scene's cameras and props read `distance` as a place on the
@@ -317,13 +515,15 @@ export class EngineSceneStateSource implements SceneStateSource {
         distance: along,
         direction,
         speedMps: speed,
-        steerAngle: Math.atan(direction * VEHICLE.wheelbase * sample.curvature),
+        steerAngle: Math.atan(direction * VEHICLE.wheelbase * (sample.curvature - laneCurve)),
         wheelAngle: distance / VEHICLE.wheelRadius,
       },
       links,
       active: (event.carrying ?? null) as AccessNetworkId | null,
       handoff: this.handoffAt(t),
       handoffBefore: this.handoffBeforeAt(t),
+      sessionDown: down,
+      held,
       warming,
       degraded,
       traffic: {

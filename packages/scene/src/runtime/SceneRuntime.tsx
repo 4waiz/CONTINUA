@@ -66,6 +66,14 @@ export interface SceneSettings {
    * take: the run's playback rate, so at 4x the flight still reads.
    */
   flightPace: number;
+  /**
+   * A second run drawn beside the scene's own: the normal rover, when a run is
+   * compared with it. Its rover drives the other lane (`world/lanes.ts`), with
+   * its own link; null draws one rover.
+   */
+  companion: SceneStateSource | null;
+  /** What the run's own rover is called on its tag when the normal rover drives beside it. */
+  roverName: string;
 }
 
 const DEFAULT_SETTINGS: SceneSettings = {
@@ -81,6 +89,8 @@ const DEFAULT_SETTINGS: SceneSettings = {
   viewInset: { top: 0, bottom: 0 },
   linkFlights: true,
   flightPace: 1,
+  companion: null,
+  roverName: 'CONTINUA',
 };
 
 class SettingsStore {
@@ -120,6 +130,8 @@ export interface SceneRuntime {
    * everything else. Never put this in React state.
    */
   readonly frame: { current: SceneState };
+  /** The companion's state this frame (`SceneSettings.companion`), or null with none. */
+  readonly companionFrame: { current: SceneState | null };
 }
 
 const RuntimeContext = createContext<SceneRuntime | null>(null);
@@ -159,6 +171,7 @@ export function SceneRuntimeProvider({
       source,
       settings,
       frame: { current: source.sampleAt(0) },
+      companionFrame: { current: null },
     };
   }, [source, settings]);
 

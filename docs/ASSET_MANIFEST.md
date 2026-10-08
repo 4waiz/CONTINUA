@@ -37,8 +37,9 @@ frond card (§2a).
 | `continua_rover.glb` | 791,724 (773 KB) | 72,278 | Hero rover: 15 meshes (three of them moving sensors), 2 steering pivots, 24 materials |
 | `continua_rover_lod1.glb` | 264,936 (259 KB) | 23,450 | Low-detail rover for the `low` quality tier |
 | `continua_props.glb` | 1,602,892 (1565 KB) | 114,318 | 61 world props, instanced at runtime; the foliage atlas |
+| `continua_dock02.glb` | 43,036 (42 KB) | 2,542 | `PROP_DockStation_02`: the second dock bay, where the normal rover starts beside CONTINUA - DOCK 01 lettered DOCK 02, without the pillar, cabinet and floodlights (`build_dock_two.py`) |
 
-The three files total **2.66 MB**; the decoder adds `draco_decoder.wasm`
+The four files total **2.70 MB**; the decoder adds `draco_decoder.wasm`
 (192 KB) and `draco_wasm_wrapper.js` (58 KB).
 
 **Cache busting.** `/models/*` is served `immutable` for a year
@@ -302,6 +303,7 @@ and the rig-integrity test are.
 ```bash
 npm run blender:vehicle    # .blend + hero .glb + LOD .glb + model hashes
 npm run blender:props      # .blend + props .glb + model hashes
+node scripts/run-blender.mjs scripts/blender/build_dock_two.py   # DOCK 02 .glb + model hashes
 npm run blender:previews   # six studio renders
 npm run blender:all        # all three, in order
 ```

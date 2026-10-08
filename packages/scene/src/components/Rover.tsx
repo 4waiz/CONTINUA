@@ -7,11 +7,16 @@
  * suspension can move them without touching the wheels, and drives everything
  * from `sampleAt(clock.time)`.
  *
+ * Two of them can share the road: CONTINUA, and the normal rover beside it -
+ * the same vehicle in a plainer livery (grey, no blue, no name), driven from
+ * the normal rover's own run. A rover whose link is down flashes its hazard
+ * lamps until it is moving again.
+ *
  * Orientation contract (docs/ASSET_MANIFEST.md): forward +X, up +Y,
  * wheel spin about local Z, steering about local Y.
  */
 
-import type { SceneStateSource } from '@continua/contracts';
+import type { SceneState, SceneStateSource } from '@continua/contracts';
 import { useFrame } from '@react-three/fiber';
 import { useGLTF } from '@react-three/drei';
 import { useEffect, useMemo, useRef } from 'react';
@@ -115,11 +120,48 @@ interface Rig {
   satPanel: Object3D | null;
   /** The tail and stop lamps: this rover's own copy of their material. */
   brake: { material: MeshStandardMaterial; base: number } | null;
+  /** The amber lamps, front and rear: this rover's own copy, for its hazard lights. */
+  hazard: { material: MeshStandardMaterial; base: number } | null;
+  /** Materials this rig cloned for itself, to dispose with it. */
+  owned: MeshStandardMaterial[];
   missing: string[];
+}
+
+/** Which rover a rig is: CONTINUA, or the normal rover in its plainer livery. */
+export type RoverVariant = 'continua' | 'normal';
+
+/**
+ * The normal rover's livery: the same vehicle, grey instead of white and no
+ * CONTINUA blue - so the two read apart at a glance, and only the one in
+ * CONTINUA's colours is CONTINUA. The door and tailgate wordmarks are lettered
+ * in the blue accent (scripts/blender/build_vehicle.py, build_identity), so
+ * painting the accent the body's colour takes the name off it; the grille's
+ * wordmark, in the bright rim finish, is painted out on the body alone.
+ */
+const NORMAL_PAINT = '#7f8895';
+const NORMAL_LIVERY: Record<string, string> = {
+  CONTINUA_Paint_White: NORMAL_PAINT,
+  CONTINUA_Accent_Blue: NORMAL_PAINT,
+  CONTINUA_Plate: '#c3c8cf',
+  CONTINUA_Accent_Cyan: '#9aa2ad',
+  CONTINUA_Spring_Blue: '#6f7782',
+  CONTINUA_Caliper: '#3d444f',
+};
+
+/** Whether a node is part of the body shell (not a wheel), by its ancestors' names. */
+function onBody(node: Object3D): boolean {
+  for (let at: Object3D | null = node; at; at = at.parent) {
+    if (at.name === 'CONTINUA_Body') return true;
+    if (/^CONTINUA_(Wheel|Steer)_/.test(at.name)) return false;
+  }
+  return false;
 }
 
 /** How much brighter the tail lamps burn under full braking. */
 const BRAKE_GAIN = 2.2;
+/** Hazard lamps: flashes a second, and how much brighter than their resting glow. */
+const HAZARD_HZ = 1.5;
+const HAZARD_GAIN = 7;
 
 /** The LiDAR's spin, rad/s: two revolutions a second read as a scanner without strobing. */
 const LIDAR_SPIN = Math.PI * 4;
@@ -143,7 +185,7 @@ function satelliteDeploy(source: SceneStateSource, t: number): number {
   return x * x * (3 - 2 * x);
 }
 
-function buildRig(source: Object3D): Rig {
+function buildRig(source: Object3D, variant: RoverVariant): Rig {
   const cloned = source.clone(true);
   const vehicle = (cloned.getObjectByName('CONTINUA_Vehicle') ?? cloned) as Object3D;
   const missing: string[] = [];
@@ -170,17 +212,43 @@ function buildRig(source: Object3D): Rig {
   vehicle.add(body);
 
   // The lamps get a material of their own: the glTF's is shared through the
-  // loader's cache, and brightening it would brighten every copy.
+  // loader's cache, and brightening it would brighten every copy. So does the
+  // normal rover's paint, for the same reason.
   // (Typed by assertion: assigned in the callback, it would otherwise be
   // narrowed to its initial null.)
   let brake = null as MeshStandardMaterial | null;
+  let hazard = null as MeshStandardMaterial | null;
+  const owned: MeshStandardMaterial[] = [];
+  const livery = new Map<string, MeshStandardMaterial>();
   cloned.traverse((node) => {
     if (!(node instanceof Mesh)) return;
     node.castShadow = true;
     node.receiveShadow = true;
     if (node.material instanceof MeshStandardMaterial && node.material.name === 'CONTINUA_Light_Rear') {
-      brake ??= node.material.clone();
+      if (!brake) owned.push((brake = node.material.clone()));
       node.material = brake;
+    }
+    if (node.material instanceof MeshStandardMaterial && node.material.name === 'CONTINUA_Light_Amber') {
+      if (!hazard) owned.push((hazard = node.material.clone()));
+      node.material = hazard;
+    }
+    const repaint =
+      variant === 'normal' && node.material instanceof MeshStandardMaterial
+        ? (NORMAL_LIVERY[node.material.name] ??
+          (node.material.name === 'CONTINUA_Rim_Bright' && onBody(node) ? NORMAL_PAINT : undefined))
+        : undefined;
+    if (repaint && node.material instanceof MeshStandardMaterial) {
+      const name = `${node.material.name}:${repaint}`;
+      let paint = livery.get(name);
+      if (!paint) {
+        paint = node.material.clone();
+        paint.color.set(repaint);
+        // The accents glow faintly in CONTINUA's blue; the normal rover's do not.
+        paint.emissive.setRGB(0, 0, 0);
+        livery.set(name, paint);
+        owned.push(paint);
+      }
+      node.material = paint;
     }
     const materials = Array.isArray(node.material) ? node.material : [node.material];
     for (const material of materials) {
@@ -195,7 +263,7 @@ function buildRig(source: Object3D): Rig {
   });
 
   const root = new Group();
-  root.name = 'CONTINUA_RoverRoot';
+  root.name = variant === 'normal' ? 'CONTINUA_RoverRoot_Normal' : 'CONTINUA_RoverRoot';
   root.add(vehicle);
   return {
     root,
@@ -206,6 +274,8 @@ function buildRig(source: Object3D): Rig {
     satMount: root.getObjectByName('CONTINUA_SatMount') ?? null,
     satPanel: root.getObjectByName('CONTINUA_SatPanel') ?? null,
     brake: brake ? { material: brake, base: brake.emissiveIntensity } : null,
+    hazard: hazard ? { material: hazard, base: hazard.emissiveIntensity } : null,
+    owned,
     missing,
   };
 }
@@ -213,17 +283,29 @@ function buildRig(source: Object3D): Rig {
 export function Rover({
   lod = false,
   onRigReport,
+  variant = 'continua',
+  source: sourceOverride,
+  frame: frameOverride,
 }: {
   lod?: boolean;
   onRigReport?: (report: { missing: string[] }) => void;
+  /** CONTINUA (the default), or the normal rover in its own livery. */
+  variant?: RoverVariant;
+  /** The run this rover is drawn from, when it is not the scene's own (the normal rover's). */
+  source?: SceneStateSource;
+  /** Its state this frame, written by `SceneDriver`; null hides the rover. */
+  frame?: { current: SceneState | null };
 }) {
-  const { source, frame } = useSceneRuntime();
+  const runtime = useSceneRuntime();
+  const source = sourceOverride ?? runtime.source;
+  const frame = frameOverride ?? runtime.frame;
   const url = lod ? ROVER_MODEL_LOD1_URL : ROVER_MODEL_URL;
   const { scene } = useGLTF(url);
 
-  const rig = useMemo(() => buildRig(scene), [scene]);
-  // The lamps' material is this rig's own (the rest belong to the glTF cache).
-  useEffect(() => () => rig.brake?.material.dispose(), [rig]);
+  const rig = useMemo(() => buildRig(scene, variant), [scene, variant]);
+  // The lamps' and the livery's materials are this rig's own (the rest belong
+  // to the glTF cache).
+  useEffect(() => () => rig.owned.forEach((material) => material.dispose()), [rig]);
   const groupRef = useRef<Group>(null);
 
   useEffect(() => {
@@ -238,6 +320,11 @@ export function Rover({
     const state = frame.current;
     const group = groupRef.current;
     if (!group) return;
+    if (!state) {
+      group.visible = false;
+      return;
+    }
+    group.visible = true;
     const pose = state.vehicle;
 
     // --- restrained suspension, still a pure function of time -------------
@@ -266,10 +353,18 @@ export function Rover({
     rig.body.rotation.set(rollTrim, 0, pitchTrim, 'YXZ');
 
     // The tail lamps brighten as it brakes - read from the same speed profile
-    // as the body's dive, so a frame is still a pure function of time.
+    // as the body's dive - and stay lit while it stands with no link; the
+    // hazards flash from the moment its session drops until it is moving
+    // again. All on the scene clock, so a frame is still a pure function of time.
+    const held = state.held ?? 0;
+    const hazards = state.sessionDown === true || held > 0.05;
     if (rig.brake) {
       rig.brake.material.emissiveIntensity =
-        rig.brake.base * (1 + BRAKE_GAIN * smoothstep(0.35, 1.5, -acceleration));
+        rig.brake.base * (1 + BRAKE_GAIN * Math.max(smoothstep(0.35, 1.5, -acceleration), held));
+    }
+    if (rig.hazard) {
+      const on = hazards && (state.simTime * HAZARD_HZ) % 1 < 0.55;
+      rig.hazard.material.emissiveIntensity = rig.hazard.base * (on ? HAZARD_GAIN : 1);
     }
 
     for (const wheel of rig.wheels) wheel.rotation.z = -pose.wheelAngle;
@@ -295,7 +390,7 @@ export function Rover({
   });
 
   return (
-    <group ref={groupRef} name="CONTINUA_Rover">
+    <group ref={groupRef} name={variant === 'normal' ? 'CONTINUA_Rover_Normal' : 'CONTINUA_Rover'}>
       <ContactShadow />
       <primitive object={rig.root} />
     </group>

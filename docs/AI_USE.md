@@ -192,18 +192,22 @@ shorter cut. Since 2026-10-08 `?story` plays the story in the app instead. Its p
 
 ### The Mission page's voice
 
-The page reads its own words aloud - each change of network and each rover
-losing or regaining its link while driving, each caption in the story - and
-that voice is **synthesised speech** too, made the same way: locally, with
-`scripts/speak.ps1` and the Windows OneCore voice "Microsoft Mark", ahead of
-time (`npm run voice:lines`, `npm run voice:build`), into the MP3s under
-`apps/web/public/voice/`. No text or audio left the machine.
+The page reads aloud while a run plays - a running commentary on the drive,
+each caption in the story - and that voice is **synthesised speech** too, made
+the same way: locally, with `scripts/speak.ps1` and the Windows OneCore voice
+"Microsoft Mark", ahead of time (`npm run voice:lines`, `npm run voice:build`),
+into the MP3s under `apps/web/public/voice/`. No text or audio left the
+machine.
 
-* **The words are the page's own.** The drive's lines are made by the same
-  function the page uses (`spokenLines` in
-  `apps/web/src/components/mission/plain.ts`); the story's are recorded from a
-  run of it. Only units are expanded for speech ("4.5 s" is said "4.5
-  seconds"). Nothing is added, summarised or reworded.
+* **The words are the page's own.** The drive's commentary - why each switch
+  happened, the road map's warning, each rover losing its link and what it was
+  missing, how long the normal rover stood, how the run ended - is built from
+  the two runs' events by one function (`driveCommentary` in
+  `apps/web/src/components/mission/commentary.ts`), not written by a model;
+  `scripts/voice-lines-drive.mts` runs that same function over every recorded
+  run the public site replays (145 lines on 2026-10-08) so each is recorded.
+  The story's lines are recorded from a run of it. Only units are expanded for
+  speech ("4.5 s" is said "4.5 seconds").
 * **No online voice.** A line with no recording - one whose numbers came out
   differently on a run - is read by one of the browser's *local* voices, or
   not at all: a browser's online voices would send the text to a speech
