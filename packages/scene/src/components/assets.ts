@@ -21,3 +21,4 @@ export const ROVER_MODEL_URL = `/models/continua_rover.glb?v=${MODEL_VERSIONS.ro
 export const ROVER_MODEL_LOD1_URL = `/models/continua_rover_lod1.glb?v=${MODEL_VERSIONS.roverLod1}`;
 export const PROPS_MODEL_URL = `/models/continua_props.glb?v=${MODEL_VERSIONS.props}`;
 export const DOCK_TWO_MODEL_URL = `/models/continua_dock02.glb?v=${MODEL_VERSIONS.dockTwo}`;
+export const TUNNEL_MODEL_URL = `/models/continua_tunnel.glb?v=${MODEL_VERSIONS.tunnel}`;

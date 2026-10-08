@@ -45,14 +45,17 @@ export function GlassSection({
   action,
   children,
   className = '',
+  tour,
 }: {
   title?: string;
   action?: ReactNode;
   children: ReactNode;
   className?: string;
+  /** What a page's tour calls this section (`data-tour`). */
+  tour?: string;
 }) {
   return (
-    <section className={`px-4 py-3.5 ${className}`}>
+    <section className={`px-4 py-3.5 ${className}`} data-tour={tour}>
       {(title || action) && (
         <header className="mb-2.5 flex items-center justify-between gap-2">
           {title && <h2 className="section-label">{title}</h2>}

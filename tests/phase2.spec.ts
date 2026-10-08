@@ -45,6 +45,24 @@ async function requireEngine(page: Page): Promise<void> {
 }
 
 /**
+ * The guided tours (apps/web/src/components/onboarding) open on a first visit,
+ * and the first drive's is modal. These tests drive the pages themselves, so
+ * each starts with the tours marked as taken - all but the test of the tour.
+ */
+const TOURS = ['mission-drive', 'results', 'decision-log', 'scenario-builder', 'brief'];
+
+test.beforeEach(async ({ page }, testInfo) => {
+  if (testInfo.title.includes('first drive')) return;
+  await page.addInitScript((ids: string[]) => {
+    try {
+      for (const id of ids) window.localStorage.setItem(`continua.tour.${id}.v1`, 'done');
+    } catch {
+      // No storage: the tests that need the tours closed will say so.
+    }
+  }, TOURS);
+});
+
+/**
  * The Mission page opens on its introduction; one click starts the featured
  * run and shows the controls, which can start another.
  */
@@ -119,6 +137,62 @@ test.describe('Mission dashboard', () => {
       .toBeGreaterThan(first);
 
     await page.screenshot({ path: `${EVIDENCE}/p2-mission-${testInfo.project.name}.png` });
+    expect(errors, errors.join(' | ')).toEqual([]);
+  });
+
+  test('opens the first drive on a short tour, then plays it', async ({ page }) => {
+    const errors = consoleErrors(page);
+    await requireEngine(page);
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
+    await openDrive(page);
+
+    // Held at its start while the screen is explained.
+    const tour = page.getByRole('dialog', { name: 'How to read the drive' });
+    await expect(tour).toBeVisible({ timeout: 45_000 });
+    await expect(tour.getByText('Step 1 of 4')).toBeVisible();
+    const clock = () => page.locator('input[aria-label="Run timeline"]').inputValue().then(Number);
+    // The hold is a pause and a seek on the engine: wait for them to land.
+    await expect.poll(clock, { timeout: 15_000, message: 'held near its start' }).toBeLessThan(1.5);
+    const held = await clock();
+    await page.waitForTimeout(1500);
+    expect(Math.abs((await clock()) - held), 'the drive waits for the tour').toBeLessThan(0.3);
+
+    for (let step = 2; step <= 4; step += 1) {
+      await tour.getByRole('button', { name: 'Next' }).click();
+      await expect(tour.getByText(`Step ${step} of 4`)).toBeVisible();
+    }
+    await tour.getByRole('button', { name: 'Start the drive' }).click();
+    await expect(tour).toBeHidden();
+    await expect.poll(clock, { timeout: 15_000, message: 'the drive plays once the tour is done' }).toBeGreaterThan(held + 1);
+
+    // Taken once, it does not come back by itself - but the Guide brings it back.
+    await page.getByRole('button', { name: 'Guide' }).click();
+    await expect(tour).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(tour).toBeHidden();
+    expect(errors, errors.join(' | ')).toEqual([]);
+  });
+
+  test('a ?tour link opens the drive tour again for a browser that has seen it', async ({ page }) => {
+    const errors = consoleErrors(page);
+    await requireEngine(page);
+    await page.goto('/?tour', { waitUntil: 'domcontentloaded' });
+    await openDrive(page);
+
+    // Opened by the drive's own start, at the hold - once.
+    const tour = page.getByRole('dialog', { name: 'How to read the drive' });
+    await expect(tour).toBeVisible({ timeout: 45_000 });
+    await expect(tour.getByText('Step 1 of 4')).toBeVisible();
+    const clock = () => page.locator('input[aria-label="Run timeline"]').inputValue().then(Number);
+    await expect.poll(clock, { timeout: 15_000, message: 'held near its start' }).toBeLessThan(1.5);
+    const held = await clock();
+
+    // Skipped, the drive still starts.
+    await tour.getByRole('button', { name: 'Skip tour' }).click();
+    await expect(tour).toBeHidden();
+    await expect.poll(clock, { timeout: 15_000, message: 'the drive plays once the tour is skipped' }).toBeGreaterThan(held + 1);
+    await page.waitForTimeout(1500);
+    await expect(tour).toBeHidden();
     expect(errors, errors.join(' | ')).toEqual([]);
   });
 

@@ -159,6 +159,15 @@ terrain masking, no antenna pattern and no interference. It is labelled
 `modelled_coverage` everywhere it appears, and the controller is never allowed
 to treat it as a measurement.
 
+**The ridge tunnel is drawing, not coverage.** Between route metres 560 and
+616.4 the road goes through a tunnel the world draws
+(`packages/scene/src/world/tunnel.ts`); the coverage model above does not know
+it is there. Every link available either side of it is available inside it -
+the satellite link too, which a real tunnel would block - and the engine, its
+traces and the stored comparisons were not changed when it was added. The
+radiating cable drawn along its lining is the kind a road tunnel carries to
+keep the mobile network inside: a picture, not a modelled link.
+
 ### Route-anchored shadows and the radio map (Phase 5)
 
 * A `shadow` fault (`sim/exogenous.py`) scales a link's coverage down over a

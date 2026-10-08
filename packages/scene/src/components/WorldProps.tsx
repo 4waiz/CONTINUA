@@ -45,6 +45,7 @@ import { PYLON_CONDUCTORS, TURBINE, WORLD_LAYOUT, type Placement } from '../worl
 import { route } from '../world/route';
 import { SITES, type SiteMarker } from '../world/sites';
 import { SEA_LEVEL, terrain } from '../world/terrain';
+import { groundHeight, pipeBuried, TUNNEL_PLANTING } from '../world/tunnel';
 import { PROPS_MODEL_URL } from './assets';
 import { plainGlazing, windowMaterial, type RoomSpec } from './windows';
 
@@ -56,13 +57,14 @@ export type { Placement };
 // Instancing
 // ---------------------------------------------------------------------------
 
-interface Primitive {
+export interface Primitive {
   geometry: BufferGeometry;
   material: Material | Material[];
   relative: Matrix4;
 }
 
-function collectPrimitives(node: Object3D): Primitive[] {
+/** A glTF node's meshes, each with its transform relative to the node: what one instanced mesh per primitive needs. */
+export function collectPrimitives(node: Object3D): Primitive[] {
   node.updateWorldMatrix(true, true);
   const inverse = node.matrixWorld.clone().invert();
   const out: Primitive[] = [];
@@ -85,7 +87,8 @@ const _euler = new Euler();
 const _placement = new Matrix4();
 
 function placementMatrix(item: Placement, target: Matrix4): Matrix4 {
-  _position.set(item.x, terrain.height(item.x, item.z), item.z);
+  // The ground it stands on: the terrain, or the hill over the tunnel.
+  _position.set(item.x, groundHeight(item.x, item.z), item.z);
   _quaternion.setFromEuler(_euler.set(0, item.yaw, 0));
   const s = item.scale ?? 1;
   _scale.set(s, s, s);
@@ -435,7 +438,7 @@ function GroundContact({ entries }: { entries: { name: string; placements: Place
         const oz = footprint.cz * s;
         const x = item.x + ox * cos + oz * sin;
         const z = item.z - ox * sin + oz * cos;
-        position.set(x, terrain.height(x, z) + 0.05, z);
+        position.set(x, groundHeight(x, z) + 0.05, z);
         rotation.setFromEuler(euler.set(0, item.yaw, 0));
         scale.set(width, 1, depth);
         const area = footprint.width * footprint.depth * s * s;
@@ -851,12 +854,18 @@ function allPlacements(): Map<string, Placement[]> {
     list.push({ x: site.x, z: site.z, yaw: site.yaw, scale: site.scale });
     byProp.set(site.prop, list);
   }
-  for (const [prop, placements] of Object.entries(WORLD_LAYOUT)) {
+  // The world's dressing, and the ridge's own planting over the tunnel.
+  const layout: Record<string, readonly Placement[]> = { ...WORLD_LAYOUT };
+  for (const [prop, planting] of Object.entries(TUNNEL_PLANTING)) layout[prop] = [...(layout[prop] ?? []), ...planting];
+  for (const [prop, placements] of Object.entries(layout)) {
     const list = byProp.get(prop) ?? [];
     // Seeded scatter can land past the shore; only the wind farm and the
     // jetty stand at sea.
     const afloat = prop === TURBINE.tower || prop === TURBINE.rotor || prop === 'PROP_Jetty';
-    const kept = afloat ? [...placements] : placements.filter((item) => terrain.height(item.x, item.z) > SEA_LEVEL + 0.25);
+    let kept = afloat ? [...placements] : placements.filter((item) => terrain.height(item.x, item.z) > SEA_LEVEL + 0.25);
+    // The pipeline is buried where it meets the ridge over the tunnel; the
+    // tunnel lays the pieces where it goes under and comes out (Tunnel.tsx).
+    if (prop === 'PROP_Pipeline') kept = kept.filter((item) => !pipeBuried(item));
     const keep = THINNED_ON_LOW.get(prop);
     list.push(...(keep ? keepersFirst(kept, keep) : kept));
     byProp.set(prop, list);

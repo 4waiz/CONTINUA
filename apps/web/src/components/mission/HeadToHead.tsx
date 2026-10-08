@@ -132,7 +132,7 @@ export function HeadToHead({
 }) {
   const compare = baseline !== undefined;
   return (
-    <section className="glass h2h" aria-label="Head to head">
+    <section className="glass h2h" aria-label="Head to head" data-tour="mission-scoreboard">
       <header className="h2h-head">
         <h2 className="section-label flex items-center gap-1.5">
           {compare ? 'Head to head' : 'So far'}

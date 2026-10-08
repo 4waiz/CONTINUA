@@ -34,6 +34,8 @@ import Link from 'next/link';
 import { useEffect, useMemo, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { AppShell } from './AppShell';
 import { carryingSegments } from './mission/MissionDock';
+import { PageTour } from './onboarding/PageTour';
+import { DECISION_LOG_TOUR } from './onboarding/tours';
 import { readableReason } from './mission/plain';
 import { NetworkIcon, ReplayIcon } from './ui/icons';
 import { Chip } from './ui/primitives';
@@ -205,7 +207,7 @@ export function DecisionLogView() {
     <AppShell>
       <div className="grid h-full min-h-0 grid-cols-1 grid-rows-[minmax(0,1fr)] gap-3 xl:grid-cols-[264px_minmax(0,1fr)_372px] max-[1500px]:xl:grid-cols-[240px_minmax(0,1fr)_340px]">
         {/* ---------------- runs ---------------- */}
-        <section className="panel flex min-h-0 flex-col overflow-hidden">
+        <section className="panel flex min-h-0 flex-col overflow-hidden" data-tour="log-runs">
           <header className="flex items-center justify-between gap-2 px-4 pt-3.5 pb-2.5">
             <h2 className="section-label">Recorded runs</h2>
             {runs.length > 0 && (
@@ -234,7 +236,7 @@ export function DecisionLogView() {
         </section>
 
         {/* ---------------- timeline ---------------- */}
-        <section className="panel flex min-h-0 flex-col overflow-hidden">
+        <section className="panel flex min-h-0 flex-col overflow-hidden" data-tour="log-decisions">
           <header className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2 border-b border-[color:var(--color-line)] px-5 pt-3.5 pb-3">
             <div className="min-w-0">
               <h2 className="section-label">Decisions</h2>
@@ -318,7 +320,7 @@ export function DecisionLogView() {
 
         {/* ---------------- detail ---------------- */}
         <div className="scroll-y flex min-h-0 flex-col gap-3 pr-0.5">
-          <section className="panel px-5 py-4">
+          <section className="panel px-5 py-4" data-tour="log-detail">
             {!selected ? (
               <>
                 <h2 className="section-label">Decision detail</h2>
@@ -334,6 +336,12 @@ export function DecisionLogView() {
           {metrics && <RunOutcome metrics={metrics} />}
         </div>
       </div>
+      <PageTour
+        id="decision-log"
+        steps={DECISION_LOG_TOUR}
+        label="A tour of the decision log"
+        offer="Four steps: pick a run, and read every decision CONTINUA made, with what it was based on."
+      />
     </AppShell>
   );
 }
@@ -430,7 +438,7 @@ function CarryingRibbon({
   }, [segments]);
 
   return (
-    <div className="flex w-full items-center gap-3">
+    <div className="flex w-full items-center gap-3" data-tour="log-ribbon">
       <div className="relative h-[26px] min-w-0 flex-1">
         <div className="absolute inset-x-0 top-1/2 h-[8px] -translate-y-1/2 overflow-hidden rounded-full bg-[color:var(--color-line)]">
           {segments.map((segment, index) => (

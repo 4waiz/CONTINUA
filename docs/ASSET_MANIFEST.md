@@ -24,7 +24,7 @@ Draco decoder is served from the app itself, so the app still works offline.
 
 ## 2. Runtime assets
 
-Served from `apps/web/public/models/`. All three are Draco-compressed
+Served from `apps/web/public/models/`. All of them are Draco-compressed
 (`KHR_draco_mesh_compression`, level 7; quantisation: position 14 bit, normal
 10, colour 10, generic 12). The rover carries **no textures**: every material
 is untextured PBR, surface detail is geometry, and contact darkening is the
@@ -36,10 +36,11 @@ frond card (§2a).
 | --- | --- | --- | --- |
 | `continua_rover.glb` | 791,724 (773 KB) | 72,278 | Hero rover: 15 meshes (three of them moving sensors), 2 steering pivots, 24 materials |
 | `continua_rover_lod1.glb` | 264,936 (259 KB) | 23,450 | Low-detail rover for the `low` quality tier |
-| `continua_props.glb` | 1,602,892 (1565 KB) | 114,318 | 61 world props, instanced at runtime; the foliage atlas |
+| `continua_props.glb` | 1,603,568 (1566 KB) | 114,410 | 61 world props, instanced at runtime; the foliage atlas |
 | `continua_dock02.glb` | 43,036 (42 KB) | 2,542 | `PROP_DockStation_02`: the second dock bay, where the normal rover starts beside CONTINUA - DOCK 01 lettered DOCK 02, without the pillar, cabinet and floodlights (`build_dock_two.py`) |
+| `continua_tunnel.glb` | 116,240 (114 KB) | 8,176 | The ridge tunnel's six pieces (`build_tunnel.py`, §6) |
 
-The four files total **2.70 MB**; the decoder adds `draco_decoder.wasm`
+The five files total **2.82 MB**; the decoder adds `draco_decoder.wasm`
 (192 KB) and `draco_wasm_wrapper.js` (58 KB).
 
 **Cache busting.** `/models/*` is served `immutable` for a year
@@ -201,8 +202,10 @@ face outward on both sides; normals are flipped to match.
 All authored at the world origin, base on `z = 0`, front facing +X unless the
 table says otherwise. The runtime instances each one with a position and yaw
 from `packages/scene/src/world/sites.ts` (network sites) or
-`packages/scene/src/world/layout.ts` (everything else), and a Y from
-`terrain.height`. Network site positions come from `world.json`, which the
+`packages/scene/src/world/layout.ts` (everything else), and a Y from the
+ground it stands on: `terrain.height`, or the hill over the ridge tunnel where
+that stands above it (`groundHeight` in `world/tunnel.ts`). Network site
+positions come from `world.json`, which the
 engine also reads; the decorative layout is scene-side only and never moves a
 site.
 
@@ -250,7 +253,7 @@ site.
 
 | Node | Triangles | Orientation / size | Used for |
 | --- | --- | --- | --- |
-| `PROP_SatTerminal` | 7,288 | 7.2 m dish aimed at the satellite (due south in the world, 45° up, with the site's yaw); compound offset (6, 4), shelter behind the pedestal | Satellite ground station (beam at 4.4 m) |
+| `PROP_SatTerminal` | 7,380 | 7.2 m dish aimed at the satellite (due south in the world, 45° up, with the site's yaw); compound offset (6, 4), shelter behind the pedestal; fence and pad on a four-sided outline whose south side follows the road at 7.5 m or more from its centre line (a rectangle put its corner in the rover's lane), gate in the west side onto the forecourt | Satellite ground station (beam at 4.4 m) |
 | `PROP_ValveStation` | 1,732 | Pipeline along X | Inspection target |
 | `PROP_Palm` | 868 | 16 pinnate fronds on leaf cards | Palms |
 | `PROP_Ghaf` | 1,146 | Three limbs; ten crown clusters of 40 leaf cards round a core | Broadleaf woods, the campus screening belt (node name kept from the desert world) |
@@ -269,6 +272,30 @@ site.
 | `PROP_Pipeline` | 456 | 12 m run along X | Inspected pipeline, instanced |
 | `PROP_WindTurbine` | 292 | 60 m tower | Wind farm, on the shore and offshore |
 | `PROP_Rock_A/B/C` | 160 / 80 / 240 | Irregular | Granite boulders |
+
+**The ridge tunnel** (`world_tunnel.py`, exported to `continua_tunnel.glb` by
+`build_tunnel.py`)
+
+Where the corridor meets the remote hills the road goes through a ridge: 56.4 m
+between the portals' faces (route metres 560 to 616.4, `TUNNEL` in
+`packages/scene/src/world/tunnel.ts`). Each piece is placed on the road's own
+line and grade; the hill over it, the cut in front of each portal and the
+planting on it are drawn by the scene (`Tunnel.tsx`), from dimensions shared
+with the Blender script (`TUNNEL_PROFILE`). Set dressing: the route and the
+engine's coverage model are unchanged.
+
+| Node | Triangles | Orientation / size | Used for |
+| --- | --- | --- | --- |
+| `PROP_TunnelPortal` | 2,904 | +X out of the tunnel; origin on the road's centre line in the face, z = 0 the road. Headwall 16.4 m wide, coping at 9.4 m; precast frame round the opening; wing walls splayed from 7.6 m to 11.0 m off the centre line over 14 m, copings stepping down to 1.2 m; "RIDGE TUNNEL" in raised letters; a lane signal over each lane | Both portals |
+| `PROP_TunnelSegment` | 2,576 | 6 m along X, 6.08 m long (the overlap is a dark ring joint); horseshoe lining, 5.35 m radius, crown 6.95 m | The lining, nine segments end to end |
+| `PROP_TunnelFans` | 1,488 | Two jet fans at ±2.2 m, axis at 5.5 m | Middle of the tunnel |
+| `PROP_TunnelSOS` | 668 | Emergency station on the +Y wall, exit sign on the -Y wall | One on each wall, near either end |
+| `PROP_PipelineBury` | 504 | +X toward the ridge; its level end meets a `PROP_Pipeline` run's end | Where the pipeline goes under the ridge |
+| `PROP_PipelineMarker` | 36 | 1.3 m post | Over the buried pipeline |
+
+The lining carries two rows of luminaires, a cable tray, reflective
+delineators and the radiating cable a road tunnel uses to keep the mobile
+network inside - drawn, not modelled.
 
 Turbine rotors are animated as a pure function of `clock.time`, so a scrubbed
 or captured frame is exact. Glass uses a higher environment intensity and the
@@ -304,6 +331,7 @@ and the rig-integrity test are.
 npm run blender:vehicle    # .blend + hero .glb + LOD .glb + model hashes
 npm run blender:props      # .blend + props .glb + model hashes
 node scripts/run-blender.mjs scripts/blender/build_dock_two.py   # DOCK 02 .glb + model hashes
+node scripts/run-blender.mjs scripts/blender/build_tunnel.py     # ridge tunnel .glb + model hashes
 npm run blender:previews   # six studio renders
 npm run blender:all        # all three, in order
 ```

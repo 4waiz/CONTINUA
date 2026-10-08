@@ -16,6 +16,8 @@
 import Link from 'next/link';
 import { AppShell } from './AppShell';
 import { AtAGlance } from './experiments/AtAGlance';
+import { PageTour } from './onboarding/PageTour';
+import { BRIEF_TOUR } from './onboarding/tours';
 import { PROOF_EXPERIMENT, useProofRows } from './mission/StoryCards';
 import { REPO_URL } from '@/lib/deployment';
 import { CompareIcon, FlightIcon, NetworkIcon, PlayIcon, RoadMapIcon } from './ui/icons';
@@ -202,7 +204,7 @@ export function ChallengeView() {
     <AppShell>
       <div className="doc-scroll scroll-y h-full">
         <article className="doc">
-          <header className="doc-hero glass">
+          <header className="doc-hero glass" data-tour="brief-hero">
             <div className="doc-kicker">EDGE challenge · Advanced Technology Pioneers 2026</div>
             <h1 className="doc-title">
               How might we keep a user&apos;s experience unbroken as they move between Wi-Fi, mobile, satellite and wired
@@ -230,7 +232,7 @@ export function ChallengeView() {
             </h2>
             <ol className="doc-criteria">
               {CRITERIA.map((criterion) => (
-                <li key={criterion.n} className="doc-criterion glass">
+                <li key={criterion.n} className="doc-criterion glass" data-tour={criterion.n === CRITERIA[0]!.n ? 'brief-criterion' : undefined}>
                   <span className="doc-criterion-n metric">{criterion.n}</span>
                   <div className="min-w-0">
                     <p className="doc-asked">{criterion.asked}</p>
@@ -421,6 +423,12 @@ export function ChallengeView() {
           </section>
         </article>
       </div>
+      <PageTour
+        id="brief"
+        steps={BRIEF_TOUR}
+        label="A tour of the brief"
+        offer="Two steps: the question this project answers, and where each success criterion is met."
+      />
     </AppShell>
   );
 }

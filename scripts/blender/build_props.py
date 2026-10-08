@@ -67,6 +67,10 @@ AO_DISTANCE = {
     "PROP_Boat_Rescue": 0.8, "PROP_Boat_Sail": 0.6,
     "PROP_Skyline_A": 6.0, "PROP_Skyline_B": 6.0, "PROP_Skyline_C": 6.0,
     "PROP_WindTurbine_Rotor": 2.0, "PROP_Pylon": 1.2, "PROP_CellTower": 1.2,
+    # The ridge tunnel (build_tunnel.py): the lining's own corners, not a
+    # dusk inside it.
+    "PROP_TunnelPortal": 2.6, "PROP_TunnelSegment": 1.4, "PROP_TunnelFans": 0.5, "PROP_TunnelSOS": 0.35,
+    "PROP_PipelineBury": 1.0, "PROP_PipelineMarker": 0.3,
 }
 
 

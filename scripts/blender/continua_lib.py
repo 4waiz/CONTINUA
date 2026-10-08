@@ -504,6 +504,7 @@ MODEL_FILES = {
     "roverLod1": "continua_rover_lod1.glb",
     "props": "continua_props.glb",
     "dockTwo": "continua_dock02.glb",
+    "tunnel": "continua_tunnel.glb",
 }
 
 

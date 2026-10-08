@@ -21,6 +21,8 @@ import { LinkPills } from './mission/LinkPills';
 import { Pipeline } from './mission/MissionDock';
 import { MissionScene } from './mission/MissionScene';
 import { RouteMap } from './mission/RouteMap';
+import { PageTour } from './onboarding/PageTour';
+import { SCENARIO_TOUR } from './onboarding/tours';
 import {
   FaultSection,
   Field,
@@ -254,7 +256,7 @@ export function ScenarioLabView() {
               error && <EngineStatus detail={error} onRetry={() => setBootAttempt((n) => n + 1)} retrying={busy} />
             )}
             <div className="glass divide-y divide-[color:var(--color-line)]">
-              <GlassSection title="Base scenario">
+              <GlassSection title="Base scenario" tour="lab-scenarios">
                 <div className="grid grid-cols-2 gap-1.5">
                   {scenarios.map((entry) => (
                     <ScenarioCard
@@ -275,7 +277,7 @@ export function ScenarioLabView() {
                 </div>
               </GlassSection>
 
-              <GlassSection title="Policy under test">
+              <GlassSection title="Policy under test" tour="lab-policy">
                 <PolicySelector policies={policies} value={policyId} onChange={setPolicyId} />
               </GlassSection>
 
@@ -417,7 +419,7 @@ export function ScenarioLabView() {
         {/* ---------------- summary and launch ---------------- */}
         <aside className="mission-side mission-right scroll-y flex flex-col gap-3 *:shrink-0">
           {runId && <RouteMap event={run.latest} events={run.decisions} />}
-          <div className="glass divide-y divide-[color:var(--color-line)]">
+          <div className="glass divide-y divide-[color:var(--color-line)]" data-tour="lab-summary">
             <GlassSection title="Scenario summary">
               <dl className="flex flex-col gap-2">
                 {summaryRows.map(([label, value]) => (
@@ -456,12 +458,18 @@ export function ScenarioLabView() {
 
         {/* ---------------- live strip ---------------- */}
         <div className="mission-dock">
-          <section className="glass flex items-center gap-3 px-3 py-2" aria-label="Live run">
+          <section className="glass flex items-center gap-3 px-3 py-2" aria-label="Live run" data-tour="lab-live">
             <LinkPills event={run.latest} />
             <span className="divider-v" />
             <Pipeline event={run.latest} />
           </section>
         </div>
+        <PageTour
+          id="scenario-builder"
+          steps={SCENARIO_TOUR}
+          label="A tour of the scenario builder"
+          offer="Four steps: choose a road and who drives it, and watch the controller at work."
+        />
       </div>
     </AppShell>
   );

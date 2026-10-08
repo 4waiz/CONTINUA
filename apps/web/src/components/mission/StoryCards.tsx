@@ -15,7 +15,7 @@ import type { PolicyIdString } from '@continua/contracts/engine';
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { InfoTip } from '../ui/InfoTip';
-import { PlayIcon, ReplayIcon } from '../ui/icons';
+import { ArrowLeftIcon, PlayIcon, ReplayIcon } from '../ui/icons';
 import { CHAPTERS } from './story';
 
 /** The pre-registered comparison on the shadowed route (docs/PHASE_5_RESULTS.md). */
@@ -74,10 +74,23 @@ export function StoryLanding({ onDrive, busy }: { onDrive: () => void; busy: boo
           })}
         </div>
       )}
+      {/* The one way in, marked as the place to start: whoever opens the page
+          cold - a judge, a reviewer - knows where to click. */}
       <div className="mt-5">
-        <button type="button" className="control control-primary h-[44px] px-6 text-[15px]" onClick={onDrive} disabled={busy}>
-          <PlayIcon size={15} /> Watch the two rovers
-        </button>
+        <div className="start-cta">
+          <button
+            type="button"
+            className="control control-primary start-cta-button h-[44px] px-6 text-[15px]"
+            onClick={onDrive}
+            disabled={busy}
+          >
+            <PlayIcon size={15} /> Watch the two rovers
+          </button>
+          <span className="start-here" aria-hidden>
+            <ArrowLeftIcon size={14} /> Start here
+          </span>
+        </div>
+        <p className="start-cta-note">About two minutes. Turn the sound on: a voice says why each change of network happens.</p>
       </div>
       <p className="story-landing-foot">A simulation, not a live network test.</p>
     </section>

@@ -40,6 +40,7 @@ import { RoverCam } from './RoverCam';
 import { CompanionLinkBeams, CoverageOverlay, LinkBeams } from './Network';
 import { DeadZoneWalls } from './DeadZone';
 import { DockTwo } from './DockTwo';
+import { Tunnel } from './Tunnel';
 import { Rover } from './Rover';
 import { RoverTags } from './RoverTags';
 import { SceneCameras } from './Cameras';
@@ -327,6 +328,7 @@ function SceneContents({
       />
       <DeadZoneWalls zones={settings.deadZones} lite={quality === 'low'} />
       <DockTwo />
+      <Tunnel lite={quality === 'low'} />
       <Rover lod={quality === 'low'} />
       {companion && <Rover lod={quality === 'low'} variant="normal" source={companion} frame={companionFrame} />}
       <CoverageOverlay visible={settings.showCoverage && !inspect} />

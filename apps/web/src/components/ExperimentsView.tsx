@@ -14,6 +14,8 @@ import { AtAGlance, glanceRows } from './experiments/AtAGlance';
 import { InfoTip } from './ui/InfoTip';
 import type { PolicyIdString } from '@continua/contracts/engine';
 import { AppShell } from './AppShell';
+import { PageTour } from './onboarding/PageTour';
+import { RESULTS_TOUR } from './onboarding/tours';
 import { CompareIcon } from './ui/icons';
 import { IS_PUBLIC_PREVIEW, REPO_URL } from '@/lib/deployment';
 import { ComparisonChart } from './experiments/ComparisonChart';
@@ -238,7 +240,7 @@ export function ExperimentsView() {
       <div className="flex h-full min-h-0 flex-col gap-3">
         {/* One header strip: what this page is, what is on disk, and the one
             action it offers. It replaces a toolbar plus four stat cards. */}
-        <section className="panel flex shrink-0 flex-wrap items-center gap-x-6 gap-y-3 px-5 py-3.5">
+        <section className="panel flex shrink-0 flex-wrap items-center gap-x-6 gap-y-3 px-5 py-3.5" data-tour="results-header">
           <div className="min-w-[260px] flex-1">
             <h2 className="text-[15px] font-semibold leading-tight">Paired policy comparison</h2>
             <p className="mt-1 max-w-[560px] text-[11.5px] leading-snug text-[color:var(--color-muted)]">
@@ -304,7 +306,7 @@ export function ExperimentsView() {
 
         <div className="grid min-h-0 flex-1 grid-cols-1 grid-rows-[minmax(0,1fr)] gap-3 xl:grid-cols-[292px_minmax(0,1fr)]">
           <div className="scroll-y flex flex-col gap-3 pr-0.5">
-            <section className="panel px-4 py-3.5">
+            <section className="panel px-4 py-3.5" data-tour="results-stored">
               <h2 className="panel-label mb-2">Stored experiments</h2>
               {stored.length === 0 ? (
                 <p className="text-[12px] text-[color:var(--color-muted)]">None yet.</p>
@@ -399,7 +401,7 @@ export function ExperimentsView() {
             )}
 
             {glance.length > 0 && (
-              <section className="panel px-4 py-3.5" aria-label="At a glance">
+              <section className="panel px-4 py-3.5" aria-label="At a glance" data-tour="results-glance">
                 <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
                   <h2 className="panel-label flex items-center gap-1.5">
                     At a glance · {scenarioTitle(String(results?.scenario_id ?? ''))} · {glance[0]!.trials.length} paired drives each
@@ -415,7 +417,7 @@ export function ExperimentsView() {
             )}
 
             {aggregate && (
-              <section className="panel px-4 py-3.5">
+              <section className="panel px-4 py-3.5" data-tour="results-charts">
                 <h2 className="panel-label mb-2.5">Baseline comparison</h2>
                 <div className="grid grid-cols-1 gap-2.5 lg:grid-cols-2 2xl:grid-cols-3">
                   {CHART_METRICS.map((metric) => (
@@ -537,6 +539,12 @@ export function ExperimentsView() {
           </div>
         </div>
       </div>
+      <PageTour
+        id="results"
+        steps={RESULTS_TOUR}
+        label="A tour of the results"
+        offer="Four steps: how the strategies were compared, and how to read every drive."
+      />
     </AppShell>
   );
 }

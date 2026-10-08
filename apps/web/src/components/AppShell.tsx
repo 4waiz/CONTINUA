@@ -24,6 +24,8 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { IS_PUBLIC_PREVIEW } from '@/lib/deployment';
+import { useRegisteredTour } from './onboarding/tourStore';
+import { GuideIcon } from './ui/icons';
 import { Chip, Dot } from './ui/primitives';
 
 /**
@@ -235,6 +237,22 @@ export function BrandHeader({ compact = false }: { compact?: boolean }) {
   );
 }
 
+/** The way back into the page's tour, whenever it has one. */
+function GuideButton() {
+  const tour = useRegisteredTour();
+  if (!tour) return null;
+  return (
+    <button
+      type="button"
+      className="guide-btn"
+      onClick={tour.start}
+      title="A short guided tour of this page: what each panel shows and where to click"
+    >
+      <GuideIcon size={15} /> Guide
+    </button>
+  );
+}
+
 export function TopBar({ right }: { right?: ReactNode }) {
   const pathname = usePathname();
   return (
@@ -256,7 +274,10 @@ export function TopBar({ right }: { right?: ReactNode }) {
           );
         })}
       </nav>
-      <div className="flex min-w-0 shrink-0 items-center justify-end">{right}</div>
+      <div className="flex min-w-0 shrink-0 items-center justify-end gap-3">
+        <GuideButton />
+        {right}
+      </div>
     </header>
   );
 }

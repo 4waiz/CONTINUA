@@ -65,7 +65,7 @@ def prop_sat_terminal(m: dict) -> bpy.types.Object:
     # beam attaches to, while the fence clears the road's turnaround, which
     # lies toward authored -X with the site's yaw.
     c = Kit("tmp_compound", m)
-    slab(c["concrete_warm"], (-2.0, 0.0, 0.05), (30.0, 24.0, 0.1), cell=4.0)
+    _quad_slab(c["concrete_warm"], _offset_polygon(COMPOUND_FENCE, PAD_MARGIN), 0.0, 0.1, cell=4.0)
     # Pedestal; the yoke and elevation axis turn with the dish's azimuth.
     slab(k["concrete"], (0.0, 0.0, 0.55), (3.2, 3.2, 1.1), cell=1.0)
     cylinder(k["panel"], (0.0, 0.0, 1.45), 1.35, 0.7, 32)
@@ -128,15 +128,23 @@ def prop_sat_terminal(m: dict) -> bpy.types.Object:
     geo.tube(c["galv"], [(sx0 + 2.0, sy0 + 1.5, 3.1), (sx0 + 2.0, sy0 + 1.5, 7.5)], 0.05, 8)
     lib.bm_sphere(c["panel"], (sx0 + 2.0, sy0 + 1.5, 7.6), 0.14, 12, 6)
     box(c["accent_violet"], (sx0 + 3.52, sy0, 2.75), (0.03, 2.2, 0.16))
-    # Solar row.
+    # Solar row, along the west fence north of the gate.
     tilt = Matrix.Rotation(math.radians(-25), 4, "Y")
     for i in range(6):
-        y = -9.0 + i * 1.75
+        y = 2.5 + i * 1.75
         box(c["solar"], (-14.5, y, 1.3), (1.0, 1.7, 0.05), rotation=tilt)
-    for y in (-9.0, -0.25):
+    for y in (2.5, 11.25):
         cylinder(c["galv"], (-14.5, y, 0.6), 0.05, 1.2, 8)
-    arch.railing(c, [(-17.0, -12.0, 0.1), (13.0, -12.0, 0.1), (13.0, 12.0, 0.1), (-17.0, 12.0, 0.1),
-                     (-17.0, -12.0, 0.1)], height=2.4, post=3.0)
+    # The fence: round the compound from the gate's north post to its south
+    # one. The gate, on the west side, opens onto the forecourt where the road
+    # ends (terminus.ts).
+    sw, se, ne, nw = COMPOUND_FENCE
+    gx = sw[0]
+    gate_south, gate_north = GATE_Y
+    arch.railing(c, [(gx, gate_north, 0.1), (nw[0], nw[1], 0.1), (ne[0], ne[1], 0.1), (se[0], se[1], 0.1),
+                     (sw[0], sw[1], 0.1), (gx, gate_south, 0.1)], height=2.4, post=3.0)
+    for y in GATE_Y:
+        box(c["graphite"], (gx, y, 1.35), (0.16, 0.16, 2.7))
     sx, sy = COMPOUND_SHIFT
     for key, bm in list(c.meshes.items()):
         bmesh.ops.translate(bm, verts=bm.verts[:], vec=(sx, sy, 0.0))
@@ -160,6 +168,62 @@ COMPOUND_SHIFT = (6.0, 4.0)
 # The equipment shelter's centre in the compound's frame (before the shift):
 # on the far side of the pedestal from the dish's line of sight.
 SHELTER = (2.0, 4.5)
+# The fence, in the compound's frame (before the shift): south-west,
+# south-east, north-east, north-west. The road runs past the south side on a
+# slight skew (authored -X is toward the turning circle), so the south side
+# follows it at 7.5 m or more from the road's centre line - outside the
+# carriageway and its gravel verge. A rectangle here put its south-west corner
+# 2 m from the centre line, in the rover's lane. The dish's rim keeps 1.5 m
+# inside it.
+COMPOUND_FENCE = ((-17.0, -5.8), (13.0, -12.0), (13.0, 12.0), (-17.0, 12.0))
+# The gate in the west side, between these two posts.
+GATE_Y = (-4.6, 0.4)
+# How far the concrete pad reaches past the fence.
+PAD_MARGIN = 0.8
+
+
+def _offset_polygon(points, distance: float):
+    """A convex polygon (counter-clockwise) with every edge moved outward."""
+    count = len(points)
+    lines = []
+    for i in range(count):
+        ax, ay = points[i]
+        bx, by = points[(i + 1) % count]
+        length = math.hypot(bx - ax, by - ay)
+        nx, ny = (by - ay) / length, -(bx - ax) / length
+        lines.append(((ax + nx * distance, ay + ny * distance), (bx - ax, by - ay)))
+    out = []
+    for i in range(count):
+        (p, d), (q, e) = lines[i - 1], lines[i]
+        det = d[0] * e[1] - d[1] * e[0]
+        t = ((q[0] - p[0]) * e[1] - (q[1] - p[1]) * e[0]) / det
+        out.append((p[0] + d[0] * t, p[1] + d[1] * t))
+    return out
+
+
+def _quad_slab(bm, corners, z0: float, z1: float, cell: float = 3.0) -> None:
+    """A slab over a four-cornered outline, its top split into roughly
+    `cell`-sized quads - the shape `slab` gives a box, for an outline that is
+    not a rectangle - so a vertex AO bake has something to hold."""
+    a, b, c2, d = (Vector((x, y, 0.0)) for x, y in corners)
+    nu = max(1, int(math.ceil(max((b - a).length, (c2 - d).length) / cell)))
+    nv = max(1, int(math.ceil(max((d - a).length, (c2 - b).length) / cell)))
+
+    def at(i, j, z):
+        u, v = i / nu, j / nv
+        p = a.lerp(b, u).lerp(d.lerp(c2, u), v)
+        return (p.x, p.y, z)
+
+    top = [[bm.verts.new(at(i, j, z1)) for j in range(nv + 1)] for i in range(nu + 1)]
+    bottom = [[bm.verts.new(at(i, j, z0)) for j in range(nv + 1)] for i in range(nu + 1)]
+    for i in range(nu):
+        for j in range(nv):
+            bm.faces.new((top[i][j], top[i + 1][j], top[i + 1][j + 1], top[i][j + 1]))
+            bm.faces.new((bottom[i][j], bottom[i][j + 1], bottom[i + 1][j + 1], bottom[i + 1][j]))
+    ring = ([(i, 0) for i in range(nu)] + [(nu, j) for j in range(nv)]
+            + [(i, nv) for i in range(nu, 0, -1)] + [(0, j) for j in range(nv, 0, -1)])
+    for (i0, j0), (i1, j1) in zip(ring, ring[1:] + ring[:1]):
+        bm.faces.new((bottom[i0][j0], bottom[i1][j1], top[i1][j1], top[i0][j0]))
 
 
 # ==========================================================================

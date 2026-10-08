@@ -55,6 +55,7 @@ import { ROAD_HALF_WIDTH, ROAD_SURFACE_OFFSET } from '../world/road';
 import { route } from '../world/route';
 import { inlandDistance, SEA_LEVEL, TERRAIN, terrain } from '../world/terrain';
 import { onForecourt } from '../world/terminus';
+import { onTunnelWorks } from '../world/tunnel';
 import { patchStandard } from './shaders';
 
 // ---------------------------------------------------------------------------
@@ -868,9 +869,10 @@ function scatter(seed: number, perMetre: number, from: number, spread: number, m
       });
     }
   }
-  // None on the forecourt where the road ends - filtered after the fact,
-  // so the seeded sequence, and every other tuft, is unchanged.
-  return out.filter((spot) => !onForecourt(spot.x, spot.z, 0.5));
+  // None on the forecourt where the road ends, nor in the ridge tunnel, its
+  // walls or under its hill - filtered after the fact, so the seeded
+  // sequence, and every other tuft, is unchanged.
+  return out.filter((spot) => !onForecourt(spot.x, spot.z, 0.5) && !onTunnelWorks(spot.x, spot.z));
 }
 
 /**

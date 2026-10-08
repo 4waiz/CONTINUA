@@ -31,6 +31,7 @@ import { route } from '../world/route';
 import { roadSurfaceY } from '../world/road';
 import type { DeadZone } from '../world/deadZones';
 import { SATELLITE_SKY, siteForNetwork } from '../world/sites';
+import { clampCamera, flightAllowance, keepAboveGround } from '../world/tunnel';
 import { terrain } from '../world/terrain';
 
 /** Keep the camera this far above whatever ground is beneath it. */
@@ -586,8 +587,8 @@ function flightPose(state: SceneState, network: AccessNetworkId, age: number, fr
     swoop(_ride, home, smoother01(k), out);
     floor = RIDE_FLOOR_M * (1 - smooth01((k - 0.3) / 0.62));
   }
-  const ground = terrain.surfaceHeight(out.position.x, out.position.z) + floor;
-  if (out.position.y < ground) out.position.y = ground;
+  // Over the hill as well as the land: a flight never goes through it.
+  keepAboveGround(out.position, floor);
   return true;
 }
 
@@ -600,11 +601,15 @@ const _flown: Shot = { position: new Vector3(), target: new Vector3(), fov: 40 }
  * of link while that flight lasts. A change that comes while the last one is
  * still being flown takes over from wherever that flight has the camera, so
  * the camera never cuts back to the rover first. `pace` stretches every beat
- * by the run's playback rate.
+ * by the run's playback rate. Near the ridge tunnel a flight eases back to
+ * the rover's own framing, and none flies while the rover is inside: the
+ * camera goes in with it rather than coming back through the hill.
  */
 function applyFlights(state: SceneState, time: number, pace: number, shot: Shot): void {
   const latest = state.handoff ?? null;
   if (!latest) return;
+  const allowance = flightAllowance(state.vehicle.distance, state.vehicle.direction ?? 1);
+  if (allowance <= 0) return;
   const before = state.handoffBefore ?? null;
   const ageOf = (mark: HandoffMark) => (time - mark.at) / pace;
   const flying = (mark: HandoffMark) => ageOf(mark) >= 0 && ageOf(mark) <= FLIGHT_S;
@@ -612,7 +617,11 @@ function applyFlights(state: SceneState, time: number, pace: number, shot: Shot)
   if (flying(latest)) {
     let from = _base;
     if (before && flying(before) && flightPose(state, before.to, ageOf(before), _base, _base, _earlier)) from = _earlier;
-    if (flightPose(state, latest.to, ageOf(latest), from, _base, _flown)) copyShot(_flown, shot);
+    if (flightPose(state, latest.to, ageOf(latest), from, _base, _flown)) {
+      shot.position.lerpVectors(_base.position, _flown.position, allowance);
+      shot.target.lerpVectors(_base.target, _flown.target, allowance);
+      shot.fov = _base.fov + (_flown.fov - _base.fov) * allowance;
+    }
   }
 }
 
@@ -756,9 +765,9 @@ export function SceneCameras({
         break;
     }
 
-    // Never let the camera dip into a hill.
-    const groundY = terrain.surfaceHeight(shot.position.x, shot.position.z) + GROUND_CLEARANCE;
-    shot.position.y = Math.max(shot.position.y, groundY);
+    // Never let the camera dip into a hill - and in the ridge tunnel, keep it
+    // inside the lining.
+    clampCamera(shot.position, GROUND_CLEARANCE);
 
     camera.position.copy(shot.position);
     lookTarget.current.copy(shot.target);

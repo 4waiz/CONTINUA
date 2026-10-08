@@ -1779,3 +1779,72 @@ cutting with the camera looking back, the pull-away; the reversed route
 stop - CONTINUA cannot survive every link failing either), B2 beside the
 normal rover, one rover with the comparison off, and the story. The public
 site was not redeployed by this change.
+
+# A tunnel through the ridge, the fence off the road, and a guided first visit
+
+The owner asked, on 2026-10-08, for three things: a tunnel on the road, made
+in Blender; the rover at the road's end not to drive through "the steel
+pipes" - the satellite ground station's railing, whose rectangle put a corner
+in the lane; and onboarding, so a judge knows where to click on the Mission
+page and on every other page.
+
+**The ridge tunnel.** Where the corridor meets the remote hills the road now
+goes through a ridge: 56.4 m between the portals' faces, route metres 560 to
+616.4 (`TUNNEL` in `packages/scene/src/world/tunnel.ts`). The pieces are built
+headless by `scripts/blender/world_tunnel.py` (`build_tunnel.py` exports
+`continua_tunnel.glb`: 114 KB, 8,176 triangles): two portals - headwall,
+precast frame, splayed wing walls with stepped copings, "RIDGE TUNNEL" in
+raised letters and a lane signal over each lane - and a horseshoe lining of
+nine 6 m segments with two rows of luminaires, a cable tray, a radiating cable
+and delineators, jet fans in the middle, and an emergency station with an exit
+sign across from it near each end. The scene draws the rest from the same
+dimensions (`Tunnel.tsx`): the hill over the bore, its toe sunk into the
+terrain; the open cut in front of each portal; trees, shrubs and
+rocks on its slopes; the pipeline, which ran over the ground there, buried
+under the ridge with marker posts over it; and a warm light that follows the
+rover past the fittings. Scatter keeps off the works, and the last road sign
+moved past the exit cut.
+
+**Cameras.** Inside the bore every camera is held under the lining's crown and
+inside its walls, and in front of a portal it is kept off the hill. Flights to
+a new link fade out as the rover nears the tunnel and stay off inside it: a
+flight up and out would pass through the rock.
+
+**Drawing, not coverage.** The route, `world.json`, the engine and the
+coverage model are unchanged: every link available either side of the tunnel
+is available inside it, the satellite link too (ASSUMPTIONS §6).
+
+**The fence.** The ground station's compound was a rectangle whose corner
+stood in the rover's lane at the end of the route. Its fence and pad now
+follow a four-sided outline whose south side runs with the road at 7.5 m or
+more from its centre line (the pad 6.7 m), the gate in the west side onto the
+forecourt (`world_remote.py`; the props rebuilt, 114,410 triangles).
+
+**Onboarding** (`apps/web/src/components/onboarding/`). On the landing,
+**Watch the two rovers** is marked as the place to start: a beacon breathing
+out from the button and a "Start here" label pointing at it (both still when
+the system asks for reduced motion). The first drive from the landing opens on
+a four-step tour of the screen - the two rovers' status, the four networks,
+the scoreboard, the timeline and its controls - with the drive held half a
+second in, and plays when the tour is done or skipped. Results, Decision log,
+Scenario builder and The brief offer a tour of their own on a first visit, in
+a corner card, never unasked. **Guide** in the top bar opens the page's tour
+again. A tour is modal: the page is dimmed round the element a step is about,
+Tab stays in the card, Escape skips, the arrow keys step, and focus goes back
+where it was. Taken or declined, a tour is remembered per browser
+(`localStorage`; a browser that refuses storage is offered it each visit), and
+`?tour` in the address shows it again.
+
+**Checks.** lint and typecheck clean; build clean; test:engine 162 passed
+(the engine was not touched); test:phase2 14/14 against a production build
+with an engine of its own on port 8011, the two new tests among them ("opens
+the first drive on a short tour, then plays it" and "a ?tour link opens the
+drive tour again for a browser that has seen it") - on the first run the
+first of them failed on its own timing (the hold is a pause and a seek on the
+engine, and it read the clock before they landed; it now waits for them);
+test:smoke 11 passed and 10 skipped by design. Viewed at 1920×1080, 1440×900,
+1280×720 and the owner's 1706×800 at 1.5: the landing, the drive tour's four
+steps and the drive playing after it, the tunnel's approach, bore and exit
+behind the rover, and the road's end; the other pages' offers and tours at
+1600×900 and 1706×800 at 1.5. The public site was not redeployed by this
+change.

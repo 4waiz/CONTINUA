@@ -288,3 +288,22 @@ export function LinkLostIcon(props: IconProps) {
     </Svg>
   );
 }
+
+/** A compass: a page's guided tour. */
+export function GuideIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M15.3 8.7l-2.1 4.5-4.5 2.1 2.1-4.5z" />
+    </Svg>
+  );
+}
+
+/** An arrow pointing left, at whatever stands beside it. */
+export function ArrowLeftIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M19 12H6M11 7l-5 5 5 5" />
+    </Svg>
+  );
+}

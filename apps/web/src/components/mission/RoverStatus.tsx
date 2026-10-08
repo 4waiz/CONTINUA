@@ -120,7 +120,7 @@ export function RoverStatus({
   const pair = baseline !== undefined;
   return (
     <div className="pointer-events-none flex items-center gap-2" aria-label="Can each operator reach their rover?">
-      <div className="versus" data-pair={pair}>
+      <div className="versus" data-pair={pair} data-tour="mission-status">
         <Side name={mainName} event={main} timeline={mainTimeline} ours totals={totals} />
         {pair && (
           <>

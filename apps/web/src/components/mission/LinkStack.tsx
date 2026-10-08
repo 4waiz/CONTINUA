@@ -156,7 +156,7 @@ export function LinkStack({
   const last = window[window.length - 1]?.t ?? 0;
 
   return (
-    <section className="glass flex min-h-0 flex-col" aria-label="Access links">
+    <section className="glass flex min-h-0 flex-col" aria-label="Access links" data-tour="mission-networks">
       <header className="flex items-center justify-between px-4 pt-3.5 pb-2">
         <h2 className="section-label flex items-center gap-1.5">
           {simple ? (title ?? 'Networks') : 'Access links'}

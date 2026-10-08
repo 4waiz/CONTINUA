@@ -369,7 +369,8 @@ function buildLayout(): Record<string, Placement[]> {
     add('PROP_LightPole', besideRoute(d, side * 9.2, side > 0 ? HALF_PI : -HALF_PI));
   }
   // Sign faces are authored on +X; turn them to face oncoming traffic.
-  for (const [d, lateral] of [[96, 8.6], [238, -8.6], [452, 8.6], [620, -8.6]] as const) {
+  // The last stands past the ridge tunnel's exit cut (tunnel.ts).
+  for (const [d, lateral] of [[96, 8.6], [238, -8.6], [452, 8.6], [656, -8.6]] as const) {
     add('PROP_RoadSign', besideRoute(d, lateral, Math.PI));
   }
 

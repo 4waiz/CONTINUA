@@ -73,6 +73,9 @@ import { RunSummary } from './RunSummary';
 import { StoryBar, STORY_POLICY, STORY_SCENARIO, useStoryDirector } from './story';
 import { proofSentence, StoryLanding, StoryProof, useProofRows } from './StoryCards';
 import { narrator, useNarrator } from './voice';
+import { Tour } from '../onboarding/Tour';
+import { DRIVE_TOUR } from '../onboarding/tours';
+import { tourLinked, usePageTour } from '../onboarding/usePageTour';
 
 /** Whoever asked the system for less motion gets no camera flights until they turn them on. */
 function prefersReducedMotion(): boolean {
@@ -89,6 +92,13 @@ const WARNING_VISIBLE_S = 8;
 
 /** How long the bar waits, with nothing touched, before it steps aside for the picture. */
 const BAR_IDLE_MS = 3500;
+
+/**
+ * Where the first drive is held while its tour is open: just after the start.
+ * At 0 s the rovers' cables are not yet up, and both read "Connection lost"
+ * while the tour says what green and red mean.
+ */
+const TOUR_HOLD_S = 0.5;
 
 /** The story's seed: any would do; this one is the one the story was written against. */
 const STORY_SEED = 1;
@@ -425,6 +435,55 @@ export function MissionView() {
     return () => clearTimeout(timer);
   }, [scenarios.length, demoRuns.length, startStory]);
 
+  // --- the tour of the drive -------------------------------------------------
+  // The first drive from the landing opens on a short tour of the screen, the
+  // drive held at its start until the tour is done or skipped; the top bar's
+  // Guide opens it again whenever the drive is on screen, holding it where it
+  // is. Never in the story, which says what is happening itself. `?tour` in
+  // the address asks for it on the first drive whatever this browser
+  // remembers - opened here, at the hold, not by the link's own timer.
+  const tourOnDrive = useRef(false);
+  const tourAsked = useRef<boolean | null>(null);
+  const tourFromStart = useRef(false);
+  const tourResume = useRef(false);
+  const [tourFinish, setTourFinish] = useState('Start the drive');
+  const driveTour = usePageTour('mission-drive', {
+    enabled: view === 'drive',
+    fromLink: false,
+    onOpen: () => {
+      narrator.stop();
+      tourResume.current = playing || tourFromStart.current;
+      setTourFinish(tourFromStart.current ? 'Start the drive' : 'Back to the drive');
+      void control('pause');
+      if (tourFromStart.current) void seek(TOUR_HOLD_S);
+      tourFromStart.current = false;
+    },
+    onClose: () => {
+      if (tourResume.current) void control('play');
+      tourResume.current = false;
+    },
+  });
+  const firstEvent = Boolean(run.latest);
+  const { known: tourKnown, open: tourOpen, start: startTour } = driveTour;
+  useEffect(() => {
+    if (!tourOnDrive.current) return undefined;
+    tourAsked.current ??= tourLinked();
+    if (tourKnown === true && !tourAsked.current) {
+      tourOnDrive.current = false;
+      return undefined;
+    }
+    if (view !== 'drive' || !runId || !firstEvent || tourKnown === null || tourOpen) return undefined;
+    // Once the run's first event is in, so the panels the tour points at are there.
+    const timer = setTimeout(() => {
+      if (!tourOnDrive.current) return;
+      tourOnDrive.current = false;
+      tourAsked.current = false;
+      tourFromStart.current = true;
+      startTour();
+    }, 450);
+    return () => clearTimeout(timer);
+  }, [view, runId, firstEvent, tourKnown, tourOpen, startTour]);
+
   /**
    * The one way in: the run that shows what CONTINUA is for - the shadowed
    * route, CONTINUA with its road map beside the normal rover - started at
@@ -432,6 +491,7 @@ export function MissionView() {
    */
   const startDrive = useCallback(() => {
     narrator.stop();
+    tourOnDrive.current = true;
     setView('drive');
     setCamera('follow');
     setScenarioId(STORY_SCENARIO);
@@ -1022,6 +1082,7 @@ export function MissionView() {
         {view === 'drive' && (
           <div
             className="mission-dock"
+            data-tour="mission-timeline"
             ref={bottomRef}
             data-idle={barIdle && !barHeld && playing && !settingsOpen && !detail}
             onPointerEnter={() => setBarHeld(true)}
@@ -1103,6 +1164,17 @@ export function MissionView() {
               }
             />
           </div>
+        )}
+
+        {driveTour.open && (
+          <Tour
+            steps={DRIVE_TOUR}
+            step={driveTour.step}
+            onStep={driveTour.setStep}
+            onClose={driveTour.close}
+            finishLabel={tourFinish}
+            label="How to read the drive"
+          />
         )}
 
         {(notice || (run.connection === 'disconnected' && runId)) && (
