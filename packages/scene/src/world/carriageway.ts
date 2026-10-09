@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-611E9C2CB245 */
 /**
  * The road's dimensions, on their own: `layout.ts` and `dock.ts` need them,
  * and `road.ts`, which builds the ribbons, depends on the terrain - which

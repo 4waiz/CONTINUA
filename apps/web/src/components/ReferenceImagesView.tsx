@@ -1,4 +1,5 @@
 'use client';
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-B4A715845531 */
 
 /**
  * The ATP 2026 EDGE supporting materials, as a browsable page.

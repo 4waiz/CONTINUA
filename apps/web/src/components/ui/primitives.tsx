@@ -1,4 +1,5 @@
 'use client';
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-086CA9B570AE */
 
 /**
  * The small set of chrome primitives the CONTINUA dashboard is built from.

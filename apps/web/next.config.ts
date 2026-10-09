@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-233A6705CEB3 */
 import type { NextConfig } from 'next';
 import path from 'node:path';
 

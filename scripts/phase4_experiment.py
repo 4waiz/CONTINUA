@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE.
+# KS-CONTINUA-CD9CE8538193
 """
 The Phase 4 comparison: every policy, old and new, on the six core scenarios
 plus fast-run and reverse-run, 20 paired trials each, on the `test2` seed

@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-D14D1AF5AF2E */
 /**
  * Replay recorded runs with no engine behind them.
  *

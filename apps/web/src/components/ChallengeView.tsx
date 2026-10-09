@@ -1,4 +1,5 @@
 'use client';
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-7EBD046E1445 */
 
 /**
  * The brief, answered: the EDGE challenge's question and its five success

@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE.
+# KS-CONTINUA-02B1F672FA27
 """
 Architecture kit for the CONTINUA world props.
 

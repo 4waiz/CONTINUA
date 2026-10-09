@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-F4DF72B518CE */
 /**
  * The mission route.
  *

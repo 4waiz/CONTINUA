@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-33E39F3A3D61 */
 /**
  * Synthesise the narration and lay it on the video's timeline.
  *

@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-9C95A184D855 */
 /**
  * How smooth is it, on this machine's GPU?
  *

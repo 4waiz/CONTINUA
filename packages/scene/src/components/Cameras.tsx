@@ -1,4 +1,5 @@
 'use client';
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-B73F6E0C578B */
 
 /**
  * Camera rigs.

@@ -1,4 +1,5 @@
 'use client';
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-553EED50282B */
 
 /**
  * The end of a run, stated once: what the session went through, from the

@@ -1,4 +1,5 @@
 'use client';
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-0BEDD29AA40A */
 
 /**
  * Which rover is which, when two share the road: a small tag over each -

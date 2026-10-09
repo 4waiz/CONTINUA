@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-85B0058014AB */
 /**
  * Screenshot every page at the three viewports the design targets.
  *

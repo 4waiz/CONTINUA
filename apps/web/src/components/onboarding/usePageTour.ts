@@ -1,4 +1,5 @@
 'use client';
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-5C136D65ACC7 */
 
 /**
  * A page's tour: whether it is open and at which step, whether this browser

@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE.
+# KS-CONTINUA-E262D66528EB
 """
 CONTINUA checkpoint supervisor.
 

@@ -1,4 +1,5 @@
 'use client';
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-D2BDA3C75964 */
 
 /**
  * Renderer cost, measured rather than asserted.

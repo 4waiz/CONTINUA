@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE.
+# KS-CONTINUA-6E4E56C33D6C
 """
 Run storage.
 

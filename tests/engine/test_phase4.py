@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE.
+# KS-CONTINUA-C36755CB2678
 """
 Phase 4 engine tests: per-class steering, mode handover, the B2-defer baseline
 and the honesty metrics around them.

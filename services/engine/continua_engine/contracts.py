@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE.
+# KS-CONTINUA-11E95EC8A48D
 """
 CONTINUA engine contracts.
 

@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-A95E8A41A229 */
 /**
  * Record the demo video's source runs again, and prove they are the same runs.
  *

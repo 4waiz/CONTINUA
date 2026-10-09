@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-9B60D3ECC93B */
 import type { Metadata } from 'next';
 import { ReferenceImagesView } from '@/components/ReferenceImagesView';
 

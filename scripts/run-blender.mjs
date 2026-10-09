@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-8CBCE2671FE7 */
 /**
  * Run a CONTINUA Blender script in headless Blender.
  *

@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE.
+# KS-CONTINUA-831D13B1E36B
 """
 CONTINUA - world prop library.
 

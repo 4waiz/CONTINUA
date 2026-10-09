@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE.
+# KS-CONTINUA-66A630FE1A58
 """
 The radio map: what earlier drives of the route measured, by position.
 

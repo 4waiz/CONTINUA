@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE.
+# KS-CONTINUA-3DC2AB7B27CC
 """
 Run metrics, computed from receiver-side facts only.
 

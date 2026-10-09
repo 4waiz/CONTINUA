@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-2F80C1DC81F6 */
 /**
  * @continua/scene - the reusable CONTINUA 3D scene.
  *

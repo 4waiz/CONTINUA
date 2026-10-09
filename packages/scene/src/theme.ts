@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-1E45BC26DF5C */
 /**
  * CONTINUA design tokens.
  *

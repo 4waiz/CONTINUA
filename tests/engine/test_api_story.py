@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE.
+# KS-CONTINUA-5ABE5A63B3ED
 """
 The API the story mode and the road-ahead strip read.
 

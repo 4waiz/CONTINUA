@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-A938D2999F8C */
 /**
  * Inspect the finished MP4 and report what is actually in it.
  *

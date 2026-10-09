@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE.
+# KS-CONTINUA-59AFAA2C2766
 """
 CONTINUA - foliage that reads as leaves.
 

@@ -1,4 +1,5 @@
 'use client';
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-7BD67303B3DA */
 
 /**
  * The story mode: a guided minute through the one run that shows what

@@ -1,4 +1,5 @@
 'use client';
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-2F9BF9A71F49 */
 
 /**
  * The four access links, the selected link's measurements, and whether the

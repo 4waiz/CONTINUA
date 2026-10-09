@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-8D50F9C3FF68 */
 /**
  * Assemble the demo video from captured frames, rendered frames and narration.
  *

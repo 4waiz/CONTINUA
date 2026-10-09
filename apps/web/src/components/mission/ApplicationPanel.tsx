@@ -1,4 +1,5 @@
 'use client';
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-854DFF69FB2C */
 
 /**
  * Application health: a gauge and five bars - an operator scanning for which

@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-10DA54CF14F0 */
 import type { Metadata } from 'next';
 import { CaptureShell } from '@/components/Shells';
 

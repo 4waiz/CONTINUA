@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-BFAFD6282D25 */
 import type { Metadata } from 'next';
 import { ScenarioLabShell } from '@/components/Shells';
 

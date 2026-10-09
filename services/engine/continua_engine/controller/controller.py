@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE.
+# KS-CONTINUA-2B7C2123BB94
 """
 The CONTINUA controller: Observe → Predict → Prepare → Steer → Explain.
 

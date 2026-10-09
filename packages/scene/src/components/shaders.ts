@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-FFD59C17D67A */
 /**
  * Procedural surface shading for the ground, the roads and the sky.
  *

@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE.
+# KS-CONTINUA-EDADA01035E6
 """
 CONTINUA engine HTTP/WebSocket API.
 

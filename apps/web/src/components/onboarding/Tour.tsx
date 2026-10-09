@@ -1,4 +1,5 @@
 'use client';
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-EA2517F94651 */
 
 /**
  * A guided tour's overlay: the page dimmed round the element a step is about,

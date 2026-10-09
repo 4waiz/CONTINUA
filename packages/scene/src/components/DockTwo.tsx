@@ -1,4 +1,5 @@
 'use client';
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-D43B22CD6829 */
 
 /**
  * The second dock bay, DOCK 02 (scripts/blender/build_dock_two.py): the first

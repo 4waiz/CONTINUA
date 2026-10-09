@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-2C7C0BCCB83E */
 /**
  * CONTINUA browser smoke tests.
  *

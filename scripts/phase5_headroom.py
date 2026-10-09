@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE.
+# KS-CONTINUA-828A322FA9DD
 """
 Phase 5, step 1: how much could prediction buy at all? (tune block only)
 

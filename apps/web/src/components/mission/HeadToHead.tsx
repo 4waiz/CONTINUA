@@ -1,4 +1,5 @@
 'use client';
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-73C58863CE44 */
 
 /**
  * Head to head: what each operator has lived through so far, side by side.

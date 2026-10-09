@@ -1,4 +1,5 @@
 'use client';
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-123EF06481E1 */
 
 /**
  * Capture view - a fixed 16:9 frame for Phase 3 video.

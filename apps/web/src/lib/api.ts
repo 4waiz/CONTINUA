@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-E93626509A41 */
 /**
  * REST client for the CONTINUA engine.
  *

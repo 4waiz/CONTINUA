@@ -1,4 +1,5 @@
 'use client';
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-FA2598C1436C */
 
 /**
  * The whole route at a glance: where the rover is, which zone it is in, and

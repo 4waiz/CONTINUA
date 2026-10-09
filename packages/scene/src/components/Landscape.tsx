@@ -1,4 +1,5 @@
 'use client';
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-A5066639E1F7 */
 
 /**
  * The land beyond the props: the sea around the island, mountain ranges across

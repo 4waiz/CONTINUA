@@ -1,4 +1,5 @@
 'use client';
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-BE259A46EAB9 */
 
 /**
  * Scenario Lab - build a run, then watch it.

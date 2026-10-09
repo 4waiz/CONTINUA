@@ -1,4 +1,5 @@
 'use client';
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-94C674DF089F */
 
 /**
  * The Mission page's opening card, and the story's closing one.

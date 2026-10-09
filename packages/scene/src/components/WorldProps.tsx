@@ -1,4 +1,5 @@
 'use client';
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-7A0BC1C7BCA7 */
 
 /**
  * World dressing: the authored Blender props, placed on the terrain.

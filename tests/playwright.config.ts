@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-9DF972C6D6BE */
 import { defineConfig, devices } from '@playwright/test';
 
 /**

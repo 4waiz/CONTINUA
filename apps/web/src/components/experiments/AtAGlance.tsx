@@ -1,4 +1,5 @@
 'use client';
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-2C8B22B15907 */
 
 /**
  * A comparison at a glance: every trial of every strategy as one small rover,

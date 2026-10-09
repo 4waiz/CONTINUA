@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-CF346BC027A1 */
 import type { Metadata } from 'next';
 import { ChallengeView } from '@/components/ChallengeView';
 

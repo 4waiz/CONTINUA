@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-70FF8AA4AABB */
 import type { Metadata } from 'next';
 import { VideoCard } from '@/components/capture/VideoCard';
 

@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-0E3C0ADC6569 */
 import type { Metadata, Viewport } from 'next';
 import { SceneHostMount } from '@/components/SceneHostMount';
 import './globals.css';

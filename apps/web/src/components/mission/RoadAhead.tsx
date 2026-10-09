@@ -1,4 +1,5 @@
 'use client';
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-A53D61DB702B */
 
 /**
  * The road ahead: the whole route as one strip, with where each network can

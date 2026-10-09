@@ -1,4 +1,5 @@
 'use client';
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-9F2B78143626 */
 
 /**
  * The rover's forward camera, for the Mission view's camera tile.

@@ -1,4 +1,5 @@
 'use client';
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-F0E6ED4B80D7 */
 
 /**
  * Ground: terrain, the route's carriageway, service roads, building

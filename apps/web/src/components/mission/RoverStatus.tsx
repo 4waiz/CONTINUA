@@ -1,4 +1,5 @@
 'use client';
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-B5DD42393EC7 */
 
 /**
  * Can each operator still reach their rover? The one question the whole

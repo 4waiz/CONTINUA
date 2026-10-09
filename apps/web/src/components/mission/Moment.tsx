@@ -1,4 +1,5 @@
 'use client';
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-8B5F43307114 */
 
 /**
  * The moment banner under the status card: the one thing that just happened,

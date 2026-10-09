@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-5BDE90A228A6 */
 /**
  * Turn the supplied `logo.png` into a wordmark the interface can sit on any
  * background.

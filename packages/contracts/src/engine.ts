@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-A5451B3098CB */
 /**
  * TypeScript mirror of `services/engine/continua_engine/contracts.py`.
  *

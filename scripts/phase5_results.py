@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE.
+# KS-CONTINUA-46FBF3D44FF1
 """
 Render docs/PHASE_5_RESULTS.md from the recorded Phase 5 comparison.
 

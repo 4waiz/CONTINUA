@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-C21169163901 */
 /**
  * What each page's tour says, step by step. Four steps at most, each about
  * one thing on the screen: what it is, and what to do with it. Written to be

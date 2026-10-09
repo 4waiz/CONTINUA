@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-3FCEB1FD94F9 */
 /**
  * Record the page's voice: every line it can say - each sentence the drive
  * view says when something changes, each caption of the story - synthesised

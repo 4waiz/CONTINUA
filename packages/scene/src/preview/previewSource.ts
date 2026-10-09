@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-7C20107DBD42 */
 /**
  * The Phase 1 scene-state source.
  *

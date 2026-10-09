@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE.
+# KS-CONTINUA-C37B5841E2BA
 """
 CONTINUA - rover generation, Mk2.
 

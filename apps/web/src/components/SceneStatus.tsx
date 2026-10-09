@@ -1,4 +1,5 @@
 'use client';
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-2F22B6DAF0BE */
 
 /**
  * What the scene's box says when there is no scene to show: WebGL missing, the

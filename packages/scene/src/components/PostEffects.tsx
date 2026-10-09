@@ -1,4 +1,5 @@
 'use client';
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-51933355CE7B */
 
 /**
  * The high tier's finishing passes: ground-truth ambient occlusion (three's own

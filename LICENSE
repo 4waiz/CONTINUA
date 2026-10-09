@@ -1,0 +1,44 @@
+CONTINUA - Predictive Network Continuity
+Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved.
+
+PROPRIETARY LICENSE - SOURCE AVAILABLE FOR VIEWING ONLY
+
+1. Ownership. CONTINUA, including all source code, scripts, 3D models and
+   other assets, data, documentation, designs, text, audio, video and the
+   name and logo "CONTINUA", is the exclusive property of Kanban Studios F.Z.E
+   ("Kanban Studios"). No ownership or other right is transferred to you by
+   your access to this repository.
+
+2. What you may do. You may view this repository and run the code locally
+   for the sole purpose of personal, non-commercial evaluation.
+
+3. What you may not do without prior written permission from Kanban Studios.
+   You may not copy, modify, merge, publish, distribute, sublicense, sell,
+   host, deploy, or create derivative works from CONTINUA or any part of it;
+   use it or any part of it, or the ideas, designs, models, data or text it
+   contains, for your own or any third party's commercial or other benefit;
+   use it to train, fine-tune or benchmark a competing product or model;
+   remove or alter any copyright notice or fingerprint identifier in it; or
+   present it as your own work.
+
+4. Fingerprints. Source files carry a copyright notice and a fingerprint
+   identifier ("KS-CONTINUA-...") assigned to the file. Their presence in any
+   code, product or document outside this repository is evidence of copying.
+
+5. Remedies. Any use outside section 2 is unauthorised. Kanban Studios may
+   seek all remedies available under applicable law, including injunctive
+   relief, an account of profits, and damages or other monetary compensation
+   for the unauthorised use and for its enforcement costs, in the courts and
+   under the law that Kanban Studios selects where permitted. Nothing in this
+   licence limits any right or remedy Kanban Studios has by law.
+
+6. Third-party components. Open-source dependencies installed from package
+   registries (for example Next.js, React, three.js, FastAPI) remain under
+   their own licences, which are not changed by this one.
+
+7. No warranty. CONTINUA is provided "as is", without warranty of any kind.
+   Kanban Studios is not liable for any claim arising from its use.
+
+8. Termination. This licence ends automatically if you breach it.
+
+Permission requests: https://kanbanstudios.ae

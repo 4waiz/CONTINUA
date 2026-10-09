@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-836EAC415CAE */
 /**
  * What the voice says while a run plays: a running commentary built from the
  * two runs' own events - the run on screen and, when it is compared, the

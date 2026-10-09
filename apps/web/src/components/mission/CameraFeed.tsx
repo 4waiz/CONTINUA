@@ -1,4 +1,5 @@
 'use client';
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-77D7F8344D7E */
 
 /**
  * The rover's forward camera, as the operator would see it picture-in-picture.

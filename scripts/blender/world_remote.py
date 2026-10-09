@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE.
+# KS-CONTINUA-258680C5A43B
 """
 CONTINUA world - the remote sector, and the living things.
 

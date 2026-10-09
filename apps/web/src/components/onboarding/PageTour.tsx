@@ -1,4 +1,5 @@
 'use client';
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-D901BF738621 */
 
 /**
  * A page's tour, ready to drop in: on a first visit, an offer of it in the

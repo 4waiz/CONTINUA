@@ -1,4 +1,5 @@
 'use client';
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-7A343CF66DA7 */
 
 /**
  * The four access links as one compact strip - for views where the links are

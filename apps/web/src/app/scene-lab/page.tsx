@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-02C94434DE0D */
 import type { Metadata } from 'next';
 import { SceneLabShell } from '@/components/SceneShell';
 

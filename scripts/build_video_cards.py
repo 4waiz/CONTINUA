@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE.
+# KS-CONTINUA-8AD78C51D97A
 """
 Extract the numbers the video's caption cards display, straight from the
 recorded evidence, into one small JSON file the web app can render.

@@ -1,4 +1,5 @@
 'use client';
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-FA0E2E6E97AA */
 
 /**
  * Who the app's one 3D canvas belongs to right now.

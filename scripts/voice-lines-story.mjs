@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-BF3F6C117C5C */
 /**
  * Collect the lines the story's voice reads, from a run of the story in 3D
  * (`?story` opens the film; its "Replay it in 3D" plays the story).

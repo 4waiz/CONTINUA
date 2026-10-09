@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-31DD32102013 */
 import type { Metadata } from 'next';
 import { CreditsView } from '@/components/CreditsView';
 

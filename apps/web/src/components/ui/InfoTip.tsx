@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-DF7CE42AFBEB */
 /**
  * A small "?" that explains the panel it sits on, in one or two sentences.
  *

@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE.
+# KS-CONTINUA-4DA1388ABE77
 """
 Surface-building helpers for the Mk2 CONTINUA assets.
 

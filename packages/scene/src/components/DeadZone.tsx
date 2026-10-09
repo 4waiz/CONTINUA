@@ -1,4 +1,5 @@
 'use client';
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-6E455432DFA8 */
 
 /**
  * The cutting that a scenario's radio shadow stands for (`world/deadZones.ts`).

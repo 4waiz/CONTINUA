@@ -1,4 +1,5 @@
 'use client';
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-9C508A586E3A */
 
 /**
  * The page's voice: what changed, said aloud - each change of network and each

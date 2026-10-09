@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE.
+# KS-CONTINUA-5CAB3E55EB1F
 """
 The exogenous trace: everything about the world that the controller cannot change.
 

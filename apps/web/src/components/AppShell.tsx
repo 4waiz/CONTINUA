@@ -1,4 +1,5 @@
 'use client';
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-F4667F8793F9 */
 
 /**
  * The application shell: one slim top bar - brand, navigation, run identity -

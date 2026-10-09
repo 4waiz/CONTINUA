@@ -1,4 +1,5 @@
 'use client';
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-6B378F14D1E4 */
 
 /**
  * Full-frame caption cards for the demo video.

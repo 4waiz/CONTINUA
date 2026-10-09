@@ -1,4 +1,5 @@
 'use client';
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-52AE7A9EA2B1 */
 
 /**
  * Experiments - run the paired comparison, read the result honestly.

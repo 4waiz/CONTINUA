@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-7EC44A2D9E56 */
 import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import { TitleFrame } from '@/components/capture/TitleFrame';

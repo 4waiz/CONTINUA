@@ -1,4 +1,5 @@
 'use client';
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-4AF881F28778 */
 
 /**
  * The Phase 1 scene, driven by the Phase 2 engine.

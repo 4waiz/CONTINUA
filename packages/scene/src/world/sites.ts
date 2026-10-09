@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-677D8E75BA78 */
 /**
  * Where things are in the world, and where each access network can be reached.
  *

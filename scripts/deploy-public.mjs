@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-EDCCE4327F3A */
 /**
  * Build the public static export and publish it to Cloudflare.
  *

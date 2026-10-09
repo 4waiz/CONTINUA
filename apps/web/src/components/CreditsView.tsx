@@ -1,4 +1,5 @@
 'use client';
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-C9C899DD04B3 */
 
 /**
  * Credits: who made CONTINUA, what it is built with, and where everything on

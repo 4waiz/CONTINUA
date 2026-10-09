@@ -1,4 +1,5 @@
 'use client';
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-A8693C5E1D7E */
 
 /**
  * The ridge tunnel (`world/tunnel.ts`).

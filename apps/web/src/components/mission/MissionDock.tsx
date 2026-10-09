@@ -1,4 +1,5 @@
 'use client';
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-D68C220BB95D */
 
 /**
  * The mission dock: everything about *this run* in one strip along the bottom

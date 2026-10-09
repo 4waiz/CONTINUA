@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-CB6F4B8A19F8 */
 /**
  * Model URLs and the glTF loader's decoder path, in one place.
  *

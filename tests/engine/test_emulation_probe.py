@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE.
+# KS-CONTINUA-AB8A76D2E21D
 """
 The emulation capability probe must describe this host truthfully.
 

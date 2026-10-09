@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE.
+# KS-CONTINUA-AFD8FFEBF37F
 """
 CONTINUA world - the industrial corridor and the network infrastructure.
 

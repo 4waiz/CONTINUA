@@ -1,4 +1,5 @@
 'use client';
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-88BA2C430C92 */
 
 /**
  * Mounts the shared scene canvas from the root layout, so it survives every

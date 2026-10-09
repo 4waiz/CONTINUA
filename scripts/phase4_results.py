@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE.
+# KS-CONTINUA-AFE615761EDE
 """
 Render docs/PHASE_4_RESULTS.md from the recorded Phase 4 experiments.
 

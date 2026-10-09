@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-964E1D67F576 */
 /**
  * Kerbs: where paving meets grass.
  *

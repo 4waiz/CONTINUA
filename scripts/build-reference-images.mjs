@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-46BE19A4058E */
 /**
  * Prepare the ATP 2026 EDGE supporting materials for the web.
  *

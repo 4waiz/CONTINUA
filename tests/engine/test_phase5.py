@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE.
+# KS-CONTINUA-713CCF488A8D
 """
 Phase 5: route-aware preparation (P3) and the radio map.
 

@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-947C6AEA2E7C */
 /**
  * Where every decorative structure in the world stands.
  *

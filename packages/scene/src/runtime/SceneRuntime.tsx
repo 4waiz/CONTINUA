@@ -1,4 +1,5 @@
 'use client';
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-3FC411B3161F */
 
 /**
  * Scene runtime: the clock, the state source and the view settings.

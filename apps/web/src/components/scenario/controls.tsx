@@ -1,4 +1,5 @@
 'use client';
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-05093FB5BDD6 */
 
 /**
  * The Scenario Lab's input controls, as a laboratory rather than a settings form.

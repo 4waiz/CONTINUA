@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-7396C03BA8D0 */
 /**
  * What the public deployment says about the one thing it cannot do.
  *

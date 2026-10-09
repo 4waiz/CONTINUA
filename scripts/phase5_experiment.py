@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE.
+# KS-CONTINUA-61383F62F049
 """
 The Phase 5 comparison: route-aware preparation (P3) against every baseline
 and against P1 and P1-noPred, on the five `shadow` scenarios and the eight

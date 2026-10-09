@@ -1,4 +1,5 @@
 'use client';
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-C8B757DC8151 */
 
 /**
  * A clear coastal day: a deep blue sky with fair-weather cumulus, a warm key

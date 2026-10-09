@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE.
+# KS-CONTINUA-A75C37DFC514
 """
 Shared helpers for the CONTINUA Blender generation scripts.
 

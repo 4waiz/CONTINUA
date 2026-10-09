@@ -1,4 +1,5 @@
 'use client';
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-2BE23B846F1A */
 
 /**
  * The app's one 3D canvas (see `sceneHostStore`).

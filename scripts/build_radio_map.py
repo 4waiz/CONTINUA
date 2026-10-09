@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE.
+# KS-CONTINUA-A3E43F7BB24C
 """
 Build a radio map from survey drives (Phase 5).
 

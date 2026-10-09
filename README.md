@@ -310,3 +310,9 @@ rasteriser starts on the low tier.
 | 7 | Visual overhaul: Mk2 rover, 48-prop world kit, procedural ground and daylight, immersive interface | **complete** (see `docs/PROGRESS.md`) |
 | 8 | A green coastal island (sea, beaches, mountains, clouds, flowering trees), one shared canvas across pages, a live rover camera | **complete** (see `docs/PROGRESS.md`) |
 | 9 | Smooth motion; lush island ranges, leaf-card trees and woods; the satellite link in the sky; CONTINUA run beside a reactive baseline | **complete** (see `docs/PROGRESS.md`) |
+
+## License
+
+Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. CONTINUA is
+proprietary: the source is visible for evaluation only, and any other use
+requires written permission. See [LICENSE](LICENSE).

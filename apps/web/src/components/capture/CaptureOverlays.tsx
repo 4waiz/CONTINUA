@@ -1,4 +1,5 @@
 'use client';
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-BAD412456314 */
 
 /**
  * Burned-in text for the demo video: titles, step labels, callouts.

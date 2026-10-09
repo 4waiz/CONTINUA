@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-67C468F19BE1 */
 /**
  * What this build is, and what it can honestly offer.
  *

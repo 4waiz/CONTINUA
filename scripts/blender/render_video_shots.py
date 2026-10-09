@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE.
+# KS-CONTINUA-C7EA2D1614BD
 """
 CONTINUA - the opening and closing shots of the demo video.
 

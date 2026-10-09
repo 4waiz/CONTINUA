@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-17B4EEC09E46 */
 import type { Metadata } from 'next';
 import { DecisionLogShell } from '@/components/Shells';
 

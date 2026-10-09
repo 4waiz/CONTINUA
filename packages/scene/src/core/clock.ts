@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-8C254F72CE4F */
 import type { PlaybackState, Seconds } from '@continua/contracts';
 
 /**

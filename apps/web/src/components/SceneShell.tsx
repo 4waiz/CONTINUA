@@ -1,4 +1,5 @@
 'use client';
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-1097F1EF6071 */
 
 /**
  * Client shell for the Phase 1 scene lab.

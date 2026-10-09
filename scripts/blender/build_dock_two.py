@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE.
+# KS-CONTINUA-6CD7221D5780
 """
 CONTINUA - the second dock bay, DOCK 02.
 

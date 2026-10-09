@@ -1,4 +1,5 @@
 'use client';
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-AC5BAB8D5066 */
 
 /**
  * The frame around the 3D scene: capability check, loading, and failure.

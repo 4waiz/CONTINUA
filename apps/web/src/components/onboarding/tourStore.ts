@@ -1,4 +1,5 @@
 'use client';
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-3FAB425CDD3C */
 
 /**
  * The tour of the page on screen, for the top bar's Guide button: a page that

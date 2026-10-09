@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-61A2D0E01843 */
 /**
  * The public site's only Worker code. Cloudflare serves the static export
  * straight from its asset store; this runs first for `/video/*` alone

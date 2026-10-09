@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-93BB6713B483 */
 /**
  * The interface's icon set: inline SVG, drawn on a 24-unit grid with a 1.75
  * stroke, inheriting `currentColor`. No icon font, no download.

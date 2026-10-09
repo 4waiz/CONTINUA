@@ -1,4 +1,5 @@
 'use client';
+/* Copyright (c) 2026 Kanban Studios F.Z.E. All rights reserved. Proprietary - see LICENSE. KS-CONTINUA-23BA03BCFB09 */
 
 /**
  * The one channel the video capture harness uses to drive burned-in text.
