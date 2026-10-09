@@ -192,12 +192,8 @@ workload overrides are hidden there, and the page says so.
 | `npm run deploy` | Static export into `apps/web/out/` in public-preview mode, checked, then published to Cloudflare (`-- --dry` stops before publishing) |
 
 The site plays no film. The 30-second intro and the two-minute narrated
-walkthrough made in October are files in `deliverables/`; their storyboard,
-claim ledger and voice script are in `brag-output-2026-10-06-230856/brag-plan.md`,
-and the frame-exact capture, voice, edit and stills scripts in
-`brag-output-2026-10-06-230856/work/`. Both were recorded while the Mission page
-still offered driving by hand (W A S D), which has since been taken out. The
-earlier one-minute film's sources stay in `brag-output/`. `edge/worker.js` still
+walkthrough made in October are files in `deliverables/`; their production
+sources have been removed from the repository. `edge/worker.js` still
 answers byte ranges for `/video/*`, which Safari needs to play a video at all;
 everything else is plain static assets.
 
@@ -224,8 +220,7 @@ list and `docs/VIDEO_CLAIMS.md` is the gate.
 | `npm run voice:build` | Record those lines locally with a Windows voice, into `apps/web/public/voice/` |
 
 The shipped demo was re-voiced on 2026-10-07 with the films' narrator, its picture
-and subtitles unchanged (`brag-output-2026-10-06-230856/work/revoice_demo.py`;
-`docs/VIDEO_QA.md`). `npm run video:narration` still makes the original
+and subtitles unchanged (`docs/VIDEO_QA.md`). `npm run video:narration` still makes the original
 Windows-voiced track.
 
 ## Layout
