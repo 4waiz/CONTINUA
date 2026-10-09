@@ -22,17 +22,17 @@ npm run engine              # engine on 127.0.0.1:8000 - leave this running
 npm run build && npm start  # app on localhost:3000
 ```
 
-| URL | Section |
-| --- | --- |
-| <http://localhost:3000> | **Mission** - opens on what this is and one way in, **Watch the two rovers**: the shadowed route, CONTINUA and the normal rover side by side, then any scenario and strategy - in plain words, said aloud, with every measurement behind **Details** |
-| <http://localhost:3000/?story> | The story - the link to send someone: the same run in the app as a narrated minute with chapter captions |
-| <http://localhost:3000/experiments> | **Results** - every paired comparison, twenty drives a strategy at a glance, then the full tables and the execution-capability report |
-| <http://localhost:3000/decision-log> | **Decision log** - every controller action, with its observations, reason and the run's recorded outcome |
-| <http://localhost:3000/scenario-lab> | **Scenario builder** - inject failures and congestion, change speed and workload |
-| <http://localhost:3000/challenge> | **The brief** - the EDGE challenge's five success criteria, each mapped to its evidence, the existing mechanisms it is measured against, and what this is not |
-| <http://localhost:3000/credits> | **Credits** - Team Kanban, the stack, and where every figure comes from |
-| <http://localhost:3000/capture?run=…> | Fixed 16:9 capture frame |
-| <http://localhost:3000/scene-lab> | The 3D workbench: cameras, quality tiers, the rover up close |
+| Local | Live | Section |
+| --- | --- | --- |
+| <http://localhost:3000> | <https://continua.kanbanstudios.ae> | **Mission** - opens on what this is and one way in, **Watch the two rovers**: the shadowed route, CONTINUA and the normal rover side by side, then any scenario and strategy - in plain words, said aloud, with every measurement behind **Details** |
+| <http://localhost:3000/?story> | <https://continua.kanbanstudios.ae/?story> | The story - the link to send someone: the same run in the app as a narrated minute with chapter captions |
+| <http://localhost:3000/experiments> | <https://continua.kanbanstudios.ae/experiments> | **Results** - every paired comparison, twenty drives a strategy at a glance, then the full tables and the execution-capability report |
+| <http://localhost:3000/decision-log> | <https://continua.kanbanstudios.ae/decision-log> | **Decision log** - every controller action, with its observations, reason and the run's recorded outcome |
+| <http://localhost:3000/scenario-lab> | <https://continua.kanbanstudios.ae/scenario-lab> | **Scenario builder** - inject failures and congestion, change speed and workload |
+| <http://localhost:3000/challenge> | <https://continua.kanbanstudios.ae/challenge> | **The brief** - the EDGE challenge's five success criteria, each mapped to its evidence, the existing mechanisms it is measured against, and what this is not |
+| <http://localhost:3000/credits> | <https://continua.kanbanstudios.ae/credits> | **Credits** - Team Kanban, the stack, and where every figure comes from |
+| <http://localhost:3000/capture?run=…> | - | Fixed 16:9 capture frame |
+| <http://localhost:3000/scene-lab> | <https://continua.kanbanstudios.ae/scene-lab> | The 3D workbench: cameras, quality tiers, the rover up close |
 
 Node 20.11+ and Python 3.11+ required. Engine dependencies:
 `pip install -r services/engine/requirements.txt`. If port 8000 is taken,
