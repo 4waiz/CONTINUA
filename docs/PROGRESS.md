@@ -1848,3 +1848,35 @@ steps and the drive playing after it, the tunnel's approach, bore and exit
 behind the rover, and the road's end; the other pages' offers and tours at
 1600×900 and 1706×800 at 1.5. The public site was not redeployed by this
 change.
+
+# VIDEO PAUSED, named when it lasts and said why
+
+The owner asked, on 2026-10-09, why CONTINUA's operator view showed VIDEO
+PAUSED, and said it should not. It is the receiver's own fact: the badge
+followed `stalled_now`, set 0.2 s after the last whole video frame, and on the
+satellite path - a GEO-like profile with a 620 ms base round trip - most
+frames miss the 350 ms video deadline. In the featured drive's remote stretch
+CONTINUA's operator received 5 to 6 frames a second of 30 and the normal
+rover's 3.5; in the cutting CONTINUA's received 0.5 while the normal rover
+lost its link. That is not hidden: the picture still freezes whenever the
+stream does, and the head to head's "Video frozen" counts every stalled
+second.
+
+What changed is the badge. The flag came and went with each frame that still
+arrived in time, so the badge blinked: 54 times for each rover in the featured
+drive. In the plain view it now appears once a stall has lasted a second,
+read back from the run's own events so a seek lands right, and under it says
+"satellite delay" when the video rides the satellite path. In the featured
+drive that is twice for each rover: CONTINUA's in the cutting and just after
+it, 8.5 s in all; the normal rover's from the cutting to 68 s, and for a tenth
+of a second at 102.8 s. The same rule holds for both rovers;
+"LINK LOST" still shows at once; Details still shows the receiver's flag as it
+is. The engine, the runs and the stored comparisons are untouched.
+
+**Checks.** lint and typecheck clean; build clean; test:phase2 14/14 against
+this build with an engine of its own on port 8011 (the engine and the scene
+were not touched, so test:engine and test:smoke were not re-run). The head to
+head viewed at 1920×1080, 1280×720 and the owner's 1706×800 at 1.5: at 33 s
+CONTINUA "VIDEO PAUSED / satellite delay" beside the normal rover's "LINK
+LOST", at 45 s the normal rover's alone, at 53 s both, at 87 s and 94 s
+neither. The public site was not redeployed by this change.

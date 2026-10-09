@@ -161,8 +161,12 @@ One screen, no page scroll, at 1920×1080, 1440×900, 1366×768 and 1280×720.
   rigs aim a few metres ahead of the rover rather than far up the road, so it
   stands in the clear band at 1280 x 720 as at 1920 x 1080.
 * **A paused video is not a lost link.** In the operator views a stream that
-  has stalled while its link holds is amber, "VIDEO PAUSED"; a rover with no
-  link is red, "LINK LOST" ("STALLED · n ms" and "SESSION DOWN" in Details).
+  has stalled for over a second while its link holds is amber, "VIDEO
+  PAUSED", with "satellite delay" under it when the video rides the satellite
+  path, whose round trip leaves most frames too late to show; a shorter stall
+  shows only as the picture stuttering, not as a badge that blinks with every
+  late frame. A rover with no link is red, "LINK LOST", at once ("STALLED · n
+  ms", the receiver's flag as it is, and "SESSION DOWN" in Details).
 * **The end of a run, in words.** One card per rover - kept its connection or
   lost it, seconds without a link, whether it had to stop - then how often each
   changed network and what each sent over satellite, whichever way those fall,

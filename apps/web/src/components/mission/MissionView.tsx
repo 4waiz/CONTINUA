@@ -1027,6 +1027,8 @@ export function MissionView() {
                   <CameraFeed
                     event={run.latest}
                     baseline={baselineId ? baselineEvent : undefined}
+                    timeline={run.source.timeline}
+                    baselineTimeline={baselineId ? baseline.source.timeline : undefined}
                     baselineLabel="Normal rover"
                     mainLabel={mainName}
                     compact

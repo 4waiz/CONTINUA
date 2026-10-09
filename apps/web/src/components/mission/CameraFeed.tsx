@@ -21,7 +21,7 @@
  * rendered from the run's rover, and only its half's motion is the baseline's.)
  */
 
-import type { EngineEvent } from '@continua/contracts/engine';
+import { classPathOf, type EngineEvent } from '@continua/contracts/engine';
 import {
   ROVER_CAM_HEIGHT,
   ROVER_CAM_WIDTH,
@@ -34,6 +34,42 @@ import { CameraIcon, ChevronIcon } from '../ui/icons';
 import { InfoTip } from '../ui/InfoTip';
 
 type VideoClass = NonNullable<NonNullable<EngineEvent['app']>['classes']['video']>;
+
+/**
+ * How long a stall lasts before the plain view says VIDEO PAUSED. The
+ * receiver flags a stall 0.2 s after the last whole frame; over a satellite
+ * path that flag comes and goes several times a second, as the odd frame
+ * still arrives in time, and a badge that blinked with it read as a fault.
+ * A second named, the stutter shows as the picture catching up. Details shows
+ * the receiver's flag as it is.
+ */
+const PAUSE_LABEL_S = 1;
+
+/**
+ * How long a run's video has been stalled at `event`, read back from the
+ * run's own events - a seek can land in the middle of a stall. 0 when it is
+ * not stalled.
+ */
+function stalledFor(timeline: readonly EngineEvent[], event: EngineEvent | null | undefined): number {
+  if (event?.app?.classes.video?.stalled_now !== true) return 0;
+  // The last event at or before this one.
+  let lo = 0;
+  let hi = timeline.length - 1;
+  if (hi < 0) return 0;
+  while (lo < hi) {
+    const mid = (lo + hi + 1) >> 1;
+    if (timeline[mid]!.t <= event.t) lo = mid;
+    else hi = mid - 1;
+  }
+  let since = event.t;
+  for (let i = lo; i >= 0; i -= 1) {
+    const entry = timeline[i]!;
+    if (entry.t > event.t) continue;
+    if (entry.app?.classes.video?.stalled_now !== true) break;
+    since = entry.t;
+  }
+  return event.t - since;
+}
 
 /** One run's picture: a bitmap renderer, cropped to its half in split mode. */
 function Picture({
@@ -69,31 +105,41 @@ function Picture({
  * A half's state: the session itself down (red), or only the video stalled
  * while the link holds (amber) - a controller that holds video back to keep
  * steering alive on a thin link is doing its job, and must not look like the
- * rover that lost everything.
+ * rover that lost everything. On a satellite path the amber badge says why:
+ * its round trip leaves most frames too late to show.
  */
 function HalfState({
   video,
   inOutage,
   side,
   plain,
+  pausedFor,
+  onSatellite,
 }: {
   video: VideoClass | undefined;
   inOutage: boolean;
   side: 'left' | 'right' | null;
   plain: boolean;
+  /** How long the stream has been stalled, s. */
+  pausedFor: number;
+  /** The video rides the satellite path. */
+  onSatellite: boolean;
 }) {
-  if (!inOutage && !video?.stalled_now) return null;
+  const paused = video?.stalled_now === true && (!plain || pausedFor >= PAUSE_LABEL_S);
+  if (!inOutage && !paused) return null;
   const stall = video?.stall_ms != null ? ` · ${video.stall_ms.toFixed(0)} ms` : '';
+  const cause = !inOutage && plain && onSatellite;
   return (
     <div
       className="absolute inset-y-0 grid place-items-center bg-[rgb(16_23_37/0.42)]"
       style={side === null ? { left: 0, right: 0 } : side === 'left' ? { left: 0, width: '50%' } : { right: 0, width: '50%' }}
     >
       <span
-        className="rounded-full px-2.5 py-1 text-[11px] font-semibold text-white"
+        className={`${cause ? 'rounded-[10px] leading-tight' : 'rounded-full'} px-2.5 py-1 text-center text-[11px] font-semibold text-white`}
         style={{ background: inOutage ? 'var(--color-bad)' : 'var(--color-warn)' }}
       >
         {inOutage ? (plain ? 'LINK LOST' : 'SESSION DOWN') : plain ? 'VIDEO PAUSED' : `STALLED${stall}`}
+        {cause && <span className="block text-[10px] font-medium text-white/90">satellite delay</span>}
       </span>
     </div>
   );
@@ -102,6 +148,8 @@ function HalfState({
 export function CameraFeed({
   event,
   baseline,
+  timeline,
+  baselineTimeline,
   baselineLabel = 'Reactive',
   mainLabel = 'CONTINUA',
   defaultOpen,
@@ -114,6 +162,12 @@ export function CameraFeed({
    * outside compare mode (null while its first event is on its way).
    */
   baseline?: EngineEvent | null;
+  /**
+   * Each run's events so far, to tell how long a stall has lasted: the plain
+   * view names one only once it has lasted. Without them it is named at once.
+   */
+  timeline?: readonly EngineEvent[];
+  baselineTimeline?: readonly EngineEvent[];
   baselineLabel?: string;
   mainLabel?: string;
   /** Start open, whatever the screen height (the story and the simple view have room). */
@@ -137,6 +191,8 @@ export function CameraFeed({
   const baseStalled = !baseVideo || baseVideo.stalled_now === true;
   const delivered = video?.frames_delivered;
   const baseDelivered = baseVideo?.frames_delivered;
+  const pausedFor = timeline ? stalledFor(timeline, event) : Infinity;
+  const basePausedFor = baselineTimeline ? stalledFor(baselineTimeline, baseline) : Infinity;
 
   // The latest stall states, read by the sink without re-registering it.
   const live = useRef({ stalled, baseStalled, split });
@@ -223,10 +279,24 @@ export function CameraFeed({
         </div>
       )}
       {video && (
-        <HalfState video={video} inOutage={event?.app?.in_outage === true} side={split ? 'left' : null} plain={compact} />
+        <HalfState
+          video={video}
+          inOutage={event?.app?.in_outage === true}
+          side={split ? 'left' : null}
+          plain={compact}
+          pausedFor={pausedFor}
+          onSatellite={classPathOf(event, 'video') === 'satellite'}
+        />
       )}
       {split && baseline && (
-        <HalfState video={baseVideo} inOutage={baseline.app?.in_outage === true} side="right" plain={compact} />
+        <HalfState
+          video={baseVideo}
+          inOutage={baseline.app?.in_outage === true}
+          side="right"
+          plain={compact}
+          pausedFor={basePausedFor}
+          onSatellite={classPathOf(baseline, 'video') === 'satellite'}
+        />
       )}
       {/* On the picture itself, where it cannot be missed - and out of a
           header that, at 1280 px, it pushed into an ellipsis. */}
@@ -257,7 +327,7 @@ export function CameraFeed({
           align="end"
           text={
             compact
-              ? "Each rover's forward camera as its operator receives it. VIDEO PAUSED: the link holds but no new frames arrive. LINK LOST: no link at all. Drawn from the simulation, not real video."
+              ? "Each rover's forward camera as its operator receives it. VIDEO PAUSED: the link holds, but no new frame has arrived for over a second - on satellite most frames arrive too late to show. LINK LOST: no link at all. Drawn from the simulation, not real video."
               : "The rover's forward camera as its operator receives it. A picture freezes when that rover's video stalls; SESSION DOWN means no link at all. Drawn from the simulation, not real video."
           }
         />
