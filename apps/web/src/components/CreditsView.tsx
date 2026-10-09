@@ -25,14 +25,14 @@ const TEAM: readonly { initials: string; name: string; role: string; focus: stri
     focus: 'MPTCP, QoS, Linux routing and wireless systems.',
   },
   {
-    initials: 'MA',
-    name: 'Mahra Alshamsi',
+    initials: 'FJ',
+    name: 'Fatima Jamal',
     role: 'Simulation & Experiment Lead',
     focus: 'Mininet-WiFi, tc netem, automation and statistics.',
   },
   {
-    initials: 'OM',
-    name: 'Obaid Mukkadam',
+    initials: 'HM',
+    name: 'Huda Mueen',
     role: 'Research & Experience Lead',
     focus: 'Literature, usability, documentation and the demo narrative.',
   },
